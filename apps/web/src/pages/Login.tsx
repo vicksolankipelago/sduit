@@ -41,7 +41,13 @@ export const LoginPage: React.FC = () => {
     const { error } = await signInWithEmail(email, password);
 
     if (error) {
-      setError(error.message);
+      // Provide helpful error message for invalid credentials
+      if (error.message.toLowerCase().includes('invalid login credentials') ||
+          error.message.toLowerCase().includes('invalid credentials')) {
+        setError('Invalid email or password. If you don\'t have an account, click "Create Account" below.');
+      } else {
+        setError(error.message);
+      }
     } else {
       navigate(from, { replace: true });
     }
