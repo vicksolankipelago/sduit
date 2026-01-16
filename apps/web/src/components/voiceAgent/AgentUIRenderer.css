@@ -114,7 +114,7 @@
   flex: 1;
   border-radius: 36px;
   overflow: hidden;
-  background: var(--background);
+  background: var(--background-light);
 }
 
 /* Hide all scrollbars within device */
@@ -130,7 +130,7 @@
 /* Device screen area - contains the SDUI content */
 .agent-ui-device-screen {
   flex: 1;
-  background: var(--background);
+  background: var(--background-light);
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
@@ -413,7 +413,7 @@
 
 /* Bottom bar inside device frame */
 .agent-ui-device-bottom-bar {
-  background: var(--background);
+  background: var(--background-light);
   border-top: none;
   padding: 0.5rem 0.75rem 0.75rem 0.75rem;
   display: flex;
@@ -443,6 +443,9 @@
 .agent-ui-device-bottom-bar .voice-control-btn {
   width: 46px;
   height: 46px;
+  background: var(--background-light);
+  border-color: var(--ui-element-divider);
+  color: var(--text-global-primary);
 }
 
 .agent-ui-device-bottom-bar .voice-control-btn svg {
@@ -453,6 +456,21 @@
 .agent-ui-device-bottom-bar .voice-control-mic {
   width: 56px;
   height: 56px;
+  background: var(--background-light);
+  border-color: var(--ui-element-divider);
+  color: var(--text-global-primary);
+}
+ 
+.agent-ui-device-bottom-bar .voice-control-mic.muted {
+  background: var(--background-light);
+  border-color: var(--ui-element-divider);
+  color: var(--alert-error-default);
+}
+ 
+.agent-ui-device-bottom-bar .voice-control-end-call {
+  background: var(--background-light);
+  border-color: var(--ui-element-divider);
+  color: var(--alert-error-default);
 }
 
 .agent-ui-device-bottom-bar .voice-control-mic svg {

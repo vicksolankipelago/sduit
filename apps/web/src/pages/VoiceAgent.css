@@ -1,6 +1,6 @@
 .voice-agent {
   position: relative;
-  min-height: calc(100vh - 120px);
+  min-height: 100vh;
   background: var(--background-light);
   display: flex;
   flex-direction: column;
@@ -880,15 +880,4 @@
   }
 }
 
-/* Dark theme specific overrides (if needed) */
-[data-theme="dark"] .voice-agent {
-  /* Uses var(--background) which is already dark */
-}
-
-[data-theme="dark"] .voice-agent-instructions {
-  /* Uses var(--surface) which is already dark */
-}
-
-[data-theme="dark"] .voice-agent-status {
-  /* Uses var(--surface) which is already dark */
-}
+/* Dark theme specific overrides can be added here if needed */
