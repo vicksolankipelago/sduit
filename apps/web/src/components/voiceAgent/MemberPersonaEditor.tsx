@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import './MemberPersonaEditor.css';
 import { PQData, DEFAULT_PQ_DATA } from '../../utils/promptTemplates';
+import { VOICE_OPTIONS } from '../../types/journey';
 
 interface MemberPersonaEditorProps {
   disabled?: boolean;
   onPersonaChange?: (enabled: boolean, description: string) => void;
   onPQDataChange?: (pqData: Partial<PQData>) => void;
+  onVoiceChange?: (voice: string) => void;
   onSave?: () => void;
   initialEnabled?: boolean;
   initialDescription?: string;
   initialPQData?: Partial<PQData>;
+  initialVoice?: string;
 }
 
 const EXAMPLE_PERSONAS = [
@@ -39,23 +42,28 @@ const MemberPersonaEditor: React.FC<MemberPersonaEditorProps> = ({
   disabled = false,
   onPersonaChange,
   onPQDataChange,
+  onVoiceChange,
   onSave,
   initialEnabled = false,
   initialDescription = '',
   initialPQData = {},
+  initialVoice = '',
 }) => {
   const [personaEnabled, setPersonaEnabled] = useState(initialEnabled);
   const [selectedPreset, setSelectedPreset] = useState('Custom');
   const [personaDescription, setPersonaDescription] = useState(initialDescription);
   const [pqData, setPQData] = useState<Partial<PQData>>({ ...DEFAULT_PQ_DATA, ...initialPQData });
+  const [selectedVoice, setSelectedVoice] = useState(initialVoice);
   const [hasChanges, setHasChanges] = useState(false);
 
   const handleTogglePersona = (enabled: boolean) => {
+    if (disabled) return;
     setPersonaEnabled(enabled);
     setHasChanges(true);
   };
 
   const handlePresetSelect = (presetName: string) => {
+    if (disabled) return;
     setSelectedPreset(presetName);
     const preset = EXAMPLE_PERSONAS.find(p => p.name === presetName);
     if (preset) {
@@ -65,12 +73,19 @@ const MemberPersonaEditor: React.FC<MemberPersonaEditorProps> = ({
   };
 
   const handleDescriptionChange = (description: string) => {
+    if (disabled) return;
     setPersonaDescription(description);
     setHasChanges(true);
   };
 
   const handlePQFieldChange = (field: keyof PQData, value: string) => {
+    if (disabled) return;
     setPQData(prev => ({ ...prev, [field]: value }));
+    setHasChanges(true);
+  };
+
+  const handleVoiceChange = (voice: string) => {
+    setSelectedVoice(voice);
     setHasChanges(true);
   };
 
@@ -80,6 +95,9 @@ const MemberPersonaEditor: React.FC<MemberPersonaEditorProps> = ({
     }
     if (onPQDataChange) {
       onPQDataChange(pqData);
+    }
+    if (onVoiceChange) {
+      onVoiceChange(selectedVoice);
     }
     setHasChanges(false);
     if (onSave) {
@@ -95,13 +113,28 @@ const MemberPersonaEditor: React.FC<MemberPersonaEditorProps> = ({
         </div>
       )}
 
-      {!disabled && (
-        <div className="persona-editor-content-clean">
+      <div className="persona-editor-content-clean">
           {/* Member Profile (PQ Data) - Always visible at top */}
           <div className="pq-section">
             <h3 className="section-title">Member Profile</h3>
 
             <div className="pq-fields-grid">
+              <div className="pq-field">
+                <label className="pq-field-label">Voice</label>
+                <select
+                  className="pq-field-select"
+                  value={selectedVoice}
+                  onChange={(e) => handleVoiceChange(e.target.value)}
+                >
+                  <option value="">Use journey default</option>
+                  {VOICE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="pq-field">
                 <label className="pq-field-label">Member Name</label>
                 <input
@@ -110,6 +143,7 @@ const MemberPersonaEditor: React.FC<MemberPersonaEditorProps> = ({
                   value={pqData.memberName || ''}
                   onChange={(e) => handlePQFieldChange('memberName', e.target.value)}
                   placeholder="e.g., Jack"
+                  disabled={disabled}
                 />
               </div>
 
@@ -121,6 +155,7 @@ const MemberPersonaEditor: React.FC<MemberPersonaEditorProps> = ({
                   value={pqData.mainSubstance || ''}
                   onChange={(e) => handlePQFieldChange('mainSubstance', e.target.value)}
                   placeholder="e.g., alcohol"
+                  disabled={disabled}
                 />
               </div>
 
@@ -130,6 +165,7 @@ const MemberPersonaEditor: React.FC<MemberPersonaEditorProps> = ({
                   className="pq-field-select"
                   value={pqData.acuityLevel || 'moderate'}
                   onChange={(e) => handlePQFieldChange('acuityLevel', e.target.value)}
+                  disabled={disabled}
                 >
                   <option value="low">Low</option>
                   <option value="moderate">Moderate</option>
@@ -145,6 +181,7 @@ const MemberPersonaEditor: React.FC<MemberPersonaEditorProps> = ({
                   value={pqData.drinkingLogs || ''}
                   onChange={(e) => handlePQFieldChange('drinkingLogs', e.target.value)}
                   placeholder="e.g., [3, 2, 4, 1, 3, 2, 0]"
+                  disabled={disabled}
                 />
               </div>
             </div>
@@ -157,6 +194,7 @@ const MemberPersonaEditor: React.FC<MemberPersonaEditorProps> = ({
                 value={pqData.primaryGoal || ''}
                 onChange={(e) => handlePQFieldChange('primaryGoal', e.target.value)}
                 placeholder="e.g., drink less and maintain a healthy lifestyle"
+                disabled={disabled}
               />
             </div>
 
@@ -168,6 +206,7 @@ const MemberPersonaEditor: React.FC<MemberPersonaEditorProps> = ({
                 onChange={(e) => handlePQFieldChange('motivation', e.target.value)}
                 placeholder="e.g., wanting to be more present for family"
                 rows={2}
+                disabled={disabled}
               />
             </div>
 
@@ -179,6 +218,7 @@ const MemberPersonaEditor: React.FC<MemberPersonaEditorProps> = ({
                 value={pqData.learningTopics || ''}
                 onChange={(e) => handlePQFieldChange('learningTopics', e.target.value)}
                 placeholder="e.g., understanding triggers, building healthier habits"
+                disabled={disabled}
               />
             </div>
 
@@ -190,6 +230,7 @@ const MemberPersonaEditor: React.FC<MemberPersonaEditorProps> = ({
                 value={pqData.carePreferences || ''}
                 onChange={(e) => handlePQFieldChange('carePreferences', e.target.value)}
                 placeholder="e.g., empathetic and understanding"
+                disabled={disabled}
               />
             </div>
           </div>
@@ -204,6 +245,7 @@ const MemberPersonaEditor: React.FC<MemberPersonaEditorProps> = ({
                   type="checkbox"
                   checked={personaEnabled}
                   onChange={(e) => handleTogglePersona(e.target.checked)}
+                  disabled={disabled}
                 />
                 <span className="persona-switch-slider"></span>
               </label>
@@ -222,6 +264,7 @@ const MemberPersonaEditor: React.FC<MemberPersonaEditorProps> = ({
                         key={preset.name}
                         className={`persona-preset-btn ${selectedPreset === preset.name ? 'active' : ''}`}
                         onClick={() => handlePresetSelect(preset.name)}
+                        disabled={disabled}
                       >
                         {preset.name}
                       </button>
@@ -237,6 +280,7 @@ const MemberPersonaEditor: React.FC<MemberPersonaEditorProps> = ({
                     onChange={(e) => handleDescriptionChange(e.target.value)}
                     placeholder="Describe the member persona in detail..."
                     rows={4}
+                    disabled={disabled}
                   />
                 </div>
               </>
@@ -257,7 +301,6 @@ const MemberPersonaEditor: React.FC<MemberPersonaEditorProps> = ({
             )}
           </div>
         </div>
-      )}
     </div>
   );
 };

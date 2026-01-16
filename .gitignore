@@ -34,3 +34,6 @@ temp/
 
 # OS files
 Thumbs.db
+
+# Supabase CLI temp files
+supabase/.temp/

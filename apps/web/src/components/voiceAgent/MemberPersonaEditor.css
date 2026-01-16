@@ -467,8 +467,7 @@
 }
 
 .member-persona-editor-clean.disabled {
-  opacity: 0.6;
-  pointer-events: none;
+  opacity: 1;
 }
 
 .persona-editor-content-clean {
