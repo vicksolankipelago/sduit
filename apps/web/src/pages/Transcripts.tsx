@@ -1,0 +1,415 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import {
+  listUserSessions,
+  loadSessionById,
+  deleteSessionById,
+  SessionListItem,
+} from '../services/supabase/sessionService';
+import { SessionExport, downloadSessionExport, downloadFormattedTranscript } from '../utils/transcriptExport';
+import { isSupabaseConfigured } from '@sduit/shared/auth';
+import './Transcripts.css';
+
+type ViewMode = 'list' | 'detail';
+type DetailTab = 'transcript' | 'events' | 'info';
+
+export const TranscriptsPage: React.FC = () => {
+  const { user } = useAuth();
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [sessions, setSessions] = useState<SessionListItem[]>([]);
+  const [currentSession, setCurrentSession] = useState<SessionExport | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailTab, setDetailTab] = useState<DetailTab>('transcript');
+  const [error, setError] = useState<string | null>(null);
+
+  // Load sessions on mount
+  useEffect(() => {
+    if (user && isSupabaseConfigured) {
+      loadSessions();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const loadSessions = async () => {
+    if (!user) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await listUserSessions(user.id);
+      setSessions(data);
+    } catch (err) {
+      console.error('Failed to load sessions:', err);
+      setError('Failed to load sessions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSessionClick = async (session: SessionListItem) => {
+    setDetailLoading(true);
+    setError(null);
+    try {
+      const fullSession = await loadSessionById(session.id);
+      if (fullSession) {
+        setCurrentSession(fullSession);
+        setViewMode('detail');
+        setDetailTab('transcript');
+      } else {
+        setError('Session not found');
+      }
+    } catch (err) {
+      console.error('Failed to load session:', err);
+      setError('Failed to load session details');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent, session: SessionListItem) => {
+    e.stopPropagation();
+    if (!confirm('Delete this transcript? This cannot be undone.')) return;
+
+    try {
+      await deleteSessionById(session.id);
+      setSessions((prev) => prev.filter((s) => s.id !== session.id));
+    } catch (err) {
+      console.error('Failed to delete session:', err);
+      setError('Failed to delete session');
+    }
+  };
+
+  const handleBack = () => {
+    setViewMode('list');
+    setCurrentSession(null);
+  };
+
+  const handleDownloadJSON = () => {
+    if (currentSession) {
+      downloadSessionExport(currentSession);
+    }
+  };
+
+  const handleDownloadText = () => {
+    if (currentSession) {
+      downloadFormattedTranscript(currentSession);
+    }
+  };
+
+  const formatDuration = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+  };
+
+  const formatRelativeTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  // Not logged in state
+  if (!user || !isSupabaseConfigured) {
+    return (
+      <div className="transcripts-page">
+        <div className="transcripts-empty">
+          <div className="transcripts-empty-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
+            </svg>
+          </div>
+          <h2>Sign in to view transcripts</h2>
+          <p>Session transcripts are saved to the cloud when you're signed in.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="transcripts-page">
+        <div className="transcripts-loading">
+          <div className="transcripts-spinner" />
+          <p>Loading transcripts...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Detail view
+  if (viewMode === 'detail' && currentSession) {
+    return (
+      <div className="transcripts-page">
+        <div className="transcripts-detail">
+          {/* Header */}
+          <div className="transcripts-detail-header">
+            <button className="transcripts-back-btn" onClick={handleBack}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              Back
+            </button>
+            <div className="transcripts-detail-title">
+              <h1>{currentSession.journey?.name || 'Untitled Session'}</h1>
+              <span className="transcripts-detail-date">
+                {new Date(currentSession.exportedAt).toLocaleString()}
+              </span>
+            </div>
+            <div className="transcripts-detail-actions">
+              <button className="transcripts-action-btn" onClick={handleDownloadText} title="Download as text">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Text
+              </button>
+              <button className="transcripts-action-btn" onClick={handleDownloadJSON} title="Download as JSON">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                JSON
+              </button>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="transcripts-tabs">
+            <button
+              className={`transcripts-tab ${detailTab === 'transcript' ? 'active' : ''}`}
+              onClick={() => setDetailTab('transcript')}
+            >
+              Transcript
+            </button>
+            <button
+              className={`transcripts-tab ${detailTab === 'events' ? 'active' : ''}`}
+              onClick={() => setDetailTab('events')}
+            >
+              Events ({currentSession.events.length})
+            </button>
+            <button
+              className={`transcripts-tab ${detailTab === 'info' ? 'active' : ''}`}
+              onClick={() => setDetailTab('info')}
+            >
+              Info
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          <div className="transcripts-tab-content">
+            {detailTab === 'transcript' && (
+              <div className="transcripts-conversation">
+                {currentSession.transcript
+                  .filter((item) => item.type === 'MESSAGE' && item.title)
+                  .map((item, index) => (
+                    <div
+                      key={item.itemId || index}
+                      className={`transcripts-message ${item.role === 'user' ? 'user' : 'assistant'}`}
+                    >
+                      <div className="transcripts-message-role">
+                        {item.role === 'user' ? 'Member' : 'Coach'}
+                      </div>
+                      <div className="transcripts-message-content">{item.title}</div>
+                      <div className="transcripts-message-time">{item.timestamp}</div>
+                    </div>
+                  ))}
+                {currentSession.transcript.filter((item) => item.type === 'MESSAGE' && item.title).length === 0 && (
+                  <div className="transcripts-empty-tab">No messages in this session</div>
+                )}
+              </div>
+            )}
+
+            {detailTab === 'events' && (
+              <div className="transcripts-events">
+                {currentSession.events.map((event, index) => (
+                  <div key={index} className="transcripts-event">
+                    <div className="transcripts-event-name">{event.eventName}</div>
+                    <div className="transcripts-event-time">{event.timestamp}</div>
+                    {event.eventData && (
+                      <pre className="transcripts-event-data">
+                        {JSON.stringify(event.eventData, null, 2)}
+                      </pre>
+                    )}
+                  </div>
+                ))}
+                {currentSession.events.length === 0 && (
+                  <div className="transcripts-empty-tab">No events recorded</div>
+                )}
+              </div>
+            )}
+
+            {detailTab === 'info' && (
+              <div className="transcripts-info">
+                <div className="transcripts-info-section">
+                  <h3>Session</h3>
+                  <div className="transcripts-info-grid">
+                    <div className="transcripts-info-item">
+                      <span className="label">Session ID</span>
+                      <span className="value">{currentSession.sessionId}</span>
+                    </div>
+                    <div className="transcripts-info-item">
+                      <span className="label">Duration</span>
+                      <span className="value">{formatDuration(currentSession.duration.totalSeconds)}</span>
+                    </div>
+                    <div className="transcripts-info-item">
+                      <span className="label">Exported</span>
+                      <span className="value">{new Date(currentSession.exportedAt).toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {currentSession.journey && (
+                  <div className="transcripts-info-section">
+                    <h3>Journey</h3>
+                    <div className="transcripts-info-grid">
+                      <div className="transcripts-info-item">
+                        <span className="label">Name</span>
+                        <span className="value">{currentSession.journey.name}</span>
+                      </div>
+                      <div className="transcripts-info-item">
+                        <span className="label">Voice</span>
+                        <span className="value">{currentSession.journey.voice}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {currentSession.agent && (
+                  <div className="transcripts-info-section">
+                    <h3>Agent</h3>
+                    <div className="transcripts-info-grid">
+                      <div className="transcripts-info-item">
+                        <span className="label">Name</span>
+                        <span className="value">{currentSession.agent.name}</span>
+                      </div>
+                      <div className="transcripts-info-item">
+                        <span className="label">Tools</span>
+                        <span className="value">{currentSession.agent.tools.length} tools</span>
+                      </div>
+                    </div>
+                    {currentSession.agent.prompt && (
+                      <div className="transcripts-info-prompt">
+                        <span className="label">Prompt</span>
+                        <pre className="transcripts-info-prompt-text">{currentSession.agent.prompt}</pre>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="transcripts-info-section">
+                  <h3>Stats</h3>
+                  <div className="transcripts-info-grid">
+                    <div className="transcripts-info-item">
+                      <span className="label">Total Messages</span>
+                      <span className="value">{currentSession.stats.totalMessages}</span>
+                    </div>
+                    <div className="transcripts-info-item">
+                      <span className="label">User Messages</span>
+                      <span className="value">{currentSession.stats.userMessages}</span>
+                    </div>
+                    <div className="transcripts-info-item">
+                      <span className="label">Assistant Messages</span>
+                      <span className="value">{currentSession.stats.assistantMessages}</span>
+                    </div>
+                    <div className="transcripts-info-item">
+                      <span className="label">Tool Calls</span>
+                      <span className="value">{currentSession.stats.toolCalls}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // List view
+  return (
+    <div className="transcripts-page">
+      <div className="transcripts-header">
+        <h1>Transcripts</h1>
+        <p>Review your saved voice session transcripts</p>
+      </div>
+
+      {error && <div className="transcripts-error">{error}</div>}
+
+      {detailLoading && (
+        <div className="transcripts-loading-overlay">
+          <div className="transcripts-spinner" />
+        </div>
+      )}
+
+      {sessions.length === 0 ? (
+        <div className="transcripts-empty">
+          <div className="transcripts-empty-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
+            </svg>
+          </div>
+          <h2>No transcripts yet</h2>
+          <p>Complete a voice session to see your transcript here.</p>
+        </div>
+      ) : (
+        <div className="transcripts-grid">
+          {sessions.map((session) => (
+            <div
+              key={session.id}
+              className="transcripts-card"
+              onClick={() => handleSessionClick(session)}
+            >
+              <div className="transcripts-card-header">
+                <span className="transcripts-card-title">
+                  {session.journeyName || 'Untitled Session'}
+                </span>
+                <span className="transcripts-card-time">{formatRelativeTime(session.createdAt)}</span>
+              </div>
+              {session.agentName && (
+                <div className="transcripts-card-agent">Agent: {session.agentName}</div>
+              )}
+              <div className="transcripts-card-stats">
+                <span>{session.messageCount} messages</span>
+                <span>•</span>
+                <span>{formatDuration(session.durationSeconds)}</span>
+              </div>
+              <button
+                className="transcripts-card-delete"
+                onClick={(e) => handleDelete(e, session)}
+                title="Delete transcript"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default TranscriptsPage;
