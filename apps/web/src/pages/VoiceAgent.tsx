@@ -175,7 +175,23 @@ function VoiceAgentContent() {
       const journeyList = await listJourneys();
       console.log('📋 Available journeys on mount:', journeyList.map(j => `${j.name} (${j.id})`));
       setAvailableJourneys(journeyList);
-      
+
+      // Check if there's a journey to auto-launch (from Journey Builder)
+      const launchJourneyId = localStorage.getItem('voice-agent-launch-journey');
+      if (launchJourneyId) {
+        localStorage.removeItem('voice-agent-launch-journey'); // Clear flag
+        const journeyToLaunch = await loadJourney(launchJourneyId);
+        if (journeyToLaunch) {
+          setCurrentJourney(journeyToLaunch);
+          addLog('info', `🚀 Launching journey: ${journeyToLaunch.name}`);
+          // Auto-start after a brief delay
+          setTimeout(() => {
+            connectToRealtime(journeyToLaunch);
+          }, 500);
+          return;
+        }
+      }
+
       if (!currentJourney && journeyList.length > 0) {
         // Auto-load first journey but don't start it
         const firstJourney = await loadJourney(journeyList[0].id);
@@ -185,7 +201,7 @@ function VoiceAgentContent() {
         }
       }
     };
-    
+
     loadJourneys();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run only once on mount
