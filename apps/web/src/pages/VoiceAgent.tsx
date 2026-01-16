@@ -563,11 +563,6 @@ Important guidelines:
   const disconnectFromRealtime = () => {
     addLog('info', 'Disconnecting from session...');
 
-    // Export transcript before disconnecting
-    if (transcriptItems.length > 0) {
-      exportSessionTranscript();
-    }
-
     disconnect();
     
     // Disconnect persona if connected
