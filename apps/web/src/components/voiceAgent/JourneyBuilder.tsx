@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Journey, Agent, DEFAULT_SYSTEM_PROMPT, validateJourney, Screen } from '../../types/journey';
-import { listJourneys, loadJourney, saveJourney, deleteJourney, duplicateJourney, downloadJourneyAsJSON, initializeExampleJourneys } from '../../services/journeyStorage';
+import { Journey, JourneyListItem, Agent, DEFAULT_SYSTEM_PROMPT, validateJourney, Screen } from '../../types/journey';
+import { listJourneys, loadJourney, saveJourney, deleteJourney, duplicateJourney, downloadJourneyAsJSON } from '../../services/journeyStorage';
 import { SCREEN_TEMPLATES } from '../../lib/voiceAgent/screenTemplates';
 import { downloadAgentAsModule } from '../../services/screenExport';
 import { generateScreensFromPrompts, suggestionToScreen, ScreenSuggestion } from '../../services/aiScreenGenerator';
@@ -26,7 +26,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const [journeys, setJourneys] = useState<JourneyListItem[]>([]);
   const [currentJourney, setCurrentJourney] = useState<Journey | null>(null);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
-  const [showJourneyList, setShowJourneyList] = useState(false); // Hidden by default
+  const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
   const [validationErrors, setValidationErrors] = useState<any[]>([]);
   const [builderTab, setBuilderTab] = useState<'flow' | 'screens' | 'prompts'>('flow');
   const [editingScreenIndex, setEditingScreenIndex] = useState<number | null>(null);
@@ -48,17 +48,6 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     const initAndLoad = async () => {
       const journeyList = await listJourneys();
       setJourneys(journeyList);
-      
-      // Auto-load the first journey on first visit
-      if (journeyList.length > 0 && !currentJourney) {
-        const firstJourney = await loadJourney(journeyList[0].id);
-        if (firstJourney) {
-          setCurrentJourney(firstJourney);
-          setShowJourneyList(false);
-          // Auto-launch the journey so it's ready in Active Session tab
-          onLaunchJourney(firstJourney);
-        }
-      }
     };
     
     initAndLoad();
@@ -85,15 +74,19 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     
     setCurrentJourney(newJourney);
     setSelectedAgentId(null);
-    setShowJourneyList(false);
+    setViewMode('detail');
   };
 
   const handleLoadJourney = async (journeyId: string) => {
+    if (currentJourney?.id === journeyId) {
+      setViewMode('detail');
+      return;
+    }
     const journey = await loadJourney(journeyId);
     if (journey) {
       setCurrentJourney(journey);
       setSelectedAgentId(null);
-      setShowJourneyList(false);
+      setViewMode('detail');
     }
   };
 
@@ -122,6 +115,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       refreshJourneyList();
       if (currentJourney?.id === journeyId) {
         setCurrentJourney(null);
+        setViewMode('list');
       }
     }
   };
@@ -131,7 +125,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     if (duplicate) {
       await refreshJourneyList();
       setCurrentJourney(duplicate);
-      setShowJourneyList(false);
+      setViewMode('detail');
     }
   };
 
@@ -204,6 +198,15 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     }
 
     onLaunchJourney(currentJourney);
+  };
+
+  const handleBackToList = () => {
+    setViewMode('list');
+    setSelectedAgentId(null);
+    setEditingScreenIndex(null);
+    setPreviewScreenIndex(null);
+    setShowAgentModal(false);
+    setBuilderTab('flow');
   };
 
   const selectedAgent = currentJourney?.agents.find(a => a.id === selectedAgentId) || null;
@@ -363,14 +366,18 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       {/* Top Bar */}
       <div className="journey-builder-header">
         <div className="journey-header-left">
-          <button
-            className="journey-list-toggle"
-            onClick={() => setShowJourneyList(!showJourneyList)}
-            type="button"
-          >
-            {showJourneyList ? '◀' : '☰'} {showJourneyList ? 'Hide' : 'Show'} Journeys
-          </button>
-          {currentJourney && (
+          {viewMode === 'detail' && (
+            <button
+              className="journey-back-btn"
+              onClick={handleBackToList}
+              type="button"
+              aria-label="Back to journeys"
+              title="Back to journeys"
+            >
+              ←
+            </button>
+          )}
+          {viewMode === 'detail' && currentJourney && (
             <div className="journey-current-name">
               <input
                 type="text"
@@ -384,10 +391,21 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
           )}
         </div>
         <div className="journey-header-actions">
-          {currentJourney && (
+          {viewMode === 'list' ? (
+            <button className="journey-create-btn" onClick={handleCreateNewJourney} type="button">
+              + New Journey
+            </button>
+          ) : currentJourney && (
             <>
               <button className="journey-action-btn" onClick={handleSaveJourney} disabled={disabled}>
                 💾 Save
+              </button>
+              <button
+                className="journey-action-btn danger"
+                onClick={() => handleDeleteJourney(currentJourney.id)}
+                disabled={disabled}
+              >
+                🗑️ Delete
               </button>
               <button className="journey-action-btn launch" onClick={handleLaunch} disabled={disabled}>
                 🚀 Launch Journey
@@ -398,75 +416,41 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       </div>
 
       <div className="journey-builder-layout">
-        {/* Left Panel - Journey List */}
-        {showJourneyList && (
-          <div className="journey-list-panel">
-            <div className="journey-list-header">
-              <h3>Saved Journeys</h3>
-              <button className="journey-create-btn" onClick={handleCreateNewJourney} type="button">
-                + New
-              </button>
-            </div>
-
-            {journeys.length === 0 ? (
-              <div className="journey-list-empty">
-                <p>No journeys yet</p>
-                <button className="journey-create-empty-btn" onClick={handleCreateNewJourney} type="button">
-                  Create Your First Journey
-                </button>
-              </div>
-            ) : (
-              <div className="journey-list-items">
-                {journeys.map(journey => (
-                  <div
-                    key={journey.id}
-                    className={`journey-list-item ${currentJourney?.id === journey.id ? 'active' : ''}`}
-                  >
-                    <div className="journey-item-content" onClick={() => handleLoadJourney(journey.id)}>
-                      <div className="journey-item-name">{journey.name}</div>
-                      <div className="journey-item-meta">
-                        {journey.agentCount} agent{journey.agentCount !== 1 ? 's' : ''}
-                      </div>
-                    </div>
-                    <div className="journey-item-actions">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDuplicateJourney(journey.id);
-                        }}
-                        title="Duplicate"
-                      >
-                        📋
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          downloadJourneyAsJSON(journey.id);
-                        }}
-                        title="Export JSON"
-                      >
-                        💾
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteJourney(journey.id);
-                        }}
-                        title="Delete"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Center Panel - Main Content */}
         <div className="journey-main-panel">
-          {!currentJourney ? (
+          {viewMode === 'list' ? (
+            <div className="journey-list-view">
+              <div className="journey-list-view-header">
+                <h2>Journeys</h2>
+                <p>Select a journey to view and edit details.</p>
+              </div>
+              {journeys.length === 0 ? (
+                <div className="journey-list-empty">
+                  <p>No journeys yet</p>
+                  <button className="journey-create-empty-btn" onClick={handleCreateNewJourney} type="button">
+                    Create Your First Journey
+                  </button>
+                </div>
+              ) : (
+                <div className="journey-list-items">
+                  {journeys.map(journey => (
+                    <div
+                      key={journey.id}
+                      className={`journey-list-item ${currentJourney?.id === journey.id ? 'active' : ''}`}
+                    >
+                      <div className="journey-item-content" onClick={() => handleLoadJourney(journey.id)}>
+                        <div className="journey-item-name">{journey.name}</div>
+                        <div className="journey-item-meta">
+                          {journey.agentCount} agent{journey.agentCount !== 1 ? 's' : ''}
+                        </div>
+                      </div>
+                      <div className="journey-item-actions" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : !currentJourney ? (
             <div className="journey-welcome">
               <h2>Welcome to Journey Builder</h2>
               <p>Create multi-agent conversation flows with visual editing</p>
@@ -673,7 +657,38 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
               {/* Prompts Tab */}
               {selectedAgentId && builderTab === 'prompts' && (
                 <div className="journey-prompts-section">
-                  <h4>Screen Prompts for {selectedAgent?.name}</h4>
+                  <h4>Prompts for {selectedAgent?.name}</h4>
+                  <div className="journey-prompts-overview">
+                    <div className="journey-prompt-block">
+                      <div className="journey-prompt-block-header">
+                        <span>System Prompt</span>
+                        <span className="journey-prompt-block-meta">Applies to all agents</span>
+                      </div>
+                      <textarea
+                        value={currentJourney.systemPrompt}
+                        onChange={(e) => setCurrentJourney({ ...currentJourney, systemPrompt: e.target.value })}
+                        placeholder="Define global instructions for all agents..."
+                        disabled={disabled}
+                        rows={8}
+                      />
+                    </div>
+                    <div className="journey-prompt-block">
+                      <div className="journey-prompt-block-header">
+                        <span>Agent Prompt</span>
+                        <span className="journey-prompt-block-meta">Specific to this agent</span>
+                      </div>
+                      <textarea
+                        value={selectedAgent?.prompt || ''}
+                        onChange={(e) => {
+                          if (!selectedAgent) return;
+                          handleUpdateAgent({ ...selectedAgent, prompt: e.target.value });
+                        }}
+                        placeholder="Define specific instructions for this agent..."
+                        disabled={disabled}
+                        rows={8}
+                      />
+                    </div>
+                  </div>
                   {!selectedAgent?.screens || selectedAgent.screens.length === 0 ? (
                     <div className="journey-prompts-empty">
                       <p>No screens defined. Add screens first to create prompts.</p>

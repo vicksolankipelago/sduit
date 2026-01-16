@@ -4,6 +4,9 @@
   align-items: center;
   width: 100%;
   margin: 0 auto;
+  background-color: var(--background-light-card);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
 }
 
 .animated-image-placeholder {
