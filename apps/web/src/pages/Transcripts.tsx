@@ -25,6 +25,7 @@ export const TranscriptsPage: React.FC = () => {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailTab, setDetailTab] = useState<DetailTab>('transcript');
   const [error, setError] = useState<string | null>(null);
+  const [sessionMetrics, setSessionMetrics] = useState<Record<string, { messageCount: number }>>({});
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -179,6 +180,47 @@ export const TranscriptsPage: React.FC = () => {
     return merged;
   };
 
+  const filterEvents = (events: SessionExport['events']) => {
+    return events.filter((event) => {
+      const name = event.eventName || '';
+      const hasDelta = typeof (event.eventData as any)?.delta === 'string';
+      return !name.includes('delta') && !hasDelta;
+    });
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadMetrics = async () => {
+      const updates: Record<string, { messageCount: number }> = {};
+      await Promise.all(
+        sessions.map(async (session) => {
+          try {
+            const fullSession = await loadSessionById(session.id);
+            if (!fullSession) return;
+            const mergedMessages = mergeTranscriptMessages(fullSession.transcript)
+              .filter((item) => item.type === 'MESSAGE' && item.title);
+            updates[session.id] = { messageCount: mergedMessages.length };
+          } catch (err) {
+            console.warn('Failed to load session metrics:', err);
+          }
+        })
+      );
+
+      if (!cancelled && Object.keys(updates).length > 0) {
+        setSessionMetrics((prev) => ({ ...prev, ...updates }));
+      }
+    };
+
+    if (sessions.length > 0) {
+      loadMetrics();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessions]);
+
   // Not logged in state
   if (!user || !isSupabaseConfigured) {
     return (
@@ -214,6 +256,12 @@ export const TranscriptsPage: React.FC = () => {
 
   // Detail view
   if (viewMode === 'detail' && currentSession) {
+    const mergedTranscript = mergeTranscriptMessages(currentSession.transcript);
+    const transcriptMessages = mergedTranscript.filter((item) => item.type === 'MESSAGE' && item.title);
+    const filteredEvents = filterEvents(currentSession.events);
+    const userMessages = transcriptMessages.filter((item) => item.role === 'user');
+    const assistantMessages = transcriptMessages.filter((item) => item.role === 'assistant');
+
     return (
       <div className="transcripts-page">
         <div className="transcripts-detail">
@@ -263,7 +311,7 @@ export const TranscriptsPage: React.FC = () => {
               className={`transcripts-tab ${detailTab === 'events' ? 'active' : ''}`}
               onClick={() => setDetailTab('events')}
             >
-              Events ({currentSession.events.length})
+              Events ({filteredEvents.length})
             </button>
             <button
               className={`transcripts-tab ${detailTab === 'info' ? 'active' : ''}`}
@@ -277,8 +325,7 @@ export const TranscriptsPage: React.FC = () => {
           <div className="transcripts-tab-content">
             {detailTab === 'transcript' && (
               <div className="transcripts-conversation">
-                {mergeTranscriptMessages(currentSession.transcript)
-                  .filter((item) => item.type === 'MESSAGE' && item.title)
+                {transcriptMessages
                   .map((item, index) => (
                     <div
                       key={item.itemId || index}
@@ -291,7 +338,7 @@ export const TranscriptsPage: React.FC = () => {
                       <div className="transcripts-message-time">{item.timestamp}</div>
                     </div>
                   ))}
-                {currentSession.transcript.filter((item) => item.type === 'MESSAGE' && item.title).length === 0 && (
+                {transcriptMessages.length === 0 && (
                   <div className="transcripts-empty-tab">No messages in this session</div>
                 )}
               </div>
@@ -299,7 +346,7 @@ export const TranscriptsPage: React.FC = () => {
 
             {detailTab === 'events' && (
               <div className="transcripts-events">
-                {currentSession.events.map((event, index) => (
+                {filteredEvents.map((event, index) => (
                   <div key={index} className="transcripts-event">
                     <div className="transcripts-event-name">{event.eventName}</div>
                     <div className="transcripts-event-time">{event.timestamp}</div>
@@ -310,7 +357,7 @@ export const TranscriptsPage: React.FC = () => {
                     )}
                   </div>
                 ))}
-                {currentSession.events.length === 0 && (
+                {filteredEvents.length === 0 && (
                   <div className="transcripts-empty-tab">No events recorded</div>
                 )}
               </div>
@@ -379,15 +426,15 @@ export const TranscriptsPage: React.FC = () => {
                   <div className="transcripts-info-grid">
                     <div className="transcripts-info-item">
                       <span className="label">Total Messages</span>
-                      <span className="value">{currentSession.stats.totalMessages}</span>
+                      <span className="value">{transcriptMessages.length}</span>
                     </div>
                     <div className="transcripts-info-item">
                       <span className="label">User Messages</span>
-                      <span className="value">{currentSession.stats.userMessages}</span>
+                      <span className="value">{userMessages.length}</span>
                     </div>
                     <div className="transcripts-info-item">
                       <span className="label">Assistant Messages</span>
-                      <span className="value">{currentSession.stats.assistantMessages}</span>
+                      <span className="value">{assistantMessages.length}</span>
                     </div>
                     <div className="transcripts-info-item">
                       <span className="label">Tool Calls</span>
@@ -452,7 +499,7 @@ export const TranscriptsPage: React.FC = () => {
                 </div>
                 <div className="transcripts-list-item-meta">
                   <span className="transcripts-list-item-stats">
-                    {session.messageCount} messages • {formatDuration(session.durationSeconds)}
+                    {(sessionMetrics[session.id]?.messageCount ?? session.messageCount)} messages • {formatDuration(session.durationSeconds)}
                   </span>
                   <span className="transcripts-list-item-time">{formatRelativeTime(session.createdAt)}</span>
                 </div>
