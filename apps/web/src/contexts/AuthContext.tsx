@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { supabase, isSupabaseConfigured, User, Session } from '@sduit/shared/auth';
+import { migrateLocalStorageToSupabase } from '../utils/migrateLocalStorage';
 
 interface AuthContextValue {
   user: User | null;
@@ -17,6 +18,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const migrationAttemptedRef = useRef(false);
 
   useEffect(() => {
     if (!supabase) {
@@ -41,6 +43,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Migrate localStorage data to Supabase on first login
+  useEffect(() => {
+    if (user && !loading && !migrationAttemptedRef.current) {
+      migrationAttemptedRef.current = true;
+
+      migrateLocalStorageToSupabase(user.id).then((result) => {
+        if (result.migrated > 0) {
+          console.log(`✅ Migrated ${result.migrated} journeys from localStorage to Supabase`);
+        }
+        if (result.errors.length > 0) {
+          console.warn('⚠️ Migration errors:', result.errors);
+        }
+      }).catch((error) => {
+        console.error('Migration failed:', error);
+      });
+    }
+  }, [user, loading]);
 
   const signInWithMagicLink = async (email: string) => {
     if (!supabase) {

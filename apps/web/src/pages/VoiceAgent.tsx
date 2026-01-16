@@ -37,6 +37,8 @@ import {
 import { journeyToRealtimeAgents, getStartingAgentName, setEventTriggerCallback, getAgentScreens } from '../lib/voiceAgent/journeyRuntime';
 import { listJourneys, loadJourney } from '../services/journeyStorage';
 import { PQData, substitutePromptVariables, DEFAULT_PQ_DATA } from '../utils/promptTemplates';
+import { useAuth } from '../contexts/AuthContext';
+import { saveSession } from '../services/supabase/sessionService';
 
 // Main Voice Agent Component
 function VoiceAgentContent() {
@@ -45,14 +47,15 @@ function VoiceAgentContent() {
     transcriptItems,
   } = useTranscript();
   const { logServerEvent, loggedEvents } = useEvent();
-  const { 
-    triggerFunctionUI, 
+  const {
+    triggerFunctionUI,
     triggerEventUI,
     enableScreenRendering,
     disableScreenRendering,
     navigateToScreen,
     updateModuleState
   } = useAgentUI();
+  const { user } = useAuth();
 
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const currentAgentRef = useRef<string>('greeter');
@@ -118,6 +121,9 @@ function VoiceAgentContent() {
   const [pqData, setPQData] = useState<Partial<PQData>>(() => {
     const saved = localStorage.getItem('voice-agent-pq-data');
     return saved ? JSON.parse(saved) : {};
+  });
+  const [selectedVoice, setSelectedVoice] = useState(() => {
+    return localStorage.getItem('voice-agent-selected-voice') || '';
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [currentJourney, setCurrentJourney] = useState<Journey | null>(null);
@@ -349,8 +355,8 @@ function VoiceAgentContent() {
         parameters: tool.parameters,
       }));
 
-      // Use journey-level voice (preferred) or fall back to agent voice
-      const journeyVoice = journeyWithPQData.voice || startingAgentConfigForConnect.voice || 'shimmer';
+      // Use settings override, then journey voice, then agent voice
+      const journeyVoice = selectedVoice || journeyWithPQData.voice || startingAgentConfigForConnect.voice || 'shimmer';
 
       const journeyAgentConfig = {
         name: startingAgentName,
@@ -385,7 +391,7 @@ function VoiceAgentContent() {
         allJourneyAgentsMap.set(agentName, {
           name: agentName,
           instructions: agentInstructionParts.filter(Boolean).join('\n\n'),
-          voice: journeyWithPQData.voice || agent.voice || 'shimmer', // Use journey voice for consistency
+          voice: selectedVoice || journeyWithPQData.voice || agent.voice || 'shimmer', // Use journey voice for consistency
           handoffs: agent.handoffs || [],
         });
       });
@@ -560,17 +566,43 @@ Important guidelines:
     addLog('success', '📥 Raw session JSON exported');
   };
 
-  const disconnectFromRealtime = () => {
+  const disconnectFromRealtime = async () => {
     addLog('info', 'Disconnecting from session...');
 
+    // Auto-save session to Supabase if authenticated and has transcript
+    if (user && transcriptItems.length > 0) {
+      try {
+        const agentConfig = combinedPromptRef.current ? {
+          name: currentAgentRef.current,
+          publicDescription: '',
+          instructions: combinedPromptRef.current,
+          tools: [],
+        } : undefined;
+
+        const sessionExport = createSessionExport({
+          sessionId: sessionIdRef.current,
+          transcript: transcriptItems,
+          events: loggedEvents,
+          journey: currentJourney || undefined,
+          agentConfig,
+        });
+
+        await saveSession(sessionExport, user.id);
+        addLog('success', '☁️ Session auto-saved to cloud');
+      } catch (error) {
+        console.error('Failed to auto-save session:', error);
+        addLog('warning', 'Failed to auto-save session to cloud');
+      }
+    }
+
     disconnect();
-    
+
     // Disconnect persona if connected
     if (personaStatus !== 'DISCONNECTED') {
       disconnectPersona();
       addLog('info', '🎭 Persona disconnected');
     }
-    
+
     // Clean up audio routing
     if (audioRouterRef.current) {
       audioRouterRef.current.cleanup();
@@ -581,7 +613,7 @@ Important guidelines:
     if (disableScreenRendering) {
       disableScreenRendering();
     }
-    
+
     setSessionStatus("DISCONNECTED");
     addLog('success', 'Disconnected successfully');
   };
@@ -651,6 +683,12 @@ Important guidelines:
     setPQData(data);
     localStorage.setItem('voice-agent-pq-data', JSON.stringify(data));
     addLog('info', '📝 PQ data updated', { memberName: data.memberName, primaryGoal: data.primaryGoal });
+  };
+
+  const handleVoiceChange = (voice: string) => {
+    setSelectedVoice(voice);
+    localStorage.setItem('voice-agent-selected-voice', voice);
+    addLog('info', voice ? `🎵 Voice set to ${voice}` : '🎵 Voice set to journey default');
   };
 
   // Persona session - uses same implementation as voice agent
@@ -922,10 +960,12 @@ Important guidelines:
                 disabled={sessionStatus !== 'DISCONNECTED'}
                 onPersonaChange={handlePersonaChange}
                 onPQDataChange={handlePQDataChange}
+                onVoiceChange={handleVoiceChange}
                 onSave={() => setSettingsOpen(false)}
                 initialEnabled={personaEnabled}
                 initialDescription={personaDescription}
                 initialPQData={pqData}
+                initialVoice={selectedVoice}
               />
             </div>
           </div>
