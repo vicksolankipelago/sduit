@@ -4,6 +4,7 @@ import {
   listUserSessions,
   loadSessionById,
   deleteSessionById,
+  getSessionCount,
   SessionListItem,
 } from '../services/supabase/sessionService';
 import { SessionExport, downloadSessionExport, downloadFormattedTranscript } from '../utils/transcriptExport';
@@ -12,6 +13,8 @@ import './Transcripts.css';
 
 type ViewMode = 'list' | 'detail';
 type DetailTab = 'transcript' | 'events' | 'info';
+
+const PAGE_SIZE = 10;
 
 export const TranscriptsPage: React.FC = () => {
   const { user } = useAuth();
@@ -23,27 +26,43 @@ export const TranscriptsPage: React.FC = () => {
   const [detailTab, setDetailTab] = useState<DetailTab>('transcript');
   const [error, setError] = useState<string | null>(null);
 
-  // Load sessions on mount
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  // Load sessions on mount and when page changes
   useEffect(() => {
     if (user && isSupabaseConfigured) {
-      loadSessions();
+      loadSessions(currentPage);
     } else {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, currentPage]);
 
-  const loadSessions = async () => {
+  const loadSessions = async (page: number) => {
     if (!user) return;
     setLoading(true);
     setError(null);
     try {
-      const data = await listUserSessions(user.id);
+      const offset = (page - 1) * PAGE_SIZE;
+      const [data, count] = await Promise.all([
+        listUserSessions(user.id, PAGE_SIZE, offset),
+        getSessionCount(user.id),
+      ]);
       setSessions(data);
+      setTotalCount(count);
     } catch (err) {
       console.error('Failed to load sessions:', err);
       setError('Failed to load sessions');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
     }
   };
 
@@ -73,7 +92,12 @@ export const TranscriptsPage: React.FC = () => {
 
     try {
       await deleteSessionById(session.id);
+      setTotalCount((prev) => prev - 1);
       setSessions((prev) => prev.filter((s) => s.id !== session.id));
+      // If we deleted the last item on this page and there are more pages, go back
+      if (sessions.length === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      }
     } catch (err) {
       console.error('Failed to delete session:', err);
       setError('Failed to delete session');
@@ -347,7 +371,7 @@ export const TranscriptsPage: React.FC = () => {
     <div className="transcripts-page">
       <div className="transcripts-header">
         <h1>Transcripts</h1>
-        <p>Review your saved voice session transcripts</p>
+        <p>Review your saved voice session transcripts {totalCount > 0 && `(${totalCount} total)`}</p>
       </div>
 
       {error && <div className="transcripts-error">{error}</div>}
@@ -373,40 +397,71 @@ export const TranscriptsPage: React.FC = () => {
           <p>Complete a voice session to see your transcript here.</p>
         </div>
       ) : (
-        <div className="transcripts-grid">
-          {sessions.map((session) => (
-            <div
-              key={session.id}
-              className="transcripts-card"
-              onClick={() => handleSessionClick(session)}
-            >
-              <div className="transcripts-card-header">
-                <span className="transcripts-card-title">
-                  {session.journeyName || 'Untitled Session'}
-                </span>
-                <span className="transcripts-card-time">{formatRelativeTime(session.createdAt)}</span>
+        <>
+          <div className="transcripts-list">
+            {sessions.map((session) => (
+              <div
+                key={session.id}
+                className="transcripts-list-item"
+                onClick={() => handleSessionClick(session)}
+              >
+                <div className="transcripts-list-item-main">
+                  <span className="transcripts-list-item-title">
+                    {session.journeyName || 'Untitled Session'}
+                  </span>
+                  {session.agentName && (
+                    <span className="transcripts-list-item-agent">{session.agentName}</span>
+                  )}
+                </div>
+                <div className="transcripts-list-item-meta">
+                  <span className="transcripts-list-item-stats">
+                    {session.messageCount} messages • {formatDuration(session.durationSeconds)}
+                  </span>
+                  <span className="transcripts-list-item-time">{formatRelativeTime(session.createdAt)}</span>
+                </div>
+                <button
+                  className="transcripts-list-item-delete"
+                  onClick={(e) => handleDelete(e, session)}
+                  title="Delete transcript"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                </button>
               </div>
-              {session.agentName && (
-                <div className="transcripts-card-agent">Agent: {session.agentName}</div>
-              )}
-              <div className="transcripts-card-stats">
-                <span>{session.messageCount} messages</span>
-                <span>•</span>
-                <span>{formatDuration(session.durationSeconds)}</span>
-              </div>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="transcripts-pagination">
               <button
-                className="transcripts-card-delete"
-                onClick={(e) => handleDelete(e, session)}
-                title="Delete transcript"
+                className="transcripts-pagination-btn"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="3 6 5 6 21 6" />
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+                Previous
+              </button>
+              <span className="transcripts-pagination-info">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                className="transcripts-pagination-btn"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Next
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="9 18 15 12 9 6" />
                 </svg>
               </button>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );
