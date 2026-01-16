@@ -462,6 +462,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
             <div className="journey-editor">
               {/* Journey Description */}
               <div className="journey-description-field">
+                <label className="journey-description-label">Description</label>
                 <textarea
                   value={currentJourney.description}
                   onChange={(e) => setCurrentJourney({ ...currentJourney, description: e.target.value })}
