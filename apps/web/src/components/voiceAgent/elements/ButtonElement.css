@@ -1,0 +1,103 @@
+.button-element {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-family-grotesque);
+  width: 100%;
+  border-radius: var(--border-radius-sm);
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+/* Button Styles */
+.button-element-primary {
+  background-color: #212633;
+  color: #ffffff;
+}
+
+.button-element-primary:hover:not(:disabled) {
+  background-color: #2d3444;
+}
+
+.button-element-primary:active:not(:disabled) {
+  background-color: #181c26;
+}
+
+.button-element-secondary {
+  background-color: var(--secondary-default);
+  color: var(--text-button-secondary);
+}
+
+.button-element-secondary:hover:not(:disabled) {
+  background-color: var(--secondary-hover);
+}
+
+.button-element-secondary:active:not(:disabled) {
+  background-color: var(--secondary-pressed);
+}
+
+.button-element-tertiary {
+  background-color: transparent;
+  color: var(--text-global-primary);
+  border: 2px solid var(--ui-element-outline-default);
+}
+
+.button-element-tertiary:hover:not(:disabled) {
+  border-color: var(--ui-element-outline-active);
+  background-color: var(--background-action-hover);
+}
+
+.button-element-alert {
+  background-color: var(--alert-error-default);
+  color: var(--text-button-alert);
+}
+
+.button-element-alert:hover:not(:disabled) {
+  background-color: var(--alert-error-hover);
+}
+
+.button-element-alert:active:not(:disabled) {
+  background-color: var(--alert-error-pressed);
+}
+
+/* Button Sizes */
+.button-element-large {
+  padding: 14px 16px;
+  height: 54px;
+  min-height: 54px;
+}
+
+.button-element-medium {
+  padding: 12px 16px;
+  height: 48px;
+  min-height: 48px;
+}
+
+.button-element-small {
+  padding: 8px 16px;
+  height: 40px;
+  min-height: 40px;
+}
+
+/* Disabled State */
+.button-element-disabled,
+.button-element:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button-element-primary:disabled {
+  background-color: var(--primary-cta-disabled);
+}
+
+.button-element-secondary:disabled {
+  background-color: var(--secondary-disabled);
+}
+
+.button-element-alert:disabled {
+  background-color: var(--alert-error-disabled);
+}
+

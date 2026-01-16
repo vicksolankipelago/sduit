@@ -1,0 +1,36 @@
+.loading-view-element {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-lg);
+  width: 100%;
+}
+
+.loading-view-spinner {
+  display: inline-block;
+  position: relative;
+  width: 48px;
+  height: 48px;
+}
+
+.loading-view-spinner-circle {
+  box-sizing: border-box;
+  display: block;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 4px solid var(--ui-element-outline-default);
+  border-radius: 50%;
+  animation: loading-view-spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  border-color: var(--primary-cta-default) transparent transparent transparent;
+}
+
+@keyframes loading-view-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+

@@ -1,0 +1,45 @@
+.voice-agent-orb-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  position: relative;
+}
+
+.voice-agent-orb-canvas {
+  display: block;
+  filter: drop-shadow(0 10px 30px rgba(29, 185, 84, 0.2));
+  transition: filter 0.3s ease;
+}
+
+.voice-agent-orb-container.speaking .voice-agent-orb-canvas {
+  filter: drop-shadow(0 15px 40px rgba(29, 185, 84, 0.4));
+}
+
+.voice-agent-orb-container.listening .voice-agent-orb-canvas {
+  filter: drop-shadow(0 15px 40px rgba(99, 102, 241, 0.3));
+}
+
+.voice-agent-orb-state-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-global-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+}
+
+.voice-agent-orb-container.speaking .voice-agent-orb-state-label {
+  color: #1DB954;
+}
+
+.voice-agent-orb-container.listening .voice-agent-orb-state-label {
+  color: #6366F1;
+}
+
+.voice-agent-orb-container.active .voice-agent-orb-state-label {
+  color: var(--text-global-primary);
+}
+

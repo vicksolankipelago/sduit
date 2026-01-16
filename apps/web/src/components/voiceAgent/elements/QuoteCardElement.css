@@ -1,0 +1,37 @@
+.quote-card-element {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0 16px;
+  padding: 24px 16px;
+  background-color: #E8EEFF;
+  border-radius: var(--border-radius-sm);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.quote-card-image {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.quote-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.quote-card-message {
+  color: var(--text-global-primary);
+  font-style: normal;
+}
+
+.quote-card-author {
+  color: var(--text-global-primary);
+}
+

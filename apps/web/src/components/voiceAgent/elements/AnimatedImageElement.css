@@ -1,0 +1,20 @@
+.animated-image-element {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.animated-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--background-light-card);
+  border: 2px dashed var(--ui-element-outline-default);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-global-secondary);
+  font-family: var(--font-family-grotesque);
+  margin: 0 auto;
+}
+

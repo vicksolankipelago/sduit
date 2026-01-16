@@ -1,0 +1,22 @@
+.text-block-element {
+  width: 100%;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  color: var(--text-global-primary);
+  display: block;
+}
+
+.text-align-left {
+  text-align: left;
+}
+
+.text-align-center {
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.text-align-right {
+  text-align: right;
+}
+

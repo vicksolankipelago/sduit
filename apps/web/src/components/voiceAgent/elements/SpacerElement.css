@@ -1,0 +1,32 @@
+.spacer-element {
+  display: block;
+  width: 100%;
+}
+
+.spacer-element-flexible {
+  flex: 1;
+  min-height: 0;
+  max-height: 40px; /* Limit flexible spacer growth in compact screens */
+}
+
+.spacer-element-fixed {
+  flex-shrink: 0;
+  flex-grow: 0;
+}
+
+/* In direct SDUI rendering, limit all spacers */
+.agent-ui-screen-direct .spacer-element-flexible {
+  flex: 0 0 auto; /* Don't flex, use minimal space */
+  height: 20px; /* Small fixed height instead of flexible */
+  max-height: 20px;
+}
+
+.spacer-element-vertical {
+  width: 100%;
+}
+
+.spacer-element-horizontal {
+  height: 100%;
+  width: auto;
+}
+

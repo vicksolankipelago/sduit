@@ -1,0 +1,299 @@
+.voice-control-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 2000;
+  background: var(--background-light);
+  border-top: 1px solid var(--ui-element-divider);
+  padding: 0.5rem 2rem 0.75rem 2rem; /* Even more compact */
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.voice-control-bar-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3rem;
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+  position: relative;
+}
+
+@media (min-width: 1200px) {
+  .voice-control-bar-container {
+    gap: 4rem;
+  }
+}
+
+/* Base Button Styles */
+.voice-control-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--background-light);
+  border: 2px solid var(--ui-element-outline-default);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.voice-control-btn:hover {
+  transform: scale(1.05);
+  border-color: var(--text-global-primary);
+}
+
+.voice-control-btn:active {
+  transform: scale(0.95);
+}
+
+/* Keyboard Button */
+.voice-control-keyboard {
+  width: 36px;
+  height: 36px;
+  color: var(--text-global-secondary);
+}
+
+.voice-control-keyboard svg {
+  width: 18px;
+  height: 18px;
+}
+
+.voice-control-keyboard.active {
+  background: var(--primary-cta-default);
+  border-color: var(--primary-cta-default);
+  color: white;
+}
+
+.voice-control-keyboard:hover {
+  background: var(--background-light-card);
+}
+
+.voice-control-keyboard.active:hover {
+  background: var(--primary-cta-hover);
+  border-color: var(--primary-cta-hover);
+}
+
+/* Microphone Button */
+.voice-control-mic {
+  width: 48px;
+  height: 48px;
+  background: var(--primary-cta-default);
+  border-color: var(--primary-cta-default);
+  color: white;
+  box-shadow: 0 4px 12px rgba(26, 26, 26, 0.15);
+}
+
+.voice-control-mic svg {
+  width: 22px;
+  height: 22px;
+}
+
+.voice-control-mic:hover {
+  background: var(--primary-cta-hover);
+  border-color: var(--primary-cta-hover);
+  box-shadow: 0 6px 16px rgba(26, 26, 26, 0.2);
+}
+
+.voice-control-mic.muted {
+  background: var(--alert-error-default);
+  border-color: var(--alert-error-default);
+}
+
+.voice-control-mic.muted:hover {
+  background: var(--alert-error-hover);
+  border-color: var(--alert-error-hover);
+}
+
+/* Pulse Animation for Listening State */
+.mic-pulse-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 2px solid var(--primary-cta-default);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.voice-control-mic.listening .mic-pulse-ring {
+  animation: pulse-wave 2s ease-out infinite;
+}
+
+.mic-pulse-ring-1 {
+  animation-delay: 0s;
+}
+
+.mic-pulse-ring-2 {
+  animation-delay: 0.6s;
+}
+
+.mic-pulse-ring-3 {
+  animation-delay: 1.2s;
+}
+
+@keyframes pulse-wave {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+/* Settings Button - Positioned on far right */
+.voice-control-settings {
+  position: absolute;
+  right: 0;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  color: var(--text-global-secondary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.voice-control-settings:hover {
+  background: var(--background-light-card);
+  color: var(--text-global-primary);
+  opacity: 1;
+}
+
+.voice-control-settings svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.5;
+}
+
+/* End Call Button */
+.voice-control-end-call {
+  width: 36px;
+  height: 36px;
+  background: var(--alert-error-default);
+  border-color: var(--alert-error-default);
+  color: white;
+}
+
+.voice-control-end-call svg {
+  width: 18px;
+  height: 18px;
+}
+
+.voice-control-end-call:hover {
+  background: var(--alert-error-hover);
+  border-color: var(--alert-error-hover);
+  transform: scale(1.05);
+}
+
+/* Responsive - Desktop Large */
+@media (min-width: 1400px) {
+  .voice-control-keyboard,
+  .voice-control-end-call {
+    width: 52px;
+    height: 52px;
+  }
+
+  .voice-control-keyboard svg,
+  .voice-control-end-call svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .voice-control-mic {
+    width: 72px;
+    height: 72px;
+  }
+
+  .voice-control-mic svg {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* Responsive - Tablet */
+@media (max-width: 1024px) {
+  .voice-control-bar-container {
+    gap: 2.5rem;
+  }
+}
+
+/* Responsive - Mobile */
+@media (max-width: 768px) {
+  .voice-control-bar {
+    padding: 0.75rem 1rem 1.25rem 1rem;
+  }
+
+  .voice-control-bar-container {
+    gap: 1.5rem;
+  }
+
+  .voice-control-keyboard,
+  .voice-control-end-call {
+    width: 44px;
+    height: 44px;
+  }
+
+  .voice-control-keyboard svg,
+  .voice-control-end-call svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .voice-control-mic {
+    width: 56px;
+    height: 56px;
+  }
+
+  .voice-control-mic svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* Responsive - Small Mobile */
+@media (max-width: 480px) {
+  .voice-control-bar {
+    padding: 0.625rem 0.75rem 1rem 0.75rem;
+  }
+
+  .voice-control-bar-container {
+    gap: 1.25rem;
+  }
+
+  .voice-control-keyboard,
+  .voice-control-end-call {
+    width: 40px;
+    height: 40px;
+  }
+
+  .voice-control-keyboard svg,
+  .voice-control-end-call svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .voice-control-mic {
+    width: 52px;
+    height: 52px;
+  }
+
+  .voice-control-mic svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+

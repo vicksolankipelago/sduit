@@ -1,0 +1,265 @@
+import React, { useState } from 'react';
+import './MemberPersonaEditor.css';
+import { PQData, DEFAULT_PQ_DATA } from '../../utils/promptTemplates';
+
+interface MemberPersonaEditorProps {
+  disabled?: boolean;
+  onPersonaChange?: (enabled: boolean, description: string) => void;
+  onPQDataChange?: (pqData: Partial<PQData>) => void;
+  onSave?: () => void;
+  initialEnabled?: boolean;
+  initialDescription?: string;
+  initialPQData?: Partial<PQData>;
+}
+
+const EXAMPLE_PERSONAS = [
+  {
+    name: 'Motivated by Family',
+    description: 'You are a 35-year-old parent struggling with alcohol use. You drink 3-4 beers daily and want to quit because you want to be more present for your children and partner. You feel guilty about how drinking affects your family time and relationships.'
+  },
+  {
+    name: 'Health-Focused Professional',
+    description: 'You are a 42-year-old professional who has been drinking wine nightly to unwind. You\'ve noticed health impacts and want to improve your fitness and energy levels. You\'re motivated by wanting to feel better physically and be more productive at work.'
+  },
+  {
+    name: 'Social Drinker Seeking Control',
+    description: 'You are a 28-year-old who drinks heavily in social situations. You struggle with saying no when friends are drinking. You want to cut back because you\'re tired of hangovers and want to pursue other hobbies like playing basketball.'
+  },
+  {
+    name: 'Long-term Heavy User',
+    description: 'You are a 50-year-old who has been drinking heavily for 20+ years. You experience withdrawal symptoms when trying to quit. You\'re motivated by wanting to improve your health before it\'s too late and regain relationships you\'ve damaged.'
+  },
+  {
+    name: 'Custom',
+    description: ''
+  }
+];
+
+const MemberPersonaEditor: React.FC<MemberPersonaEditorProps> = ({
+  disabled = false,
+  onPersonaChange,
+  onPQDataChange,
+  onSave,
+  initialEnabled = false,
+  initialDescription = '',
+  initialPQData = {},
+}) => {
+  const [personaEnabled, setPersonaEnabled] = useState(initialEnabled);
+  const [selectedPreset, setSelectedPreset] = useState('Custom');
+  const [personaDescription, setPersonaDescription] = useState(initialDescription);
+  const [pqData, setPQData] = useState<Partial<PQData>>({ ...DEFAULT_PQ_DATA, ...initialPQData });
+  const [hasChanges, setHasChanges] = useState(false);
+
+  const handleTogglePersona = (enabled: boolean) => {
+    setPersonaEnabled(enabled);
+    setHasChanges(true);
+  };
+
+  const handlePresetSelect = (presetName: string) => {
+    setSelectedPreset(presetName);
+    const preset = EXAMPLE_PERSONAS.find(p => p.name === presetName);
+    if (preset) {
+      setPersonaDescription(preset.description);
+      setHasChanges(true);
+    }
+  };
+
+  const handleDescriptionChange = (description: string) => {
+    setPersonaDescription(description);
+    setHasChanges(true);
+  };
+
+  const handlePQFieldChange = (field: keyof PQData, value: string) => {
+    setPQData(prev => ({ ...prev, [field]: value }));
+    setHasChanges(true);
+  };
+
+  const handleSave = () => {
+    if (onPersonaChange) {
+      onPersonaChange(personaEnabled, personaDescription);
+    }
+    if (onPQDataChange) {
+      onPQDataChange(pqData);
+    }
+    setHasChanges(false);
+    if (onSave) {
+      onSave();
+    }
+  };
+
+  return (
+    <div className={`member-persona-editor-clean ${disabled ? 'disabled' : ''}`}>
+      {disabled && (
+        <div className="persona-disabled-banner">
+          <span className="persona-disabled-notice">Disconnect voice session to edit settings</span>
+        </div>
+      )}
+
+      {!disabled && (
+        <div className="persona-editor-content-clean">
+          {/* Member Profile (PQ Data) - Always visible at top */}
+          <div className="pq-section">
+            <h3 className="section-title">Member Profile</h3>
+
+            <div className="pq-fields-grid">
+              <div className="pq-field">
+                <label className="pq-field-label">Member Name</label>
+                <input
+                  type="text"
+                  className="pq-field-input"
+                  value={pqData.memberName || ''}
+                  onChange={(e) => handlePQFieldChange('memberName', e.target.value)}
+                  placeholder="e.g., Jack"
+                />
+              </div>
+
+              <div className="pq-field">
+                <label className="pq-field-label">Main Substance</label>
+                <input
+                  type="text"
+                  className="pq-field-input"
+                  value={pqData.mainSubstance || ''}
+                  onChange={(e) => handlePQFieldChange('mainSubstance', e.target.value)}
+                  placeholder="e.g., alcohol"
+                />
+              </div>
+
+              <div className="pq-field">
+                <label className="pq-field-label">Acuity Level</label>
+                <select
+                  className="pq-field-select"
+                  value={pqData.acuityLevel || 'moderate'}
+                  onChange={(e) => handlePQFieldChange('acuityLevel', e.target.value)}
+                >
+                  <option value="low">Low</option>
+                  <option value="moderate">Moderate</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+
+              <div className="pq-field">
+                <label className="pq-field-label">Drinking Logs (7 days)</label>
+                <input
+                  type="text"
+                  className="pq-field-input"
+                  value={pqData.drinkingLogs || ''}
+                  onChange={(e) => handlePQFieldChange('drinkingLogs', e.target.value)}
+                  placeholder="e.g., [3, 2, 4, 1, 3, 2, 0]"
+                />
+              </div>
+            </div>
+
+            <div className="pq-field">
+              <label className="pq-field-label">Primary Goal</label>
+              <input
+                type="text"
+                className="pq-field-input"
+                value={pqData.primaryGoal || ''}
+                onChange={(e) => handlePQFieldChange('primaryGoal', e.target.value)}
+                placeholder="e.g., drink less and maintain a healthy lifestyle"
+              />
+            </div>
+
+            <div className="pq-field">
+              <label className="pq-field-label">Motivation</label>
+              <textarea
+                className="pq-field-textarea"
+                value={pqData.motivation || ''}
+                onChange={(e) => handlePQFieldChange('motivation', e.target.value)}
+                placeholder="e.g., wanting to be more present for family"
+                rows={2}
+              />
+            </div>
+
+            <div className="pq-field">
+              <label className="pq-field-label">Learning Topics</label>
+              <input
+                type="text"
+                className="pq-field-input"
+                value={pqData.learningTopics || ''}
+                onChange={(e) => handlePQFieldChange('learningTopics', e.target.value)}
+                placeholder="e.g., understanding triggers, building healthier habits"
+              />
+            </div>
+
+            <div className="pq-field">
+              <label className="pq-field-label">Care Preferences</label>
+              <input
+                type="text"
+                className="pq-field-input"
+                value={pqData.carePreferences || ''}
+                onChange={(e) => handlePQFieldChange('carePreferences', e.target.value)}
+                placeholder="e.g., empathetic and understanding"
+              />
+            </div>
+          </div>
+
+          {/* Persona Testing - At bottom */}
+          <div className="persona-section">
+            <h3 className="section-title">Automated Testing</h3>
+
+            <div className="persona-toggle-row">
+              <label className="persona-switch">
+                <input
+                  type="checkbox"
+                  checked={personaEnabled}
+                  onChange={(e) => handleTogglePersona(e.target.checked)}
+                />
+                <span className="persona-switch-slider"></span>
+              </label>
+              <span className="persona-toggle-label">
+                {personaEnabled ? 'Persona Testing Enabled' : 'Persona Testing Disabled'}
+              </span>
+            </div>
+
+            {personaEnabled && (
+              <>
+                <div className="persona-presets">
+                  <label className="pq-field-label">Preset Personas</label>
+                  <div className="persona-preset-buttons">
+                    {EXAMPLE_PERSONAS.map((preset) => (
+                      <button
+                        key={preset.name}
+                        className={`persona-preset-btn ${selectedPreset === preset.name ? 'active' : ''}`}
+                        onClick={() => handlePresetSelect(preset.name)}
+                      >
+                        {preset.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pq-field">
+                  <label className="pq-field-label">Persona Description</label>
+                  <textarea
+                    className="pq-field-textarea"
+                    value={personaDescription}
+                    onChange={(e) => handleDescriptionChange(e.target.value)}
+                    placeholder="Describe the member persona in detail..."
+                    rows={4}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Save button */}
+          <div className="persona-actions-clean">
+            <button
+              className="persona-save-btn"
+              onClick={handleSave}
+              disabled={!hasChanges}
+            >
+              Save Settings
+            </button>
+            {hasChanges && (
+              <span className="persona-unsaved-indicator">Unsaved changes</span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default MemberPersonaEditor;

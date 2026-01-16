@@ -1,0 +1,34 @@
+.image-card-element {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 16px 8px;
+  background-color: #DDF1C4;
+  border-radius: var(--border-radius-sm);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.image-card-image {
+  flex-shrink: 0;
+  object-fit: contain;
+  width: 72px;
+  height: 72px;
+}
+
+.image-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1;
+  padding-left: 8px;
+}
+
+.image-card-title {
+  color: var(--text-global-primary);
+}
+
+.image-card-description {
+  color: var(--text-global-primary);
+}
+

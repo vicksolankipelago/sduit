@@ -1,0 +1,12 @@
+.animated-components-element {
+  width: 100%;
+  transition: opacity 0.3s ease;
+}
+
+.animated-components-placeholder {
+  padding: var(--spacing-lg);
+  text-align: center;
+  color: var(--text-global-secondary);
+  font-family: var(--font-family-grotesque);
+}
+

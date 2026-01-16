@@ -1,0 +1,20 @@
+.image-element-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.image-element {
+  display: block;
+  max-width: 100%;
+}
+
+.image-element-fit {
+  object-fit: contain;
+}
+
+.image-element-fill {
+  object-fit: cover;
+}
+

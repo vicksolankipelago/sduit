@@ -1,0 +1,43 @@
+.week-checkin-summary-element {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background-color: var(--background-light-card);
+  border-radius: var(--border-radius-md);
+  width: 100%;
+}
+
+.week-checkin-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.week-checkin-summary-title {
+  color: var(--text-global-primary);
+}
+
+.week-checkin-summary-count {
+  color: var(--primary-cta-default);
+}
+
+.week-checkin-summary-progress {
+  width: 100%;
+  height: 8px;
+  background-color: var(--ui-element-outline-disabled);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.week-checkin-summary-progress-bar {
+  height: 100%;
+  background-color: var(--alert-success-default);
+  transition: width 0.3s ease;
+}
+
+.week-checkin-summary-label {
+  color: var(--text-global-secondary);
+  text-align: center;
+}
+

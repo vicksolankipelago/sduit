@@ -1,0 +1,363 @@
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { Screen, AnyCodable, ScreenEvent, EventAction, NavigationAction, StateUpdateAction, StateScope } from '../../types/journey';
+import jsonLogic from 'json-logic-js';
+
+/**
+ * Screen Context State
+ */
+export interface ScreenContextState {
+  // Current screen
+  currentScreen: Screen | null;
+  
+  // State management
+  screenState: Record<string, AnyCodable>;
+  moduleState: Record<string, AnyCodable>;
+  
+  // Navigation
+  navigationStack: string[]; // Stack of screen IDs
+  
+  // Event queue
+  eventQueue: ScreenEvent[];
+  
+  // Actions
+  setCurrentScreen: (screen: Screen | null) => void;
+  updateScreenState: (updates: Record<string, AnyCodable>) => void;
+  updateModuleState: (updates: Record<string, AnyCodable>) => void;
+  triggerEvent: (eventId: string) => void;
+  navigateToScreen: (screenId: string, screens: Screen[]) => void;
+  goBack: (screens: Screen[]) => void;
+  interpolateString: (template: string) => string;
+  evaluateConditions: (conditions?: any[]) => boolean;
+}
+
+const ScreenContext = createContext<ScreenContextState | undefined>(undefined);
+
+export interface ScreenProviderProps {
+  children: ReactNode;
+  initialScreen?: Screen;
+  initialModuleState?: Record<string, AnyCodable>;
+}
+
+export const ScreenProvider: React.FC<ScreenProviderProps> = ({
+  children,
+  initialScreen,
+  initialModuleState = {},
+}) => {
+  const [currentScreen, setCurrentScreenState] = useState<Screen | null>(initialScreen || null);
+  const [screenState, setScreenState] = useState<Record<string, AnyCodable>>(
+    initialScreen?.state || {}
+  );
+  const [moduleState, setModuleState] = useState<Record<string, AnyCodable>>(initialModuleState);
+  const [navigationStack, setNavigationStack] = useState<string[]>(
+    initialScreen ? [initialScreen.id] : []
+  );
+  const [eventQueue, setEventQueue] = useState<ScreenEvent[]>([]);
+
+  // Update current screen when initialScreen prop changes
+  React.useEffect(() => {
+    if (initialScreen && initialScreen.id !== currentScreen?.id) {
+      // If we're already on this screen (e.g. via internal navigation), don't reset
+      // But if the prop drives the screen, we should update
+      setCurrentScreenState(initialScreen);
+      setScreenState(initialScreen.state || {});
+      // Note: We don't automatically add to navigation stack here to avoid duplicates
+      // if the parent is driving navigation. 
+      // However, if we want back button to work, we might need to sync stacks.
+      // For now, let's assume external control means replacing the view.
+    }
+  }, [initialScreen?.id]);
+
+  // Sync module state from props if provided
+  React.useEffect(() => {
+    if (initialModuleState && Object.keys(initialModuleState).length > 0) {
+      // Merge with existing state rather than replacing completely, to preserve
+      // any state that might have been set locally before prop update
+      setModuleState(prev => ({ ...prev, ...initialModuleState }));
+    }
+  }, [initialModuleState]);
+
+  const setCurrentScreen = useCallback((screen: Screen | null) => {
+    setCurrentScreenState(screen);
+    if (screen) {
+      // Reset screen state to initial state, clearing any recorded input from previous screen
+      setScreenState(screen.state || {});
+      setNavigationStack(prev => [...prev, screen.id]);
+    }
+  }, []);
+
+  const updateScreenState = useCallback((updates: Record<string, AnyCodable>) => {
+    setScreenState(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  const updateModuleState = useCallback((updates: Record<string, AnyCodable>) => {
+    setModuleState(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  // Listen for record_input events from voice agent
+  React.useEffect(() => {
+    const handleRecordInput = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { title, summary, description, storeKey } = customEvent.detail;
+      
+      console.log('📝 ScreenContext: Received record_input event', { title, summary, storeKey });
+      
+      // Update screen state with recorded input
+      updateScreenState({
+        recordedInputTitle: title,
+        recordedInputSummary: summary,
+        recordedInputDescription: description || '',
+        recordedInputTimestamp: Date.now(),
+      });
+      
+      if (storeKey && summary) {
+        updateModuleState({ [storeKey]: summary });
+      }
+    };
+    
+    window.addEventListener('recordInput', handleRecordInput as EventListener);
+    
+    return () => {
+      window.removeEventListener('recordInput', handleRecordInput as EventListener);
+    };
+  }, [updateScreenState, updateModuleState]);
+
+  /**
+   * Interpolate template strings like {$moduleData.key} or {$screenData.key}
+   */
+  const interpolateString = useCallback((template: string): string => {
+    let result = template;
+
+    // Replace {$moduleData.key} or {{$moduleData.key}} patterns
+    const moduleDataPattern = /\{\{?\$moduleData\.([^}]+)\}\}?/g;
+    result = result.replace(moduleDataPattern, (match, rawKey) => {
+      const key = rawKey?.trim() ?? '';
+      const value = getNestedValue(moduleState, key);
+      return value !== undefined ? String(value) : match;
+    });
+
+    // Replace {$screenData.key} or {{$screenData.key}} patterns
+    const screenDataPattern = /\{\{?\$screenData\.([^}]+)\}\}?/g;
+    result = result.replace(screenDataPattern, (match, rawKey) => {
+      const key = rawKey?.trim() ?? '';
+      const value = getNestedValue(screenState, key);
+      return value !== undefined ? String(value) : match;
+    });
+
+    return result;
+  }, [screenState, moduleState]);
+
+  /**
+   * Evaluate JSON Logic conditions
+   */
+  const evaluateConditions = useCallback((conditions?: any[]): boolean => {
+    if (!conditions || conditions.length === 0) return true;
+
+    try {
+      // Evaluate each condition
+      for (const condition of conditions) {
+        if (!condition.rules || !condition.state) continue;
+
+        // Resolve state variables
+        const resolvedState: Record<string, any> = {};
+        for (const [key, valuePath] of Object.entries(condition.state)) {
+          if (typeof valuePath === 'string' && valuePath.startsWith('$moduleData.')) {
+            const path = valuePath.substring('$moduleData.'.length);
+            resolvedState[key] = getNestedValue(moduleState, path);
+          } else if (typeof valuePath === 'string' && valuePath.startsWith('$screenData.')) {
+            const path = valuePath.substring('$screenData.'.length);
+            resolvedState[key] = getNestedValue(screenState, path);
+          } else {
+            resolvedState[key] = valuePath;
+          }
+        }
+
+        // Evaluate JSON Logic
+        const result = jsonLogic.apply(condition.rules, resolvedState);
+        if (!result) return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error evaluating conditions:', error);
+      return false;
+    }
+  }, [screenState, moduleState]);
+
+  /**
+   * Execute event actions
+   */
+  const executeActions = useCallback((actions: EventAction[], screens: Screen[]) => {
+    for (const action of actions) {
+      // Check action-level conditions
+      if ('conditions' in action && action.conditions) {
+        if (!evaluateConditions(action.conditions)) {
+          continue; // Skip this action if conditions not met
+        }
+      }
+
+      switch (action.type) {
+        case 'navigation': {
+          const navAction = action as NavigationAction;
+          // Extract screen ID from deeplink
+          const screenId = extractScreenIdFromDeeplink(navAction.deeplink);
+          if (screenId) {
+            navigateToScreen(screenId, screens);
+          }
+          break;
+        }
+
+        case 'stateUpdate': {
+          const stateAction = action as StateUpdateAction;
+          const scope = stateAction.scope || 'screen';
+          if (scope === 'screen') {
+            updateScreenState(stateAction.updates);
+          } else {
+            updateModuleState(stateAction.updates);
+          }
+          break;
+        }
+
+        case 'custom':
+        case 'serviceCall':
+        case 'closeModule':
+          console.log('Action not yet implemented:', action.type);
+          break;
+      }
+    }
+  }, [evaluateConditions, updateScreenState, updateModuleState]);
+
+  /**
+   * Trigger an event by ID
+   */
+  const triggerEvent = useCallback((eventId: string, screens: Screen[] = []) => {
+    if (!currentScreen) return;
+
+    // Find event in current screen
+    const event = currentScreen.events?.find(e => e.id === eventId);
+    
+    // Also check element events
+    const elementEvent = currentScreen.sections
+      .flatMap(section => section.elements)
+      .flatMap(element => element.events || [])
+      .find(e => e.id === eventId);
+
+    const foundEvent = event || elementEvent;
+
+    if (foundEvent) {
+      // Check event-level conditions
+      if (foundEvent.conditions && !evaluateConditions(foundEvent.conditions)) {
+        console.log('Event conditions not met:', eventId);
+        return;
+      }
+
+      // Execute actions
+      if (foundEvent.action && foundEvent.action.length > 0) {
+        executeActions(foundEvent.action, screens);
+      }
+
+      // Add to event queue for tracking
+      setEventQueue(prev => [...prev, foundEvent]);
+    } else {
+      console.warn('Event not found:', eventId);
+    }
+  }, [currentScreen, evaluateConditions, executeActions]);
+
+  /**
+   * Navigate to a screen by ID
+   */
+  const navigateToScreen = useCallback((screenId: string, screens: Screen[]) => {
+    const screen = screens.find(s => s.id === screenId);
+    if (screen) {
+      setCurrentScreen(screen);
+    } else {
+      console.warn('Screen not found:', screenId);
+    }
+  }, [setCurrentScreen]);
+
+  /**
+   * Go back to previous screen
+   */
+  const goBack = useCallback((screens: Screen[]) => {
+    setNavigationStack(prev => {
+      if (prev.length <= 1) return prev;
+      
+      const newStack = prev.slice(0, -1);
+      const previousScreenId = newStack[newStack.length - 1];
+      
+      const screen = screens.find(s => s.id === previousScreenId);
+      if (screen) {
+        setCurrentScreenState(screen);
+        setScreenState(screen.state || {});
+      }
+      
+      return newStack;
+    });
+  }, []);
+
+  const value: ScreenContextState = {
+    currentScreen,
+    screenState,
+    moduleState,
+    navigationStack,
+    eventQueue,
+    setCurrentScreen,
+    updateScreenState,
+    updateModuleState,
+    triggerEvent,
+    navigateToScreen,
+    goBack,
+    interpolateString,
+    evaluateConditions,
+  };
+
+  return (
+    <ScreenContext.Provider value={value}>
+      {children}
+    </ScreenContext.Provider>
+  );
+};
+
+/**
+ * Hook to use Screen Context
+ */
+export const useScreenContext = (): ScreenContextState => {
+  const context = useContext(ScreenContext);
+  if (!context) {
+    throw new Error('useScreenContext must be used within a ScreenProvider');
+  }
+  return context;
+};
+
+/**
+ * Helper: Get nested value from object using dot notation
+ */
+function getNestedValue(obj: Record<string, any>, path: string): any {
+  const keys = path.split('.');
+  let value: any = obj;
+  
+  for (const key of keys) {
+    if (value && typeof value === 'object' && key in value) {
+      value = value[key];
+    } else {
+      return undefined;
+    }
+  }
+  
+  return value;
+}
+
+/**
+ * Helper: Extract screen ID from deeplink
+ */
+function extractScreenIdFromDeeplink(deeplink: string): string | null {
+  try {
+    // Expected format: https://links.pelagohealth.com/module-id/screen-id
+    const url = new URL(deeplink);
+    const pathParts = url.pathname.split('/').filter(Boolean);
+    return pathParts[pathParts.length - 1] || null;
+  } catch {
+    // If not a valid URL, assume it's just the screen ID
+    return deeplink;
+  }
+}
+

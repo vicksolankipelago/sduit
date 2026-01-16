@@ -1,0 +1,316 @@
+/**
+ * Pelago Design System
+ * 
+ * Colors, fonts, and spacing tokens matching iOS UILibrary
+ * Source: UILibrary/UILibrary/Extensions/Color+Extensions.swift
+ *         UILibrary/UILibrary/Extensions/Font+Extensions.swift
+ */
+
+/* Import Pelago fonts */
+@import './pelago-fonts.css';
+
+:root {
+  /* ===== TEXT COLORS ===== */
+  --text-global-primary: #212633;
+  --text-global-secondary: #6b6b6b;
+  --text-global-tertiary: #9b9b9b;
+  --text-global-disabled: #c4c4c4;
+  --text-global-light: #ffffff;
+  
+  --text-button-primary: #ffffff;
+  --text-button-secondary: #1a1a1a;
+  --text-button-alert: #ffffff;
+  
+  --text-link-primary-default: #0066cc;
+  --text-link-primary-hover: #0052a3;
+  --text-link-primary-pressed: #003d7a;
+  
+  --text-inform-primary: #1a1a1a;
+  --text-error: #dc3545;
+  --text-success: #28a745;
+  --text-warning: #ffc107;
+  
+  /* ===== BACKGROUND COLORS ===== */
+  --background-light: #ffffff;
+  --background-light-card: #f8f9fa;
+  --background-dark: #1a1a1a;
+  
+  --background-tea-green: #DDF1C4;
+  --background-light-tea-green: #EEF8E2;
+  --background-mint-green: #A2CC6E;
+  --background-light-mint-green: #d9f2dd;
+  --background-mist-blue: #E8EEFF;
+  --background-moss-green: #8fbc8f;
+  --background-light-moss-green: #c7e3c7;
+  
+  --background-peach: #ffd7be;
+  --background-light-peach: #ffe9db;
+  --background-maroon: #c77d7d;
+  --background-light-maroon: #e3bebe;
+  --background-tan: #deb887;
+  --background-light-tan: #eed9c4;
+  
+  --background-punch-pink: #ffb6d9;
+  --background-light-punch-pink: #ffd9ec;
+  --background-cerulean: #87ceeb;
+  --background-mist-blue: #d4e8f0;
+  --background-storm-blue: #6c8fa3;
+  --background-storm-gray: #b0bec5;
+  
+  --background-cream: #fff8e1;
+  --background-yellow: #fff9c4;
+  
+  --background-action-hover: rgba(0, 0, 0, 0.05);
+  --background-container-hover: rgba(0, 0, 0, 0.03);
+  
+  --background-error: #fee;
+  --background-success: #d4edda;
+  --background-warning: #fff3cd;
+  
+  /* ===== PRIMARY CTA COLORS ===== */
+  --primary-cta-default: #212633;
+  --primary-cta-hover: #2d3444;
+  --primary-cta-pressed: #181c26;
+  --primary-cta-disabled: #c4c4c4;
+  
+  /* ===== SECONDARY COLORS ===== */
+  --secondary-default: #FAE355;
+  --secondary-hover: #f5d93a;
+  --secondary-pressed: #e6c92e;
+  --secondary-disabled: #FEF7CE;
+  
+  /* ===== ALERT COLORS ===== */
+  --alert-error-default: #dc3545;
+  --alert-error-hover: #c82333;
+  --alert-error-pressed: #bd2130;
+  --alert-error-disabled: #f8d7da;
+  
+  --alert-success-default: #28a745;
+  --alert-success-hover: #218838;
+  --alert-success-pressed: #1e7e34;
+  --alert-success-disabled: #d4edda;
+  
+  --alert-warning-default: #ffc107;
+  --alert-warning-hover: #e0a800;
+  --alert-warning-pressed: #d39e00;
+  --alert-warning-disabled: #fff3cd;
+  
+  /* ===== UI ELEMENT COLORS ===== */
+  --ui-element-divider: #e0e0e0;
+  --ui-element-outline-default: #c4c4c4;
+  --ui-element-outline-active: #1a1a1a;
+  --ui-element-outline-disabled: #e0e0e0;
+  --ui-element-outline-error: #dc3545;
+  --ui-element-outline-success: #28a745;
+  --ui-element-outline-warning: #ffc107;
+  
+  /* ===== SEMANTIC ALIASES ===== */
+  --background-primary: var(--background-light);
+  --background-secondary: var(--background-light-card);
+  --background-tertiary: var(--background-dark);
+  --accent-primary: var(--primary-cta-default);
+  --accent-secondary: var(--secondary-default);
+  --success-primary: var(--alert-success-default);
+  --warning-primary: var(--alert-warning-default);
+  --error-primary: var(--alert-error-default);
+  
+  /* ===== FONT FAMILIES ===== */
+  --font-family-grotesque: 'ES Rebond Grotesque', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-family-serif: 'Suisse Neue', Georgia, serif;
+  
+  /* ===== FONT SIZES ===== */
+  --font-size-display: 60px;
+  --font-size-header-1: 32px;
+  --font-size-header-2: 24px;
+  --font-size-header-3: 20px;
+  --font-size-body-1: 16px;
+  --font-size-body-2: 14px;
+  --font-size-body-3: 12px;
+  --font-size-caption: 12px;
+  --font-size-button-1: 16px;
+  --font-size-button-2: 14px;
+  
+  /* ===== LINE HEIGHTS ===== */
+  --line-height-display: 74px;
+  --line-height-header-1: 34px;
+  --line-height-header-2: 28px;
+  --line-height-header-3: 24px;
+  --line-height-body-1: 24px;
+  --line-height-body-2: 22px;
+  --line-height-body-3: 20px;
+  --line-height-caption-1: 16px;
+  --line-height-caption-2: 20px;
+  --line-height-button-1: 18px;
+  --line-height-button-2: 16px;
+  
+  /* ===== FONT WEIGHTS ===== */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+  
+  /* ===== LETTER SPACING ===== */
+  --letter-spacing-caption: 0.5px;
+  --letter-spacing-button: 0.25px;
+  
+  /* ===== SPACING ===== */
+  --spacing-unit: 4px;
+  --spacing-xs: calc(var(--spacing-unit) * 1); /* 4px */
+  --spacing-sm: calc(var(--spacing-unit) * 2); /* 8px */
+  --spacing-md: calc(var(--spacing-unit) * 4); /* 16px */
+  --spacing-lg: calc(var(--spacing-unit) * 6); /* 24px */
+  --spacing-xl: calc(var(--spacing-unit) * 8); /* 32px */
+  --spacing-2xl: calc(var(--spacing-unit) * 12); /* 48px */
+  
+  --padding-horizontal-standard: 24px;
+  
+  /* ===== BORDER RADIUS ===== */
+  --border-radius-sm: 8px;
+  --border-radius-md: 12px;
+  --border-radius-lg: 16px;
+  --border-radius-xl: 24px;
+  
+  /* ===== SHADOWS ===== */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== TYPOGRAPHY CLASSES ===== */
+
+/* Display */
+.pelago-display {
+  font-family: var(--font-family-grotesque);
+  font-size: var(--font-size-display);
+  line-height: var(--line-height-display);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Headers */
+.pelago-header-1 {
+  font-family: var(--font-family-grotesque);
+  font-size: var(--font-size-header-1);
+  line-height: var(--line-height-header-1);
+  font-weight: var(--font-weight-bold);
+}
+
+.pelago-header-2 {
+  font-family: var(--font-family-grotesque);
+  font-size: var(--font-size-header-2);
+  line-height: var(--line-height-header-2);
+  font-weight: var(--font-weight-bold);
+}
+
+.pelago-header-3 {
+  font-family: var(--font-family-grotesque);
+  font-size: var(--font-size-header-3);
+  line-height: var(--line-height-header-3);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Body */
+.pelago-body-1-bold {
+  font-family: var(--font-family-grotesque);
+  font-size: var(--font-size-body-1);
+  line-height: var(--line-height-body-1);
+  font-weight: var(--font-weight-bold);
+}
+
+.pelago-body-1-medium {
+  font-family: var(--font-family-grotesque);
+  font-size: var(--font-size-body-1);
+  line-height: var(--line-height-body-1);
+  font-weight: var(--font-weight-medium);
+}
+
+.pelago-body-1-regular {
+  font-family: var(--font-family-grotesque);
+  font-size: var(--font-size-body-1);
+  line-height: var(--line-height-body-1);
+  font-weight: var(--font-weight-regular);
+}
+
+.pelago-body-1-serif {
+  font-family: var(--font-family-serif);
+  font-size: var(--font-size-body-1);
+  line-height: 28px;
+  font-weight: var(--font-weight-regular);
+}
+
+.pelago-body-2-bold {
+  font-family: var(--font-family-grotesque);
+  font-size: var(--font-size-body-2);
+  line-height: var(--line-height-body-2);
+  font-weight: var(--font-weight-bold);
+}
+
+.pelago-body-2-medium {
+  font-family: var(--font-family-grotesque);
+  font-size: var(--font-size-body-2);
+  line-height: var(--line-height-body-2);
+  font-weight: var(--font-weight-medium);
+}
+
+.pelago-body-2-regular {
+  font-family: var(--font-family-grotesque);
+  font-size: var(--font-size-body-2);
+  line-height: var(--line-height-body-2);
+  font-weight: var(--font-weight-regular);
+}
+
+.pelago-body-2-serif {
+  font-family: var(--font-family-serif);
+  font-size: var(--font-size-body-2);
+  line-height: 24px;
+  font-weight: var(--font-weight-regular);
+}
+
+.pelago-body-3-regular {
+  font-family: var(--font-family-grotesque);
+  font-size: var(--font-size-body-3);
+  line-height: var(--line-height-body-3);
+  font-weight: var(--font-weight-regular);
+}
+
+/* Captions */
+.pelago-caption-1-bold {
+  font-family: var(--font-family-grotesque);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption-1);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-caption);
+}
+
+.pelago-caption-2-bold {
+  font-family: var(--font-family-grotesque);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption-2);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-caption);
+}
+
+.pelago-caption-2-regular {
+  font-family: var(--font-family-grotesque);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption-2);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--letter-spacing-caption);
+}
+
+/* Buttons */
+.pelago-button-1-bold {
+  font-family: var(--font-family-grotesque);
+  font-size: var(--font-size-button-1);
+  line-height: var(--line-height-button-1);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-button);
+}
+
+.pelago-button-2-bold {
+  font-family: var(--font-family-grotesque);
+  font-size: var(--font-size-button-2);
+  line-height: var(--line-height-button-2);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-button);
+}
+

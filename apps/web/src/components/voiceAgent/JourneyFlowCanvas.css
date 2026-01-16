@@ -1,0 +1,215 @@
+.journey-flow-canvas {
+  position: relative;
+  width: 100%;
+  height: 600px;
+  background: #fafafa;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: auto;
+  cursor: grab;
+}
+
+.journey-flow-canvas:active {
+  cursor: grabbing;
+}
+
+.flow-connections-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.flow-connection {
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.flow-connection:hover {
+  opacity: 1;
+  stroke-width: 3;
+}
+
+.flow-agent-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  background: #ffffff;
+  border: 3px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 1rem;
+  min-width: 180px;
+  cursor: move;
+  transition: all 0.2s ease;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.flow-agent-node:hover {
+  border-color: #1DB954;
+  box-shadow: 0 4px 12px rgba(29, 185, 84, 0.2);
+  z-index: 20;
+}
+
+.flow-agent-node.selected {
+  border-color: #1DB954;
+  background: #E8F5E9;
+  box-shadow: 0 4px 16px rgba(29, 185, 84, 0.3);
+  z-index: 30;
+}
+
+.flow-agent-node.starting {
+  border-color: #FFB84D;
+  background: #FFF9E6;
+}
+
+.flow-agent-node.starting.selected {
+  border-color: #F57C00;
+  background: #FFF4E6;
+}
+
+.flow-agent-node.dragging {
+  opacity: 0.7;
+  cursor: grabbing;
+  z-index: 100;
+}
+
+.agent-node-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #FFB84D 0%, #F57C00 100%);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.agent-node-content {
+  pointer-events: none;
+}
+
+.agent-node-header {
+  margin-bottom: 0.75rem;
+}
+
+.agent-node-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 0.25rem;
+}
+
+.agent-node-voice {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-transform: capitalize;
+}
+
+.agent-node-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.agent-stat {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.agent-node-set-start {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  pointer-events: auto;
+}
+
+.agent-node-set-start:hover {
+  background: #FFF9E6;
+  border-color: #FFB84D;
+  transform: scale(1.1);
+}
+
+.flow-add-agent-btn {
+  position: absolute;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  padding: 0.875rem 1.5rem;
+  background: linear-gradient(135deg, #1DB954 0%, #1ed760 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(29, 185, 84, 0.3);
+  z-index: 50;
+}
+
+.flow-add-agent-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(29, 185, 84, 0.4);
+}
+
+.flow-empty-state {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.flow-empty-state h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.flow-empty-state p {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .journey-flow-canvas {
+    height: 400px;
+  }
+
+  .flow-agent-node {
+    min-width: 150px;
+    padding: 0.75rem;
+  }
+
+  .agent-node-name {
+    font-size: 0.9375rem;
+  }
+
+  .flow-add-agent-btn {
+    bottom: 1rem;
+    right: 1rem;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.875rem;
+  }
+}

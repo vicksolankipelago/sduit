@@ -1,0 +1,136 @@
+/**
+ * Pelago Design System Fonts
+ * 
+ * Font families used in Pelago mobile app, now available for web SDUI
+ * Based on Font+Extensions.swift from iOS
+ */
+
+/* ES Rebond Grotesque - Primary font family */
+@font-face {
+  font-family: 'ES Rebond Grotesque';
+  src: url('/fonts/ESRebondGrotesque-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'ES Rebond Grotesque';
+  src: url('/fonts/ESRebondGrotesque-LightItalic.otf') format('opentype');
+  font-weight: 300;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'ES Rebond Grotesque';
+  src: url('/fonts/ESRebondGrotesque-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'ES Rebond Grotesque';
+  src: url('/fonts/ESRebondGrotesque-Italic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'ES Rebond Grotesque';
+  src: url('/fonts/ESRebondGrotesque-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'ES Rebond Grotesque';
+  src: url('/fonts/ESRebondGrotesque-MediumItalic.otf') format('opentype');
+  font-weight: 500;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'ES Rebond Grotesque';
+  src: url('/fonts/ESRebondGrotesque-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'ES Rebond Grotesque';
+  src: url('/fonts/ESRebondGrotesque-BoldItalic.otf') format('opentype');
+  font-weight: 700;
+  font-style: italic;
+}
+
+/* Suisse Neue - Serif font family */
+@font-face {
+  font-family: 'Suisse Neue';
+  src: url('/fonts/SuisseNeue-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Suisse Neue';
+  src: url('/fonts/SuisseNeue-LightItalic.otf') format('opentype');
+  font-weight: 300;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Suisse Neue';
+  src: url('/fonts/SuisseNeue-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Suisse Neue';
+  src: url('/fonts/SuisseNeue-RegularItalic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Suisse Neue';
+  src: url('/fonts/SuisseNeue-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Suisse Neue';
+  src: url('/fonts/SuisseNeue-MediumItalic.otf') format('opentype');
+  font-weight: 500;
+  font-style: italic;
+}
+
+/* Halcom - Alternative font (if needed) */
+@font-face {
+  font-family: 'Halcom';
+  src: url('/fonts/Halcom-Book.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Halcom';
+  src: url('/fonts/Halcom-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Halcom';
+  src: url('/fonts/Halcom-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Halcom';
+  src: url('/fonts/Halcom-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+}
+

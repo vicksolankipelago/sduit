@@ -1,0 +1,103 @@
+.oval-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+.oval-animation {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6B7280 0%, #4B5563 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.4s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.oval-animation.rectangle {
+  border-radius: 20px;
+  transform: scale(1.1);
+}
+
+.oval-inner {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.4s ease;
+}
+
+.oval-animation.rectangle .oval-inner {
+  border-radius: 16px;
+}
+
+.oval-pulse {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  position: absolute;
+  transition: all 0.4s ease;
+}
+
+.oval-animation.rectangle .oval-pulse {
+  border-radius: 16px;
+}
+
+.oval-animation.active {
+  background: linear-gradient(135deg, #1DB954 0%, #1ed760 100%);
+  box-shadow: 0 4px 20px rgba(29, 185, 84, 0.3);
+}
+
+.oval-animation.active .oval-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.oval-substance {
+  position: absolute;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.oval-status {
+  margin-top: 1.5rem;
+  font-size: 1rem;
+  color: #6B7280;
+  font-weight: 500;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.3;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,0 +1,385 @@
+/* Device Frame */
+.screen-preview-device-frame {
+  width: 375px;
+  height: 812px;
+  background-color: #000;
+  border-radius: 36px;
+  padding: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+  margin: 0 auto;
+}
+
+.screen-preview-device-notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 150px;
+  height: 28px;
+  background-color: #000;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+  z-index: 1000;
+}
+
+.screen-preview-device-home-indicator {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 134px;
+  height: 5px;
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+/* Container */
+.screen-preview-container {
+  width: 100%;
+  height: 100%;
+  background-color: var(--background-light);
+  border-radius: 24px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: screen-transition-enter 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* More dramatic screen transition - centered */
+@keyframes screen-transition-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Navigation Bar */
+.screen-preview-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center the title */
+  position: relative; /* For absolute positioning of back button */
+  padding: var(--spacing-md) var(--padding-horizontal-standard);
+  background-color: var(--background-light);
+  border-bottom: none; /* Remove border */
+  flex-shrink: 0;
+  min-height: 56px;
+}
+
+.screen-preview-back-button {
+  position: absolute;
+  left: var(--padding-horizontal-standard);
+  background: none;
+  border: none;
+  color: var(--text-link-primary-default);
+  font-family: var(--font-family-grotesque);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 8px;
+  margin-left: -8px;
+  transition: opacity 0.2s ease;
+}
+
+.screen-preview-back-button:hover {
+  opacity: 0.7;
+}
+
+.screen-preview-title {
+  text-align: center;
+  color: var(--text-global-primary);
+  width: 100%; /* Full width for proper centering */
+}
+
+.screen-preview-nav-spacer {
+  display: none; /* Not needed with centered title */
+}
+
+/* Fixed Top Section */
+.screen-preview-fixed-top {
+  flex-shrink: 0;
+  background-color: var(--background-light);
+  border-bottom: 1px solid var(--ui-element-divider);
+}
+
+/* Body Section (Scrollable) */
+.screen-preview-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: var(--background-light);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch; /* Stretch sections to full width */
+  justify-content: flex-start; /* Start from top */
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  animation: screen-content-reveal 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.15s backwards;
+}
+
+/* Staggered content reveal animation */
+@keyframes screen-content-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animate each element in sequence */
+.screen-preview-element {
+  animation: element-fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+.screen-preview-element:nth-child(1) {
+  animation-delay: 0.2s;
+}
+
+.screen-preview-element:nth-child(2) {
+  animation-delay: 0.25s;
+}
+
+.screen-preview-element:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.screen-preview-element:nth-child(4) {
+  animation-delay: 0.35s;
+}
+
+.screen-preview-element:nth-child(5) {
+  animation-delay: 0.4s;
+}
+
+@keyframes element-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fixed Bottom Section */
+.screen-preview-fixed-bottom {
+  flex-shrink: 0;
+  background-color: var(--background-light);
+  border-top: none; /* Remove border */
+  padding: var(--spacing-lg) var(--padding-horizontal-standard);
+}
+
+/* Sections */
+.screen-preview-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.screen-preview-section-fixed-top,
+.screen-preview-section-fixed-bottom {
+  padding: var(--spacing-md) var(--padding-horizontal-standard);
+}
+
+.screen-preview-section-body {
+  padding: 0 var(--padding-horizontal-standard);
+  padding-bottom: var(--spacing-sm);
+  flex: 0 0 auto; /* Don't grow or shrink */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  align-items: flex-start; /* Align to top */
+  justify-content: flex-start; /* Start from top */
+}
+
+/* In direct SDUI mode, use even less padding */
+.agent-ui-screen-direct .screen-preview-section-body {
+  padding: 1rem var(--padding-horizontal-standard);
+}
+
+.screen-preview-section-title {
+  color: var(--text-global-secondary);
+  text-transform: uppercase;
+  margin-bottom: var(--spacing-md);
+}
+
+/* Section Layouts */
+.screen-preview-section-elements {
+  display: flex;
+  gap: var(--spacing-md);
+  flex: initial;
+  min-height: 0;
+  width: 100%; /* Ensure full width */
+  align-items: stretch; /* Stretch items to full width */
+  justify-content: flex-start; /* Start from top */
+}
+
+.screen-preview-section-stack .screen-preview-section-elements {
+  flex-direction: column;
+  justify-content: flex-start; /* Stack from top */
+  align-items: stretch; /* Ensure children take full width */
+}
+
+.screen-preview-element {
+  width: 100%; /* Ensure elements take full width */
+}
+
+.screen-preview-section-horizontal .screen-preview-section-elements {
+  flex-direction: row;
+}
+
+.screen-preview-section-vertical .screen-preview-section-elements {
+  flex-direction: column;
+}
+
+.screen-preview-section-grid .screen-preview-section-elements {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-md);
+  width: 100%;
+}
+
+.screen-preview-section-grid .screen-preview-element {
+  width: auto; /* Let grid handle width */
+}
+
+@media (max-width: 360px) {
+  .screen-preview-section-grid .screen-preview-section-elements {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
+
+/* Scrollable */
+.screen-preview-section-scrollable {
+  overflow-y: auto;
+}
+
+/* Elements */
+.screen-preview-element {
+  width: 100%;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.screen-preview-element:has(.spacer-element-flexible) {
+  flex-shrink: 1;
+  flex-grow: 1;
+}
+
+.screen-preview-element-editable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  padding: 4px;
+  margin: -4px;
+}
+
+.screen-preview-element-editable:hover {
+  background-color: rgba(29, 185, 84, 0.1);
+  box-shadow: 0 0 0 2px rgba(29, 185, 84, 0.3);
+}
+
+.screen-preview-element-selected {
+  background-color: rgba(29, 185, 84, 0.15);
+  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.5);
+}
+
+.screen-preview-element-selected-indicator {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: #1DB954;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  z-index: 10;
+}
+
+.screen-preview-unknown-element {
+  padding: var(--spacing-md);
+  background-color: var(--background-error);
+  color: var(--text-error);
+  border: 2px dashed var(--alert-error-default);
+  border-radius: var(--border-radius-sm);
+  text-align: center;
+  font-family: var(--font-family-grotesque);
+  font-size: 14px;
+}
+
+/* Without Device Frame */
+.screen-preview-container:not(.screen-preview-device-frame *) {
+  max-width: 100%;
+  height: auto;
+  min-height: 600px;
+  border: 1px solid var(--ui-element-divider);
+  border-radius: var(--border-radius-md);
+}
+
+/* Direct Screen Rendering (Mobile-sized screen) */
+.agent-ui-screen-direct .screen-preview-container {
+  width: 375px; /* Fixed width */
+  height: auto;
+  max-width: 375px;
+  max-height: calc(100vh - 200px); /* Fit within viewport with padding */
+  border: 2px solid var(--ui-element-divider);
+  border-radius: 20px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+  background: var(--background-light);
+  opacity: 1;
+  overflow: hidden;
+  margin: 0; /* Let flexbox handle centering */
+}
+
+.agent-ui-screen-direct .screen-preview-device-frame {
+  width: 100%;
+  height: 100%;
+  border-radius: 24px;
+  padding: 0;
+  box-shadow: none;
+  background-color: var(--background-light);
+}
+
+/* Responsive - Full width on mobile */
+@media (max-width: 768px) {
+  .agent-ui-screen-direct .screen-preview-container {
+    width: 100%;
+    max-width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    margin: 0;
+    border-radius: 0;
+    border: none;
+  }
+  
+  .agent-ui-screen-direct .screen-preview-device-frame {
+    border-radius: 0;
+  }
+}
+
+/* Responsive - Small screens */
+@media (max-height: 900px) {
+  .agent-ui-screen-direct .screen-preview-container {
+    height: calc(100vh - 180px); /* Account for nav + voice controls */
+    max-height: calc(100vh - 180px);
+  }
+}
+
+/* Very small screens */
+@media (max-height: 700px) {
+  .agent-ui-screen-direct .screen-preview-container {
+    height: calc(100vh - 150px);
+    max-height: calc(100vh - 150px);
+  }
+}
+

@@ -1,0 +1,42 @@
+.agent-message-card-element {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 1.5rem var(--padding-horizontal-standard);
+  background-color: transparent; /* No background */
+  border-radius: 0;
+  max-width: 100%;
+  width: 100%;
+  border: none; /* No border */
+}
+
+.agent-message-card-header {
+  display: none; /* Hide avatar and agent name */
+}
+
+.agent-message-card-avatar {
+  display: none;
+}
+
+.agent-message-card-meta {
+  display: none;
+}
+
+.agent-message-card-name {
+  display: none;
+}
+
+.agent-message-card-time {
+  display: none;
+}
+
+.agent-message-card-message {
+  color: var(--text-global-primary);
+  font-family: var(--font-family-grotesque);
+  font-size: var(--font-size-header-1); /* Header 1 size: 32px */
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-header-1); /* 34px */
+  text-align: center;
+  width: 100%;
+}
+

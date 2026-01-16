@@ -1,0 +1,38 @@
+.checkbox-button-element {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 24px;
+  background-color: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.checkbox-button-element:hover {
+  border-color: #212633;
+}
+
+.checkbox-button-element-selected {
+  border: 2px solid #212633;
+  padding: 23px;
+}
+
+.checkbox-button-title {
+  color: #212633;
+  text-align: left;
+  flex: 1;
+}
+
+.checkbox-button-check-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+

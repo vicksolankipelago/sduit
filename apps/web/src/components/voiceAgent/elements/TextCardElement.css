@@ -1,0 +1,45 @@
+.text-card-element {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--background-mint-green);
+  background-color: var(--background-light-tea-green);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.text-card-element-with-checkmark {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.text-card-checkmark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 4px;
+  flex-shrink: 0;
+}
+
+.text-card-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1;
+}
+
+.text-card-caption {
+  text-transform: capitalize;
+  color: var(--text-global-secondary);
+  letter-spacing: 0.05em;
+  font-size: 0.95rem;
+}
+
+.text-card-text {
+  color: var(--text-global-primary);
+  line-height: 24px;
+  white-space: pre-wrap;
+}
