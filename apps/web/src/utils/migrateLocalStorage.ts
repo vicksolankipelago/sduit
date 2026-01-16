@@ -85,7 +85,7 @@ function clearMigratedJourneys(): void {
  */
 export async function migrateLocalStorageToSupabase(
   userId: string,
-  clearAfterMigration = true
+  clearAfterMigration = false // Changed to false - don't auto-clear, let user decide
 ): Promise<MigrationResult> {
   const result: MigrationResult = {
     migrated: 0,
