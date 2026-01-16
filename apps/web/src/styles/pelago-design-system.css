@@ -176,6 +176,48 @@
   --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
 }
 
+/* ===== GLOBAL STYLES ===== */
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family-grotesque);
+  font-size: var(--font-size-body-1);
+  line-height: var(--line-height-body-1);
+  color: var(--text-global-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-family-grotesque);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+}
+
+h1 {
+  font-size: var(--font-size-header-1);
+  line-height: var(--line-height-header-1);
+}
+
+h2 {
+  font-size: var(--font-size-header-2);
+  line-height: var(--line-height-header-2);
+}
+
+h3 {
+  font-size: var(--font-size-header-3);
+  line-height: var(--line-height-header-3);
+}
+
+button, input, select, textarea {
+  font-family: var(--font-family-grotesque);
+}
+
 /* ===== TYPOGRAPHY CLASSES ===== */
 
 /* Display */
