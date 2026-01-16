@@ -67,8 +67,8 @@ export function createSessionExport(params: {
   const startMs = messageTimes.length > 0 ? Math.min(...messageTimes) : Date.now();
   const endMs = messageTimes.length > 0 ? Math.max(...messageTimes) : Date.now();
 
-  // Calculate stats
-  const messages = transcript.filter(t => t.type === 'MESSAGE');
+  // Calculate stats - only count completed messages with content
+  const messages = transcript.filter(t => t.type === 'MESSAGE' && t.status === 'DONE' && t.title);
   const userMessages = messages.filter(t => t.role === 'user');
   const assistantMessages = messages.filter(t => t.role === 'assistant');
   const breadcrumbs = transcript.filter(t => t.type === 'BREADCRUMB');
