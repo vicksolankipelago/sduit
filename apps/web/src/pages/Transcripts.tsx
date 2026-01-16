@@ -142,6 +142,43 @@ export const TranscriptsPage: React.FC = () => {
     return date.toLocaleDateString();
   };
 
+  const mergeTranscriptMessages = (items: SessionExport['transcript']) => {
+    const merged: SessionExport['transcript'] = [];
+    const appendText = (base: string, next: string) => {
+      const trimmedNext = next.trim();
+      if (!trimmedNext) return base;
+      if (!base) return trimmedNext;
+      if (/^[,.:;!?)]/.test(trimmedNext)) {
+        return `${base}${trimmedNext}`;
+      }
+      return `${base} ${trimmedNext}`;
+    };
+
+    for (const item of items) {
+      if (item.type !== 'MESSAGE' || !item.title) {
+        merged.push(item);
+        continue;
+      }
+
+      const last = merged[merged.length - 1];
+      if (last && last.type === 'MESSAGE' && last.role === item.role) {
+        const mergedTitle = appendText(last.title || '', item.title || '');
+        merged[merged.length - 1] = {
+          ...last,
+          title: mergedTitle,
+          timestamp: item.timestamp,
+          createdAtMs: item.createdAtMs,
+          status: item.status,
+        };
+        continue;
+      }
+
+      merged.push(item);
+    }
+
+    return merged;
+  };
+
   // Not logged in state
   if (!user || !isSupabaseConfigured) {
     return (
@@ -240,7 +277,7 @@ export const TranscriptsPage: React.FC = () => {
           <div className="transcripts-tab-content">
             {detailTab === 'transcript' && (
               <div className="transcripts-conversation">
-                {currentSession.transcript
+                {mergeTranscriptMessages(currentSession.transcript)
                   .filter((item) => item.type === 'MESSAGE' && item.title)
                   .map((item, index) => (
                     <div

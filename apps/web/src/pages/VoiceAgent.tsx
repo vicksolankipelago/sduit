@@ -44,6 +44,8 @@ import { saveSession } from '../services/supabase/sessionService';
 function VoiceAgentContent() {
   const {
     addTranscriptMessage,
+    updateTranscriptMessage,
+    updateTranscriptItem,
     transcriptItems,
   } = useTranscript();
   const { logServerEvent, loggedEvents } = useEvent();
@@ -147,6 +149,7 @@ function VoiceAgentContent() {
   // Buffer for accumulating assistant responses
   const assistantResponseBuffer = useRef<string>('');
   const assistantResponseStartTime = useRef<Date | null>(null);
+  const currentMessageIdsRef = useRef<{ user?: string; assistant?: string }>({});
 
   const { startRecording, stopRecording } = useAudioDownload();
 
@@ -721,9 +724,25 @@ Important guidelines:
       }
     },
     onTranscript: (role, text, isDone) => {
+      const ensureMessageId = () => {
+        const existingId = currentMessageIdsRef.current[role];
+        if (existingId) return existingId;
+        const newId = `msg_${role}_${Date.now()}`;
+        currentMessageIdsRef.current[role] = newId;
+        addTranscriptMessage(newId, role, text, false);
+        return newId;
+      };
+
       // Log transcripts
       if (role === 'user') {
-        addTranscriptMessage(`msg_${Date.now()}`, 'user', text, false);
+        const messageId = ensureMessageId();
+        if (messageId && text) {
+          updateTranscriptMessage(messageId, text, true);
+        }
+        if (isDone) {
+          updateTranscriptItem(messageId, { status: 'DONE' });
+          currentMessageIdsRef.current.user = undefined;
+        }
         addLog('info', `User: ${text}`);
       } else {
         // Accumulate assistant response tokens
@@ -732,7 +751,10 @@ Important guidelines:
           // Don't set speaking state here - let audio element events handle it
         }
         assistantResponseBuffer.current += text;
-        addTranscriptMessage(`msg_${Date.now()}`, 'assistant', text, false);
+        const messageId = ensureMessageId();
+        if (messageId && text) {
+          updateTranscriptMessage(messageId, text, true);
+        }
         
         // Only log when response is complete
         if (isDone) {
@@ -742,7 +764,9 @@ Important guidelines:
             
             // Persona will naturally hear agent via microphone - no manual routing needed
           }
-          // Reset buffer
+          // Mark message complete + reset buffer
+          updateTranscriptItem(messageId, { status: 'DONE' });
+          currentMessageIdsRef.current.assistant = undefined;
           assistantResponseBuffer.current = '';
           assistantResponseStartTime.current = null;
           // Don't set speaking to false here - let audio element events handle it
