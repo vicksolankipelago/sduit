@@ -21,8 +21,8 @@ sduit/
 ## Development
 
 ```bash
-npm run dev:all    # Start both web and API servers
-npm run dev        # Start web only
+npm run dev        # Start both web and API servers
+npm run dev:web    # Start web only
 npm run dev:api    # Start API only
 ```
 

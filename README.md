@@ -90,10 +90,10 @@ AWS_SECRET_ACCESS_KEY=your_secret_key
 
 ```bash
 # Start both web and API servers
-npm run dev:all
+npm run dev
 
 # Start web only (port 5173)
-npm run dev
+npm run dev:web
 
 # Start API only (port 3001)
 npm run dev:api

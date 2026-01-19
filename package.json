@@ -9,9 +9,9 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=apps/web",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:web": "npm run dev --workspace=apps/web",
     "dev:api": "npm run dev --workspace=apps/api",
-    "dev:all": "concurrently \"npm run dev:api\" \"npm run dev\"",
     "build": "npm run build --workspace=apps/web",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present"
