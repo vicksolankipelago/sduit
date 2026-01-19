@@ -15,7 +15,7 @@
   justify-content: space-between;
   align-items: center;
   padding: var(--spacing-lg);
-  border-bottom: 1px solid var(--ui-element-divider);
+  background: var(--background-light-card);
 }
 
 .screen-editor-header h2 {
@@ -42,32 +42,33 @@
 
 .screen-editor-tabs {
   display: flex;
-  gap: var(--spacing-xs);
-  padding: 0 var(--spacing-lg);
-  border-bottom: 2px solid var(--ui-element-divider);
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--background-light-card);
 }
 
 .screen-editor-tab {
   padding: var(--spacing-sm) var(--spacing-md);
-  background: none;
+  background: transparent;
   border: none;
-  border-bottom: 3px solid transparent;
+  border-radius: var(--border-radius-sm);
   color: var(--text-global-secondary);
   font-family: var(--font-family-grotesque);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-bottom: -2px;
 }
 
 .screen-editor-tab:hover {
   color: var(--text-global-primary);
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .screen-editor-tab.active {
-  color: var(--primary-cta-default);
-  border-bottom-color: var(--primary-cta-default);
+  color: var(--text-global-primary);
+  background: var(--background-light);
+  box-shadow: var(--shadow-card);
 }
 
 .screen-editor-content {
@@ -103,7 +104,7 @@
   padding: var(--spacing-sm);
   font-family: 'Monaco', 'Menlo', monospace;
   font-size: 13px;
-  border: 2px solid var(--ui-element-outline-default);
+  border: var(--border-input);
   border-radius: var(--border-radius-sm);
 }
 
@@ -176,19 +177,19 @@
 .screen-editor-section-item {
   padding: var(--spacing-sm);
   background-color: var(--background-light-card);
-  border: 2px solid transparent;
   border-radius: var(--border-radius-sm);
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: var(--shadow-card);
 }
 
 .screen-editor-section-item:hover {
-  border-color: var(--ui-element-outline-default);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .screen-editor-section-item.selected {
-  border-color: var(--primary-cta-default);
   background-color: var(--background-light-tea-green);
+  box-shadow: 0 0 0 2px var(--primary-cta-default);
 }
 
 .screen-editor-section-item-header {
@@ -280,10 +281,10 @@
   gap: var(--spacing-md);
   padding: var(--spacing-md);
   background-color: var(--background-light);
-  border: 2px solid var(--ui-element-outline-default);
   border-radius: var(--border-radius-sm);
   max-height: 400px;
   overflow-y: auto;
+  box-shadow: var(--shadow-elevated);
 }
 
 .screen-editor-element-category h5 {
@@ -308,15 +309,15 @@
   gap: var(--spacing-xs);
   padding: var(--spacing-sm);
   background-color: var(--background-light-card);
-  border: 2px solid var(--ui-element-outline-default);
+  border: none;
   border-radius: var(--border-radius-sm);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .screen-editor-element-palette-item:hover:not(:disabled) {
-  border-color: var(--primary-cta-default);
   background-color: var(--background-light-tea-green);
+  transform: translateY(-2px);
 }
 
 .screen-editor-element-palette-icon {
@@ -340,19 +341,19 @@
 .screen-editor-element-item {
   padding: var(--spacing-sm);
   background-color: var(--background-light);
-  border: 2px solid var(--ui-element-outline-default);
   border-radius: var(--border-radius-sm);
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: var(--shadow-card);
 }
 
 .screen-editor-element-item:hover {
-  border-color: var(--ui-element-outline-active);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .screen-editor-element-item.selected {
-  border-color: var(--primary-cta-default);
   background-color: var(--background-light-tea-green);
+  box-shadow: 0 0 0 2px var(--primary-cta-default);
 }
 
 .screen-editor-element-item-header {
@@ -456,8 +457,8 @@
 .screen-editor-event-item {
   padding: var(--spacing-md);
   background-color: var(--background-light-card);
-  border: 2px solid var(--ui-element-outline-default);
   border-radius: var(--border-radius-sm);
+  box-shadow: var(--shadow-card);
 }
 
 .screen-editor-event-item-header {
@@ -537,7 +538,6 @@
   font-family: var(--font-family-grotesque);
   font-size: 14px;
   background-color: var(--background-light-card);
-  border: 2px dashed var(--ui-element-outline-default);
   border-radius: var(--border-radius-sm);
 }
 

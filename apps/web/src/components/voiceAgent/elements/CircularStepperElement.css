@@ -10,7 +10,7 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  border: 2px solid var(--ui-element-outline-default);
+  border: none;
   background-color: var(--background-light);
   color: var(--text-global-primary);
   font-size: 24px;
@@ -19,10 +19,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: var(--shadow-card);
 }
 
 .circular-stepper-button:hover:not(:disabled) {
-  border-color: var(--ui-element-outline-active);
+  box-shadow: var(--shadow-card-hover);
   background-color: var(--background-action-hover);
 }
 

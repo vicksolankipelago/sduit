@@ -5,22 +5,21 @@
   gap: 8px;
   padding: 24px;
   background-color: #ffffff;
-  border: 1px solid #cccccc;
   border-radius: 8px;
   cursor: pointer;
   user-select: none;
   width: 100%;
   box-sizing: border-box;
   transition: all 0.2s ease;
+  box-shadow: var(--shadow-card);
 }
 
 .checkbox-button-element:hover {
-  border-color: #212633;
+  box-shadow: var(--shadow-card-hover);
 }
 
 .checkbox-button-element-selected {
-  border: 2px solid #212633;
-  padding: 23px;
+  box-shadow: 0 0 0 2px #212633;
 }
 
 .checkbox-button-title {

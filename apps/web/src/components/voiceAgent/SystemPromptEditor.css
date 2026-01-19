@@ -2,7 +2,6 @@
   background: #ffffff;
   border-radius: 8px;
   padding: 1.5rem;
-  border: 1px solid #e0e0e0;
 }
 
 .system-prompt-editor.disabled {
@@ -38,26 +37,30 @@
 
 .system-prompt-action-btn {
   padding: 0.5rem 1rem;
-  background: #ffffff;
-  border: 1px solid #d0d0d0;
+  background: var(--background-light-card);
+  border: none;
   border-radius: 6px;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #4a4a4a;
+  color: var(--text-global-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
 }
 
 .system-prompt-action-btn:hover:not(:disabled) {
-  background: #f5f5f5;
-  border-color: #1DB954;
+  background: rgba(29, 185, 84, 0.1);
   color: #1DB954;
 }
 
 .system-prompt-action-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.system-prompt-action-btn.active {
+  background: #E8F5E9;
+  color: #1DB954;
 }
 
 .system-prompt-info {
@@ -96,13 +99,11 @@
 .formula-part.system {
   background: #E8F5E9;
   color: #1DB954;
-  border: 1px solid #1DB954;
 }
 
 .formula-part.agent {
   background: #E3F2FD;
   color: #1976D2;
-  border: 1px solid #1976D2;
 }
 
 .formula-plus, .formula-equals {
@@ -115,7 +116,6 @@
   padding: 0.375rem 0.75rem;
   background: #FFF3E0;
   color: #F57C00;
-  border: 1px solid #F57C00;
   border-radius: 6px;
   font-weight: 600;
 }
@@ -124,24 +124,43 @@
   margin-bottom: 1rem;
 }
 
+.system-prompt-editor-area.with-variables {
+  display: flex;
+  gap: 1rem;
+}
+
+.system-prompt-textarea-wrapper {
+  flex: 1;
+  min-width: 0;
+}
+
+.system-prompt-editor-area.with-variables .variable-panel {
+  flex-shrink: 0;
+  width: 280px;
+  max-height: none;
+  height: fit-content;
+  position: sticky;
+  top: 1rem;
+}
+
 .system-prompt-textarea {
   width: 100%;
   padding: 1rem;
-  border: 2px solid #e0e0e0;
+  border: var(--border-input);
   border-radius: 8px;
   font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
   font-size: 0.875rem;
   line-height: 1.6;
   resize: vertical;
   min-height: 200px;
-  transition: border-color 0.2s ease;
+  transition: all 0.2s ease;
   background: #ffffff;
   color: #1a1a1a;
 }
 
 .system-prompt-textarea:focus {
   outline: none;
-  border-color: #1DB954;
+  border: var(--border-input-focus);
   box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.1);
 }
 
@@ -158,8 +177,7 @@
 }
 
 .system-prompt-preview {
-  background: #f8f9fa;
-  border: 2px solid #e0e0e0;
+  background: var(--background-light-card);
   border-radius: 8px;
   padding: 1.5rem;
   margin-bottom: 1rem;
@@ -181,7 +199,6 @@
 
 .system-prompt-tips {
   background: #FFF9E6;
-  border: 1px solid #FFE082;
   border-radius: 8px;
   padding: 1rem;
 }
@@ -210,6 +227,17 @@
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+  .system-prompt-editor-area.with-variables {
+    flex-direction: column;
+  }
+
+  .system-prompt-editor-area.with-variables .variable-panel {
+    width: 100%;
+    position: static;
+  }
+}
+
 @media (max-width: 768px) {
   .system-prompt-header {
     flex-direction: column;
@@ -222,12 +250,13 @@
 
   .system-prompt-actions {
     width: 100%;
-    flex-direction: column;
+    flex-wrap: wrap;
   }
 
   .system-prompt-action-btn {
-    width: 100%;
+    flex: 1;
     justify-content: center;
+    min-width: 120px;
   }
 }
 

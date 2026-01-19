@@ -25,21 +25,21 @@
   gap: 0.75rem; /* Reduced spacing */
   padding: 0.875rem; /* Reduced padding */
   background-color: var(--background-light);
-  border: 2px solid var(--ui-element-outline-default);
   border-radius: var(--border-radius-md);
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
   min-height: 60px; /* Set minimum height for consistent sizing */
+  box-shadow: var(--shadow-card);
 }
 
 .large-question-option:hover {
-  border-color: var(--ui-element-outline-active);
+  box-shadow: var(--shadow-card-hover);
   background-color: var(--background-action-hover);
 }
 
 .large-question-option.selected {
-  border-color: var(--primary-cta-default);
+  box-shadow: 0 0 0 2px var(--primary-cta-default);
   background-color: var(--background-light-tea-green);
 }
 

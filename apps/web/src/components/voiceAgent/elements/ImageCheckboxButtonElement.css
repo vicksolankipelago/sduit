@@ -4,7 +4,6 @@
   gap: var(--spacing-md);
   padding: var(--spacing-md);
   background-color: var(--background-light-tea-green);
-  border: 2px solid transparent;
   border-radius: var(--border-radius-md);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -13,11 +12,10 @@
 }
 
 .image-checkbox-button-element:hover {
-  border-color: var(--ui-element-outline-active);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .image-checkbox-button-element.selected {
-  border-color: var(--primary-cta-default);
   box-shadow: 0 0 0 2px var(--primary-cta-default);
 }
 

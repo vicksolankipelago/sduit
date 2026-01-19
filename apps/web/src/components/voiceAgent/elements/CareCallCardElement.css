@@ -4,9 +4,9 @@
   gap: var(--spacing-md);
   padding: var(--spacing-md);
   background-color: var(--background-light-card);
-  border: 2px solid var(--ui-element-outline-default);
   border-radius: var(--border-radius-md);
   width: 100%;
+  box-shadow: var(--shadow-card);
 }
 
 .care-call-card-header {

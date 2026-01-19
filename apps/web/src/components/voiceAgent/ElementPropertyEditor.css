@@ -50,7 +50,7 @@
   padding: 1rem;
   background-color: white;
   border-radius: 8px;
-  border: 1px solid #e0e0e0;
+  box-shadow: var(--shadow-card);
 }
 
 .element-property-section h4 {
@@ -61,7 +61,6 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid #e0e0e0;
 }
 
 .form-field {
@@ -92,9 +91,9 @@
   padding: 0.5rem;
   font-family: inherit;
   font-size: 13px;
-  border: 2px solid #e0e0e0;
+  border: var(--border-input);
   border-radius: 6px;
-  transition: border-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .form-field-input input[type="text"]:focus,
@@ -102,7 +101,7 @@
 .form-field-input textarea:focus,
 .form-field-input select:focus {
   outline: none;
-  border-color: #1DB954;
+  border: var(--border-input-focus);
 }
 
 .form-field-input textarea {

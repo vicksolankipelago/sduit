@@ -91,7 +91,6 @@
 /* Error */
 .transcripts-error {
   background: #fee2e2;
-  border: 1px solid #fecaca;
   color: #dc2626;
   padding: 0.75rem 1rem;
   border-radius: 8px;
@@ -101,9 +100,9 @@
 /* List */
 .transcripts-list {
   background: white;
-  border: 1px solid var(--ui-element-divider);
   border-radius: 12px;
   overflow: hidden;
+  box-shadow: var(--shadow-card);
 }
 
 .transcripts-list-item {
@@ -111,17 +110,16 @@
   align-items: center;
   gap: 1rem;
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--ui-element-divider);
   cursor: pointer;
   transition: background 0.15s ease;
 }
 
-.transcripts-list-item:last-child {
-  border-bottom: none;
+.transcripts-list-item + .transcripts-list-item {
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.04);
 }
 
 .transcripts-list-item:hover {
-  background: var(--background-light);
+  background: var(--background-light-card);
 }
 
 .transcripts-list-item-main {
@@ -200,7 +198,7 @@
   align-items: center;
   gap: 0.375rem;
   background: white;
-  border: 1px solid var(--ui-element-divider);
+  border: none;
   padding: 0.5rem 1rem;
   border-radius: 8px;
   cursor: pointer;
@@ -208,11 +206,12 @@
   color: var(--text-global-primary);
   font-weight: 500;
   transition: all 0.2s ease;
+  box-shadow: var(--shadow-card);
 }
 
 .transcripts-pagination-btn:hover:not(:disabled) {
-  border-color: var(--primary-cta-default);
-  background: var(--background-light);
+  background: var(--background-light-card);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .transcripts-pagination-btn:disabled {
@@ -229,8 +228,8 @@
 .transcripts-detail {
   background: white;
   border-radius: 12px;
-  border: 1px solid var(--ui-element-divider);
   overflow: hidden;
+  box-shadow: var(--shadow-card);
 }
 
 .transcripts-detail-header {
@@ -238,8 +237,7 @@
   align-items: center;
   gap: 1rem;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--ui-element-divider);
-  background: var(--background-light);
+  background: var(--background-light-card);
 }
 
 .transcripts-back-btn {
@@ -286,33 +284,34 @@
   align-items: center;
   gap: 0.375rem;
   background: white;
-  border: 1px solid var(--ui-element-divider);
+  border: none;
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.75rem;
   color: var(--text-global-secondary);
   transition: all 0.2s ease;
+  box-shadow: var(--shadow-card);
 }
 
 .transcripts-action-btn:hover {
-  border-color: var(--primary-cta-default);
   color: var(--text-global-primary);
+  box-shadow: var(--shadow-card-hover);
 }
 
 /* Tabs */
 .transcripts-tabs {
   display: flex;
-  gap: 0;
-  border-bottom: 1px solid var(--ui-element-divider);
-  padding: 0 1.5rem;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--background-light-card);
 }
 
 .transcripts-tab {
-  padding: 0.875rem 1rem;
-  background: none;
+  padding: 0.625rem 1rem;
+  background: transparent;
   border: none;
-  border-bottom: 2px solid transparent;
+  border-radius: 6px;
   color: var(--text-global-secondary);
   font-weight: 500;
   font-size: 0.875rem;
@@ -322,11 +321,13 @@
 
 .transcripts-tab:hover {
   color: var(--text-global-primary);
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .transcripts-tab.active {
-  color: var(--primary-cta-default);
-  border-bottom-color: var(--primary-cta-default);
+  color: var(--text-global-primary);
+  background: var(--background-light);
+  box-shadow: var(--shadow-card);
 }
 
 /* Tab Content */
@@ -418,13 +419,13 @@
 .transcripts-event-data {
   font-size: 0.6875rem;
   background: white;
-  border: 1px solid var(--ui-element-divider);
   border-radius: 4px;
   padding: 0.5rem;
   overflow-x: auto;
   margin: 0;
   max-height: 200px;
   overflow-y: auto;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 /* Info Tab */
@@ -435,13 +436,11 @@
 }
 
 .transcripts-info-section {
-  border-bottom: 1px solid var(--ui-element-divider);
   padding-bottom: 1.5rem;
 }
 
-.transcripts-info-section:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+.transcripts-info-section + .transcripts-info-section {
+  padding-top: 1.5rem;
 }
 
 .transcripts-info-section h3 {
@@ -492,8 +491,7 @@
 }
 
 .transcripts-info-prompt-text {
-  background: var(--background-light);
-  border: 1px solid var(--ui-element-divider);
+  background: var(--background-light-card);
   border-radius: 8px;
   padding: 1rem;
   font-size: 0.8125rem;

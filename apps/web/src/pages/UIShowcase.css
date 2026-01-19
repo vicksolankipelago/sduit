@@ -29,31 +29,29 @@
   display: flex;
   gap: 0.5rem;
   margin-bottom: 2rem;
-  border-bottom: 2px solid #e0e0e0;
 }
 
 .ui-showcase-tab {
   padding: 0.75rem 1.5rem;
-  background: none;
+  background: transparent;
   border: none;
-  border-bottom: 3px solid transparent;
-  color: #6b7280;
+  border-radius: 8px;
+  color: var(--text-global-secondary);
   font-family: inherit;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-bottom: -2px;
 }
 
 .ui-showcase-tab:hover {
-  color: #1a1a1a;
-  background-color: rgba(0, 0, 0, 0.03);
+  color: var(--text-global-primary);
+  background-color: rgba(0, 0, 0, 0.04);
 }
 
 .ui-showcase-tab.active {
   color: #1DB954;
-  border-bottom-color: #1DB954;
+  background-color: rgba(29, 185, 84, 0.1);
 }
 
 /* Element Gallery */
@@ -72,10 +70,10 @@
 
 .ui-showcase-category-tab {
   padding: 0.5rem 1rem;
-  background-color: #f0f0f0;
-  border: 2px solid transparent;
-  border-radius: 6px;
-  color: #333;
+  background-color: var(--background-light-card);
+  border: none;
+  border-radius: 8px;
+  color: var(--text-global-secondary);
   font-family: inherit;
   font-size: 14px;
   font-weight: 600;
@@ -84,13 +82,13 @@
 }
 
 .ui-showcase-category-tab:hover {
-  background-color: #e0e0e0;
+  background-color: rgba(0, 0, 0, 0.08);
+  color: var(--text-global-primary);
 }
 
 .ui-showcase-category-tab.active {
   background-color: #1DB954;
   color: white;
-  border-color: #1DB954;
 }
 
 .ui-showcase-grid {
@@ -100,16 +98,16 @@
 }
 
 .ui-showcase-item {
-  background: #f8f9fa;
-  border: 2px solid #e0e0e0;
+  background: var(--background-light);
   border-radius: 12px;
   padding: 1.5rem;
   transition: all 0.2s ease;
+  box-shadow: var(--shadow-card);
 }
 
 .ui-showcase-item:hover {
-  border-color: #1DB954;
-  box-shadow: 0 4px 12px rgba(29, 185, 84, 0.1);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
 }
 
 .ui-showcase-item-header {
@@ -129,8 +127,8 @@
 .ui-showcase-item-tag {
   font-size: 0.75rem;
   font-family: 'Monaco', 'Menlo', monospace;
-  background: #e0e0e0;
-  color: #666;
+  background: var(--background-light-card);
+  color: var(--text-global-secondary);
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
 }
@@ -143,10 +141,9 @@
 }
 
 .ui-showcase-item-preview {
-  background: white;
+  background: var(--background-light-card);
   border-radius: 8px;
   padding: 1.5rem;
-  border: 1px solid #e0e0e0;
 }
 
 .ui-showcase-item-code {
@@ -156,9 +153,8 @@
 }
 
 .ui-showcase-item-code details {
-  background-color: #f8f9fa;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  background-color: var(--background-light-card);
+  border-radius: 6px;
   padding: 0.5rem;
 }
 
@@ -259,18 +255,19 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem;
-  background-color: white;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
+  background-color: var(--background-light);
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
+  box-shadow: var(--shadow-card);
 }
 
 .ui-showcase-builder-element-btn:hover {
-  border-color: #1DB954;
-  background-color: #f0fff4;
+  background-color: rgba(29, 185, 84, 0.08);
   transform: translateX(4px);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .ui-showcase-builder-element-icon {
@@ -325,11 +322,10 @@
 
 .ui-showcase-builder-preview-count {
   font-size: 14px;
-  color: #666;
-  background-color: white;
+  color: var(--text-global-secondary);
+  background-color: var(--background-light);
   padding: 0.375rem 0.75rem;
-  border-radius: 4px;
-  border: 1px solid #e0e0e0;
+  border-radius: 6px;
 }
 
 .ui-showcase-builder-preview-content {
@@ -363,23 +359,23 @@
   justify-content: space-between;
   gap: 0.5rem;
   padding: 0.75rem;
-  background-color: white;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
+  background-color: var(--background-light);
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
+  box-shadow: var(--shadow-card);
 }
 
 .ui-showcase-builder-element-item:hover {
-  border-color: #1DB954;
-  background-color: #f0fff4;
+  background-color: rgba(29, 185, 84, 0.08);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .ui-showcase-builder-element-item.selected {
-  border-color: #1DB954;
-  background-color: #e6f7ed;
-  box-shadow: 0 0 0 2px rgba(29, 185, 84, 0.2);
+  background-color: rgba(29, 185, 84, 0.12);
+  box-shadow: 0 0 0 2px rgba(29, 185, 84, 0.3);
 }
 
 .ui-showcase-builder-element-item-content {
@@ -407,25 +403,25 @@
 
 .ui-showcase-builder-element-item-move,
 .ui-showcase-builder-element-item-remove {
-  background-color: #f0f0f0;
-  border: 1px solid #d0d0d0;
+  background-color: var(--background-light-card);
+  border: none;
   cursor: pointer;
   font-size: 14px;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  border-radius: 6px;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   min-width: 28px;
   height: 28px;
+  color: var(--text-global-secondary);
 }
 
 .ui-showcase-builder-element-item-move:hover:not(:disabled),
 .ui-showcase-builder-element-item-remove:hover {
   background-color: #1DB954;
   color: white;
-  border-color: #1DB954;
 }
 
 .ui-showcase-builder-element-item-move:disabled {
@@ -435,7 +431,6 @@
 
 .ui-showcase-builder-element-item-remove:hover {
   background-color: #dc3545;
-  border-color: #dc3545;
 }
 
 /* Element Editor */
@@ -453,10 +448,9 @@
 .ui-showcase-builder-empty-editor {
   padding: 3rem 1.5rem;
   text-align: center;
-  color: #999;
+  color: var(--text-global-tertiary);
   font-size: 14px;
-  background-color: white;
-  border: 2px dashed #e0e0e0;
+  background-color: var(--background-light-card);
   border-radius: 8px;
 }
 

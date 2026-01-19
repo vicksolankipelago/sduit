@@ -1,10 +1,10 @@
 .checklist-card-element {
   padding: var(--spacing-md);
   background-color: var(--background-light);
-  border: 1px solid #cccccc;
   border-radius: var(--border-radius-sm);
   width: 100%;
   box-sizing: border-box;
+  box-shadow: var(--shadow-card);
 }
 
 .checklist-card-title {

@@ -14,7 +14,6 @@
   justify-content: center;
   align-items: center;
   background: var(--background-light);
-  border-bottom: 1px solid var(--ui-element-divider);
   padding: 1.25rem 2rem;
   position: sticky;
   top: 0;
@@ -63,13 +62,12 @@
 
 .journey-card {
   background: var(--background-light);
-  border: 2px solid var(--ui-element-divider);
   border-radius: 16px;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-card);
   position: relative;
   overflow: hidden;
 }
@@ -130,8 +128,7 @@
 }
 
 .journey-card:hover {
-  border-color: #1DB954;
-  box-shadow: 0 4px 16px rgba(29, 185, 84, 0.1);
+  box-shadow: var(--shadow-card-hover);
   transform: translateY(-2px);
 }
 
@@ -204,7 +201,6 @@
   padding: 4rem 2rem;
   background: var(--background-light-card);
   border-radius: 16px;
-  border: 2px dashed var(--ui-element-divider);
 }
 
 .journeys-empty-state h3 {
@@ -224,7 +220,6 @@
 .journey-persona-section {
   margin-top: 2rem;
   padding-top: 2rem;
-  border-top: 1px solid var(--ui-element-divider);
 }
 
 /* Active Session Info */
@@ -265,7 +260,6 @@
   background: var(--background-light-card);
   padding: 0.5rem 1rem;
   border-radius: 20px;
-  border: 1px solid var(--ui-element-divider);
 }
 
 .journey-builder-link-btn {
@@ -380,8 +374,7 @@
   background: var(--background-light-card);
   padding: 0.75rem 1.5rem;
   border-radius: 50px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid var(--ui-element-divider);
+  box-shadow: var(--shadow-elevated);
 }
 
 .status-indicator {
@@ -398,8 +391,7 @@
   border-radius: 16px;
   padding: 2rem;
   text-align: left;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border: 1px solid var(--ui-element-divider);
+  box-shadow: var(--shadow-elevated);
 }
 
 .voice-agent-instructions h3 {
@@ -443,10 +435,10 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: var(--background-light);
-  border: 1px solid var(--ui-element-divider);
+  background: var(--background-light-card);
+  border: none;
   padding: 0;
-  color: var(--text-global-primary);
+  color: var(--text-global-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
   border-radius: 10px;
@@ -456,9 +448,8 @@
 }
 
 .voice-agent-settings-btn:hover {
-  background: var(--background-action-hover);
-  border-color: var(--accent-primary);
-  color: var(--accent-primary);
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--text-global-primary);
 }
 
 .voice-agent-settings-btn svg {
@@ -504,7 +495,6 @@
   animation: slideUp 0.3s ease;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--ui-element-divider);
 }
 
 /* Compact settings panel for persona only */
@@ -535,7 +525,6 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 2.5rem;
-  border-bottom: 1px solid var(--ui-element-divider);
   background: var(--background-light-card);
 }
 
@@ -550,36 +539,34 @@
 /* Settings Tabs */
 .voice-agent-settings-tabs {
   display: flex;
-  gap: 0;
+  gap: 0.5rem;
   background: var(--background-light-card);
-  border-bottom: 2px solid var(--ui-element-divider);
-  padding: 0 1.5rem;
+  padding: 0.75rem 1.5rem;
 }
 
 .settings-tab {
   background: transparent;
   border: none;
-  padding: 1rem 1.5rem;
+  padding: 0.75rem 1.25rem;
   font-size: 0.9375rem;
   font-weight: 500;
   color: var(--text-global-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -2px;
+  border-radius: 8px;
   position: relative;
 }
 
 .settings-tab:hover {
   color: var(--text-global-primary);
-  background: var(--surface-hover);
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .settings-tab.active {
-  color: var(--accent-primary);
-  border-bottom-color: var(--accent-primary);
+  color: var(--text-global-primary);
   background: var(--background-light);
   font-weight: 600;
+  box-shadow: var(--shadow-card);
 }
 
 .settings-tab-panel {
@@ -598,8 +585,8 @@
 }
 
 .voice-agent-settings-close {
-  background: var(--background-light);
-  border: 1px solid var(--ui-element-divider);
+  background: transparent;
+  border: none;
   font-size: 1.25rem;
   color: var(--text-global-secondary);
   cursor: pointer;
@@ -614,9 +601,8 @@
 }
 
 .voice-agent-settings-close:hover {
-  background: var(--surface-hover);
+  background: rgba(0, 0, 0, 0.08);
   color: var(--text-global-primary);
-  border-color: var(--ui-element-divider);
   transform: scale(1.05);
 }
 
@@ -658,7 +644,6 @@
 /* Export Controls */
 .voice-agent-export-controls {
   background: var(--background-light-card);
-  border: 1px solid var(--ui-element-divider);
   border-radius: 12px;
   padding: 1.25rem;
   margin-bottom: 1.5rem;
@@ -699,24 +684,22 @@
 .voice-agent-export-btn-secondary {
   background: var(--background-light);
   color: var(--text-global-primary);
-  border: 1px solid var(--ui-element-divider);
+  box-shadow: var(--shadow-card);
 }
 
 .voice-agent-export-btn-secondary:hover {
   background: var(--background-light-card);
-  border-color: var(--primary-cta-default);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .voice-agent-export-btn-tertiary {
   background: transparent;
   color: var(--text-global-secondary);
-  border: 1px dashed var(--ui-element-divider);
   font-size: 0.75rem;
 }
 
 .voice-agent-export-btn-tertiary:hover {
-  background: var(--background-light);
-  border-style: solid;
+  background: var(--background-light-card);
   color: var(--text-global-primary);
 }
 
