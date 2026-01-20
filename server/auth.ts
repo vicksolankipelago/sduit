@@ -3,12 +3,20 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { scrypt, randomBytes, timingSafeEqual, createHash } from "crypto";
 import { promisify } from "util";
 import { users, type SelectUser } from "../shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { pool } from "./db";
+
+function generateResetToken(): string {
+  return randomBytes(32).toString("hex");
+}
+
+function hashToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
 
 declare global {
   namespace Express {
@@ -158,6 +166,107 @@ export function setupAuth(app: Express) {
     }
     const { password: _, ...userWithoutPassword } = req.user;
     res.json(userWithoutPassword);
+  });
+
+  // Forgot password - generates reset token
+  app.post("/api/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      const [user] = await getUserByEmail(email);
+      
+      // Always return success to prevent email enumeration
+      if (!user) {
+        return res.status(200).json({ 
+          message: "If an account exists with this email, a reset link has been generated",
+          // In production, you would NOT return the token - it would be emailed
+          // For demo purposes, we indicate no user found without exposing it
+        });
+      }
+
+      // Generate reset token
+      const resetToken = generateResetToken();
+      const hashedToken = hashToken(resetToken);
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      // Save hashed token to database
+      await db
+        .update(users)
+        .set({
+          passwordResetToken: hashedToken,
+          passwordResetExpires: expiresAt,
+        })
+        .where(eq(users.id, user.id));
+
+      // In a real app, you would email this link
+      // For demo, we return the token directly
+      const resetUrl = `/reset-password?token=${resetToken}`;
+      
+      console.log(`Password reset requested for ${email}. Reset URL: ${resetUrl}`);
+      
+      res.status(200).json({ 
+        message: "If an account exists with this email, a reset link has been generated",
+        // Return reset URL for demo purposes only - remove in production
+        resetUrl,
+        token: resetToken,
+      });
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      res.status(500).json({ message: "Failed to process request" });
+    }
+  });
+
+  // Reset password - uses token to set new password
+  app.post("/api/reset-password", async (req, res) => {
+    try {
+      const { token, password } = req.body;
+
+      if (!token || !password) {
+        return res.status(400).json({ message: "Token and password are required" });
+      }
+
+      if (password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+
+      const hashedToken = hashToken(token);
+
+      // Find user with valid token
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.passwordResetToken, hashedToken))
+        .limit(1);
+
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+
+      // Check if token has expired
+      if (!user.passwordResetExpires || new Date() > user.passwordResetExpires) {
+        return res.status(400).json({ message: "Reset token has expired" });
+      }
+
+      // Update password and clear reset token
+      await db
+        .update(users)
+        .set({
+          password: await hashPassword(password),
+          passwordResetToken: null,
+          passwordResetExpires: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, user.id));
+
+      res.status(200).json({ message: "Password reset successfully" });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      res.status(500).json({ message: "Failed to reset password" });
+    }
   });
 }
 

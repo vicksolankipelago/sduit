@@ -6,6 +6,8 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
 import { LoginPage } from './pages/Login';
+import { ForgotPasswordPage } from './pages/ForgotPassword';
+import { ResetPasswordPage } from './pages/ResetPassword';
 import VoiceAgent from './pages/VoiceAgent';
 import { JourneyBuilderPage } from './pages/JourneyBuilder';
 import { TranscriptsPage } from './pages/Transcripts';
@@ -24,6 +26,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
 
             {/* Protected routes with layout */}
             <Route
