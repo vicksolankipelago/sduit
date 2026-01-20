@@ -1,12 +1,12 @@
 import { Router } from "express";
-import { isAuthenticated } from "../replit_integrations/auth";
+import { isAuthenticated } from "../auth";
 import { storage } from "../storage";
 
 const router = Router();
 
 router.get("/", isAuthenticated, async (req: any, res) => {
   try {
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     const limit = parseInt(req.query.limit as string) || 50;
     const offset = parseInt(req.query.offset as string) || 0;
     
@@ -31,7 +31,7 @@ router.get("/", isAuthenticated, async (req: any, res) => {
 
 router.get("/count", isAuthenticated, async (req: any, res) => {
   try {
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     const count = await storage.getSessionCount(userId);
     res.json({ count });
   } catch (error) {
@@ -48,7 +48,7 @@ router.get("/:sessionId", isAuthenticated, async (req: any, res) => {
       return res.status(404).json({ message: "Session not found" });
     }
     
-    if (session.userId !== req.user.claims.sub) {
+    if (session.userId !== req.user.id) {
       return res.status(403).json({ message: "Forbidden" });
     }
     
@@ -93,7 +93,7 @@ router.get("/:sessionId", isAuthenticated, async (req: any, res) => {
 
 router.post("/", isAuthenticated, async (req: any, res) => {
   try {
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     const sessionData = req.body;
     
     const session = await storage.saveSession({
@@ -134,7 +134,7 @@ router.delete("/:sessionId", isAuthenticated, async (req: any, res) => {
       return res.status(404).json({ message: "Session not found" });
     }
     
-    if (session.userId !== req.user.claims.sub) {
+    if (session.userId !== req.user.id) {
       return res.status(403).json({ message: "Forbidden" });
     }
     

@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
-import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
+import { setupAuth, isAuthenticated } from "./auth";
 import journeysRouter from "./routes/journeys";
 import voiceSessionsRouter from "./routes/voiceSessions";
 
@@ -23,11 +23,10 @@ app.get("/api/health", (req, res) => {
 });
 
 async function main() {
-  await setupAuth(app);
-  registerAuthRoutes(app);
+  setupAuth(app);
   
-  app.use("/api/journeys", journeysRouter);
-  app.use("/api/voice-sessions", voiceSessionsRouter);
+  app.use("/api/journeys", isAuthenticated, journeysRouter);
+  app.use("/api/voice-sessions", isAuthenticated, voiceSessionsRouter);
   
   app.get("/api/debug/env", (req, res) => {
     res.json({

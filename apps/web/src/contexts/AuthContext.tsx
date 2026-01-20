@@ -10,18 +10,27 @@ interface User {
   updatedAt: string | null;
 }
 
+interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+interface RegisterData extends LoginCredentials {
+  firstName?: string;
+  lastName?: string;
+}
+
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
   isAuthenticated: boolean;
-  login: (redirectTo?: string) => void;
-  logout: () => void;
+  login: (credentials: LoginCredentials) => Promise<{ success: boolean; error?: string }>;
+  register: (data: RegisterData) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-
-const REDIRECT_KEY = 'auth_redirect_to';
 
 async function fetchUser(): Promise<User | null> {
   try {
@@ -64,26 +73,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     refreshUser();
   }, [refreshUser]);
 
-  useEffect(() => {
-    const redirectTo = sessionStorage.getItem(REDIRECT_KEY);
-    if (user && redirectTo) {
-      sessionStorage.removeItem(REDIRECT_KEY);
-      window.location.href = redirectTo;
-    }
-  }, [user]);
+  const login = useCallback(async (credentials: LoginCredentials) => {
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(credentials),
+      });
 
-  const login = useCallback((redirectTo?: string) => {
-    if (redirectTo) {
-      sessionStorage.setItem(REDIRECT_KEY, redirectTo);
-    } else {
-      sessionStorage.setItem(REDIRECT_KEY, window.location.pathname);
+      if (!response.ok) {
+        const data = await response.json();
+        return { success: false, error: data.message || "Login failed" };
+      }
+
+      const userData = await response.json();
+      setUser(userData);
+      return { success: true };
+    } catch (error) {
+      console.error("Login error:", error);
+      return { success: false, error: "An error occurred during login" };
     }
-    window.location.href = "/api/login";
   }, []);
 
-  const logout = useCallback(() => {
-    sessionStorage.removeItem(REDIRECT_KEY);
-    window.location.href = "/api/logout";
+  const register = useCallback(async (data: RegisterData) => {
+    try {
+      const response = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const result = await response.json();
+        return { success: false, error: result.message || "Registration failed" };
+      }
+
+      const userData = await response.json();
+      setUser(userData);
+      return { success: true };
+    } catch (error) {
+      console.error("Registration error:", error);
+      return { success: false, error: "An error occurred during registration" };
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      await fetch("/api/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      setUser(null);
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   }, []);
 
   return (
@@ -92,6 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loading,
       isAuthenticated: !!user,
       login,
+      register,
       logout,
       refreshUser,
     }}>

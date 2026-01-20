@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { isAuthenticated } from "../replit_integrations/auth";
+import { isAuthenticated } from "../auth";
 import { storage } from "../storage";
 import { v4 as uuidv4 } from "uuid";
 
@@ -7,7 +7,7 @@ const router = Router();
 
 router.get("/", isAuthenticated, async (req: any, res) => {
   try {
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     const journeys = await storage.listUserJourneys(userId);
     
     const journeyList = journeys.map((j) => ({
@@ -33,7 +33,7 @@ router.get("/:id", isAuthenticated, async (req: any, res) => {
       return res.status(404).json({ message: "Journey not found" });
     }
     
-    if (journey.userId !== req.user.claims.sub) {
+    if (journey.userId !== req.user.id) {
       return res.status(403).json({ message: "Forbidden" });
     }
     
@@ -57,7 +57,7 @@ router.get("/:id", isAuthenticated, async (req: any, res) => {
 
 router.post("/", isAuthenticated, async (req: any, res) => {
   try {
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     const { name, description, systemPrompt, voice, agents, startingAgentId, version } = req.body;
     
     const journey = await storage.createJourney({
@@ -98,7 +98,7 @@ router.put("/:id", isAuthenticated, async (req: any, res) => {
       return res.status(404).json({ message: "Journey not found" });
     }
     
-    if (journey.userId !== req.user.claims.sub) {
+    if (journey.userId !== req.user.id) {
       return res.status(403).json({ message: "Forbidden" });
     }
     
@@ -144,7 +144,7 @@ router.delete("/:id", isAuthenticated, async (req: any, res) => {
       return res.status(404).json({ message: "Journey not found" });
     }
     
-    if (journey.userId !== req.user.claims.sub) {
+    if (journey.userId !== req.user.id) {
       return res.status(403).json({ message: "Forbidden" });
     }
     
@@ -158,7 +158,7 @@ router.delete("/:id", isAuthenticated, async (req: any, res) => {
 
 router.post("/:id/duplicate", isAuthenticated, async (req: any, res) => {
   try {
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     const original = await storage.getJourney(req.params.id);
     
     if (!original) {

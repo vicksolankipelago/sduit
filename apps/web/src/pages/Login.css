@@ -209,6 +209,26 @@
   text-decoration: underline;
 }
 
+.auth-switch {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+}
+
+.auth-switch button {
+  background: none;
+  border: none;
+  color: #1a1a2e;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.auth-switch button:hover {
+  color: #2a2a4e;
+}
+
 .auth-callback {
   min-height: 100vh;
   display: flex;
