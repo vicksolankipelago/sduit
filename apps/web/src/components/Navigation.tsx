@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './Navigation.css';
 
 export const Navigation: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/login');
+  const handleSignOut = () => {
+    logout();
   };
 
   const menuItems = [
