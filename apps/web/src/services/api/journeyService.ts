@@ -2,7 +2,7 @@ import { Journey, JourneyListItem } from '../../types/journey';
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (response.status === 401) {
-    window.location.href = '/api/login';
+    window.location.href = '/login';
     throw new Error('Unauthorized');
   }
   
