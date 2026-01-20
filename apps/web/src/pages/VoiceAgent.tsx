@@ -1161,29 +1161,22 @@ Important guidelines:
           {sessionStatus === 'DISCONNECTED' ? (
             <div className="journeys-grid-container">
               <div className="journeys-grid">
-                {availableJourneys
-                  .filter((journey) => journey.id === 'default-post-web-pq')
-                  .map((journey) => {
-                    // Map journey IDs to gradient backgrounds and icons
-                    const journeyStyles: Record<string, { gradient: string; icon: string }> = {
-                      'default-post-web-pq': { 
-                        gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        icon: '🎙️'
-                      },
-                      'default-gad-phq2': { 
-                        gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                        icon: '🧠'
-                      },
-                      'default-dry-january': { 
-                        gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                        icon: '🎯'
-                      },
+                {availableJourneys.map((journey) => {
+                    // Map journey names to gradient backgrounds and icons
+                    const getJourneyStyle = (name: string) => {
+                      if (name.toLowerCase().includes('intake')) {
+                        return { gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', icon: '🎙️' };
+                      }
+                      if (name.toLowerCase().includes('mental') || name.toLowerCase().includes('screening')) {
+                        return { gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', icon: '🧠' };
+                      }
+                      if (name.toLowerCase().includes('january') || name.toLowerCase().includes('dry')) {
+                        return { gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', icon: '🎯' };
+                      }
+                      return { gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)', icon: '✨' };
                     };
                     
-                    const style = journeyStyles[journey.id] || { 
-                      gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-                      icon: '✨'
-                    };
+                    const style = getJourneyStyle(journey.name);
                     
                     return (
                       <div key={journey.id} className="journey-card">
