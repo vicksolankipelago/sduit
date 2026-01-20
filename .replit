@@ -16,10 +16,10 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "SDUI Journey Builder"
+args = "Flow Builder"
 
 [[workflows.workflow]]
-name = "SDUI Journey Builder"
+name = "Flow Builder"
 author = "agent"
 
 [[workflows.workflow.tasks]]
@@ -38,10 +38,6 @@ exposeLocalhost = true
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 5001
-externalPort = 3000
 
 [deployment]
 deploymentTarget = "autoscale"

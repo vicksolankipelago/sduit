@@ -76,7 +76,7 @@ export const Navigation: React.FC = () => {
     <nav className={`navigation ${isCollapsed ? 'collapsed' : ''}`}>
       <div className="nav-header">
         <div className="nav-logo">
-          {!isCollapsed && <span className="nav-title">SDUI Builder</span>}
+          {!isCollapsed && <span className="nav-title">Flow Builder</span>}
         </div>
         <button
           className="nav-collapse-btn"

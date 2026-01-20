@@ -56,7 +56,7 @@ export const LoginPage: React.FC = () => {
   return (
     <div className="login-page">
       <div className="login-container">
-        <h1>SDUI Journey Builder</h1>
+        <h1>Flow Builder</h1>
         <p className="subtitle">{isRegister ? 'Create an account' : 'Sign in to continue'}</p>
         
         {error && <div className="error-message">{error}</div>}

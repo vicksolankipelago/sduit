@@ -1,6 +1,6 @@
-# SDUI Journey Builder
+# Flow Builder
 
-A Server-Driven UI Journey Builder for designing and testing voice agent experiences with real-time AI capabilities.
+A Flow Builder for designing and testing voice agent experiences with real-time AI capabilities.
 
 ## Overview
 
