@@ -15,7 +15,7 @@ export const VoiceAgentOrb: React.FC<VoiceAgentOrbProps> = ({
   audioLevel = 0,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number>(undefined);
   const timeRef = useRef(0);
   const smoothedAudioLevel = useRef(0);
 

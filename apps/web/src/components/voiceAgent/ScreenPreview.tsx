@@ -208,28 +208,28 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
       {/* Fixed Top Section */}
       {sectionsByPosition['fixed-top'].length > 0 && (
         <div className="screen-preview-fixed-top">
-          {sectionsByPosition['fixed-top'].forEach((section, idx) => {
+          {sectionsByPosition['fixed-top'].map((section, idx) => {
             elementCounter = renderSection(section, idx, elementCounter);
+            return sectionRenderCache[sectionRenderCache.length - 1];
           })}
-          {sectionRenderCache.splice(0, sectionRenderCache.length)}
         </div>
       )}
 
       {/* Body Section (Scrollable) */}
       <div className="screen-preview-body">
-        {sectionsByPosition['body'].forEach((section, idx) => {
+        {sectionsByPosition['body'].map((section, idx) => {
           elementCounter = renderSection(section, idx, elementCounter);
+          return sectionRenderCache[sectionRenderCache.length - 1];
         })}
-        {sectionRenderCache.splice(0, sectionRenderCache.length)}
       </div>
 
       {/* Fixed Bottom Section */}
       {sectionsByPosition['fixed-bottom'].length > 0 && (
         <div className="screen-preview-fixed-bottom">
-          {sectionsByPosition['fixed-bottom'].forEach((section, idx) => {
+          {sectionsByPosition['fixed-bottom'].map((section, idx) => {
             elementCounter = renderSection(section, idx, elementCounter);
+            return sectionRenderCache[sectionRenderCache.length - 1];
           })}
-          {sectionRenderCache.splice(0, sectionRenderCache.length)}
         </div>
       )}
     </div>

@@ -32,7 +32,7 @@ const UIShowcase: React.FC = () => {
   
   const [selectedElementIndex, setSelectedElementIndex] = useState<number | null>(null);
   const [draggedElementIndex, setDraggedElementIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [_dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const handleAddElement = (elementType: ElementType) => {
     const metadata = ElementMetadataRegistry[elementType];
@@ -121,7 +121,7 @@ const UIShowcase: React.FC = () => {
   const selectedElement = selectedElementIndex !== null ? currentElements[selectedElementIndex] : null;
   const selectedElementId = selectedElement?.state.id as string | undefined;
 
-  const handleElementSelectFromPreview = (elementId: string, sectionIndex: number, elementIndex: number) => {
+  const handleElementSelectFromPreview = (elementId: string, _sectionIndex: number, _elementIndex: number) => {
     // Find the element in the body section by ID
     const bodySection = builderScreen.sections.find(s => s.position === 'body');
     if (!bodySection) return;
@@ -132,77 +132,8 @@ const UIShowcase: React.FC = () => {
     }
   };
 
-  const handleDragStart = (index: number, e: React.DragEvent) => {
-    setDraggedElementIndex(index);
-    
-    // Create custom drag image
-    const element = e.currentTarget as HTMLElement;
-    const ghost = element.cloneNode(true) as HTMLElement;
-    ghost.style.position = 'absolute';
-    ghost.style.top = '-1000px';
-    ghost.style.width = element.offsetWidth + 'px';
-    ghost.style.opacity = '0.8';
-    ghost.style.transform = 'rotate(2deg)';
-    ghost.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-    document.body.appendChild(ghost);
-    e.dataTransfer.setDragImage(ghost, element.offsetWidth / 2, 20);
-    
-    setTimeout(() => {
-      document.body.removeChild(ghost);
-    }, 0);
-  };
-
-  const handleDragOver = (index: number, e: React.DragEvent) => {
-    e.preventDefault();
-    if (draggedElementIndex === null) return;
-    setDragOverIndex(index);
-  };
-
-  const handleDrop = (dropIndex: number, e: React.DragEvent) => {
-    e.preventDefault();
-    if (draggedElementIndex === null) return;
-
-    const updatedElements = [...currentElements];
-    const [draggedElement] = updatedElements.splice(draggedElementIndex, 1);
-    
-    // Adjust drop index if dragging down
-    const actualDropIndex = draggedElementIndex < dropIndex ? dropIndex : dropIndex;
-    updatedElements.splice(actualDropIndex, 0, draggedElement);
-
-    const updatedSections = builderScreen.sections.map(section => {
-      if (section.position === 'body') {
-        return {
-          ...section,
-          elements: updatedElements,
-        };
-      }
-      return section;
-    });
-
-    setBuilderScreen({
-      ...builderScreen,
-      sections: updatedSections,
-    });
-
-    // Update selected index
-    if (selectedElementIndex === draggedElementIndex) {
-      setSelectedElementIndex(actualDropIndex);
-    } else if (selectedElementIndex !== null) {
-      if (draggedElementIndex < selectedElementIndex && actualDropIndex >= selectedElementIndex) {
-        setSelectedElementIndex(selectedElementIndex - 1);
-      } else if (draggedElementIndex > selectedElementIndex && actualDropIndex <= selectedElementIndex) {
-        setSelectedElementIndex(selectedElementIndex + 1);
-      }
-    }
-
-    setDraggedElementIndex(null);
-    setDragOverIndex(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedElementIndex(null);
-    setDragOverIndex(null);
-  };
+  // Note: Drag state kept for future drag-and-drop functionality
+  void draggedElementIndex; void _dragOverIndex; void setDraggedElementIndex; void setDragOverIndex;
 
   const handleMoveElementUp = (index: number) => {
     if (index === 0) return; // Already at top

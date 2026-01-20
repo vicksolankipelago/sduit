@@ -12,7 +12,7 @@ export interface ImageCheckboxButtonElementProps {
 
 export const ImageCheckboxButtonElement: React.FC<ImageCheckboxButtonElementProps> = ({
   data,
-  style,
+  style: _style,
   events,
   onEventTrigger,
 }) => {

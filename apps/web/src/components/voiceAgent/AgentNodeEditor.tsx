@@ -273,7 +273,7 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
                   {agent.screens.length} screen(s) defined
                 </div>
                 <ul className="screens-list">
-                  {agent.screens.map((screen, index) => (
+                  {agent.screens.map((screen) => (
                     <li key={screen.id} className="screens-list-item">
                       <span className="screens-list-title">{screen.title}</span>
                       <span className="screens-list-id">{screen.id}</span>

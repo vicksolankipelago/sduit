@@ -53,7 +53,7 @@ function normalizeEvent(event: ScreenEvent): IOSScreenEvent {
     id: event.id,
     type: event.type,
     conditions: event.conditions || [],
-    action: event.action as Array<Record<string, AnyCodable>>,
+    action: event.action as unknown as Array<Record<string, AnyCodable>>,
     ...(event.analyticsName && { analyticsName: event.analyticsName }),
   };
 }

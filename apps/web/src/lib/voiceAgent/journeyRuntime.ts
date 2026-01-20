@@ -8,7 +8,7 @@
  */
 
 import { RealtimeAgent, tool } from '@openai/agents/realtime';
-import { Journey, Agent as JourneyAgent, Tool as JourneyTool, Screen, ToolParameterSchema } from '../../types/journey';
+import { Journey, Agent as JourneyAgent, Tool as JourneyTool, Screen } from '../../types/journey';
 import { toolLogger } from '../../utils/logger';
 
 // Type definitions
@@ -151,7 +151,7 @@ export class JourneyRuntime {
 
     // Add trigger_event tool if agent has screens
     if (agentConfig.screens && agentConfig.screens.length > 0) {
-      realtimeTools.push(this.createTriggerEventTool(agentName));
+      realtimeTools.push(this.createTriggerEventTool(agentName) as any);
     }
 
     return new RealtimeAgent({
@@ -178,8 +178,9 @@ export class JourneyRuntime {
     return tool({
       name: toolConfig.name,
       description: toolConfig.description,
-      parameters: toolConfig.parameters as ToolParameterSchema,
-      execute: async (input: Record<string, unknown>) => {
+      parameters: toolConfig.parameters as any,
+      strict: false,
+      execute: async (input: any) => {
         // Execute user-defined code (Note: This is a security concern - see issue #1)
         if (toolConfig.executeCode) {
           try {
@@ -216,11 +217,11 @@ export class JourneyRuntime {
       storeKey?: string;
     }
 
-    return tool({
+    return (tool as any)({
       name: 'record_input',
       description: toolConfig.description,
       parameters: {
-        type: 'object',
+        type: 'object' as const,
         properties: {
           title: { type: 'string', description: 'A short title for the recorded input' },
           summary: { type: 'string', description: 'A one-line summary of what the user said' },
@@ -229,9 +230,10 @@ export class JourneyRuntime {
           delay: { type: 'number', description: 'Optional: Delay in seconds before triggering the next event' },
           storeKey: { type: 'string', description: 'Optional: Module state key to store the recorded summary' },
         },
-        required: ['title', 'summary'],
-        additionalProperties: false,
+        required: ['title', 'summary'] as const,
+        additionalProperties: false as const,
       },
+      strict: false,
       execute: async (input: RecordInputParams) => {
         const { title, summary = '', description = '', nextEventId, delay, storeKey } = input;
 
@@ -283,11 +285,11 @@ export class JourneyRuntime {
       'navigate_to_checkin_commitment',
     ];
 
-    return tool({
+    return (tool as any)({
       name: 'trigger_event',
       description: 'Trigger a screen event to navigate or perform actions in the UI. Use this after user interactions to move through the flow.',
       parameters: {
-        type: 'object',
+        type: 'object' as const,
         properties: {
           eventId: {
             type: 'string',
@@ -298,9 +300,10 @@ export class JourneyRuntime {
             description: 'Optional delay in seconds before triggering the event. Use this to allow users to read information on screen before navigating.',
           },
         },
-        required: ['eventId'],
-        additionalProperties: false,
+        required: ['eventId'] as const,
+        additionalProperties: false as const,
       },
+      strict: false,
       execute: async (input: TriggerEventParams) => {
         const { eventId } = input;
 

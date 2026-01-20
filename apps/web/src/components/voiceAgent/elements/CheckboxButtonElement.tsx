@@ -25,7 +25,7 @@ const SelectorCheckIcon: React.FC = () => (
 
 export const CheckboxButtonElement: React.FC<CheckboxButtonElementProps> = ({
   data,
-  style,
+  style: _style,
   events,
   onEventTrigger,
 }) => {

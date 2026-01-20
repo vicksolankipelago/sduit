@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Journey, JourneyListItem, Agent, DEFAULT_SYSTEM_PROMPT, validateJourney, Screen } from '../../types/journey';
-import { listJourneys, loadJourney, saveJourney, deleteJourney, duplicateJourney, downloadJourneyAsJSON } from '../../services/journeyStorage';
+import { listJourneys, loadJourney, saveJourney, deleteJourney, duplicateJourney } from '../../services/journeyStorage';
 import { SCREEN_TEMPLATES } from '../../lib/voiceAgent/screenTemplates';
 import { downloadAgentAsModule } from '../../services/screenExport';
 import { generateScreensFromPrompts, suggestionToScreen, ScreenSuggestion } from '../../services/aiScreenGenerator';
@@ -40,7 +40,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const [aiCustomInstructions, setAiCustomInstructions] = useState('');
   const [aiGeneratedSuggestions, setAiGeneratedSuggestions] = useState<ScreenSuggestion[]>([]);
   const [isGeneratingScreens, setIsGeneratingScreens] = useState(false);
-  const [aiGenerationError, setAiGenerationError] = useState<string | null>(null);
+  const [_aiGenerationError, setAiGenerationError] = useState<string | null>(null);
   const [previewingSuggestion, setPreviewingSuggestion] = useState<ScreenSuggestion | null>(null);
 
   useEffect(() => {
@@ -90,7 +90,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     }
   };
 
-  const handleSaveJourney = () => {
+  const handleSaveJourney = async () => {
     if (!currentJourney) return;
 
     const errors = validateJourney(currentJourney);
@@ -101,7 +101,8 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       return;
     }
 
-    if (saveJourney(currentJourney)) {
+    const saved = await saveJourney(currentJourney);
+    if (saved) {
       refreshJourneyList();
       alert(`Journey "${currentJourney.name}" saved successfully!`);
     } else {
@@ -120,14 +121,8 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     }
   };
 
-  const handleDuplicateJourney = async (journeyId: string) => {
-    const duplicate = await duplicateJourney(journeyId);
-    if (duplicate) {
-      await refreshJourneyList();
-      setCurrentJourney(duplicate);
-      setViewMode('detail');
-    }
-  };
+  // Temporarily unused - can be re-enabled when duplicate button is added to UI
+  void duplicateJourney; // Silence unused import warning
 
   const handleAddAgent = () => {
     if (!currentJourney) return;
@@ -587,7 +582,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                   {!selectedAgent?.screens || selectedAgent.screens.length === 0 ? (
                     <div className="journey-screens-empty">
                       <p>No screens defined for this agent yet.</p>
-                      <button onClick={handleAddScreen} disabled={disabled} className="journey-add-screen-empty-btn">
+                      <button onClick={() => handleAddScreen()} disabled={disabled} className="journey-add-screen-empty-btn">
                         + Create First Screen
                       </button>
                     </div>

@@ -8,7 +8,7 @@ export function useAudioLevel(stream: MediaStream | null): number {
   const [audioLevel, setAudioLevel] = useState(0);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number>(undefined);
 
   useEffect(() => {
     if (!stream) {
@@ -16,11 +16,13 @@ export function useAudioLevel(stream: MediaStream | null): number {
       return;
     }
 
+    let analyser: AnalyserNode;
+    
     // Avoid creating duplicate audio contexts
     try {
       // Create audio context and analyser
       const audioContext = new AudioContext();
-      const analyser = audioContext.createAnalyser();
+      analyser = audioContext.createAnalyser();
       analyser.fftSize = 256;
       analyser.smoothingTimeConstant = 0.85; // More smoothing to reduce crackling
 

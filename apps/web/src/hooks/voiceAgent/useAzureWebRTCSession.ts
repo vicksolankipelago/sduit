@@ -6,8 +6,8 @@ import {
   executeTool,
   createSessionUpdate,
   type ToolContext,
+  type AzureAgentConfig,
 } from '../../config/voiceAgent/azureAgentAdapter';
-import { getAgentScreens } from '../../lib/voiceAgent/journeyRuntime';
 
 export interface AzureWebRTCSessionCallbacks {
   customPrompts?: Record<string, string>;
@@ -25,7 +25,7 @@ export interface AzureWebRTCConnectOptions {
   skipInitialGreeting?: boolean; // Skip auto-greeting (useful for persona)
   voice?: string; // Voice to use (e.g., 'alloy', 'echo', 'shimmer', 'sage')
   customMicStream?: MediaStream; // Custom microphone stream (for routing agent audio to persona)
-  agentConfig?: { name: string; instructions: string; voice: string; tools?: any[] }; // Journey agent configuration
+  agentConfig?: { name: string; instructions: string; voice: string; tools?: any[]; handoffs?: string[] }; // Journey agent configuration
   allJourneyAgents?: Map<string, { name: string; instructions: string; voice: string; handoffs?: string[] }>; // All agents in journey for handoffs
   onEventTrigger?: (eventId: string, agentName: string) => void; // Callback for trigger_event tool
 }
@@ -124,7 +124,9 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
           updateStatus('CONNECTED');
           
           // Initialize with journey agent if provided, otherwise use default greeter agent
-          let initialAgent = agentConfig || getInitialAgent();
+          let initialAgent: AzureAgentConfig = agentConfig 
+            ? { ...agentConfig, tools: agentConfig.tools || [], handoffs: agentConfig.handoffs || [] }
+            : getInitialAgent();
           
           // Store all journey agents for handoff support
           if (allJourneyAgents) {
@@ -159,7 +161,8 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
           const sessionConfig = createSessionUpdate(agentToUse, undefined, voice);
           
           console.log('📤 Sending initial session configuration for agent:', initialAgent.name);
-          console.log('📋 Agent instructions preview:', agentToUse.instructions.substring(0, 200) + '...');
+          const instructionsStr = typeof agentToUse.instructions === 'string' ? agentToUse.instructions : '';
+          console.log('📋 Agent instructions preview:', instructionsStr.substring(0, 200) + '...');
           if (voice) {
             console.log('🎵 Using voice:', voice);
           }
@@ -305,7 +308,7 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                 }
                 // Execute record_input tool for capturing user responses
                 else if (name === 'record_input' && args.title) {
-                  const { title, summary = '', description = '', nextEventId, delay: rawDelay } = args;
+                  const { title, summary = '', description: _description = '', nextEventId, delay: rawDelay } = args;
                   console.log(`📝 Recording input - Title: ${title}, Summary: ${summary}, NextEvent: ${nextEventId}`);
                   
                   // Parse delay robustly
