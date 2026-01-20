@@ -23,15 +23,21 @@ The workflow "SDUI Journey Builder" runs both frontend and API concurrently usin
 
 ## Authentication
 
-The application uses Replit Auth for authentication:
-- Login: Redirects to `/api/login` which initiates OAuth flow with Replit
-- Logout: Redirects to `/api/logout` to clear session
-- User info: Available at `/api/auth/user`
+The application uses email/password authentication with Passport.js:
+- Register: POST to `/api/register` with email, password, firstName (optional), lastName (optional)
+- Login: POST to `/api/login` with email and password
+- Logout: POST to `/api/logout` to clear session
+- User info: GET `/api/auth/user`
+
+Security features:
+- Password hashing with scrypt and per-user random salt
+- Session regeneration on login/register to prevent session fixation
+- Session destruction and cookie clearing on logout
 
 ## Database
 
 Uses PostgreSQL with Drizzle ORM. Schema defined in `shared/schema.ts`:
-- `users` - User profiles from Replit Auth
+- `users` - User profiles with email and hashed password
 - `sessions` - Express session storage
 - `journeys` - User-created voice agent journeys
 - `voice_sessions` - Saved voice session transcripts
@@ -40,18 +46,18 @@ Uses PostgreSQL with Drizzle ORM. Schema defined in `shared/schema.ts`:
 
 ### Backend
 - `DATABASE_URL` - PostgreSQL connection string (auto-configured by Replit)
+- `SESSION_SECRET` - Secret for session encryption
 - `AZURE_OPENAI_ENDPOINT` - Azure OpenAI endpoint URL
 - `AZURE_OPENAI_API_KEY` - Azure OpenAI API key
 - `AZURE_OPENAI_DEPLOYMENT_NAME` - Deployment name for realtime API
 - `AWS_BEARER_TOKEN_BEDROCK` - AWS Bedrock token for AI generation
 - `AWS_REGION` - AWS region (default: us-east-1)
-- `REPLIT_DOMAINS` - Auto-configured by Replit for auth
 
 ## Tech Stack
 
 - Frontend: React 19, Vite, React Router 7, TypeScript
 - Backend: Express.js, Node.js
-- Authentication: Replit Auth (OpenID Connect)
+- Authentication: Email/password with Passport.js (passport-local)
 - Database: PostgreSQL with Drizzle ORM
 - Voice AI: Azure OpenAI Realtime API (WebRTC)
 - AI Generation: AWS Bedrock (Claude)
@@ -60,9 +66,9 @@ Uses PostgreSQL with Drizzle ORM. Schema defined in `shared/schema.ts`:
 
 ### Authentication
 - `GET /api/auth/user` - Get current authenticated user
-- `GET /api/login` - Initiate Replit OAuth login
-- `GET /api/logout` - Logout and clear session
-- `GET /api/callback` - OAuth callback handler
+- `POST /api/register` - Register new user with email/password
+- `POST /api/login` - Login with email/password
+- `POST /api/logout` - Logout and clear session
 
 ### Journeys
 - `GET /api/journeys` - List user's journeys
@@ -80,6 +86,7 @@ Uses PostgreSQL with Drizzle ORM. Schema defined in `shared/schema.ts`:
 
 ## Recent Changes
 
-- 2026-01-20: Refactored authentication from Supabase to Replit Auth
+- 2026-01-20: Migrated authentication from Replit Auth to email/password with Passport.js
+- 2026-01-20: Added secure session management with session regeneration and destruction
 - 2026-01-20: Migrated database storage to PostgreSQL with Drizzle ORM
 - 2026-01-20: Configured Vite proxy to route /api/* to Express API server
