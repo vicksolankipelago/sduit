@@ -1054,7 +1054,7 @@ Important guidelines:
           <h2 className="voice-agent-title">Flows</h2>
           <button
             className="voice-agent-create-btn"
-            onClick={() => navigate('/builder')}
+            onClick={() => navigate('/builder?new=true')}
           >
             Create Flow
           </button>

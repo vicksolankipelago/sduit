@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { Journey, JourneyListItem, Agent, DEFAULT_SYSTEM_PROMPT, validateJourney, Screen } from '../../types/journey';
 import { listJourneys, loadJourney, saveJourney, deleteJourney, duplicateJourney } from '../../services/journeyStorage';
@@ -23,6 +24,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   onLaunchJourney,
   disabled = false,
 }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [journeys, setJourneys] = useState<JourneyListItem[]>([]);
   const [currentJourney, setCurrentJourney] = useState<Journey | null>(null);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
@@ -48,6 +50,26 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     const initAndLoad = async () => {
       const journeyList = await listJourneys();
       setJourneys(journeyList);
+      
+      // Check if we should auto-create a new flow
+      if (searchParams.get('new') === 'true') {
+        const newJourney: Journey = {
+          id: uuidv4(),
+          name: 'New Flow',
+          description: 'Describe your flow',
+          systemPrompt: DEFAULT_SYSTEM_PROMPT,
+          agents: [],
+          startingAgentId: '',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          version: '1.0.0',
+        };
+        setCurrentJourney(newJourney);
+        setSelectedAgentId(null);
+        setViewMode('detail');
+        // Clear the query param so refreshing doesn't create another new flow
+        setSearchParams({}, { replace: true });
+      }
     };
     
     initAndLoad();
