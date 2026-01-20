@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
 import { setupAuth, isAuthenticated } from "./auth";
 import journeysRouter from "./routes/journeys";
@@ -9,8 +11,11 @@ import feedbackRouter from "./routes/feedback";
 
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
-const PORT = parseInt(process.env.PORT || "3001");
+const PORT = parseInt(process.env.PORT || "5000");
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
@@ -297,7 +302,18 @@ Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
     }
   });
 
-  app.listen(PORT, "127.0.0.1", () => {
+  const distPath = path.join(__dirname, "../apps/web/dist");
+  app.use(express.static(distPath));
+  
+  app.use((req, res, next) => {
+    if (!req.path.startsWith("/api") && !req.path.startsWith("/health")) {
+      res.sendFile(path.join(distPath, "index.html"));
+    } else {
+      next();
+    }
+  });
+
+  app.listen(PORT, "0.0.0.0", () => {
     console.log(`API Server running on port ${PORT}`);
   });
 }

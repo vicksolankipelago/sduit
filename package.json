@@ -9,10 +9,11 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "dev": "PORT=3001 concurrently \"npm run dev:api\" \"npm run dev:web\"",
     "dev:web": "npm run dev --workspace=apps/web",
-    "dev:api": "tsx watch server/index.ts",
+    "dev:api": "PORT=3001 tsx watch server/index.ts",
     "build": "npm run build --workspace=apps/web",
+    "start": "tsx server/index.ts",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "db:push": "drizzle-kit push"
