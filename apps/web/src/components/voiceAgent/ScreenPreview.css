@@ -193,7 +193,7 @@
 .screen-preview-section-body {
   padding: 0 var(--padding-horizontal-standard);
   padding-bottom: var(--spacing-sm);
-  flex: 0 0 auto; /* Don't grow or shrink */
+  flex: 1 1 auto; /* Allow growing to fill space */
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -216,7 +216,7 @@
 .screen-preview-section-elements {
   display: flex;
   gap: var(--spacing-md);
-  flex: initial;
+  flex: 1 1 auto; /* Allow growing to fill space */
   min-height: 0;
   width: 100%; /* Ensure full width */
   align-items: stretch; /* Stretch items to full width */
@@ -271,8 +271,8 @@
 }
 
 .screen-preview-element:has(.spacer-element-flexible) {
-  flex-shrink: 1;
-  flex-grow: 1;
+  flex: 1 1 0;
+  min-height: 0;
 }
 
 .screen-preview-element-editable {
