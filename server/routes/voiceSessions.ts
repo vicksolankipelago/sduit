@@ -126,6 +126,41 @@ router.post("/", isAuthenticated, async (req: any, res) => {
   }
 });
 
+router.put("/:sessionId/message", isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const { sessionId } = req.params;
+    const { message, journey, agent } = req.body;
+    
+    if (!message || !message.itemId) {
+      return res.status(400).json({ message: "Message with itemId is required" });
+    }
+    
+    const existingSession = await storage.getSession(sessionId);
+    if (existingSession && existingSession.userId !== userId) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    
+    const session = await storage.upsertSessionMessage({
+      userId,
+      sessionId,
+      message,
+      journeyId: journey?.id,
+      journeyName: journey?.name,
+      journeyVoice: journey?.voice,
+      agentId: agent?.id,
+      agentName: agent?.name,
+      agentPrompt: agent?.prompt,
+      agentTools: agent?.tools || [],
+    });
+    
+    res.json({ success: true, id: session.id });
+  } catch (error) {
+    console.error("Error upserting session message:", error);
+    res.status(500).json({ message: "Failed to save message" });
+  }
+});
+
 router.delete("/:sessionId", isAuthenticated, async (req: any, res) => {
   try {
     const session = await storage.getSession(req.params.sessionId);

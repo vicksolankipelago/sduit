@@ -25,7 +25,7 @@ import MemberPersonaEditor from '../components/voiceAgent/MemberPersonaEditor';
 import VoiceControlBar from '../components/voiceAgent/VoiceControlBar';
 import { useAudioLevel } from '../hooks/voiceAgent/useAudioLevel';
 
-import { SessionStatus } from '../types/voiceAgent';
+import { SessionStatus, TranscriptItem } from '../types/voiceAgent';
 import { Journey, JourneyListItem } from '../types/journey';
 import {
   createSessionExport,
@@ -38,7 +38,7 @@ import { journeyToRealtimeAgents, getStartingAgentName, setEventTriggerCallback,
 import { listJourneys, loadJourney } from '../services/journeyStorage';
 import { PQData, substitutePromptVariables, DEFAULT_PQ_DATA } from '../utils/promptTemplates';
 import { useAuth } from '../contexts/AuthContext';
-import { saveSession } from '../services/api/sessionService';
+import { saveSession, DebouncedSessionSaver } from '../services/api/sessionService';
 
 // Main Voice Agent Component
 function VoiceAgentContent() {
@@ -142,6 +142,12 @@ function VoiceAgentContent() {
   const sessionIdRef = useRef<string>(`session_${Date.now()}`);
   // Track the combined prompt sent to the agent for export
   const combinedPromptRef = useRef<string>('');
+  // Real-time session saver with debouncing
+  const sessionSaverRef = useRef<DebouncedSessionSaver>(
+    new DebouncedSessionSaver(500, (error) => {
+      console.error('Real-time save error:', error);
+    })
+  );
 
   // Track audio level from microphone for visualization
   const audioLevel = useAudioLevel(micStream);
@@ -150,6 +156,10 @@ function VoiceAgentContent() {
   const assistantResponseBuffer = useRef<string>('');
   const assistantResponseStartTime = useRef<Date | null>(null);
   const currentMessageIdsRef = useRef<{ user?: string; assistant?: string }>({});
+  // Track which itemIds have been queued to prevent duplicate saves
+  const queuedItemIdsRef = useRef<Set<string>>(new Set());
+  // Buffer for accumulating user message text (since text comes in chunks)
+  const userMessageBuffer = useRef<string>('');
 
   const { startRecording, stopRecording } = useAudioDownload();
 
@@ -211,6 +221,14 @@ function VoiceAgentContent() {
 
     // Generate new session ID for this session
     sessionIdRef.current = `session_${Date.now()}`;
+    
+    // Reset the real-time saver for the new session
+    sessionSaverRef.current.reset();
+    // Clear the queued item IDs set for the new session
+    queuedItemIdsRef.current.clear();
+    // Clear message buffers
+    userMessageBuffer.current = '';
+    assistantResponseBuffer.current = '';
 
     // Use provided journey or fall back to current journey state
     const journeyToUse = journeyOverride || currentJourney;
@@ -488,6 +506,24 @@ Important guidelines:
         });
         addLog('success', 'Successfully initiated voice agent connection');
       }
+      
+      // Configure real-time saver with session info (only if user is authenticated)
+      if (user) {
+        sessionSaverRef.current.configure(
+          sessionIdRef.current,
+          journeyToUse ? {
+            id: journeyToUse.id,
+            name: journeyToUse.name,
+            voice: journeyToUse.voice,
+          } : undefined,
+          {
+            id: startingAgentName,
+            name: startingAgentName,
+            prompt: combinedInstructions,
+            tools: azureTools,
+          }
+        );
+      }
     } catch (err: any) {
       console.error("Error connecting to Azure OpenAI:", err);
       addLog('error', 'Failed to connect to Azure OpenAI', { error: err.message });
@@ -588,7 +624,16 @@ Important guidelines:
   const disconnectFromRealtime = async () => {
     addLog('info', 'Disconnecting from session...');
 
-    // Auto-save session if authenticated and has transcript
+    // Flush any pending real-time saves first
+    if (user) {
+      try {
+        await sessionSaverRef.current.flush();
+      } catch (error) {
+        console.error('Failed to flush pending saves:', error);
+      }
+    }
+
+    // Auto-save complete session if authenticated and has transcript
     if (user && transcriptItems.length > 0) {
       try {
         const agentConfig = combinedPromptRef.current ? {
@@ -613,6 +658,9 @@ Important guidelines:
         addLog('warning', 'Failed to auto-save session to cloud');
       }
     }
+
+    // Reset the real-time saver
+    sessionSaverRef.current.reset();
 
     disconnect();
 
@@ -752,12 +800,34 @@ Important guidelines:
       // Log transcripts
       if (role === 'user') {
         const messageId = ensureMessageId();
+        // Accumulate user message text
+        userMessageBuffer.current += text;
         if (messageId && text) {
           updateTranscriptMessage(messageId, text, true);
         }
         if (isDone) {
+          const fullUserText = userMessageBuffer.current.trim();
           updateTranscriptItem(messageId, { status: 'DONE' });
           currentMessageIdsRef.current.user = undefined;
+          // Queue completed user message for real-time saving
+          // Construct the complete TranscriptItem directly instead of looking up from state
+          if (user && messageId && !queuedItemIdsRef.current.has(messageId)) {
+            queuedItemIdsRef.current.add(messageId);
+            const completeUserMessage: TranscriptItem = {
+              itemId: messageId,
+              type: 'MESSAGE',
+              role: 'user',
+              title: fullUserText,
+              expanded: false,
+              timestamp: new Date().toISOString(),
+              createdAtMs: Date.now(),
+              status: 'DONE',
+              isHidden: false,
+            };
+            sessionSaverRef.current.queueMessage(completeUserMessage);
+          }
+          // Reset user message buffer
+          userMessageBuffer.current = '';
         }
         addLog('info', `User: ${text}`);
       } else {
@@ -783,6 +853,23 @@ Important guidelines:
           // Mark message complete + reset buffer
           updateTranscriptItem(messageId, { status: 'DONE' });
           currentMessageIdsRef.current.assistant = undefined;
+          // Queue completed assistant message for real-time saving
+          // Construct the complete TranscriptItem directly instead of looking up from state
+          if (user && messageId && !queuedItemIdsRef.current.has(messageId)) {
+            queuedItemIdsRef.current.add(messageId);
+            const completeAssistantMessage: TranscriptItem = {
+              itemId: messageId,
+              type: 'MESSAGE',
+              role: 'assistant',
+              title: fullResponse,
+              expanded: false,
+              timestamp: assistantResponseStartTime.current?.toISOString() || new Date().toISOString(),
+              createdAtMs: assistantResponseStartTime.current?.getTime() || Date.now(),
+              status: 'DONE',
+              isHidden: false,
+            };
+            sessionSaverRef.current.queueMessage(completeAssistantMessage);
+          }
           assistantResponseBuffer.current = '';
           assistantResponseStartTime.current = null;
           // Don't set speaking to false here - let audio element events handle it
