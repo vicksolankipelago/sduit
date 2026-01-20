@@ -70,6 +70,19 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
         // Clear the query param so refreshing doesn't create another new flow
         setSearchParams({}, { replace: true });
       }
+      
+      // Check if we should load a specific flow for editing
+      const editId = searchParams.get('id');
+      if (editId) {
+        const journeyToEdit = await loadJourney(editId);
+        if (journeyToEdit) {
+          setCurrentJourney(journeyToEdit);
+          setSelectedAgentId(null);
+          setViewMode('detail');
+          // Clear the query param
+          setSearchParams({}, { replace: true });
+        }
+      }
     };
     
     initAndLoad();

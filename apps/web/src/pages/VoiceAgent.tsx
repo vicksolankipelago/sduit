@@ -1178,16 +1178,28 @@ Important guidelines:
                           style={{ background: style.gradient }}
                         >
                           <span className="journey-card-icon">{style.icon}</span>
-                          <button
-                            className="journey-card-settings-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSettingsOpen(true);
-                            }}
-                            title="Configure testing persona"
-                          >
-                            <span className="journey-card-settings-icon">⚙️</span>
-                          </button>
+                          <div className="journey-card-actions">
+                            <button
+                              className="journey-card-edit-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/builder?id=${journey.id}`);
+                              }}
+                              title="Edit flow"
+                            >
+                              <span className="journey-card-edit-icon">✏️</span>
+                            </button>
+                            <button
+                              className="journey-card-settings-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSettingsOpen(true);
+                              }}
+                              title="Configure testing persona"
+                            >
+                              <span className="journey-card-settings-icon">⚙️</span>
+                            </button>
+                          </div>
                         </div>
                         <div className="journey-card-header">
                           <h3 className="journey-card-title">{journey.name}</h3>
