@@ -5,13 +5,13 @@ import './Navigation.css';
 
 export const Navigation: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
 
   const handleSignOut = () => {
     logout();
   };
 
-  const menuItems = [
+  const allMenuItems = [
     {
       path: '/',
       label: 'Journeys',
@@ -23,6 +23,7 @@ export const Navigation: React.FC = () => {
           <line x1="8" y1="23" x2="16" y2="23" />
         </svg>
       ),
+      adminOnly: false,
     },
     {
       path: '/builder',
@@ -35,6 +36,7 @@ export const Navigation: React.FC = () => {
           <rect x="3" y="14" width="7" height="7" />
         </svg>
       ),
+      adminOnly: true,
     },
     {
       path: '/ui-showcase',
@@ -46,6 +48,7 @@ export const Navigation: React.FC = () => {
           <line x1="9" y1="21" x2="9" y2="9" />
         </svg>
       ),
+      adminOnly: true,
     },
     {
       path: '/transcripts',
@@ -59,6 +62,7 @@ export const Navigation: React.FC = () => {
           <polyline points="10 9 9 9 8 9" />
         </svg>
       ),
+      adminOnly: false,
     },
     {
       path: '/settings',
@@ -69,8 +73,11 @@ export const Navigation: React.FC = () => {
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
         </svg>
       ),
+      adminOnly: false,
     },
   ];
+
+  const menuItems = allMenuItems.filter(item => !item.adminOnly || isAdmin);
 
   return (
     <nav className={`navigation ${isCollapsed ? 'collapsed' : ''}`}>
@@ -117,6 +124,7 @@ export const Navigation: React.FC = () => {
             {!isCollapsed && (
               <div className="nav-user-info">
                 <span className="nav-user-email">{user.email}</span>
+                <span className="nav-user-role">{user.role === 'admin' ? 'Admin' : 'Tester'}</span>
               </div>
             )}
           </div>

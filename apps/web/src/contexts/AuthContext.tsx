@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
+type UserRole = 'admin' | 'test';
+
 interface User {
   id: string;
   email: string | null;
   firstName: string | null;
   lastName: string | null;
   profileImageUrl: string | null;
+  role: UserRole;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -24,6 +27,7 @@ interface AuthContextValue {
   user: User | null;
   loading: boolean;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   login: (credentials: LoginCredentials) => Promise<{ success: boolean; error?: string }>;
   register: (data: RegisterData) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
@@ -136,6 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       user,
       loading,
       isAuthenticated: !!user,
+      isAdmin: user?.role === 'admin',
       login,
       register,
       logout,
