@@ -13,7 +13,7 @@ const app = express();
 const PORT = parseInt(process.env.PORT || "3001");
 
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok", message: "Voice Agent API server is running" });

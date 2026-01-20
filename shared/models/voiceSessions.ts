@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { integer, jsonb, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { bigint, integer, jsonb, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 import { users } from "./auth";
 
 // Voice sessions table for storing session transcripts
@@ -8,8 +8,8 @@ export const voiceSessions = pgTable("voice_sessions", {
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   sessionId: varchar("session_id").notNull().unique(),
   exportedAt: timestamp("exported_at").notNull(),
-  durationStartMs: integer("duration_start_ms"),
-  durationEndMs: integer("duration_end_ms"),
+  durationStartMs: bigint("duration_start_ms", { mode: "number" }),
+  durationEndMs: bigint("duration_end_ms", { mode: "number" }),
   durationTotalSeconds: integer("duration_total_seconds"),
   journeyId: varchar("journey_id"),
   journeyName: varchar("journey_name"),
