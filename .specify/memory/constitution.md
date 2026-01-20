@@ -1,50 +1,102 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# SDUI Journey Builder Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Config-Driven Architecture
+All UI flows MUST be defined as structured configuration files. The system generates syntactically valid SDUI configs that can be consumed by any compliant renderer. No hardcoded UI logic - everything is declarative and portable.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+**Rules:**
+- Flows defined in JSON/YAML config format
+- Schema validation on all config outputs
+- Configs must be version-controlled and diffable
+- Runtime interprets configs, never generates UI directly
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. Design Excellence
+The flow editor UI MUST be beautifully designed and intuitive. This is a design tool - it must inspire confidence and creativity. Pelago design system compliance is mandatory.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+**Rules:**
+- Follow Pelago design system (ES Rebond Grotesque, Suisse Neue fonts)
+- Consistent spacing, typography, and color usage
+- Micro-interactions and visual feedback for all actions
+- Accessibility standards (WCAG 2.1 AA minimum)
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. Preview-First Development
+Users MUST always see what they're building. Real-time preview is non-negotiable. The gap between editing and experiencing should be zero.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+**Rules:**
+- Live preview updates on every change
+- Toggle between voice and visual preview modes
+- Preview must match production rendering exactly
+- Support device frame previews (mobile, tablet, desktop)
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. Voice & Visual Parity
+Voice flows and non-voice flows are equal citizens. The system MUST support both interaction modes with the same underlying config structure.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+**Rules:**
+- Single config format supports both voice and visual flows
+- Voice prompts and visual components defined together
+- Test runner supports both modes
+- Seamless switching between voice and tap interactions
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### V. Type Safety & Validation
+All configs MUST be syntactically correct and type-safe. Invalid configs should be impossible to save or export.
+
+**Rules:**
+- TypeScript throughout the codebase
+- JSON Schema validation for all config files
+- Real-time validation feedback in editor
+- Generated TypeScript types from config schemas
+
+## Tech Stack Constraints
+
+**Frontend:**
+- React 19 with Vite
+- React Router 7
+- TypeScript (strict mode)
+- Pelago design system
+
+**Backend:**
+- Express.js / Node.js
+- Supabase (auth + database)
+- Azure OpenAI (voice/realtime)
+- AWS Bedrock (AI generation)
+
+**Architecture:**
+- Monorepo with npm workspaces
+- Apps: `web` (editor), `api` (backend)
+- Packages: `shared` (types, utils)
+
+## Development Workflow
+
+**Commits:**
+- JIRA ticket format: `[POLICE-XXX] type: description`
+- Types: feat, fix, refactor, docs, test, chore
+
+**Code Quality:**
+- TypeScript strict mode enforced
+- ESLint + Prettier for formatting
+- Component-driven development
+- Shared types between frontend and backend
+
+**Testing:**
+- Unit tests for config validation logic
+- Integration tests for API endpoints
+- Visual regression tests for UI components
+- E2E tests for critical user flows
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution defines the non-negotiable principles for SDUI Journey Builder. All features, PRs, and architectural decisions MUST align with these principles.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Amendment Process:**
+1. Propose change with rationale
+2. Document impact on existing code
+3. Update dependent specs and plans
+4. Version bump according to semver
+
+**Compliance:**
+- All PRs must verify principle alignment
+- Code review checklist includes constitution check
+- Quarterly review of principles for relevance
+
+**Version**: 1.0.0 | **Ratified**: 2025-01-19 | **Last Amended**: 2025-01-19

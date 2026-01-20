@@ -1,12 +1,14 @@
 /**
  * Journey Types
- * 
+ *
  * Type definitions for the Agent Journey Builder system.
  * Journeys define multi-agent conversation flows with configurable prompts,
  * tools, and handoff logic.
- * 
+ *
  * Includes Server-Driven UI (SDUI) support matching iOS structure.
  */
+
+import { Variable } from './variables';
 
 /**
  * Tool Parameter Schema
@@ -662,6 +664,7 @@ export interface Journey {
   createdAt: string;
   updatedAt: string;
   version: string; // For future migration compatibility
+  customVariables?: Variable[]; // User-defined template variables for prompts
 }
 
 /**

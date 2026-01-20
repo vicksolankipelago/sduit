@@ -477,6 +477,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                 value={currentJourney.systemPrompt}
                 onChange={(systemPrompt) => setCurrentJourney({ ...currentJourney, systemPrompt })}
                 disabled={disabled}
+                journey={currentJourney}
               />
 
               {/* Builder Tabs */}
@@ -700,6 +701,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                       screenPrompts={selectedAgent.screenPrompts || {}}
                       onChange={handleUpdateScreenPrompts}
                       disabled={disabled}
+                      journey={currentJourney}
                     />
                   )}
                 </div>

@@ -315,8 +315,15 @@ const UIShowcase: React.FC = () => {
           <div className="ui-showcase-grid">
             {getElementsByCategory(selectedCategory).map((metadata) => {
               const Component = getElementComponent(metadata.type);
-              
+
               if (!Component) return null;
+
+              // Create a minimal screen for the ScreenProvider context
+              const previewScreen: Screen = {
+                id: `preview-${metadata.type}`,
+                title: 'Preview',
+                sections: [],
+              };
 
               return (
                 <div key={metadata.type} className="ui-showcase-item">
@@ -330,11 +337,13 @@ const UIShowcase: React.FC = () => {
                     {metadata.description}
                   </div>
                   <div className="ui-showcase-item-preview">
-                    <Component
-                      data={metadata.defaultData}
-                      style={metadata.defaultStyle}
-                      onEventTrigger={(eventId: string) => console.log('Event:', eventId)}
-                    />
+                    <ScreenProvider initialScreen={previewScreen}>
+                      <Component
+                        data={metadata.defaultData}
+                        style={metadata.defaultStyle}
+                        onEventTrigger={(eventId: string) => console.log('Event:', eventId)}
+                      />
+                    </ScreenProvider>
                   </div>
                   <div className="ui-showcase-item-code">
                     <details>

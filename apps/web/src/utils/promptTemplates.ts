@@ -4,6 +4,8 @@
  * Handles loading and managing agent prompt templates
  */
 
+import { Variable, VariableMatch, VariableValidationResult } from '../types/variables';
+
 /**
  * PQ (Personalization Quiz) Data interface
  * These values are injected into prompt templates
@@ -46,6 +48,81 @@ A: Moderation - fewer drinks per typical drinking day.
 Q: How do you prefer to receive support?
 A: I prefer supportive and non-judgmental guidance.`,
 };
+
+/**
+ * Default variables derived from PQData
+ * These are the built-in variables available in all prompts
+ */
+export const DEFAULT_VARIABLES: Variable[] = [
+  // Member Info
+  { name: 'memberName', description: "Member's first name", category: 'member', isCustom: false },
+  { name: 'mainSubstance', description: 'Primary substance of focus', category: 'member', isCustom: false },
+  { name: 'acuityLevel', description: 'Member acuity level (low/moderate/high)', category: 'member', isCustom: false },
+  // Goals
+  { name: 'primaryGoal', description: "Member's stated primary goal", category: 'goals', isCustom: false },
+  { name: 'motivation', description: 'What motivates the member', category: 'goals', isCustom: false },
+  { name: 'learningTopics', description: 'Topics member wants to learn about', category: 'goals', isCustom: false },
+  // Preferences
+  { name: 'personalizedApproach', description: 'Preferred support approach', category: 'preferences', isCustom: false },
+  { name: 'carePreferences', description: 'Care style preferences', category: 'preferences', isCustom: false },
+  // Context
+  { name: 'drinkingLogs', description: 'Recent drinking log data', category: 'context', isCustom: false },
+  { name: 'allQuestionsAndAnswers', description: 'Full Q&A history', category: 'context', isCustom: false },
+];
+
+/**
+ * Regex pattern for matching {{variableName}} syntax
+ */
+const VARIABLE_PATTERN = /\{\{([a-zA-Z][a-zA-Z0-9]*)\}\}/g;
+
+/**
+ * Extract all variable occurrences from text
+ * Returns array of variable matches with positions
+ */
+export function extractVariablesFromText(text: string): Array<{ name: string; start: number; end: number }> {
+  const matches: Array<{ name: string; start: number; end: number }> = [];
+  let match: RegExpExecArray | null;
+
+  // Reset regex lastIndex
+  VARIABLE_PATTERN.lastIndex = 0;
+
+  while ((match = VARIABLE_PATTERN.exec(text)) !== null) {
+    matches.push({
+      name: match[1],
+      start: match.index,
+      end: match.index + match[0].length,
+    });
+  }
+
+  return matches;
+}
+
+/**
+ * Validate all variables in a prompt against available variables
+ * Returns validation result with details for each variable
+ */
+export function validatePromptVariables(
+  text: string,
+  availableVariables: Variable[]
+): VariableValidationResult {
+  const extracted = extractVariablesFromText(text);
+  const availableNames = new Set(availableVariables.map(v => v.name));
+
+  const variables: VariableMatch[] = extracted.map(match => {
+    const isValid = availableNames.has(match.name);
+    return {
+      name: match.name,
+      position: { start: match.start, end: match.end },
+      isValid,
+      error: isValid ? undefined : `Unknown variable: ${match.name}`,
+    };
+  });
+
+  return {
+    isValid: variables.every(v => v.isValid),
+    variables,
+  };
+}
 
 /**
  * Substitute template variables in a prompt string

@@ -1,19 +1,50 @@
-import React, { useState } from 'react';
-import { DEFAULT_SYSTEM_PROMPT } from '../../types/journey';
+import React, { useState, useRef } from 'react';
+import { DEFAULT_SYSTEM_PROMPT, Journey } from '../../types/journey';
+import { useVariables } from '../../hooks/useVariables';
+import VariablePanel from './VariablePanel';
 import './SystemPromptEditor.css';
 
 interface SystemPromptEditorProps {
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  journey?: Journey | null;
 }
 
 const SystemPromptEditor: React.FC<SystemPromptEditorProps> = ({
   value,
   onChange,
   disabled = false,
+  journey = null,
 }) => {
   const [showPreview, setShowPreview] = useState(false);
+  const [showVariables, setShowVariables] = useState(true);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { variables, variablesByCategory } = useVariables(journey);
+
+  const handleInsertVariable = (variableName: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const currentValue = value || '';
+    const variableText = `{{${variableName}}}`;
+
+    const newValue =
+      currentValue.substring(0, start) +
+      variableText +
+      currentValue.substring(end);
+
+    onChange(newValue);
+
+    // Restore cursor position after the inserted variable
+    setTimeout(() => {
+      textarea.focus();
+      const newPosition = start + variableText.length;
+      textarea.setSelectionRange(newPosition, newPosition);
+    }, 0);
+  };
 
   const handleReset = () => {
     if (window.confirm('Reset to default system prompt? This will replace your current prompt.')) {
@@ -34,6 +65,13 @@ const SystemPromptEditor: React.FC<SystemPromptEditorProps> = ({
           </span>
         </div>
         <div className="system-prompt-actions">
+          <button
+            className={`system-prompt-action-btn ${showVariables ? 'active' : ''}`}
+            onClick={() => setShowVariables(!showVariables)}
+            type="button"
+          >
+            📋 Variables
+          </button>
           <button
             className="system-prompt-action-btn"
             onClick={() => setShowPreview(!showPreview)}
@@ -74,20 +112,32 @@ const SystemPromptEditor: React.FC<SystemPromptEditorProps> = ({
           </div>
         </div>
       ) : (
-        <div className="system-prompt-editor-area">
-          <textarea
-            className="system-prompt-textarea"
-            value={value || ''}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder="Define global instructions for all agents..."
-            disabled={disabled}
-            rows={12}
-          />
-          <div className="system-prompt-stats">
-            <span>{lineCount} lines</span>
-            <span>•</span>
-            <span>{characterCount} characters</span>
+        <div className={`system-prompt-editor-area ${showVariables ? 'with-variables' : ''}`}>
+          <div className="system-prompt-textarea-wrapper">
+            <textarea
+              ref={textareaRef}
+              className="system-prompt-textarea"
+              value={value || ''}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="Define global instructions for all agents...&#10;&#10;Use {{variableName}} to insert dynamic values like {{memberName}} or {{primaryGoal}}"
+              disabled={disabled}
+              rows={12}
+            />
+            <div className="system-prompt-stats">
+              <span>{lineCount} lines</span>
+              <span>•</span>
+              <span>{characterCount} characters</span>
+            </div>
           </div>
+          {showVariables && (
+            <VariablePanel
+              variables={variables}
+              variablesByCategory={variablesByCategory}
+              onInsert={handleInsertVariable}
+              mode="default"
+              disabled={disabled}
+            />
+          )}
         </div>
       )}
 

@@ -44,3 +44,10 @@ Use `/commit` skill to create properly formatted commits.
 ## Skills
 
 - `/commit` - Create a JIRA-formatted git commit
+
+## Active Technologies
+- TypeScript 5.x, React 19 + React, existing promptTemplates.ts, existing SystemPromptEditor.tsx (001-prompt-variables)
+- Journey object (localStorage + Supabase) - variables stored per-journey (001-prompt-variables)
+
+## Recent Changes
+- 001-prompt-variables: Added TypeScript 5.x, React 19 + React, existing promptTemplates.ts, existing SystemPromptEditor.tsx
