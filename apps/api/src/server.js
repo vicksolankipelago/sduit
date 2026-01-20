@@ -18,7 +18,7 @@ const PORT = 3001;
 
 // Enable CORS for the Vite dev server (allow multiple ports for development)
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:3000'],
+  origin: true,
   credentials: true
 }));
 
