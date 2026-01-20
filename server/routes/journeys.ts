@@ -16,11 +16,6 @@ const DEFAULT_JOURNEYS = [
     name: "Mental Health Screening",
     description: "GAD-2 / PHQ-2 mental health screening with compassionate voice guidance.",
   },
-  {
-    id: "default-dry-january",
-    name: "Dry January Intake Call",
-    description: "Quick intake call to set up Dry January goals and establish check-in habits.",
-  },
 ];
 
 async function seedDefaultJourneysIfNeeded(userId: string): Promise<void> {
