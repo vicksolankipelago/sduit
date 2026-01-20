@@ -1,9 +1,43 @@
 import { Journey, JourneyListItem, JourneyExport } from '../types/journey';
 import { v4 as uuidv4 } from 'uuid';
+import { loadDefaultJourneys } from '../lib/voiceAgent/examples';
 import * as journeyApi from './api/journeyService';
 
 const STORAGE_KEY = 'voice-agent-journeys';
 const STORAGE_VERSION = '1.0.0';
+const SEEDED_KEY = 'journeys-seeded-v2';
+
+async function seedDefaultJourneysIfNeeded(): Promise<void> {
+  try {
+    if (localStorage.getItem(SEEDED_KEY)) {
+      return;
+    }
+
+    const existingJourneys = await journeyApi.listUserJourneys();
+    if (existingJourneys.length > 0) {
+      localStorage.setItem(SEEDED_KEY, 'true');
+      return;
+    }
+
+    console.log('No journeys found, seeding default journeys with full content...');
+    const defaultJourneys = await loadDefaultJourneys();
+    
+    for (const journey of defaultJourneys) {
+      journey.id = uuidv4();
+      try {
+        await journeyApi.createJourney(journey);
+        console.log(`Seeded default journey: ${journey.name} with ${journey.agents.length} agents`);
+      } catch (err) {
+        console.error(`Failed to seed journey ${journey.name}:`, err);
+      }
+    }
+    
+    localStorage.setItem(SEEDED_KEY, 'true');
+    console.log(`Seeded ${defaultJourneys.length} default journeys`);
+  } catch (error) {
+    console.error('Failed to seed default journeys:', error);
+  }
+}
 
 function getLocalStorageJourneys(): Journey[] {
   try {
@@ -17,6 +51,8 @@ function getLocalStorageJourneys(): Journey[] {
 
 export async function listJourneys(): Promise<JourneyListItem[]> {
   try {
+    await seedDefaultJourneysIfNeeded();
+    
     let journeys: JourneyListItem[] = [];
     try {
       journeys = await journeyApi.listUserJourneys();

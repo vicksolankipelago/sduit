@@ -5,62 +5,9 @@ import { v4 as uuidv4 } from "uuid";
 
 const router = Router();
 
-const DEFAULT_JOURNEYS = [
-  {
-    id: "default-intake-call",
-    name: "Intake Call",
-    description: "Complete voice-guided intake flow for members who have finished the web personalization quiz.",
-  },
-  {
-    id: "default-gad-phq2",
-    name: "Mental Health Screening",
-    description: "GAD-2 / PHQ-2 mental health screening with compassionate voice guidance.",
-  },
-];
-
-async function seedDefaultJourneysIfNeeded(userId: string): Promise<void> {
-  try {
-    const existingJourneys = await storage.listUserJourneys(userId);
-    if (existingJourneys.length > 0) {
-      return;
-    }
-
-    console.log(`Seeding default journeys for user ${userId}...`);
-    
-    for (const defaultJourney of DEFAULT_JOURNEYS) {
-      const journeyId = `${defaultJourney.id}-${userId}`;
-      try {
-        await storage.createJourney({
-          id: journeyId,
-          userId,
-          name: defaultJourney.name,
-          description: defaultJourney.description,
-          systemPrompt: "",
-          voice: "shimmer",
-          agents: [],
-          startingAgentId: "",
-          version: "1.0.0",
-        });
-        console.log(`Created default journey: ${defaultJourney.name}`);
-      } catch (insertError: any) {
-        if (insertError?.code === '23505') {
-          console.log(`Default journey already exists: ${defaultJourney.name}`);
-        } else {
-          console.error(`Failed to create default journey ${defaultJourney.name}:`, insertError);
-        }
-      }
-    }
-  } catch (error) {
-    console.error("Error seeding default journeys:", error);
-  }
-}
-
 router.get("/", isAuthenticated, async (req: any, res) => {
   try {
     const userId = req.user.id;
-    
-    await seedDefaultJourneysIfNeeded(userId);
-    
     const journeys = await storage.listUserJourneys(userId);
     
     const journeyList = journeys.map((j) => ({
