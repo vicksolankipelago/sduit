@@ -29,6 +29,10 @@ router.post("/", isAuthenticated, async (req: any, res) => {
       return res.status(404).json({ message: "Voice session not found" });
     }
 
+    if (session.userId !== userId) {
+      return res.status(403).json({ message: "You can only submit feedback for your own sessions" });
+    }
+
     const [newFeedback] = await db
       .insert(feedback)
       .values({

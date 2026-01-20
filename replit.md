@@ -34,13 +34,30 @@ Security features:
 - Session regeneration on login/register to prevent session fixation
 - Session destruction and cookie clearing on logout
 
+## User Roles
+
+The application supports two user roles:
+
+### Admin
+- Can create, edit, delete, and duplicate journeys
+- Can access Journey Builder and Screens pages
+- Can view all feedback from all users
+- Default role for new users
+
+### Test
+- Can start journeys and test voice interactions
+- Can submit feedback after completing sessions
+- Cannot create/edit/delete journeys
+- Only sees Journeys and Transcripts navigation items
+
 ## Database
 
 Uses PostgreSQL with Drizzle ORM. Schema defined in `shared/schema.ts`:
-- `users` - User profiles with email and hashed password
+- `users` - User profiles with email, hashed password, and role (admin/test)
 - `sessions` - Express session storage
 - `journeys` - User-created voice agent journeys
 - `voice_sessions` - Saved voice session transcripts
+- `feedback` - User feedback linked to voice sessions (rating + comments)
 
 ## Environment Variables
 
@@ -84,8 +101,16 @@ Uses PostgreSQL with Drizzle ORM. Schema defined in `shared/schema.ts`:
 - `POST /api/voice-sessions` - Save voice session
 - `DELETE /api/voice-sessions/:id` - Delete session
 
+### Feedback
+- `GET /api/feedback` - List feedback (admins see all, test users see their own)
+- `GET /api/feedback/:id` - Get feedback by ID with transcript
+- `POST /api/feedback` - Submit feedback (rating 1-5, optional comment)
+
 ## Recent Changes
 
+- 2026-01-20: Added role-based access control (admin/test roles)
+- 2026-01-20: Added feedback system with ratings and comments linked to voice sessions
+- 2026-01-20: Updated navigation to show role-specific menu items
 - 2026-01-20: Migrated authentication from Replit Auth to email/password with Passport.js
 - 2026-01-20: Added secure session management with session regeneration and destruction
 - 2026-01-20: Migrated database storage to PostgreSQL with Drizzle ORM

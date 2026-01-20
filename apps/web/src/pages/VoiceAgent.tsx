@@ -20,8 +20,7 @@ import AgentUIRenderer from '../components/voiceAgent/AgentUIRenderer';
 import AgentPromptEditor from '../components/voiceAgent/AgentPromptEditor';
 import SessionLogViewer, { LogEntry } from '../components/voiceAgent/SessionLogViewer';
 import MemberPersonaEditor from '../components/voiceAgent/MemberPersonaEditor';
-// import JourneyBuilder from '../components/voiceAgent/JourneyBuilder';
-// import UIShowcase from './UIShowcase';
+import FeedbackForm from '../components/voiceAgent/FeedbackForm';
 import VoiceControlBar from '../components/voiceAgent/VoiceControlBar';
 import { useAudioLevel } from '../hooks/voiceAgent/useAudioLevel';
 
@@ -137,6 +136,10 @@ function VoiceAgentContent() {
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
   const [hasScreensVisible, setHasScreensVisible] = useState(false);
   const [micStream, setMicStream] = useState<MediaStream | null>(null);
+  
+  // Feedback form state
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const [feedbackSessionId, setFeedbackSessionId] = useState<string | null>(null);
 
   // Session tracking for transcript export
   const sessionIdRef = useRef<string>(`session_${Date.now()}`);
@@ -634,6 +637,7 @@ Important guidelines:
     }
 
     // Auto-save complete session if authenticated and has transcript
+    let sessionSaved = false;
     if (user && transcriptItems.length > 0) {
       try {
         const agentConfig = combinedPromptRef.current ? {
@@ -653,6 +657,10 @@ Important guidelines:
 
         await saveSession(sessionExport);
         addLog('success', 'Session auto-saved to cloud');
+        sessionSaved = true;
+        
+        // Set feedback session ID for feedback form
+        setFeedbackSessionId(sessionIdRef.current);
       } catch (error) {
         console.error('Failed to auto-save session:', error);
         addLog('warning', 'Failed to auto-save session to cloud');
@@ -683,6 +691,11 @@ Important guidelines:
 
     setSessionStatus("DISCONNECTED");
     addLog('success', 'Disconnected successfully');
+    
+    // Show feedback form if session was saved successfully
+    if (sessionSaved) {
+      setShowFeedbackForm(true);
+    }
   };
 
   // Removed sendSimulatedUserMessage - not needed for Azure WebSocket
@@ -1230,6 +1243,21 @@ Important guidelines:
           ) : null}
         </div>
       </div>
+      
+      {/* Feedback Form Modal */}
+      {showFeedbackForm && feedbackSessionId && (
+        <FeedbackForm
+          voiceSessionId={feedbackSessionId}
+          onSubmit={() => {
+            setShowFeedbackForm(false);
+            setFeedbackSessionId(null);
+          }}
+          onSkip={() => {
+            setShowFeedbackForm(false);
+            setFeedbackSessionId(null);
+          }}
+        />
+      )}
     </div>
   );
 }
