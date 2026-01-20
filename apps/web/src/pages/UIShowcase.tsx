@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import './UIShowcase.css';
 
@@ -6,33 +6,87 @@ import './UIShowcase.css';
 import { ElementMetadataRegistry, getElementsByCategory } from '../lib/voiceAgent/elementRegistry';
 import { getElementComponent } from '../lib/voiceAgent/elementRegistry';
 import { Screen, ElementConfig, ElementType } from '../types/journey';
+import { StandaloneScreen, StandaloneScreenListItem, createStandaloneScreen } from '../types/screen';
 import { ScreenProvider } from '../contexts/voiceAgent/ScreenContext';
 import ScreenPreview from '../components/voiceAgent/ScreenPreview';
 import ElementPropertyEditor from '../components/voiceAgent/ElementPropertyEditor';
+import {
+  listScreens,
+  loadScreen,
+  saveScreen,
+  deleteScreen,
+  duplicateScreen,
+} from '../services/screenStorage';
+
+type TabMode = 'screens' | 'elements' | 'builder';
 
 const UIShowcase: React.FC = () => {
-  const [showcaseMode, setShowcaseMode] = useState<'elements' | 'builder'>('builder');
+  const [showcaseMode, setShowcaseMode] = useState<TabMode>('screens');
   const [selectedCategory, setSelectedCategory] = useState<'core' | 'card' | 'interactive' | 'advanced'>('core');
-  
+
+  // Screens list state
+  const [screensList, setScreensList] = useState<StandaloneScreenListItem[]>([]);
+  const [isLoadingScreens, setIsLoadingScreens] = useState(true);
+  const [editingScreenId, setEditingScreenId] = useState<string | null>(null);
+
   // Builder state
-  const [builderScreen, setBuilderScreen] = useState<Screen>({
-    id: 'preview-screen',
-    title: 'Preview',
-    sections: [
-      {
-        id: 'body-section',
-        position: 'body',
-        layout: 'stack',
-        direction: 'vertical',
-        scrollable: true,
-        elements: [],
-      },
-    ],
-  });
-  
+  const [builderScreen, setBuilderScreen] = useState<StandaloneScreen>(() => createStandaloneScreen(uuidv4(), 'New Screen'));
+
   const [selectedElementIndex, setSelectedElementIndex] = useState<number | null>(null);
   const [draggedElementIndex, setDraggedElementIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  // Load screens on mount
+  useEffect(() => {
+    loadScreensList();
+  }, []);
+
+  const loadScreensList = async () => {
+    setIsLoadingScreens(true);
+    const screens = await listScreens();
+    setScreensList(screens);
+    setIsLoadingScreens(false);
+  };
+
+  const handleCreateScreen = () => {
+    const newScreen = createStandaloneScreen(uuidv4(), 'New Screen');
+    setBuilderScreen(newScreen);
+    setEditingScreenId(null);
+    setSelectedElementIndex(null);
+    setShowcaseMode('builder');
+  };
+
+  const handleEditScreen = async (screenId: string) => {
+    const screen = await loadScreen(screenId);
+    if (screen) {
+      setBuilderScreen(screen);
+      setEditingScreenId(screenId);
+      setSelectedElementIndex(null);
+      setShowcaseMode('builder');
+    }
+  };
+
+  const handleDuplicateScreen = async (screenId: string) => {
+    const duplicated = await duplicateScreen(screenId);
+    if (duplicated) {
+      await loadScreensList();
+    }
+  };
+
+  const handleDeleteScreen = async (screenId: string) => {
+    if (window.confirm('Are you sure you want to delete this screen?')) {
+      await deleteScreen(screenId);
+      await loadScreensList();
+    }
+  };
+
+  const handleSaveScreen = async () => {
+    const success = await saveScreen(builderScreen);
+    if (success) {
+      await loadScreensList();
+      setEditingScreenId(builderScreen.id);
+    }
+  };
 
   const handleAddElement = (elementType: ElementType) => {
     const metadata = ElementMetadataRegistry[elementType];
@@ -58,9 +112,28 @@ const UIShowcase: React.FC = () => {
       return section;
     });
 
+    // If no body section exists, create one
+    if (!builderScreen.sections.some(s => s.position === 'body')) {
+      updatedSections.push({
+        id: 'body-section',
+        position: 'body',
+        layout: 'stack',
+        direction: 'vertical',
+        scrollable: true,
+        elements: [newElement],
+      });
+    }
+
     setBuilderScreen({
       ...builderScreen,
-      sections: updatedSections,
+      sections: updatedSections.length > 0 ? updatedSections : [{
+        id: 'body-section',
+        position: 'body',
+        layout: 'stack',
+        direction: 'vertical',
+        scrollable: true,
+        elements: [newElement],
+      }],
     });
   };
 
@@ -90,7 +163,7 @@ const UIShowcase: React.FC = () => {
       ...builderScreen,
       sections: updatedSections,
     });
-    
+
     if (selectedElementIndex === index) {
       setSelectedElementIndex(null);
     } else if (selectedElementIndex !== null && selectedElementIndex > index) {
@@ -103,7 +176,7 @@ const UIShowcase: React.FC = () => {
       if (section.position === 'body') {
         return {
           ...section,
-          elements: section.elements.map((el, i) => 
+          elements: section.elements.map((el, i) =>
             i === index ? { ...el, ...updates } : el
           ),
         };
@@ -122,7 +195,6 @@ const UIShowcase: React.FC = () => {
   const selectedElementId = selectedElement?.state.id as string | undefined;
 
   const handleElementSelectFromPreview = (elementId: string, sectionIndex: number, elementIndex: number) => {
-    // Find the element in the body section by ID
     const bodySection = builderScreen.sections.find(s => s.position === 'body');
     if (!bodySection) return;
 
@@ -132,80 +204,8 @@ const UIShowcase: React.FC = () => {
     }
   };
 
-  const handleDragStart = (index: number, e: React.DragEvent) => {
-    setDraggedElementIndex(index);
-    
-    // Create custom drag image
-    const element = e.currentTarget as HTMLElement;
-    const ghost = element.cloneNode(true) as HTMLElement;
-    ghost.style.position = 'absolute';
-    ghost.style.top = '-1000px';
-    ghost.style.width = element.offsetWidth + 'px';
-    ghost.style.opacity = '0.8';
-    ghost.style.transform = 'rotate(2deg)';
-    ghost.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-    document.body.appendChild(ghost);
-    e.dataTransfer.setDragImage(ghost, element.offsetWidth / 2, 20);
-    
-    setTimeout(() => {
-      document.body.removeChild(ghost);
-    }, 0);
-  };
-
-  const handleDragOver = (index: number, e: React.DragEvent) => {
-    e.preventDefault();
-    if (draggedElementIndex === null) return;
-    setDragOverIndex(index);
-  };
-
-  const handleDrop = (dropIndex: number, e: React.DragEvent) => {
-    e.preventDefault();
-    if (draggedElementIndex === null) return;
-
-    const updatedElements = [...currentElements];
-    const [draggedElement] = updatedElements.splice(draggedElementIndex, 1);
-    
-    // Adjust drop index if dragging down
-    const actualDropIndex = draggedElementIndex < dropIndex ? dropIndex : dropIndex;
-    updatedElements.splice(actualDropIndex, 0, draggedElement);
-
-    const updatedSections = builderScreen.sections.map(section => {
-      if (section.position === 'body') {
-        return {
-          ...section,
-          elements: updatedElements,
-        };
-      }
-      return section;
-    });
-
-    setBuilderScreen({
-      ...builderScreen,
-      sections: updatedSections,
-    });
-
-    // Update selected index
-    if (selectedElementIndex === draggedElementIndex) {
-      setSelectedElementIndex(actualDropIndex);
-    } else if (selectedElementIndex !== null) {
-      if (draggedElementIndex < selectedElementIndex && actualDropIndex >= selectedElementIndex) {
-        setSelectedElementIndex(selectedElementIndex - 1);
-      } else if (draggedElementIndex > selectedElementIndex && actualDropIndex <= selectedElementIndex) {
-        setSelectedElementIndex(selectedElementIndex + 1);
-      }
-    }
-
-    setDraggedElementIndex(null);
-    setDragOverIndex(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedElementIndex(null);
-    setDragOverIndex(null);
-  };
-
   const handleMoveElementUp = (index: number) => {
-    if (index === 0) return; // Already at top
+    if (index === 0) return;
 
     const updatedElements = [...currentElements];
     [updatedElements[index - 1], updatedElements[index]] = [updatedElements[index], updatedElements[index - 1]];
@@ -225,7 +225,6 @@ const UIShowcase: React.FC = () => {
       sections: updatedSections,
     });
 
-    // Update selected index
     if (selectedElementIndex === index) {
       setSelectedElementIndex(index - 1);
     } else if (selectedElementIndex === index - 1) {
@@ -234,7 +233,7 @@ const UIShowcase: React.FC = () => {
   };
 
   const handleMoveElementDown = (index: number) => {
-    if (index === currentElements.length - 1) return; // Already at bottom
+    if (index === currentElements.length - 1) return;
 
     const updatedElements = [...currentElements];
     [updatedElements[index], updatedElements[index + 1]] = [updatedElements[index + 1], updatedElements[index]];
@@ -254,7 +253,6 @@ const UIShowcase: React.FC = () => {
       sections: updatedSections,
     });
 
-    // Update selected index
     if (selectedElementIndex === index) {
       setSelectedElementIndex(index + 1);
     } else if (selectedElementIndex === index + 1) {
@@ -262,23 +260,112 @@ const UIShowcase: React.FC = () => {
     }
   };
 
+  const handleScreenTitleChange = (title: string) => {
+    setBuilderScreen({
+      ...builderScreen,
+      title,
+    });
+  };
+
   return (
     <div className="ui-showcase">
+      {/* Header */}
+      <div className="ui-showcase-header">
+        <h2 className="ui-showcase-title">Screens</h2>
+        {showcaseMode === 'screens' && (
+          <button className="ui-showcase-create-btn" onClick={handleCreateScreen}>
+            Create Screen
+          </button>
+        )}
+        {showcaseMode === 'builder' && (
+          <div className="ui-showcase-builder-actions">
+            <button className="ui-showcase-back-btn" onClick={() => setShowcaseMode('screens')}>
+              Back to Screens
+            </button>
+            <button className="ui-showcase-save-btn" onClick={handleSaveScreen}>
+              Save Screen
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Mode Tabs */}
       <div className="ui-showcase-tabs">
+        <button
+          className={`ui-showcase-tab ${showcaseMode === 'screens' ? 'active' : ''}`}
+          onClick={() => setShowcaseMode('screens')}
+        >
+          Screens
+        </button>
         <button
           className={`ui-showcase-tab ${showcaseMode === 'builder' ? 'active' : ''}`}
           onClick={() => setShowcaseMode('builder')}
         >
-          🎨 Screen Builder
+          Screen Builder
         </button>
         <button
           className={`ui-showcase-tab ${showcaseMode === 'elements' ? 'active' : ''}`}
           onClick={() => setShowcaseMode('elements')}
         >
-          📦 Element Gallery
+          Element Gallery
         </button>
       </div>
+
+      {/* Screens List Mode */}
+      {showcaseMode === 'screens' && (
+        <div className="ui-showcase-screens-list">
+          {isLoadingScreens ? (
+            <div className="ui-showcase-loading">Loading screens...</div>
+          ) : screensList.length === 0 ? (
+            <div className="ui-showcase-empty">
+              <h3>No screens yet</h3>
+              <p>Click "Create Screen" to get started</p>
+            </div>
+          ) : (
+            <div className="ui-showcase-screens-grid">
+              {screensList.map((screen) => (
+                <div key={screen.id} className="ui-showcase-screen-card">
+                  <div className="ui-showcase-screen-card-preview">
+                    <div className="ui-showcase-screen-card-icon">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <line x1="3" y1="9" x2="21" y2="9" />
+                        <line x1="9" y1="21" x2="9" y2="9" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="ui-showcase-screen-card-content">
+                    <h3 className="ui-showcase-screen-card-title">{screen.title}</h3>
+                    <p className="ui-showcase-screen-card-meta">
+                      {screen.sectionCount} sections · {screen.elementCount} elements
+                    </p>
+                  </div>
+                  <div className="ui-showcase-screen-card-actions">
+                    <button
+                      className="ui-showcase-screen-card-btn ui-showcase-screen-card-btn-primary"
+                      onClick={() => handleEditScreen(screen.id)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="ui-showcase-screen-card-btn"
+                      onClick={() => handleDuplicateScreen(screen.id)}
+                    >
+                      Duplicate
+                    </button>
+                    <button
+                      className="ui-showcase-screen-card-btn ui-showcase-screen-card-btn-danger"
+                      onClick={() => handleDeleteScreen(screen.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Element Gallery Mode */}
       {showcaseMode === 'elements' && (
@@ -289,25 +376,25 @@ const UIShowcase: React.FC = () => {
               className={`ui-showcase-category-tab ${selectedCategory === 'core' ? 'active' : ''}`}
               onClick={() => setSelectedCategory('core')}
             >
-              ⚡ Core Elements
+              Core Elements
             </button>
             <button
               className={`ui-showcase-category-tab ${selectedCategory === 'card' ? 'active' : ''}`}
               onClick={() => setSelectedCategory('card')}
             >
-              🃏 Card Elements
+              Card Elements
             </button>
             <button
               className={`ui-showcase-category-tab ${selectedCategory === 'interactive' ? 'active' : ''}`}
               onClick={() => setSelectedCategory('interactive')}
             >
-              🎮 Interactive Elements
+              Interactive Elements
             </button>
             <button
               className={`ui-showcase-category-tab ${selectedCategory === 'advanced' ? 'active' : ''}`}
               onClick={() => setSelectedCategory('advanced')}
             >
-              ✨ Advanced Elements
+              Advanced Elements
             </button>
           </div>
 
@@ -318,7 +405,6 @@ const UIShowcase: React.FC = () => {
 
               if (!Component) return null;
 
-              // Create a minimal screen for the ScreenProvider context
               const previewScreen: Screen = {
                 id: `preview-${metadata.type}`,
                 title: 'Preview',
@@ -367,10 +453,24 @@ const UIShowcase: React.FC = () => {
         <div className="ui-showcase-builder">
           {/* Left Sidebar - Element Palette */}
           <div className="ui-showcase-builder-sidebar">
+            {/* Screen Title */}
+            <div className="ui-showcase-builder-section">
+              <h3>Screen Settings</h3>
+              <div className="ui-showcase-builder-field">
+                <label>Screen Title</label>
+                <input
+                  type="text"
+                  value={builderScreen.title}
+                  onChange={(e) => handleScreenTitleChange(e.target.value)}
+                  placeholder="Enter screen title"
+                />
+              </div>
+            </div>
+
             <div className="ui-showcase-builder-section">
               <h3>Element Palette</h3>
               <p>Click to add elements</p>
-              
+
               {(['core', 'card', 'interactive', 'advanced'] as const).map(category => (
                 <div key={category} className="ui-showcase-builder-category">
                   <h4>{category.charAt(0).toUpperCase() + category.slice(1)}</h4>
@@ -395,7 +495,7 @@ const UIShowcase: React.FC = () => {
             {currentElements.length > 0 && (
               <div className="ui-showcase-builder-section">
                 <h3>Elements in Screen</h3>
-                <p className="ui-showcase-drag-hint">Drag to reorder</p>
+                <p className="ui-showcase-drag-hint">Click to select</p>
                 <div className="ui-showcase-builder-elements-list">
                   {currentElements.map((element, index) => (
                     <div
@@ -442,7 +542,7 @@ const UIShowcase: React.FC = () => {
                           }}
                           title="Remove element"
                         >
-                          🗑️
+                          ×
                         </button>
                       </div>
                     </div>
@@ -450,13 +550,13 @@ const UIShowcase: React.FC = () => {
                 </div>
               </div>
             )}
-            
+
             {currentElements.length > 0 && (
-              <button 
+              <button
                 className="ui-showcase-builder-clear-btn"
                 onClick={handleClearBuilder}
               >
-                🗑️ Clear All
+                Clear All
               </button>
             )}
           </div>
