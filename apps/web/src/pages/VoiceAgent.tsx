@@ -1225,10 +1225,10 @@ Important guidelines:
                     );
                   })}
                   
-                  {availableJourneys.filter((j) => j.id === 'default-post-web-pq').length === 0 && (
+                  {availableJourneys.length === 0 && (
                   <div className="journeys-empty-state">
                     <h3>No journeys available</h3>
-                    <p>The Intake Call journey is not configured</p>
+                    <p>Create a journey in the Journey Builder to get started</p>
                   </div>
                 )}
               </div>
