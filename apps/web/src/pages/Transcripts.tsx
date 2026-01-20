@@ -6,9 +6,8 @@ import {
   deleteSessionById,
   getSessionCount,
   SessionListItem,
-} from '../services/supabase/sessionService';
+} from '../services/api/sessionService';
 import { SessionExport, downloadSessionExport, downloadFormattedTranscript } from '../utils/transcriptExport';
-import { isSupabaseConfigured } from '@sduit/shared/auth';
 import './Transcripts.css';
 
 type ViewMode = 'list' | 'detail';
@@ -34,7 +33,7 @@ export const TranscriptsPage: React.FC = () => {
 
   // Load sessions on mount and when page changes
   useEffect(() => {
-    if (user && isSupabaseConfigured) {
+    if (user) {
       loadSessions(currentPage);
     } else {
       setLoading(false);
@@ -48,8 +47,8 @@ export const TranscriptsPage: React.FC = () => {
     try {
       const offset = (page - 1) * PAGE_SIZE;
       const [data, count] = await Promise.all([
-        listUserSessions(user.id, PAGE_SIZE, offset),
-        getSessionCount(user.id),
+        listUserSessions(PAGE_SIZE, offset),
+        getSessionCount(),
       ]);
       setSessions(data);
       setTotalCount(count);
@@ -222,7 +221,7 @@ export const TranscriptsPage: React.FC = () => {
   }, [sessions]);
 
   // Not logged in state
-  if (!user || !isSupabaseConfigured) {
+  if (!user) {
     return (
       <div className="transcripts-page">
         <div className="transcripts-empty">

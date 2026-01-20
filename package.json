@@ -11,7 +11,7 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
     "dev:web": "npm run dev --workspace=apps/web",
-    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:api": "tsx watch server/index.ts",
     "build": "npm run build --workspace=apps/web",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
@@ -23,17 +23,24 @@
   },
   "dependencies": {
     "@types/connect-pg-simple": "^7.0.3",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@types/express-session": "^1.18.2",
     "@types/memoizee": "^0.4.12",
     "@types/passport": "^1.0.17",
     "@types/pg": "^8.16.0",
+    "@types/uuid": "^10.0.0",
     "connect-pg-simple": "^10.0.0",
+    "cors": "^2.8.5",
     "drizzle-kit": "^0.31.8",
     "drizzle-orm": "^0.45.1",
+    "express": "^5.2.1",
     "express-session": "^1.18.2",
     "memoizee": "^0.4.17",
     "openid-client": "^6.8.1",
     "passport": "^0.7.0",
-    "pg": "^8.17.1"
+    "pg": "^8.17.1",
+    "tsx": "^4.21.0",
+    "uuid": "^13.0.0"
   }
 }

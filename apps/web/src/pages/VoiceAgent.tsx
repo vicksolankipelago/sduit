@@ -38,7 +38,7 @@ import { journeyToRealtimeAgents, getStartingAgentName, setEventTriggerCallback,
 import { listJourneys, loadJourney } from '../services/journeyStorage';
 import { PQData, substitutePromptVariables, DEFAULT_PQ_DATA } from '../utils/promptTemplates';
 import { useAuth } from '../contexts/AuthContext';
-import { saveSession } from '../services/supabase/sessionService';
+import { saveSession } from '../services/api/sessionService';
 
 // Main Voice Agent Component
 function VoiceAgentContent() {
@@ -588,7 +588,7 @@ Important guidelines:
   const disconnectFromRealtime = async () => {
     addLog('info', 'Disconnecting from session...');
 
-    // Auto-save session to Supabase if authenticated and has transcript
+    // Auto-save session if authenticated and has transcript
     if (user && transcriptItems.length > 0) {
       try {
         const agentConfig = combinedPromptRef.current ? {
@@ -606,8 +606,8 @@ Important guidelines:
           agentConfig,
         });
 
-        await saveSession(sessionExport, user.id);
-        addLog('success', '☁️ Session auto-saved to cloud');
+        await saveSession(sessionExport);
+        addLog('success', 'Session auto-saved to cloud');
       } catch (error) {
         console.error('Failed to auto-save session:', error);
         addLog('warning', 'Failed to auto-save session to cloud');

@@ -1,126 +1,101 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { supabase, isSupabaseConfigured, User, Session } from '@sduit/shared/auth';
-import { migrateLocalStorageToSupabase } from '../utils/migrateLocalStorage';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+
+interface User {
+  id: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  profileImageUrl: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
 
 interface AuthContextValue {
   user: User | null;
-  session: Session | null;
   loading: boolean;
-  signInWithMagicLink: (email: string) => Promise<{ error: Error | null }>;
-  signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<void>;
+  isAuthenticated: boolean;
+  login: (redirectTo?: string) => void;
+  logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+const REDIRECT_KEY = 'auth_redirect_to';
+
+async function fetchUser(): Promise<User | null> {
+  try {
+    const response = await fetch("/api/auth/user", {
+      credentials: "include",
+    });
+
+    if (response.status === 401) {
+      return null;
+    }
+
+    if (!response.ok) {
+      throw new Error(`${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Failed to fetch user:", error);
+    return null;
+  }
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const migrationAttemptedRef = useRef(false);
 
-  useEffect(() => {
-    if (!supabase) {
+  const refreshUser = useCallback(async () => {
+    setLoading(true);
+    try {
+      const fetchedUser = await fetchUser();
+      setUser(fetchedUser);
+    } catch {
+      setUser(null);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // Get initial session
-    supabase.auth.getSession()
-      .then(({ data: { session } }) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.warn('Failed to get session:', error);
-        setLoading(false);
-      });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
-
-    return () => subscription.unsubscribe();
   }, []);
 
-  // Migrate localStorage data to Supabase on first login
   useEffect(() => {
-    if (user && !loading && !migrationAttemptedRef.current) {
-      migrationAttemptedRef.current = true;
+    refreshUser();
+  }, [refreshUser]);
 
-      migrateLocalStorageToSupabase(user.id).then((result) => {
-        if (result.migrated > 0) {
-          console.log(`✅ Migrated ${result.migrated} journeys from localStorage to Supabase`);
-        }
-        if (result.errors.length > 0) {
-          console.warn('⚠️ Migration errors:', result.errors);
-        }
-      }).catch((error) => {
-        console.error('Migration failed:', error);
-      });
+  useEffect(() => {
+    const redirectTo = sessionStorage.getItem(REDIRECT_KEY);
+    if (user && redirectTo) {
+      sessionStorage.removeItem(REDIRECT_KEY);
+      window.location.href = redirectTo;
     }
-  }, [user, loading]);
+  }, [user]);
 
-  const signInWithMagicLink = async (email: string) => {
-    if (!supabase) {
-      return { error: new Error('Supabase is not configured.') };
+  const login = useCallback((redirectTo?: string) => {
+    if (redirectTo) {
+      sessionStorage.setItem(REDIRECT_KEY, redirectTo);
+    } else {
+      sessionStorage.setItem(REDIRECT_KEY, window.location.pathname);
     }
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    return { error: error as Error | null };
-  };
+    window.location.href = "/api/login";
+  }, []);
 
-  const signInWithEmail = async (email: string, password: string) => {
-    if (!supabase) {
-      return { error: new Error('Supabase is not configured.') };
-    }
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error as Error | null };
-  };
-
-  const signUp = async (email: string, password: string) => {
-    if (!supabase) {
-      return { error: new Error('Supabase is not configured.') };
-    }
-    const { error } = await supabase.auth.signUp({ email, password });
-    return { error: error as Error | null };
-  };
-
-  const signOut = async () => {
-    if (!supabase) {
-      return;
-    }
-    await supabase.auth.signOut();
-  };
+  const logout = useCallback(() => {
+    sessionStorage.removeItem(REDIRECT_KEY);
+    window.location.href = "/api/logout";
+  }, []);
 
   return (
     <AuthContext.Provider value={{
       user,
-      session,
       loading,
-      signInWithMagicLink,
-      signInWithEmail,
-      signUp,
-      signOut,
+      isAuthenticated: !!user,
+      login,
+      logout,
+      refreshUser,
     }}>
       {children}
-      {!isSupabaseConfigured && (
-        <div className="auth-warning">
-          Supabase credentials are missing. Set VITE_SUPABASE_URL and
-          VITE_SUPABASE_ANON_KEY to enable authentication.
-        </div>
-      )}
     </AuthContext.Provider>
   );
 };

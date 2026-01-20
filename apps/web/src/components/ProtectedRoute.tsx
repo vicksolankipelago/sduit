@@ -1,5 +1,4 @@
-import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import React, { useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ProtectedRouteProps {
@@ -7,8 +6,13 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, loading } = useAuth();
-  const location = useLocation();
+  const { user, loading, login } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      login();
+    }
+  }, [loading, user, login]);
 
   if (loading) {
     return (
@@ -20,7 +24,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return (
+      <div className="loading-screen">
+        <div className="loading-spinner" />
+        <p>Redirecting to login...</p>
+      </div>
+    );
   }
 
   return <>{children}</>;

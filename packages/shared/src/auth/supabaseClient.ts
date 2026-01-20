@@ -6,10 +6,6 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || nodeSupabaseUrl || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || nodeSupabaseAnonKey || '';
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
-if (!isSupabaseConfigured) {
-  console.warn('Supabase credentials not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
-}
-
 export const supabase: SupabaseClient | null = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
