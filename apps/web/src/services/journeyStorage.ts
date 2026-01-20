@@ -1,19 +1,38 @@
 import { Journey, JourneyListItem, JourneyExport } from '../types/journey';
 import { v4 as uuidv4 } from 'uuid';
-import { loadDefaultJourneys, isDefaultJourney } from '../lib/voiceAgent/examples';
+import { loadDefaultJourneys } from '../lib/voiceAgent/examples';
 import * as journeyApi from './api/journeyService';
 
 const STORAGE_KEY = 'voice-agent-journeys';
 const STORAGE_VERSION = '1.0.0';
+const SEEDED_KEY = 'journeys-seeded';
 
-let defaultJourneysCache: Journey[] | null = null;
+async function seedDefaultJourneysIfNeeded(): Promise<void> {
+  try {
+    if (localStorage.getItem(SEEDED_KEY)) {
+      return;
+    }
 
-async function getDefaultJourneys(): Promise<Journey[]> {
-  if (!defaultJourneysCache) {
-    defaultJourneysCache = await loadDefaultJourneys();
-    console.log(`Loaded ${defaultJourneysCache.length} default journeys from codebase`);
+    const existingJourneys = await journeyApi.listUserJourneys();
+    if (existingJourneys.length > 0) {
+      localStorage.setItem(SEEDED_KEY, 'true');
+      return;
+    }
+
+    console.log('No journeys found, seeding default journeys...');
+    const defaultJourneys = await loadDefaultJourneys();
+    
+    for (const journey of defaultJourneys) {
+      journey.id = uuidv4();
+      await journeyApi.createJourney(journey);
+      console.log(`Seeded default journey: ${journey.name}`);
+    }
+    
+    localStorage.setItem(SEEDED_KEY, 'true');
+    console.log(`Seeded ${defaultJourneys.length} default journeys`);
+  } catch (error) {
+    console.error('Failed to seed default journeys:', error);
   }
-  return defaultJourneysCache;
 }
 
 function getLocalStorageJourneys(): Journey[] {
@@ -26,47 +45,18 @@ function getLocalStorageJourneys(): Journey[] {
   }
 }
 
-function cleanupDefaultJourneysFromLocalStorage(): void {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    if (!data) return;
-
-    const journeys = JSON.parse(data);
-    const defaultJourneyNames = [
-      'Post-Web PQ Voice Intake',
-      'Intake Call',
-      'GAD-2 / PHQ-2 Mental Health Screening',
-      'Mental Health Screening',
-      'Dry January Intake Call',
-    ];
-    const defaultIds = ['default-post-web-pq', 'default-gad-phq2', 'default-dry-january'];
-
-    const userJourneysOnly = journeys.filter(
-      (j: any) => !defaultIds.includes(j.id) && !defaultJourneyNames.includes(j.name)
-    );
-
-    if (userJourneysOnly.length !== journeys.length) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(userJourneysOnly));
-      console.log(`Cleaned up ${journeys.length - userJourneysOnly.length} old default journey(s)`);
-    }
-  } catch (error) {
-    console.error('Failed to cleanup:', error);
-  }
-}
-
 export async function listJourneys(): Promise<JourneyListItem[]> {
   try {
-    cleanupDefaultJourneysFromLocalStorage();
-    const defaultJourneys = await getDefaultJourneys();
+    await seedDefaultJourneysIfNeeded();
 
-    let userJourneys: JourneyListItem[] = [];
+    let journeys: JourneyListItem[] = [];
     try {
-      userJourneys = await journeyApi.listUserJourneys();
-      console.log(`Loaded ${userJourneys.length} journeys from API`);
+      journeys = await journeyApi.listUserJourneys();
+      console.log(`Loaded ${journeys.length} journeys from API`);
     } catch (error) {
       console.error('Failed to load from API, using localStorage:', error);
       const localJourneys = getLocalStorageJourneys();
-      userJourneys = localJourneys.map((journey) => ({
+      journeys = localJourneys.map((journey) => ({
         id: journey.id,
         name: journey.name,
         description: journey.description,
@@ -75,15 +65,7 @@ export async function listJourneys(): Promise<JourneyListItem[]> {
       }));
     }
 
-    const defaultItems = defaultJourneys.map((journey) => ({
-      id: journey.id,
-      name: journey.name,
-      description: journey.description,
-      agentCount: journey.agents?.length || 0,
-      updatedAt: journey.updatedAt,
-    }));
-
-    return [...defaultItems, ...userJourneys];
+    return journeys;
   } catch (error) {
     console.error('Failed to list journeys:', error);
     return [];
@@ -110,11 +92,6 @@ export function listJourneysSync(): JourneyListItem[] {
 
 export async function loadJourney(id: string): Promise<Journey | null> {
   try {
-    if (isDefaultJourney(id)) {
-      const defaultJourneys = await getDefaultJourneys();
-      return defaultJourneys.find((j) => j.id === id) || null;
-    }
-
     try {
       const journey = await journeyApi.loadUserJourney(id);
       if (journey) {
@@ -137,11 +114,6 @@ export async function loadJourney(id: string): Promise<Journey | null> {
 
 export async function saveJourney(journey: Journey): Promise<boolean> {
   try {
-    if (isDefaultJourney(journey.id)) {
-      console.warn(`Cannot save default journey: ${journey.name}. Default journeys are read-only.`);
-      return false;
-    }
-
     journey.updatedAt = new Date().toISOString();
 
     try {
@@ -180,11 +152,6 @@ export async function saveJourney(journey: Journey): Promise<boolean> {
 
 export async function deleteJourney(id: string): Promise<boolean> {
   try {
-    if (isDefaultJourney(id)) {
-      console.warn(`Cannot delete default journey: ${id}. Default journeys are read-only.`);
-      return false;
-    }
-
     try {
       await journeyApi.deleteUserJourney(id);
       console.log(`Deleted journey from API: ${id}`);

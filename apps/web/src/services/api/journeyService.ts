@@ -87,3 +87,13 @@ export async function journeyExists(journeyId: string): Promise<boolean> {
     return false;
   }
 }
+
+export async function createJourney(journey: Journey): Promise<Journey> {
+  const response = await fetch('/api/journeys', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(journey),
+  });
+  return handleResponse<Journey>(response);
+}
