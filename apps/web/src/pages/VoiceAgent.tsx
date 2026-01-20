@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './VoiceAgent.css';
 
 // Context Providers
@@ -55,6 +56,7 @@ function VoiceAgentContent() {
     updateModuleState
   } = useAgentUI();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const currentAgentRef = useRef<string>('greeter');
@@ -1049,7 +1051,13 @@ Important guidelines:
       {/* Header - Show when disconnected */}
       {sessionStatus === 'DISCONNECTED' && (
         <div className="voice-agent-header">
-          <h2 className="voice-agent-title">Journeys</h2>
+          <h2 className="voice-agent-title">Flows</h2>
+          <button
+            className="voice-agent-create-btn"
+            onClick={() => navigate('/builder')}
+          >
+            Create Flow
+          </button>
         </div>
       )}
 
@@ -1205,8 +1213,8 @@ Important guidelines:
                   
                   {availableJourneys.length === 0 && (
                   <div className="journeys-empty-state">
-                    <h3>No journeys available</h3>
-                    <p>Create a journey in the Journey Builder to get started</p>
+                    <h3>No flows available</h3>
+                    <p>Click "Create Flow" to get started</p>
                   </div>
                 )}
               </div>

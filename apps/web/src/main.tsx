@@ -36,7 +36,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               <Route index element={<VoiceAgent />} />
               <Route path="builder" element={<JourneyBuilderPage />} />
               <Route path="transcripts" element={<TranscriptsPage />} />
-              <Route path="ui-showcase" element={<UIShowcase />} />
+              <Route path="screens" element={<UIShowcase />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>
           </Routes>

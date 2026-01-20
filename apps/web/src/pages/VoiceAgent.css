@@ -11,7 +11,7 @@
 /* Header with Title */
 .voice-agent-header {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   background: var(--background-light);
   padding: 1.25rem 2rem;
@@ -19,6 +19,10 @@
   top: 0;
   z-index: 2500;
   margin: 0;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .voice-agent-title {
@@ -26,6 +30,24 @@
   font-weight: 700;
   color: var(--text-global-primary);
   margin: 0;
+}
+
+.voice-agent-create-btn {
+  background: var(--primary-cta-default);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.voice-agent-create-btn:hover {
+  background: var(--primary-cta-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-elevated);
 }
 
 /* Main Content */

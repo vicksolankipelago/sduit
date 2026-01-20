@@ -62,8 +62,8 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const handleCreateNewJourney = () => {
     const newJourney: Journey = {
       id: uuidv4(),
-      name: 'New Journey',
-      description: 'Describe your journey',
+      name: 'New Flow',
+      description: 'Describe your flow',
       systemPrompt: DEFAULT_SYSTEM_PROMPT,
       agents: [],
       startingAgentId: '',
@@ -104,14 +104,14 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     const saved = await saveJourney(currentJourney);
     if (saved) {
       refreshJourneyList();
-      alert(`Journey "${currentJourney.name}" saved successfully!`);
+      alert(`Flow "${currentJourney.name}" saved successfully!`);
     } else {
-      alert('Failed to save journey');
+      alert('Failed to save flow');
     }
   };
 
   const handleDeleteJourney = (journeyId: string) => {
-    if (window.confirm('Delete this journey? This cannot be undone.')) {
+    if (window.confirm('Delete this flow? This cannot be undone.')) {
       deleteJourney(journeyId);
       refreshJourneyList();
       if (currentJourney?.id === journeyId) {
@@ -366,8 +366,8 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
               className="journey-back-btn"
               onClick={handleBackToList}
               type="button"
-              aria-label="Back to journeys"
-              title="Back to journeys"
+              aria-label="Back to flows"
+              title="Back to flows"
             >
               ←
             </button>
@@ -378,7 +378,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                 type="text"
                 value={currentJourney.name}
                 onChange={(e) => setCurrentJourney({ ...currentJourney, name: e.target.value })}
-                placeholder="Journey Name"
+                placeholder="Flow Name"
                 disabled={disabled}
                 className="journey-name-input"
               />
@@ -388,7 +388,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
         <div className="journey-header-actions">
           {viewMode === 'list' ? (
             <button className="journey-create-btn" onClick={handleCreateNewJourney} type="button">
-              + New Journey
+              + New Flow
             </button>
           ) : currentJourney && (
             <>
@@ -403,7 +403,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                 🗑️ Delete
               </button>
               <button className="journey-action-btn launch" onClick={handleLaunch} disabled={disabled}>
-                🚀 Launch Journey
+                🚀 Launch Flow
               </button>
             </>
           )}
@@ -416,14 +416,14 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
           {viewMode === 'list' ? (
             <div className="journey-list-view">
               <div className="journey-list-view-header">
-                <h2>Journeys</h2>
-                <p>Select a journey to view and edit details.</p>
+                <h2>Flows</h2>
+                <p>Select a flow to view and edit details.</p>
               </div>
               {journeys.length === 0 ? (
                 <div className="journey-list-empty">
-                  <p>No journeys yet</p>
+                  <p>No flows yet</p>
                   <button className="journey-create-empty-btn" onClick={handleCreateNewJourney} type="button">
-                    Create Your First Journey
+                    Create Your First Flow
                   </button>
                 </div>
               ) : (
@@ -447,10 +447,10 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
             </div>
           ) : !currentJourney ? (
             <div className="journey-welcome">
-              <h2>Welcome to Journey Builder</h2>
+              <h2>Welcome to Flow Builder</h2>
               <p>Create multi-agent conversation flows with visual editing</p>
               <button className="journey-welcome-btn" onClick={handleCreateNewJourney} type="button">
-                🎯 Create New Journey
+                🎯 Create New Flow
               </button>
             </div>
           ) : (
@@ -461,7 +461,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                 <textarea
                   value={currentJourney.description}
                   onChange={(e) => setCurrentJourney({ ...currentJourney, description: e.target.value })}
-                  placeholder="Describe this journey..."
+                  placeholder="Describe this flow..."
                   disabled={disabled}
                   rows={2}
                 />
