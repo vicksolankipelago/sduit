@@ -167,3 +167,13 @@ export function isAuthenticated(req: any, res: any, next: any) {
   }
   res.status(401).json({ message: "Unauthorized" });
 }
+
+export function isAdmin(req: any, res: any, next: any) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (req.user?.role !== 'admin') {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+  return next();
+}

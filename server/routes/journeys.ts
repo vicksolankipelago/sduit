@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { isAuthenticated } from "../auth";
+import { isAuthenticated, isAdmin } from "../auth";
 import { storage } from "../storage";
 import { v4 as uuidv4 } from "uuid";
 
@@ -55,7 +55,7 @@ router.get("/:id", isAuthenticated, async (req: any, res) => {
   }
 });
 
-router.post("/", isAuthenticated, async (req: any, res) => {
+router.post("/", isAdmin, async (req: any, res) => {
   try {
     const userId = req.user.id;
     const { name, description, systemPrompt, voice, agents, startingAgentId, version } = req.body;
@@ -90,7 +90,7 @@ router.post("/", isAuthenticated, async (req: any, res) => {
   }
 });
 
-router.put("/:id", isAuthenticated, async (req: any, res) => {
+router.put("/:id", isAdmin, async (req: any, res) => {
   try {
     const journey = await storage.getJourney(req.params.id);
     
@@ -136,7 +136,7 @@ router.put("/:id", isAuthenticated, async (req: any, res) => {
   }
 });
 
-router.delete("/:id", isAuthenticated, async (req: any, res) => {
+router.delete("/:id", isAdmin, async (req: any, res) => {
   try {
     const journey = await storage.getJourney(req.params.id);
     
@@ -156,7 +156,7 @@ router.delete("/:id", isAuthenticated, async (req: any, res) => {
   }
 });
 
-router.post("/:id/duplicate", isAuthenticated, async (req: any, res) => {
+router.post("/:id/duplicate", isAdmin, async (req: any, res) => {
   try {
     const userId = req.user.id;
     const original = await storage.getJourney(req.params.id);

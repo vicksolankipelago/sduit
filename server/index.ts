@@ -5,6 +5,7 @@ import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedroc
 import { setupAuth, isAuthenticated } from "./auth";
 import journeysRouter from "./routes/journeys";
 import voiceSessionsRouter from "./routes/voiceSessions";
+import feedbackRouter from "./routes/feedback";
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ async function main() {
   
   app.use("/api/journeys", isAuthenticated, journeysRouter);
   app.use("/api/voice-sessions", isAuthenticated, voiceSessionsRouter);
+  app.use("/api/feedback", isAuthenticated, feedbackRouter);
   
   app.get("/api/debug/env", (req, res) => {
     res.json({
