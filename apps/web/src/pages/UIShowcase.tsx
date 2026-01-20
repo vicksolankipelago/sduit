@@ -194,12 +194,7 @@ const UIShowcase: React.FC = () => {
   const selectedElement = selectedElementIndex !== null ? currentElements[selectedElementIndex] : null;
   const selectedElementId = selectedElement?.state.id as string | undefined;
 
-<<<<<<< HEAD
   const handleElementSelectFromPreview = (elementId: string, _sectionIndex: number, _elementIndex: number) => {
-    // Find the element in the body section by ID
-=======
-  const handleElementSelectFromPreview = (elementId: string, sectionIndex: number, elementIndex: number) => {
->>>>>>> 11e18b8be0c1ddf6e55432b9bd0e9ffed93e1f27
     const bodySection = builderScreen.sections.find(s => s.position === 'body');
     if (!bodySection) return;
 
@@ -209,12 +204,8 @@ const UIShowcase: React.FC = () => {
     }
   };
 
-<<<<<<< HEAD
-  // Note: Drag state kept for future drag-and-drop functionality
   void draggedElementIndex; void _dragOverIndex; void setDraggedElementIndex; void setDragOverIndex;
 
-=======
->>>>>>> 11e18b8be0c1ddf6e55432b9bd0e9ffed93e1f27
   const handleMoveElementUp = (index: number) => {
     if (index === 0) return;
 
