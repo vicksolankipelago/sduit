@@ -14,7 +14,6 @@ import ElementPropertyEditor from '../components/voiceAgent/ElementPropertyEdito
 import {
   listScreens,
   loadScreen,
-  saveScreen,
   saveGlobalScreen,
   deleteScreen,
   duplicateScreen,
@@ -508,7 +507,7 @@ const UIShowcase: React.FC = () => {
                       </div>
                     </div>
                     <div className="ui-showcase-screen-card-content">
-                      <h3 className="ui-showcase-screen-card-title">{screen.title}</h3>
+                      <h3 className="ui-showcase-screen-card-title">{screen.title || screen.id}</h3>
                       <p className="ui-showcase-screen-card-meta">
                         {screen.sectionCount} sections · {screen.elementCount} elements
                       </p>

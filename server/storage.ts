@@ -351,6 +351,33 @@ export class DatabaseStorage implements IStorage {
     await db.delete(transcriptNotes).where(eq(transcriptNotes.id, noteId));
     return true;
   }
+
+  async countSessionNotes(sessionId: string): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(transcriptNotes)
+      .where(eq(transcriptNotes.sessionId, sessionId));
+    return result?.count || 0;
+  }
+
+  async countNotesForSessions(sessionIds: string[]): Promise<Record<string, number>> {
+    if (sessionIds.length === 0) return {};
+    
+    const notes = await db
+      .select({ sessionId: transcriptNotes.sessionId })
+      .from(transcriptNotes);
+    
+    const counts: Record<string, number> = {};
+    for (const id of sessionIds) {
+      counts[id] = 0;
+    }
+    for (const note of notes) {
+      if (sessionIds.includes(note.sessionId)) {
+        counts[note.sessionId] = (counts[note.sessionId] || 0) + 1;
+      }
+    }
+    return counts;
+  }
 }
 
 export const storage = new DatabaseStorage();

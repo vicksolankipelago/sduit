@@ -40,6 +40,20 @@ router.get("/count", isAuthenticated, async (req: any, res) => {
   }
 });
 
+router.post("/note-counts", isAuthenticated, async (req: any, res) => {
+  try {
+    const { sessionIds } = req.body;
+    if (!Array.isArray(sessionIds)) {
+      return res.status(400).json({ message: "sessionIds must be an array" });
+    }
+    const counts = await storage.countNotesForSessions(sessionIds);
+    res.json(counts);
+  } catch (error) {
+    console.error("Error counting notes:", error);
+    res.status(500).json({ message: "Failed to count notes" });
+  }
+});
+
 router.get("/:sessionId", isAuthenticated, async (req: any, res) => {
   try {
     // Try looking up by database ID first, then by OpenAI sessionId

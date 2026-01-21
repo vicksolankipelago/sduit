@@ -9,7 +9,7 @@ import {
 } from '../services/api/sessionService';
 import { SessionExport, downloadSessionExport, downloadFormattedTranscript } from '../utils/transcriptExport';
 import { TranscriptNotes } from '../components/voiceAgent/TranscriptNotes';
-import { listNotes, TranscriptNote } from '../services/api/notesService';
+import { listNotes, getNoteCounts, TranscriptNote } from '../services/api/notesService';
 import './Transcripts.css';
 
 type ViewMode = 'list' | 'detail';
@@ -27,6 +27,7 @@ export const TranscriptsPage: React.FC = () => {
   const [detailTab, setDetailTab] = useState<DetailTab>('transcript');
   const [error, setError] = useState<string | null>(null);
   const [sessionMetrics, setSessionMetrics] = useState<Record<string, { messageCount: number }>>({});
+  const [noteCounts, setNoteCounts] = useState<Record<string, number>>({});
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -63,6 +64,17 @@ export const TranscriptsPage: React.FC = () => {
       ]);
       setSessions(data);
       setTotalCount(count);
+      
+      // Fetch note counts for all sessions
+      if (data.length > 0) {
+        const sessionIds = data.map(s => s.sessionId);
+        try {
+          const counts = await getNoteCounts(sessionIds);
+          setNoteCounts(counts);
+        } catch (noteErr) {
+          console.error('Failed to load note counts:', noteErr);
+        }
+      }
     } catch (err) {
       console.error('Failed to load sessions:', err);
       setError('Failed to load sessions');
@@ -556,6 +568,9 @@ export const TranscriptsPage: React.FC = () => {
                 <div className="transcripts-list-item-meta">
                   <span className="transcripts-list-item-stats">
                     {(sessionMetrics[session.id]?.messageCount ?? session.messageCount)} messages • {formatDuration(session.durationSeconds)}
+                    {(noteCounts[session.sessionId] ?? 0) > 0 && (
+                      <> • {noteCounts[session.sessionId]} comment{noteCounts[session.sessionId] !== 1 ? 's' : ''}</>
+                    )}
                   </span>
                   <span className="transcripts-list-item-time">{formatRelativeTime(session.createdAt)}</span>
                 </div>

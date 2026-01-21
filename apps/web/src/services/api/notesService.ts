@@ -72,3 +72,13 @@ export async function deleteNote(sessionId: string, noteId: string): Promise<voi
   });
   await handleResponse<{ success: boolean }>(response);
 }
+
+export async function getNoteCounts(sessionIds: string[]): Promise<Record<string, number>> {
+  const response = await fetch('/api/voice-sessions/note-counts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ sessionIds }),
+  });
+  return handleResponse<Record<string, number>>(response);
+}
