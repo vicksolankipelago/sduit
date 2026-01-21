@@ -245,6 +245,7 @@
 .screen-preview-section-grid .screen-preview-section-elements {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(80px, auto);
   gap: var(--spacing-md);
   width: 100%;
 }
