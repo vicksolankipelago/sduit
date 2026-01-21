@@ -7,7 +7,6 @@ import { SCREEN_TEMPLATES } from '../../lib/voiceAgent/screenTemplates';
 import { downloadAgentAsModule } from '../../services/screenExport';
 import { generateScreensFromPrompts, suggestionToScreen, ScreenSuggestion } from '../../services/aiScreenGenerator';
 import JourneyFlowCanvas from './JourneyFlowCanvas';
-import AgentNodeEditor from './AgentNodeEditor';
 import SystemPromptEditor from './SystemPromptEditor';
 import ScreenEditor from './ScreenEditor';
 import PromptEditor from './PromptEditor';
@@ -34,7 +33,6 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const [builderTab, setBuilderTab] = useState<'flow' | 'screens' | 'prompts'>('flow');
   const [editingScreenIndex, setEditingScreenIndex] = useState<number | null>(null);
   const [previewScreenIndex, setPreviewScreenIndex] = useState<number | null>(null);
-  const [showAgentModal, setShowAgentModal] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   
   // AI Screen Generation state
@@ -174,7 +172,9 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     });
   };
 
+  // Keep for potential future use (delete from canvas)
   const handleDeleteAgent = (agentId: string) => {
+    void agentId; // Silence unused warning for now
     if (!currentJourney) return;
     if (window.confirm('Delete this agent?')) {
       const updatedAgents = currentJourney.agents.filter(a => a.id !== agentId);
@@ -487,11 +487,12 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                     agents={currentJourney.agents}
                     startingAgentId={currentJourney.startingAgentId}
                     selectedAgentId={selectedAgentId}
-                    onAgentSelect={(agentId) => {
+                    onAgentSelect={async (agentId) => {
                       setSelectedAgentId(agentId);
-                      // Only open modal if not dragging
+                      // Navigate to full-screen agent editor (save first)
                       if (!isDragging) {
-                        setShowAgentModal(true);
+                        await saveJourney(currentJourney);
+                        navigate(`/builder/agent?journeyId=${currentJourney.id}&agentId=${agentId}`);
                       }
                     }}
                     onAgentMove={(agentId, position) => {
@@ -701,50 +702,6 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
 
       </div>
 
-      {/* Agent Editor Modal */}
-      {currentJourney && showAgentModal && selectedAgent && (
-        <div className="agent-editor-modal-overlay" onClick={() => setShowAgentModal(false)}>
-          <div className="agent-editor-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="agent-editor-modal-header">
-              <h2>Edit Agent: {selectedAgent.name}</h2>
-              <button
-                className="agent-editor-modal-close"
-                onClick={() => setShowAgentModal(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <div className="agent-editor-modal-content">
-              <AgentNodeEditor
-                agent={selectedAgent}
-                allAgents={currentJourney.agents}
-                onChange={handleUpdateAgent}
-                onClose={() => {
-                  setSelectedAgentId(null);
-                  setShowAgentModal(false);
-                }}
-                disabled={disabled}
-              />
-              
-              {selectedAgent && (
-                <div style={{ padding: '1.5rem 2rem' }}>
-                  <button
-                    className="agent-delete-btn"
-                    onClick={() => {
-                      handleDeleteAgent(selectedAgent.id);
-                      setShowAgentModal(false);
-                    }}
-                    disabled={disabled}
-                    type="button"
-                  >
-                    🗑️ Delete Agent
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* AI Customization Modal */}
       {showAICustomizeModal && (

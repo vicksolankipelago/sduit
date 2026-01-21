@@ -13,6 +13,7 @@ import { JourneyBuilderPage } from './pages/JourneyBuilder';
 import { TranscriptsPage } from './pages/Transcripts';
 import UIShowcase from './pages/UIShowcase';
 import { SettingsPage } from './pages/Settings';
+import { AgentEditorPage } from './pages/AgentEditor';
 import './styles/pelago-design-system.css';
 import './pages/Login.css';
 
@@ -39,6 +40,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             >
               <Route index element={<VoiceAgent />} />
               <Route path="builder" element={<JourneyBuilderPage />} />
+              <Route path="builder/agent" element={<AgentEditorPage />} />
               <Route path="transcripts" element={<TranscriptsPage />} />
               <Route path="screens" element={<UIShowcase />} />
               <Route path="settings" element={<SettingsPage />} />
