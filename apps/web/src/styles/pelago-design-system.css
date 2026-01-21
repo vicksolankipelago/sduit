@@ -1,6 +1,8 @@
+@import "tailwindcss";
+
 /**
  * Pelago Design System
- * 
+ *
  * Colors, fonts, and spacing tokens matching iOS UILibrary
  * Source: UILibrary/UILibrary/Extensions/Color+Extensions.swift
  *         UILibrary/UILibrary/Extensions/Font+Extensions.swift
