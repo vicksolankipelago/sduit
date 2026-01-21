@@ -12,6 +12,8 @@ interface JourneyFlowCanvasProps {
   onSetStartingAgent: (agentId: string) => void;
 }
 
+const DRAG_THRESHOLD = 5; // Pixels of movement before considered a drag
+
 const JourneyFlowCanvas: React.FC<JourneyFlowCanvasProps> = ({
   agents,
   startingAgentId,
@@ -23,20 +25,22 @@ const JourneyFlowCanvas: React.FC<JourneyFlowCanvasProps> = ({
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [draggingAgentId, setDraggingAgentId] = useState<string | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [hasDragged, setHasDragged] = useState(false);
+  const [pendingClickAgentId, setPendingClickAgentId] = useState<string | null>(null);
 
   const handleMouseDown = (agentId: string, e: React.MouseEvent) => {
     if (e.button !== 0) return; // Only left click
+    e.preventDefault();
     
     const agent = agents.find(a => a.id === agentId);
-    if (!agent || !agent.position) return;
+    if (!agent) return;
 
+    // Store starting position to detect drag vs click
+    setDragStart({ x: e.clientX, y: e.clientY });
+    setHasDragged(false);
     setDraggingAgentId(agentId);
-    setDragOffset({
-      x: e.clientX - agent.position.x,
-      y: e.clientY - agent.position.y,
-    });
-    onAgentSelect(agentId);
+    setPendingClickAgentId(agentId);
   };
 
   useEffect(() => {
@@ -45,15 +49,30 @@ const JourneyFlowCanvas: React.FC<JourneyFlowCanvasProps> = ({
     const handleMouseMove = (e: MouseEvent) => {
       if (!canvasRef.current) return;
 
-      const rect = canvasRef.current.getBoundingClientRect();
-      const x = Math.max(60, Math.min(e.clientX - rect.left - dragOffset.x, rect.width - 60));
-      const y = Math.max(60, Math.min(e.clientY - rect.top - dragOffset.y, rect.height - 60));
+      // Check if we've moved enough to be considered a drag
+      const deltaX = Math.abs(e.clientX - dragStart.x);
+      const deltaY = Math.abs(e.clientY - dragStart.y);
+      
+      if (deltaX > DRAG_THRESHOLD || deltaY > DRAG_THRESHOLD) {
+        setHasDragged(true);
+        setPendingClickAgentId(null); // Cancel pending click
+        
+        const rect = canvasRef.current.getBoundingClientRect();
+        const x = Math.max(100, Math.min(e.clientX - rect.left, rect.width - 100));
+        const y = Math.max(60, Math.min(e.clientY - rect.top, rect.height - 60));
 
-      onAgentMove(draggingAgentId, { x, y });
+        onAgentMove(draggingAgentId, { x, y });
+      }
     };
 
     const handleMouseUp = () => {
+      // If we didn't drag, trigger click
+      if (!hasDragged && pendingClickAgentId) {
+        onAgentSelect(pendingClickAgentId);
+      }
       setDraggingAgentId(null);
+      setPendingClickAgentId(null);
+      setHasDragged(false);
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -63,20 +82,26 @@ const JourneyFlowCanvas: React.FC<JourneyFlowCanvasProps> = ({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [draggingAgentId, dragOffset, onAgentMove]);
+  }, [draggingAgentId, dragStart, hasDragged, pendingClickAgentId, onAgentMove, onAgentSelect]);
 
   // Auto-layout agents if they don't have positions
   useEffect(() => {
-    const needsLayout = agents.some(a => !a.position);
+    const needsLayout = agents.some(a => !a.position || (a.position.x === 0 && a.position.y === 0));
     if (!needsLayout || !canvasRef.current) return;
 
+    // Wait for canvas to be properly sized
     const rect = canvasRef.current.getBoundingClientRect();
-    const centerX = rect.width / 2;
-    const startY = 100;
-    const spacing = 180;
+    if (rect.width === 0) return;
+    
+    // Ensure cards are positioned with enough margin from edges
+    // Card is ~180px wide, with transform -50%, so need at least 100px from edge
+    const minX = 120;
+    const centerX = Math.max(minX, rect.width / 2);
+    const startY = 120;
+    const spacing = 160;
 
     agents.forEach((agent, index) => {
-      if (!agent.position) {
+      if (!agent.position || (agent.position.x === 0 && agent.position.y === 0)) {
         onAgentMove(agent.id, {
           x: centerX,
           y: startY + (index * spacing),
@@ -148,7 +173,6 @@ const JourneyFlowCanvas: React.FC<JourneyFlowCanvasProps> = ({
               top: `${position.y}px`,
             }}
             onMouseDown={(e) => handleMouseDown(agent.id, e)}
-            onClick={() => onAgentSelect(agent.id)}
           >
             {isStarting && <div className="agent-node-badge">START</div>}
             

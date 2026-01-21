@@ -59,7 +59,7 @@ const SystemPromptEditor: React.FC<SystemPromptEditorProps> = ({
     <div className={`system-prompt-editor ${disabled ? 'disabled' : ''}`}>
       <div className="system-prompt-header">
         <div className="system-prompt-title">
-          <h3>🌍 System Prompt</h3>
+          <label className="section-label">System Prompt</label>
           <span className="system-prompt-subtitle">
             Global instructions shared by all agents in this journey
           </span>
@@ -70,14 +70,14 @@ const SystemPromptEditor: React.FC<SystemPromptEditorProps> = ({
             onClick={() => setShowVariables(!showVariables)}
             type="button"
           >
-            📋 Variables
+            Variables
           </button>
           <button
             className="system-prompt-action-btn"
             onClick={() => setShowPreview(!showPreview)}
             type="button"
           >
-            {showPreview ? '✏️ Edit' : '👁️ Preview'}
+            {showPreview ? 'Edit' : 'Preview'}
           </button>
           <button
             className="system-prompt-action-btn"
@@ -85,7 +85,7 @@ const SystemPromptEditor: React.FC<SystemPromptEditorProps> = ({
             disabled={disabled}
             type="button"
           >
-            🔄 Reset to Default
+            Reset to Default
           </button>
         </div>
       </div>
@@ -112,7 +112,7 @@ const SystemPromptEditor: React.FC<SystemPromptEditorProps> = ({
           </div>
         </div>
       ) : (
-        <div className={`system-prompt-editor-area ${showVariables ? 'with-variables' : ''}`}>
+        <div className="system-prompt-editor-area">
           <div className="system-prompt-textarea-wrapper">
             <textarea
               ref={textareaRef}
@@ -129,20 +129,23 @@ const SystemPromptEditor: React.FC<SystemPromptEditorProps> = ({
               <span>{characterCount} characters</span>
             </div>
           </div>
-          {showVariables && (
-            <VariablePanel
-              variables={variables}
-              variablesByCategory={variablesByCategory}
-              onInsert={handleInsertVariable}
-              mode="default"
-              disabled={disabled}
-            />
-          )}
+        </div>
+      )}
+
+      {showVariables && (
+        <div className="system-prompt-variables-section">
+          <VariablePanel
+            variables={variables}
+            variablesByCategory={variablesByCategory}
+            onInsert={handleInsertVariable}
+            mode="inline"
+            disabled={disabled}
+          />
         </div>
       )}
 
       <div className="system-prompt-tips">
-        <h4>💡 Tips for effective system prompts:</h4>
+        <h4>Tips for effective system prompts</h4>
         <ul>
           <li>Define core personality traits and communication style</li>
           <li>Set boundaries (what agents should/shouldn't do)</li>

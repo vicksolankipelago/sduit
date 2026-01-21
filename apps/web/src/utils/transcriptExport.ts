@@ -87,7 +87,7 @@ export function createSessionExport(params: {
     journey: journey ? {
       id: journey.id,
       name: journey.name,
-      voice: journey.voice,
+      voice: journey.voice || 'default',
     } : undefined,
     agent: agentConfig ? {
       id: agentConfig.name,

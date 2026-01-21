@@ -102,17 +102,22 @@ router.put("/:id", isAdmin, async (req: any, res) => {
       return res.status(403).json({ message: "Forbidden" });
     }
     
-    const { name, description, systemPrompt, voice, agents, startingAgentId, version } = req.body;
+    const { name, description, systemPrompt, voice, agents, startingAgentId, version, changeNotes } = req.body;
     
-    const updated = await storage.updateJourney(req.params.id, {
-      name,
-      description,
-      systemPrompt,
-      voice,
-      agents,
-      startingAgentId,
-      version,
-    });
+    const updated = await storage.updateJourney(
+      req.params.id,
+      {
+        name,
+        description,
+        systemPrompt,
+        voice,
+        agents,
+        startingAgentId,
+        version,
+      },
+      req.user.id,
+      changeNotes
+    );
     
     if (!updated) {
       return res.status(500).json({ message: "Failed to update journey" });
@@ -133,6 +138,73 @@ router.put("/:id", isAdmin, async (req: any, res) => {
   } catch (error) {
     console.error("Error updating journey:", error);
     res.status(500).json({ message: "Failed to update journey" });
+  }
+});
+
+// Get version history for a journey
+router.get("/:id/versions", isAuthenticated, async (req: any, res) => {
+  try {
+    const journey = await storage.getJourney(req.params.id);
+    
+    if (!journey) {
+      return res.status(404).json({ message: "Journey not found" });
+    }
+    
+    if (journey.userId !== req.user.id) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    
+    const versions = await storage.listJourneyVersions(req.params.id);
+    
+    res.json(versions.map(v => ({
+      id: v.id,
+      journeyId: v.journeyId,
+      versionNumber: v.versionNumber,
+      name: v.name,
+      changeNotes: v.changeNotes,
+      createdAt: v.createdAt,
+    })));
+  } catch (error) {
+    console.error("Error listing journey versions:", error);
+    res.status(500).json({ message: "Failed to list versions" });
+  }
+});
+
+// Get specific version of a journey
+router.get("/:id/versions/:versionId", isAuthenticated, async (req: any, res) => {
+  try {
+    const journey = await storage.getJourney(req.params.id);
+    
+    if (!journey) {
+      return res.status(404).json({ message: "Journey not found" });
+    }
+    
+    if (journey.userId !== req.user.id) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    
+    const version = await storage.getJourneyVersion(req.params.versionId);
+    
+    if (!version || version.journeyId !== req.params.id) {
+      return res.status(404).json({ message: "Version not found" });
+    }
+    
+    res.json({
+      id: version.id,
+      journeyId: version.journeyId,
+      versionNumber: version.versionNumber,
+      name: version.name,
+      description: version.description,
+      systemPrompt: version.systemPrompt,
+      voice: version.voice,
+      agents: version.agents,
+      startingAgentId: version.startingAgentId,
+      changeNotes: version.changeNotes,
+      createdAt: version.createdAt,
+    });
+  } catch (error) {
+    console.error("Error getting journey version:", error);
+    res.status(500).json({ message: "Failed to get version" });
   }
 });
 

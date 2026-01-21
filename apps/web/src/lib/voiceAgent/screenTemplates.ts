@@ -4,8 +4,7 @@
  * Pre-built screen templates for common patterns
  */
 
-import { Screen, Section, ElementConfig } from '../../types/journey';
-import { v4 as uuidv4 } from 'uuid';
+import { Screen } from '../../types/journey';
 
 /**
  * Create a welcome/intro screen template

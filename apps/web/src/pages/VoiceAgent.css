@@ -119,11 +119,44 @@
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
 }
 
-/* Settings button on journey card */
-.journey-card-settings-btn {
+/* Card action buttons container */
+.journey-card-actions {
   position: absolute;
   top: 10px;
   right: 10px;
+  display: flex;
+  gap: 6px;
+}
+
+/* Edit button on journey card */
+.journey-card-edit-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  color: #333;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.journey-card-edit-btn:hover {
+  background: white;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.journey-card-edit-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* Settings button on journey card */
+.journey-card-settings-btn {
   width: 32px;
   height: 32px;
   border-radius: 8px;

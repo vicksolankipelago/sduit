@@ -19,7 +19,7 @@ export const OpenQuestionElement: React.FC<OpenQuestionElementProps> = ({
   const { screenState, currentScreen } = useScreenContext();
   const [recordedTitle, setRecordedTitle] = useState<string | null>(null);
   const [recordedSummary, setRecordedSummary] = useState<string | null>(null);
-  const [recordedDescription, setRecordedDescription] = useState<string | null>(null);
+  const [_recordedDescription, setRecordedDescription] = useState<string | null>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [questionMinimized, setQuestionMinimized] = useState(false);
   const [processedTimestamp, setProcessedTimestamp] = useState<number | null>(null);
@@ -85,11 +85,20 @@ export const OpenQuestionElement: React.FC<OpenQuestionElementProps> = ({
     const titleRaw = screenState?.recordedInputTitle;
     const summaryRaw = screenState?.recordedInputSummary;
     const timestampRaw = screenState?.recordedInputTimestamp;
+    const descriptionRaw = screenState?.recordedInputDescription;
     
-    const title = (titleRaw?.value ?? titleRaw) as string | undefined;
-    const summary = (summaryRaw?.value ?? summaryRaw) as string | undefined;
-    const description = (screenState?.recordedInputDescription?.value ?? screenState?.recordedInputDescription) as string | undefined;
-    const timestamp = (timestampRaw?.value ?? timestampRaw) as number | undefined;
+    // Helper to safely extract value from AnyCodable
+    const extractValue = (raw: unknown): unknown => {
+      if (raw && typeof raw === 'object' && 'value' in raw) {
+        return (raw as { value: unknown }).value;
+      }
+      return raw;
+    };
+    
+    const title = extractValue(titleRaw) as string | undefined;
+    const summary = extractValue(summaryRaw) as string | undefined;
+    const description = extractValue(descriptionRaw) as string | undefined;
+    const timestamp = extractValue(timestampRaw) as number | undefined;
 
     console.log('📝 OpenQuestionElement: State check', { 
       title, 

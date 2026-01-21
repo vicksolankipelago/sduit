@@ -2,7 +2,7 @@
  * Supabase Services
  *
  * Re-exports all Supabase service functions for convenient importing.
+ * Note: journeyService and sessionService have been moved to api/
  */
 
-export * from './journeyService';
-export * from './sessionService';
+// Deprecated - use services/api instead

@@ -161,7 +161,7 @@ function createPostWebPQScreens(): Screen[] {
       sections: [
         {
           id: 'content_section',
-          title: null,
+          title: '',
           position: 'body',
           layout: 'stack',
           direction: 'vertical',
@@ -264,7 +264,7 @@ function createPostWebPQScreens(): Screen[] {
       sections: [
         {
           id: 'content_section',
-          title: null,
+          title: '',
           position: 'body',
           layout: 'stack',
           direction: 'vertical',
@@ -289,7 +289,7 @@ function createPostWebPQScreens(): Screen[] {
               type: 'checklistCard',
               state: {
                 id: 'next_steps_checklist',
-                title: null,
+                title: '',
                 itemTitles: [
                   'Daily check-ins to track progress',
                   'Personalized insights and tips',
@@ -346,12 +346,12 @@ function createPostWebPQScreens(): Screen[] {
     // Screen 3: about-you
     {
       id: 'about-you',
-      title: null,
+      title: '',
       hidesBackButton: true,
       sections: [
         {
           id: 'content_section',
-          title: null,
+          title: '',
           position: 'body',
           layout: 'stack',
           direction: 'vertical',
@@ -399,12 +399,12 @@ function createPostWebPQScreens(): Screen[] {
     // Screen 4: outcomes
     {
       id: 'outcomes',
-      title: null,
+      title: '',
       hidesBackButton: true,
       sections: [
         {
           id: 'content_section',
-          title: null,
+          title: '',
           position: 'body',
           layout: 'stack',
           direction: 'vertical',
@@ -464,12 +464,12 @@ function createPostWebPQScreens(): Screen[] {
     // Screen 5: motivation
     {
       id: 'motivation',
-      title: null,
+      title: '',
       hidesBackButton: true,
       sections: [
         {
           id: 'content_section',
-          title: null,
+          title: '',
           position: 'body',
           layout: 'stack',
           direction: 'vertical',
@@ -517,12 +517,12 @@ function createPostWebPQScreens(): Screen[] {
     // Screen 6: intention
     {
       id: 'intention',
-      title: null,
+      title: '',
       hidesBackButton: true,
       sections: [
         {
           id: 'content_section',
-          title: null,
+          title: '',
           position: 'body',
           layout: 'stack',
           direction: 'vertical',
@@ -570,7 +570,7 @@ function createPostWebPQScreens(): Screen[] {
     // Screen 7: checkin-commitment
     {
       id: 'checkin-commitment',
-      title: null,
+      title: '',
       hidesBackButton: true,
       state: {
         selectedCommitment: null,
@@ -578,7 +578,7 @@ function createPostWebPQScreens(): Screen[] {
       sections: [
         {
           id: 'content_section',
-          title: null,
+          title: '',
           position: 'body',
           layout: 'stack',
           direction: 'vertical',
@@ -729,7 +729,7 @@ function createPostWebPQScreens(): Screen[] {
     // Screen 8: pq-notification-setup
     {
       id: 'pq-notification-setup',
-      title: null,
+      title: '',
       hidesBackButton: true,
       state: {
         notificationsEnabled: true,
@@ -737,7 +737,7 @@ function createPostWebPQScreens(): Screen[] {
       sections: [
         {
           id: 'content_section',
-          title: null,
+          title: '',
           position: 'body',
           layout: 'stack',
           direction: 'vertical',
@@ -861,12 +861,12 @@ function createPostWebPQScreens(): Screen[] {
     // Screen 9: pq-plan-review
     {
       id: 'pq-plan-review',
-      title: null,
+      title: '',
       hidesBackButton: true,
       sections: [
         {
           id: 'title_section',
-          title: null,
+          title: '',
           position: 'body',
           layout: 'stack',
           direction: 'vertical',
@@ -912,7 +912,7 @@ function createPostWebPQScreens(): Screen[] {
         },
         {
           id: 'summary_cards_section',
-          title: null,
+          title: '',
           position: 'body',
           layout: 'stack',
           direction: 'vertical',
@@ -1009,7 +1009,7 @@ function createPostWebPQScreens(): Screen[] {
         },
         {
           id: 'widgets_spacer_section',
-          title: null,
+          title: '',
           position: 'body',
           layout: 'stack',
           direction: 'vertical',
@@ -1031,7 +1031,7 @@ function createPostWebPQScreens(): Screen[] {
         },
         {
           id: 'widgets_section',
-          title: null,
+          title: '',
           position: 'body',
           layout: 'grid',
           direction: 'vertical',
@@ -1108,12 +1108,12 @@ function createPostWebPQScreens(): Screen[] {
     // Screen 10: pq-start-programme
     {
       id: 'pq-start-programme',
-      title: null,
+      title: '',
       hidesBackButton: true,
       sections: [
         {
           id: 'content_section',
-          title: null,
+          title: '',
           position: 'body',
           layout: 'stack',
           direction: 'vertical',

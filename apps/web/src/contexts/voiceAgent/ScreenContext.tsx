@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { Screen, AnyCodable, ScreenEvent, EventAction, NavigationAction, StateUpdateAction, StateScope } from '../../types/journey';
+import { Screen, AnyCodable, ScreenEvent, EventAction, NavigationAction, StateUpdateAction } from '../../types/journey';
 import jsonLogic from 'json-logic-js';
 
 /**

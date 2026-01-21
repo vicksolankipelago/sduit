@@ -27,14 +27,14 @@ const UIShowcase: React.FC = () => {
   // Screens list state
   const [screensList, setScreensList] = useState<StandaloneScreenListItem[]>([]);
   const [isLoadingScreens, setIsLoadingScreens] = useState(true);
-  const [editingScreenId, setEditingScreenId] = useState<string | null>(null);
+  const [, setEditingScreenId] = useState<string | null>(null);
 
   // Builder state
   const [builderScreen, setBuilderScreen] = useState<StandaloneScreen>(() => createStandaloneScreen(uuidv4(), 'New Screen'));
 
   const [selectedElementIndex, setSelectedElementIndex] = useState<number | null>(null);
   const [draggedElementIndex, setDraggedElementIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [_dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   // Load screens on mount
   useEffect(() => {
@@ -194,7 +194,7 @@ const UIShowcase: React.FC = () => {
   const selectedElement = selectedElementIndex !== null ? currentElements[selectedElementIndex] : null;
   const selectedElementId = selectedElement?.state.id as string | undefined;
 
-  const handleElementSelectFromPreview = (elementId: string, sectionIndex: number, elementIndex: number) => {
+  const handleElementSelectFromPreview = (elementId: string, _sectionIndex: number, _elementIndex: number) => {
     const bodySection = builderScreen.sections.find(s => s.position === 'body');
     if (!bodySection) return;
 
@@ -203,6 +203,8 @@ const UIShowcase: React.FC = () => {
       setSelectedElementIndex(index);
     }
   };
+
+  void draggedElementIndex; void _dragOverIndex; void setDraggedElementIndex; void setDragOverIndex;
 
   const handleMoveElementUp = (index: number) => {
     if (index === 0) return;

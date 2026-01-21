@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
-import { Journey, JourneyListItem, Agent, DEFAULT_SYSTEM_PROMPT, validateJourney, Screen } from '../../types/journey';
-import { listJourneys, loadJourney, saveJourney, deleteJourney, duplicateJourney, downloadJourneyAsJSON } from '../../services/journeyStorage';
+import { Journey, Agent, DEFAULT_SYSTEM_PROMPT, validateJourney, Screen } from '../../types/journey';
+import { loadJourney, saveJourney, deleteJourney, duplicateJourney } from '../../services/journeyStorage';
 import { SCREEN_TEMPLATES } from '../../lib/voiceAgent/screenTemplates';
 import { downloadAgentAsModule } from '../../services/screenExport';
 import { generateScreensFromPrompts, suggestionToScreen, ScreenSuggestion } from '../../services/aiScreenGenerator';
 import JourneyFlowCanvas from './JourneyFlowCanvas';
-import AgentNodeEditor from './AgentNodeEditor';
 import SystemPromptEditor from './SystemPromptEditor';
 import ScreenEditor from './ScreenEditor';
 import PromptEditor from './PromptEditor';
@@ -23,15 +23,16 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   onLaunchJourney,
   disabled = false,
 }) => {
-  const [journeys, setJourneys] = useState<JourneyListItem[]>([]);
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [currentJourney, setCurrentJourney] = useState<Journey | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'detail'>('detail');
   const [validationErrors, setValidationErrors] = useState<any[]>([]);
   const [builderTab, setBuilderTab] = useState<'flow' | 'screens' | 'prompts'>('flow');
   const [editingScreenIndex, setEditingScreenIndex] = useState<number | null>(null);
   const [previewScreenIndex, setPreviewScreenIndex] = useState<number | null>(null);
-  const [showAgentModal, setShowAgentModal] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   
   // AI Screen Generation state
@@ -40,24 +41,54 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const [aiCustomInstructions, setAiCustomInstructions] = useState('');
   const [aiGeneratedSuggestions, setAiGeneratedSuggestions] = useState<ScreenSuggestion[]>([]);
   const [isGeneratingScreens, setIsGeneratingScreens] = useState(false);
-  const [aiGenerationError, setAiGenerationError] = useState<string | null>(null);
+  const [_aiGenerationError, setAiGenerationError] = useState<string | null>(null);
   const [previewingSuggestion, setPreviewingSuggestion] = useState<ScreenSuggestion | null>(null);
 
   useEffect(() => {
-    // Load default journeys from codebase (async)
+    // Load flow based on URL params
     const initAndLoad = async () => {
-      const journeyList = await listJourneys();
-      setJourneys(journeyList);
+      // Check if we should auto-create a new flow
+      if (searchParams.get('new') === 'true') {
+        const newJourney: Journey = {
+          id: uuidv4(),
+          name: 'New Flow',
+          description: 'Describe your flow',
+          systemPrompt: DEFAULT_SYSTEM_PROMPT,
+          agents: [],
+          startingAgentId: '',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          version: '1.0.0',
+        };
+        setCurrentJourney(newJourney);
+        setSelectedAgentId(null);
+        setIsLoading(false);
+        // Clear the query param so refreshing doesn't create another new flow
+        setSearchParams({}, { replace: true });
+        return;
+      }
+      
+      // Check if we should load a specific flow for editing
+      const editId = searchParams.get('id');
+      if (editId) {
+        const journeyToEdit = await loadJourney(editId);
+        if (journeyToEdit) {
+          setCurrentJourney(journeyToEdit);
+          setSelectedAgentId(null);
+          setIsLoading(false);
+          // Clear the query param
+          setSearchParams({}, { replace: true });
+          return;
+        }
+      }
+      
+      // No flow specified - redirect to main flows page
+      navigate('/');
     };
     
     initAndLoad();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const refreshJourneyList = async () => {
-    const journeyList = await listJourneys();
-    setJourneys(journeyList);
-  };
 
   const handleCreateNewJourney = () => {
     const newJourney: Journey = {
@@ -77,20 +108,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     setViewMode('detail');
   };
 
-  const handleLoadJourney = async (journeyId: string) => {
-    if (currentJourney?.id === journeyId) {
-      setViewMode('detail');
-      return;
-    }
-    const journey = await loadJourney(journeyId);
-    if (journey) {
-      setCurrentJourney(journey);
-      setSelectedAgentId(null);
-      setViewMode('detail');
-    }
-  };
-
-  const handleSaveJourney = () => {
+  const handleSaveJourney = async () => {
     if (!currentJourney) return;
 
     const errors = validateJourney(currentJourney);
@@ -101,8 +119,8 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       return;
     }
 
-    if (saveJourney(currentJourney)) {
-      refreshJourneyList();
+    const saved = await saveJourney(currentJourney);
+    if (saved) {
       alert(`Flow "${currentJourney.name}" saved successfully!`);
     } else {
       alert('Failed to save flow');
@@ -112,22 +130,14 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const handleDeleteJourney = (journeyId: string) => {
     if (window.confirm('Delete this flow? This cannot be undone.')) {
       deleteJourney(journeyId);
-      refreshJourneyList();
       if (currentJourney?.id === journeyId) {
-        setCurrentJourney(null);
-        setViewMode('list');
+        navigate('/');
       }
     }
   };
 
-  const handleDuplicateJourney = async (journeyId: string) => {
-    const duplicate = await duplicateJourney(journeyId);
-    if (duplicate) {
-      await refreshJourneyList();
-      setCurrentJourney(duplicate);
-      setViewMode('detail');
-    }
-  };
+  // Temporarily unused - can be re-enabled when duplicate button is added to UI
+  void duplicateJourney; // Silence unused import warning
 
   const handleAddAgent = () => {
     if (!currentJourney) return;
@@ -162,7 +172,9 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     });
   };
 
+  // Keep for potential future use (delete from canvas)
   const handleDeleteAgent = (agentId: string) => {
+    void agentId; // Silence unused warning for now
     if (!currentJourney) return;
     if (window.confirm('Delete this agent?')) {
       const updatedAgents = currentJourney.agents.filter(a => a.id !== agentId);
@@ -201,12 +213,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   };
 
   const handleBackToList = () => {
-    setViewMode('list');
-    setSelectedAgentId(null);
-    setEditingScreenIndex(null);
-    setPreviewScreenIndex(null);
-    setShowAgentModal(false);
-    setBuilderTab('flow');
+    navigate('/');
   };
 
   const selectedAgent = currentJourney?.agents.find(a => a.id === selectedAgentId) || null;
@@ -391,11 +398,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
           )}
         </div>
         <div className="journey-header-actions">
-          {viewMode === 'list' ? (
-            <button className="journey-create-btn" onClick={handleCreateNewJourney} type="button">
-              + New Flow
-            </button>
-          ) : currentJourney && (
+          {currentJourney && (
             <>
               <button className="journey-action-btn" onClick={handleSaveJourney} disabled={disabled}>
                 💾 Save
@@ -418,37 +421,9 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       <div className="journey-builder-layout">
         {/* Center Panel - Main Content */}
         <div className="journey-main-panel">
-          {viewMode === 'list' ? (
-            <div className="journey-list-view">
-              <div className="journey-list-view-header">
-                <h2>Flows</h2>
-                <p>Select a flow to view and edit details.</p>
-              </div>
-              {journeys.length === 0 ? (
-                <div className="journey-list-empty">
-                  <p>No flows yet</p>
-                  <button className="journey-create-empty-btn" onClick={handleCreateNewJourney} type="button">
-                    Create Your First Flow
-                  </button>
-                </div>
-              ) : (
-                <div className="journey-list-items">
-                  {journeys.map(journey => (
-                    <div
-                      key={journey.id}
-                      className={`journey-list-item ${currentJourney?.id === journey.id ? 'active' : ''}`}
-                    >
-                      <div className="journey-item-content" onClick={() => handleLoadJourney(journey.id)}>
-                        <div className="journey-item-name">{journey.name}</div>
-                        <div className="journey-item-meta">
-                          {journey.agentCount} agent{journey.agentCount !== 1 ? 's' : ''}
-                        </div>
-                      </div>
-                      <div className="journey-item-actions" />
-                    </div>
-                  ))}
-                </div>
-              )}
+          {isLoading ? (
+            <div className="journey-loading">
+              <p>Loading...</p>
             </div>
           ) : !currentJourney ? (
             <div className="journey-welcome">
@@ -461,15 +436,17 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
           ) : (
             <div className="journey-editor">
               {/* Journey Description */}
-              <div className="journey-description-field">
-                <label className="journey-description-label">Description</label>
-                <textarea
-                  value={currentJourney.description}
-                  onChange={(e) => setCurrentJourney({ ...currentJourney, description: e.target.value })}
-                  placeholder="Describe this flow..."
-                  disabled={disabled}
-                  rows={2}
-                />
+              <div className="journey-description-section">
+                <div className="journey-description-field">
+                  <label className="journey-description-label">Description</label>
+                  <textarea
+                    value={currentJourney.description}
+                    onChange={(e) => setCurrentJourney({ ...currentJourney, description: e.target.value })}
+                    placeholder="Describe this flow..."
+                    disabled={disabled}
+                    rows={2}
+                  />
+                </div>
               </div>
 
               {/* System Prompt */}
@@ -512,11 +489,12 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                     agents={currentJourney.agents}
                     startingAgentId={currentJourney.startingAgentId}
                     selectedAgentId={selectedAgentId}
-                    onAgentSelect={(agentId) => {
+                    onAgentSelect={async (agentId) => {
                       setSelectedAgentId(agentId);
-                      // Only open modal if not dragging
+                      // Navigate to full-screen agent editor (save first)
                       if (!isDragging) {
-                        setShowAgentModal(true);
+                        await saveJourney(currentJourney);
+                        navigate(`/builder/agent?journeyId=${currentJourney.id}&agentId=${agentId}`);
                       }
                     }}
                     onAgentMove={(agentId, position) => {
@@ -587,7 +565,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                   {!selectedAgent?.screens || selectedAgent.screens.length === 0 ? (
                     <div className="journey-screens-empty">
                       <p>No screens defined for this agent yet.</p>
-                      <button onClick={handleAddScreen} disabled={disabled} className="journey-add-screen-empty-btn">
+                      <button onClick={() => handleAddScreen()} disabled={disabled} className="journey-add-screen-empty-btn">
                         + Create First Screen
                       </button>
                     </div>
@@ -726,50 +704,6 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
 
       </div>
 
-      {/* Agent Editor Modal */}
-      {currentJourney && showAgentModal && selectedAgent && (
-        <div className="agent-editor-modal-overlay" onClick={() => setShowAgentModal(false)}>
-          <div className="agent-editor-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="agent-editor-modal-header">
-              <h2>Edit Agent: {selectedAgent.name}</h2>
-              <button
-                className="agent-editor-modal-close"
-                onClick={() => setShowAgentModal(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <div className="agent-editor-modal-content">
-              <AgentNodeEditor
-                agent={selectedAgent}
-                allAgents={currentJourney.agents}
-                onChange={handleUpdateAgent}
-                onClose={() => {
-                  setSelectedAgentId(null);
-                  setShowAgentModal(false);
-                }}
-                disabled={disabled}
-              />
-              
-              {selectedAgent && (
-                <div style={{ padding: '1.5rem 2rem' }}>
-                  <button
-                    className="agent-delete-btn"
-                    onClick={() => {
-                      handleDeleteAgent(selectedAgent.id);
-                      setShowAgentModal(false);
-                    }}
-                    disabled={disabled}
-                    type="button"
-                  >
-                    🗑️ Delete Agent
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* AI Customization Modal */}
       {showAICustomizeModal && (

@@ -16,9 +16,7 @@ import useAudioDownload from '../hooks/voiceAgent/useAudioDownload';
 import { VoiceAgentAudioRouter } from '../utils/voiceAgent/audioRouting';
 
 // Components
-import OvalAnimation from '../components/voiceAgent/OvalAnimation';
 import AgentUIRenderer from '../components/voiceAgent/AgentUIRenderer';
-import AgentPromptEditor from '../components/voiceAgent/AgentPromptEditor';
 import SessionLogViewer, { LogEntry } from '../components/voiceAgent/SessionLogViewer';
 import MemberPersonaEditor from '../components/voiceAgent/MemberPersonaEditor';
 import FeedbackForm from '../components/voiceAgent/FeedbackForm';
@@ -34,7 +32,7 @@ import {
   downloadFormattedTranscript,
   downloadPromptAndTranscript
 } from '../utils/transcriptExport';
-import { journeyToRealtimeAgents, getStartingAgentName, setEventTriggerCallback, getAgentScreens } from '../lib/voiceAgent/journeyRuntime';
+import { journeyToRealtimeAgents, getStartingAgentName, setEventTriggerCallback } from '../lib/voiceAgent/journeyRuntime';
 import { listJourneys, loadJourney } from '../services/journeyStorage';
 import { PQData, substitutePromptVariables, DEFAULT_PQ_DATA } from '../utils/promptTemplates';
 import { useAuth } from '../contexts/AuthContext';
@@ -108,8 +106,8 @@ function VoiceAgentContent() {
   }, [sdkAudioElement]);
 
   const [sessionStatus, setSessionStatus] = useState<SessionStatus>("DISCONNECTED");
-  const [shape] = useState<'oval' | 'rectangle'>('oval');
-  const [substance] = useState<string | null>(null);
+  const [_shape] = useState<'oval' | 'rectangle'>('oval');
+  const [_substance] = useState<string | null>(null);
   const [customPrompts, setCustomPrompts] = useState<Record<string, string>>({});
   const [sessionLogs, setSessionLogs] = useState<LogEntry[]>([]);
   // Testing Persona state - OFF by default
@@ -135,8 +133,8 @@ function VoiceAgentContent() {
   // Voice control state
   const [showKeyboardInput, setShowKeyboardInput] = useState(false);
   const [isMicMuted, setIsMicMuted] = useState(false);
-  const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
-  const [hasScreensVisible, setHasScreensVisible] = useState(false);
+  const [_isAgentSpeaking, setIsAgentSpeaking] = useState(false);
+  const [_hasScreensVisible, setHasScreensVisible] = useState(false);
   const [micStream, setMicStream] = useState<MediaStream | null>(null);
   
   // Feedback form state
@@ -154,8 +152,8 @@ function VoiceAgentContent() {
     })
   );
 
-  // Track audio level from microphone for visualization
-  const audioLevel = useAudioLevel(micStream);
+  // Track audio level from microphone for visualization - keeping hook call to avoid disrupting audio flow
+  useAudioLevel(micStream);
 
   // Buffer for accumulating assistant responses
   const assistantResponseBuffer = useRef<string>('');
@@ -316,7 +314,7 @@ function VoiceAgentContent() {
           if (navAction) {
             const targetScreenId = (navAction as any).deeplink;
             addLog('info', `🎯 Navigating to screen: ${targetScreenId}`);
-            navigateToScreen(targetScreenId);
+            navigateToScreen?.(targetScreenId);
           }
 
           if (stateAction) {
@@ -346,7 +344,7 @@ function VoiceAgentContent() {
       addLog('info', `📱 Showing first screen: ${startingAgentConfig.screens[0].id}`);
       
       // Show the first screen immediately when session starts
-      enableScreenRendering(startingAgentConfig.screens, startingAgentConfig.screens[0].id);
+      enableScreenRendering?.(startingAgentConfig.screens, startingAgentConfig.screens[0].id);
       setHasScreensVisible(true);
       
       console.log('🎨 First screen displayed:', startingAgentConfig.screens[0].id);
@@ -390,7 +388,7 @@ function VoiceAgentContent() {
 
       // Create journey agent config for WebRTC session
       // Convert journey tools to Azure format
-      const azureTools = startingAgentConfig.tools.map(tool => ({
+      const azureTools = (startingAgentConfigForConnect.tools || []).map(tool => ({
         type: 'function' as const,
         name: tool.name,
         description: tool.description,
@@ -446,7 +444,7 @@ function VoiceAgentContent() {
         // Persona mode: Set up audio routing destinations first
         audioRouterRef.current = new VoiceAgentAudioRouter();
         const { personaMicStream, agentMicStream } = 
-          await audioRouterRef.current.setupBidirectionalRouting(sdkAudioElement, personaAudioElement);
+          await audioRouterRef.current.setupBidirectionalRouting(sdkAudioElement!, personaAudioElement);
         
         // Connect agent with routed mic and journey agent config
         await connect({
@@ -486,17 +484,7 @@ Important guidelines:
 - You can express uncertainty, concern, hope, or other genuine emotions
 - Speak in a natural, conversational tone
 - Respond promptly when you hear the counsellor speak`,
-            onTranscript: (role, text, isDone) => {
-              if (role === 'assistant' && isDone) {
-                addLog('info', `🎭 Persona: ${text}`);
-              }
-            },
-            onConnectionChange: (status) => {
-              if (status === 'CONNECTED') {
-                addLog('success', '🎭 Persona voice connected');
-              }
-            },
-          });
+          } as any);
         } catch (personaErr: any) {
           console.error("Error connecting persona:", personaErr);
           addLog('error', '🎭 Failed to connect persona', { error: personaErr.message });
@@ -702,14 +690,6 @@ Important guidelines:
 
   // Removed sendSimulatedUserMessage - not needed for Azure WebSocket
 
-  const onToggleConnection = () => {
-    if (sessionStatus === "CONNECTED" || sessionStatus === "CONNECTING") {
-      disconnectFromRealtime();
-    } else {
-      connectToRealtime();
-    }
-  };
-
   // Audio is handled by the WebSocket client
 
   useEffect(() => {
@@ -741,10 +721,8 @@ Important guidelines:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionStatus]);
 
-  const handlePromptsChange = (prompts: Record<string, string>) => {
-    setCustomPrompts(prompts);
-    console.log('📝 Agent prompts updated:', Object.keys(prompts));
-  };
+  // Suppress unused customPrompts setter (kept for future prompt customization feature)
+  void setCustomPrompts;
 
   const handlePersonaChange = (enabled: boolean, description: string) => {
     setPersonaEnabled(enabled);
@@ -788,7 +766,7 @@ Important guidelines:
   const {
     connect,
     disconnect,
-    sendMessage,
+    sendMessage: _sendMessage,
     setMicMuted,
   } = useAzureWebRTCSession({
     customPrompts, // Pass custom prompts to the hook
@@ -802,13 +780,14 @@ Important guidelines:
         addLog('info', 'Disconnected from Azure OpenAI');
       }
     },
-    onTranscript: (role, text, isDone) => {
+    onTranscript: (role: string, text: string, isDone?: boolean) => {
+      const roleKey = role as 'user' | 'assistant';
       const ensureMessageId = () => {
-        const existingId = currentMessageIdsRef.current[role];
+        const existingId = currentMessageIdsRef.current[roleKey];
         if (existingId) return existingId;
         const newId = `msg_${role}_${Date.now()}`;
-        currentMessageIdsRef.current[role] = newId;
-        addTranscriptMessage(newId, role, text, false);
+        currentMessageIdsRef.current[roleKey] = newId;
+        addTranscriptMessage(newId, roleKey, text, false);
         return newId;
       };
 
@@ -985,7 +964,7 @@ Important guidelines:
         
         if (newAgentConfig?.screens && newAgentConfig.screens.length > 0) {
           addLog('info', `📱 Switching to ${to}'s screens (${newAgentConfig.screens.length} screens)`);
-          enableScreenRendering(newAgentConfig.screens, newAgentConfig.screens[0].id);
+          enableScreenRendering?.(newAgentConfig.screens, newAgentConfig.screens[0].id);
         }
       }
     },
@@ -997,13 +976,6 @@ Important guidelines:
     },
   });
 
-  const getConnectionButtonText = () => {
-    switch (sessionStatus) {
-      case 'CONNECTING': return 'Connecting...';
-      case 'CONNECTED': return 'Disconnect';
-      default: return 'Start Voice Session';
-    }
-  };
 
   const handleToggleKeyboard = () => {
     setShowKeyboardInput(!showKeyboardInput);
@@ -1041,7 +1013,7 @@ Important guidelines:
         setCurrentJourney(journey);
         
         // Set initial module state for testing
-        updateModuleState({
+        updateModuleState?.({
           checkInStreak: '7', // Simulate 7-day streak
         });
         
@@ -1082,7 +1054,7 @@ Important guidelines:
           <h2 className="voice-agent-title">Flows</h2>
           <button
             className="voice-agent-create-btn"
-            onClick={() => navigate('/builder')}
+            onClick={() => navigate('/builder?new=true')}
           >
             Create Flow
           </button>
@@ -1206,16 +1178,28 @@ Important guidelines:
                           style={{ background: style.gradient }}
                         >
                           <span className="journey-card-icon">{style.icon}</span>
-                          <button
-                            className="journey-card-settings-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSettingsOpen(true);
-                            }}
-                            title="Configure testing persona"
-                          >
-                            <span className="journey-card-settings-icon">⚙️</span>
-                          </button>
+                          <div className="journey-card-actions">
+                            <button
+                              className="journey-card-edit-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/builder?id=${journey.id}`);
+                              }}
+                              title="Edit flow"
+                            >
+                              <span className="journey-card-edit-icon">✏️</span>
+                            </button>
+                            <button
+                              className="journey-card-settings-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSettingsOpen(true);
+                              }}
+                              title="Configure testing persona"
+                            >
+                              <span className="journey-card-settings-icon">⚙️</span>
+                            </button>
+                          </div>
                         </div>
                         <div className="journey-card-header">
                           <h3 className="journey-card-title">{journey.name}</h3>

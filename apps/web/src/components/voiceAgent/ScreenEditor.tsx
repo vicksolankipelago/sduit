@@ -8,7 +8,6 @@ import {
   SectionPosition,
   ElementType,
   EventType,
-  EventAction,
 } from '../../types/journey';
 import { getElementMetadata, getElementsByCategory, ElementMetadataRegistry } from '../../lib/voiceAgent/elementRegistry';
 import ElementPropertyEditor from './ElementPropertyEditor';

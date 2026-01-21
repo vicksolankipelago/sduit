@@ -1,7 +1,7 @@
-import { journeys, type Journey, type InsertJourney } from "../shared/models/journeys";
+import { journeys, journeyVersions, type Journey, type InsertJourney, type JourneyVersion, type InsertJourneyVersion } from "../shared/models/journeys";
 import { voiceSessions, type VoiceSession, type InsertVoiceSession } from "../shared/models/voiceSessions";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, count } from "drizzle-orm";
 
 export interface TranscriptMessage {
   itemId: string;
@@ -33,8 +33,12 @@ export interface IStorage {
   listUserJourneys(userId: string): Promise<Journey[]>;
   getJourney(journeyId: string): Promise<Journey | undefined>;
   createJourney(journey: InsertJourney): Promise<Journey>;
-  updateJourney(journeyId: string, journey: Partial<InsertJourney>): Promise<Journey | undefined>;
+  updateJourney(journeyId: string, journey: Partial<InsertJourney>, userId: string, changeNotes?: string): Promise<Journey | undefined>;
   deleteJourney(journeyId: string): Promise<boolean>;
+  
+  listJourneyVersions(journeyId: string): Promise<JourneyVersion[]>;
+  getJourneyVersion(versionId: string): Promise<JourneyVersion | undefined>;
+  getLatestVersionNumber(journeyId: string): Promise<number>;
   
   listUserSessions(userId: string, limit?: number, offset?: number): Promise<VoiceSession[]>;
   getSession(sessionId: string): Promise<VoiceSession | undefined>;
@@ -57,21 +61,84 @@ export class DatabaseStorage implements IStorage {
 
   async createJourney(journey: InsertJourney): Promise<Journey> {
     const [created] = await db.insert(journeys).values(journey).returning();
+    
+    // Create initial version (version 1)
+    await db.insert(journeyVersions).values({
+      journeyId: created.id,
+      userId: created.userId,
+      versionNumber: 1,
+      name: created.name,
+      description: created.description || "",
+      systemPrompt: created.systemPrompt,
+      voice: created.voice,
+      agents: created.agents,
+      startingAgentId: created.startingAgentId,
+      changeNotes: "Initial version",
+    });
+    
     return created;
   }
 
-  async updateJourney(journeyId: string, updates: Partial<InsertJourney>): Promise<Journey | undefined> {
+  async updateJourney(journeyId: string, updates: Partial<InsertJourney>, userId: string, changeNotes?: string): Promise<Journey | undefined> {
+    // Get the current version number
+    const latestVersion = await this.getLatestVersionNumber(journeyId);
+    
+    // Update the journey
     const [updated] = await db
       .update(journeys)
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(journeys.id, journeyId))
       .returning();
+    
+    if (updated) {
+      // Create a new version entry
+      await db.insert(journeyVersions).values({
+        journeyId: updated.id,
+        userId,
+        versionNumber: latestVersion + 1,
+        name: updated.name,
+        description: updated.description || "",
+        systemPrompt: updated.systemPrompt,
+        voice: updated.voice,
+        agents: updated.agents,
+        startingAgentId: updated.startingAgentId,
+        changeNotes: changeNotes || "Updated journey",
+      });
+    }
+    
     return updated;
   }
 
   async deleteJourney(journeyId: string): Promise<boolean> {
-    const result = await db.delete(journeys).where(eq(journeys.id, journeyId));
+    await db.delete(journeys).where(eq(journeys.id, journeyId));
     return true;
+  }
+  
+  async listJourneyVersions(journeyId: string): Promise<JourneyVersion[]> {
+    return await db
+      .select()
+      .from(journeyVersions)
+      .where(eq(journeyVersions.journeyId, journeyId))
+      .orderBy(desc(journeyVersions.versionNumber));
+  }
+  
+  async getJourneyVersion(versionId: string): Promise<JourneyVersion | undefined> {
+    const [version] = await db
+      .select()
+      .from(journeyVersions)
+      .where(eq(journeyVersions.id, versionId));
+    return version;
+  }
+  
+  async getLatestVersionNumber(journeyId: string): Promise<number> {
+    const versions = await db
+      .select({ versionNumber: journeyVersions.versionNumber })
+      .from(journeyVersions)
+      .where(eq(journeyVersions.journeyId, journeyId))
+      .orderBy(desc(journeyVersions.versionNumber))
+      .limit(1);
+    
+    return versions.length > 0 ? versions[0].versionNumber : 0;
   }
 
   async listUserSessions(userId: string, limit = 50, offset = 0): Promise<VoiceSession[]> {

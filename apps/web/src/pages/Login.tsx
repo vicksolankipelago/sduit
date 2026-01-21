@@ -117,6 +117,16 @@ export const LoginPage: React.FC = () => {
           >
             {submitting ? 'Please wait...' : (isRegister ? 'Create Account' : 'Sign In')}
           </button>
+
+          {!isRegister && (
+            <button
+              type="button"
+              className="forgot-password-link"
+              onClick={() => navigate('/forgot-password')}
+            >
+              Forgot your password?
+            </button>
+          )}
         </form>
 
         <div className="auth-switch">

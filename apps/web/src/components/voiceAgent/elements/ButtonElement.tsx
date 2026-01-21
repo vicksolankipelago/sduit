@@ -1,6 +1,4 @@
-import React from 'react';
 import { ButtonElementState, ButtonElementStyle, ScreenEvent } from '../../../types/journey';
-import { mapIOSColorToCSSVar } from '../../../hooks/usePelagoDesignSystem';
 import './ButtonElement.css';
 
 export interface ButtonElementProps {

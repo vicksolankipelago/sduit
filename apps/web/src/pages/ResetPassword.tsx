@@ -1,67 +1,146 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { supabase } from '@sduit/shared/auth';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import './Login.css';
 
 export const ResetPasswordPage: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token');
+  
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleResetPassword = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
-    setMessage('');
+    setSuccess('');
 
-    if (!supabase) {
-      setError('Supabase is not configured.');
-      setLoading(false);
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
       return;
     }
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
-    });
-
-    if (error) {
-      setError(error.message);
-    } else {
-      setMessage('Check your email for the password reset link!');
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
     }
-    setLoading(false);
+
+    setSubmitting(true);
+
+    try {
+      const response = await fetch('/api/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSuccess('Password reset successfully! You can now sign in.');
+      } else {
+        setError(data.message || 'Failed to reset password');
+      }
+    } catch {
+      setError('An error occurred. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  if (!token) {
+    return (
+      <div className="login-page">
+        <div className="login-container">
+          <h1>Flow Builder</h1>
+          <p className="subtitle">Invalid reset link</p>
+          <div className="error-message">
+            This password reset link is invalid or has expired.
+          </div>
+          <div className="auth-switch">
+            <p>
+              <button type="button" onClick={() => navigate('/forgot-password')}>
+                Request a new reset link
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="login-page">
       <div className="login-container">
-        <h1>Reset Password</h1>
-        <p className="subtitle">Enter your email to receive a reset link</p>
+        <h1>Flow Builder</h1>
+        <p className="subtitle">Set your new password</p>
 
-        <form onSubmit={handleResetPassword} className="auth-form">
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+        {error && <div className="error-message">{error}</div>}
+        {success && (
+          <div className="success-message">
+            {success}
+            <div style={{ marginTop: '12px' }}>
+              <button
+                type="button"
+                className="submit-btn"
+                onClick={() => navigate('/login')}
+                style={{ marginTop: '8px' }}
+              >
+                Go to Sign In
+              </button>
+            </div>
           </div>
-          <button type="submit" className="submit-btn" disabled={loading}>
-            {loading ? 'Sending...' : 'Send Reset Link'}
-          </button>
-        </form>
+        )}
 
-        {message && <p className="success-message">{message}</p>}
-        {error && <p className="error-message">{error}</p>}
+        {!success && (
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="password">New Password</label>
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter new password"
+                required
+                minLength={6}
+              />
+            </div>
 
-        <p className="back-link">
-          <Link to="/login">Back to Login</Link>
-        </p>
+            <div className="form-group">
+              <label htmlFor="confirmPassword">Confirm Password</label>
+              <input
+                type="password"
+                id="confirmPassword"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+                required
+                minLength={6}
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="submit-btn"
+              disabled={submitting}
+            >
+              {submitting ? 'Please wait...' : 'Reset Password'}
+            </button>
+          </form>
+        )}
+
+        <div className="auth-switch">
+          <p>
+            Remember your password?{' '}
+            <button type="button" onClick={() => navigate('/login')}>
+              Sign in
+            </button>
+          </p>
+        </div>
       </div>
     </div>
   );
