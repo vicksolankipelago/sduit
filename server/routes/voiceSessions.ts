@@ -42,7 +42,11 @@ router.get("/count", isAuthenticated, async (req: any, res) => {
 
 router.get("/:sessionId", isAuthenticated, async (req: any, res) => {
   try {
-    const session = await storage.getSession(req.params.sessionId);
+    // Try looking up by database ID first, then by OpenAI sessionId
+    let session = await storage.getSessionById(req.params.sessionId);
+    if (!session) {
+      session = await storage.getSession(req.params.sessionId);
+    }
     
     if (!session) {
       return res.status(404).json({ message: "Session not found" });
@@ -163,7 +167,11 @@ router.put("/:sessionId/message", isAuthenticated, async (req: any, res) => {
 
 router.delete("/:sessionId", isAuthenticated, async (req: any, res) => {
   try {
-    const session = await storage.getSession(req.params.sessionId);
+    // Try looking up by database ID first, then by OpenAI sessionId
+    let session = await storage.getSessionById(req.params.sessionId);
+    if (!session) {
+      session = await storage.getSession(req.params.sessionId);
+    }
     
     if (!session) {
       return res.status(404).json({ message: "Session not found" });
@@ -173,7 +181,7 @@ router.delete("/:sessionId", isAuthenticated, async (req: any, res) => {
       return res.status(403).json({ message: "Forbidden" });
     }
     
-    await storage.deleteSession(req.params.sessionId);
+    await storage.deleteSession(session.sessionId);
     res.json({ success: true });
   } catch (error) {
     console.error("Error deleting session:", error);
