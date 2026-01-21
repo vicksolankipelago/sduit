@@ -27,6 +27,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [currentJourney, setCurrentJourney] = useState<Journey | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'detail'>('detail');
   const [validationErrors, setValidationErrors] = useState<any[]>([]);
@@ -63,6 +64,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
         };
         setCurrentJourney(newJourney);
         setSelectedAgentId(null);
+        setIsLoading(false);
         // Clear the query param so refreshing doesn't create another new flow
         setSearchParams({}, { replace: true });
         return;
@@ -75,6 +77,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
         if (journeyToEdit) {
           setCurrentJourney(journeyToEdit);
           setSelectedAgentId(null);
+          setIsLoading(false);
           // Clear the query param
           setSearchParams({}, { replace: true });
           return;
@@ -418,7 +421,11 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       <div className="journey-builder-layout">
         {/* Center Panel - Main Content */}
         <div className="journey-main-panel">
-          {!currentJourney ? (
+          {isLoading ? (
+            <div className="journey-loading">
+              <p>Loading...</p>
+            </div>
+          ) : !currentJourney ? (
             <div className="journey-welcome">
               <h2>Welcome to Flow Builder</h2>
               <p>Create multi-agent conversation flows with visual editing</p>
