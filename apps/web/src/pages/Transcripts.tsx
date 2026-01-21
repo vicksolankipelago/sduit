@@ -561,9 +561,6 @@ export const TranscriptsPage: React.FC = () => {
                   <span className="transcripts-list-item-title">
                     {session.journeyName || 'Untitled Session'}
                   </span>
-                  {session.agentName && (
-                    <span className="transcripts-list-item-agent">{session.agentName}</span>
-                  )}
                 </div>
                 <div className="transcripts-list-item-meta">
                   <span className="transcripts-list-item-stats">
