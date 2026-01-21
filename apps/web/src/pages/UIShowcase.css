@@ -188,6 +188,16 @@
   position: relative;
 }
 
+.ui-showcase-screen-card-clickable {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ui-showcase-screen-card-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
 .ui-showcase-screen-card-hint {
   font-size: 0.75rem;
   color: var(--text-global-secondary);

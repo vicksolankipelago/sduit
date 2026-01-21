@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import './UIShowcase.css';
 
@@ -19,9 +20,16 @@ import {
 } from '../services/screenStorage';
 import { listJourneys, loadJourney } from '../services/journeyStorage';
 
+interface LocationState {
+  editScreen?: Screen;
+  agentId?: string;
+  agentName?: string;
+}
+
 type TabMode = 'screens' | 'elements' | 'builder';
 
 const UIShowcase: React.FC = () => {
+  const location = useLocation();
   const [showcaseMode, setShowcaseMode] = useState<TabMode>('screens');
   const [selectedCategory, setSelectedCategory] = useState<'core' | 'card' | 'interactive' | 'advanced'>('core');
 
@@ -29,6 +37,7 @@ const UIShowcase: React.FC = () => {
   const [screensList, setScreensList] = useState<StandaloneScreenListItem[]>([]);
   const [isLoadingScreens, setIsLoadingScreens] = useState(true);
   const [, setEditingScreenId] = useState<string | null>(null);
+  const [, setEditingAgentInfo] = useState<{ agentId?: string; agentName?: string } | null>(null);
 
   // Builder state
   const [builderScreen, setBuilderScreen] = useState<StandaloneScreen>(() => createStandaloneScreen(uuidv4(), 'New Screen'));
@@ -36,6 +45,27 @@ const UIShowcase: React.FC = () => {
   const [selectedElementIndex, setSelectedElementIndex] = useState<number | null>(null);
   const [draggedElementIndex, setDraggedElementIndex] = useState<number | null>(null);
   const [_dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  // Check for navigation state with a screen to edit
+  useEffect(() => {
+    const state = location.state as LocationState | null;
+    if (state?.editScreen) {
+      // Convert Screen to StandaloneScreen format
+      const standaloneScreen: StandaloneScreen = {
+        ...state.editScreen,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setBuilderScreen(standaloneScreen);
+      setEditingScreenId(state.editScreen.id);
+      setEditingAgentInfo({ agentId: state.agentId, agentName: state.agentName });
+      setSelectedElementIndex(null);
+      setShowcaseMode('builder');
+      
+      // Clear the state to prevent re-opening on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Load screens on mount
   useEffect(() => {
@@ -104,12 +134,39 @@ const UIShowcase: React.FC = () => {
   };
 
   const handleEditScreen = async (screenId: string) => {
-    const screen = await loadScreen(screenId);
-    if (screen) {
-      setBuilderScreen(screen);
-      setEditingScreenId(screenId);
-      setSelectedElementIndex(null);
-      setShowcaseMode('builder');
+    // Check if this is a journey screen (compound ID: journeyId:agentId:screenId)
+    if (screenId.includes(':')) {
+      const [journeyId, agentId, actualScreenId] = screenId.split(':');
+      const journey = await loadJourney(journeyId);
+      if (journey) {
+        const agent = journey.agents.find(a => a.id === agentId);
+        if (agent?.screens) {
+          const screen = agent.screens.find(s => s.id === actualScreenId);
+          if (screen) {
+            const standaloneScreen: StandaloneScreen = {
+              ...screen,
+              createdAt: journey.createdAt || new Date().toISOString(),
+              updatedAt: journey.updatedAt || new Date().toISOString(),
+            };
+            setBuilderScreen(standaloneScreen);
+            setEditingScreenId(screenId);
+            setEditingAgentInfo({ agentId: agent.id, agentName: agent.name });
+            setSelectedElementIndex(null);
+            setShowcaseMode('builder');
+            return;
+          }
+        }
+      }
+    } else {
+      // Global screen
+      const screen = await loadScreen(screenId);
+      if (screen) {
+        setBuilderScreen(screen);
+        setEditingScreenId(screenId);
+        setEditingAgentInfo(null);
+        setSelectedElementIndex(null);
+        setShowcaseMode('builder');
+      }
     }
   };
 
@@ -375,7 +432,11 @@ const UIShowcase: React.FC = () => {
               {screensList.map((screen) => {
                 const isJourneyScreen = screen.source?.type === 'journey';
                 return (
-                  <div key={screen.id} className="ui-showcase-screen-card">
+                  <div 
+                    key={screen.id} 
+                    className="ui-showcase-screen-card ui-showcase-screen-card-clickable"
+                    onClick={() => handleEditScreen(screen.id)}
+                  >
                     <div className="ui-showcase-screen-card-preview">
                       <div className="ui-showcase-screen-card-icon">
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -399,34 +460,22 @@ const UIShowcase: React.FC = () => {
                         </p>
                       )}
                     </div>
-                    <div className="ui-showcase-screen-card-actions">
-                      {isJourneyScreen ? (
-                        <span className="ui-showcase-screen-card-hint">
-                          Edit in Flow Builder
-                        </span>
-                      ) : (
-                        <>
-                          <button
-                            className="ui-showcase-screen-card-btn ui-showcase-screen-card-btn-primary"
-                            onClick={() => handleEditScreen(screen.id)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="ui-showcase-screen-card-btn"
-                            onClick={() => handleDuplicateScreen(screen.id)}
-                          >
-                            Duplicate
-                          </button>
-                          <button
-                            className="ui-showcase-screen-card-btn ui-showcase-screen-card-btn-danger"
-                            onClick={() => handleDeleteScreen(screen.id)}
-                          >
-                            Delete
-                          </button>
-                        </>
-                      )}
-                    </div>
+                    {!isJourneyScreen && (
+                      <div className="ui-showcase-screen-card-actions" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          className="ui-showcase-screen-card-btn"
+                          onClick={() => handleDuplicateScreen(screen.id)}
+                        >
+                          Duplicate
+                        </button>
+                        <button
+                          className="ui-showcase-screen-card-btn ui-showcase-screen-card-btn-danger"
+                          onClick={() => handleDeleteScreen(screen.id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })}

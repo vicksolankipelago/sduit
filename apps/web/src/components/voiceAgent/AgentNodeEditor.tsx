@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { Agent, VOICE_OPTIONS, Screen } from '../../types/journey';
 import ToolEditor from './ToolEditor';
-import { ScreenEditor } from './ScreenEditor';
-import ScreenPreview from './ScreenPreview';
-import { ScreenProvider } from '../../contexts/voiceAgent/ScreenContext';
 import { SCREEN_TEMPLATES } from '../../lib/voiceAgent/screenTemplates';
 import { getAvailableTemplates, loadPromptTemplate, PromptTemplateKey } from '../../utils/promptTemplates';
 import './AgentNodeEditor.css';
@@ -24,22 +22,10 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
   onClose,
   disabled = false,
 }) => {
+  const navigate = useNavigate();
   const [loadingTemplate, setLoadingTemplate] = useState(false);
   const [showTemplateMenu, setShowTemplateMenu] = useState(false);
   const [activeTab, setActiveTab] = useState<'config' | 'tools' | 'screens'>('config');
-  const [editingScreenIndex, setEditingScreenIndex] = useState<number | null>(null);
-  const [previewScreenIndex, setPreviewScreenIndex] = useState<number | null>(null);
-
-  // Bounds-checking safety net - only reset indices if they're out of bounds
-  useEffect(() => {
-    const maxIndex = (agent?.screens?.length ?? 0) - 1;
-    if (editingScreenIndex !== null && editingScreenIndex > maxIndex) {
-      setEditingScreenIndex(maxIndex >= 0 ? maxIndex : null);
-    }
-    if (previewScreenIndex !== null && previewScreenIndex > maxIndex) {
-      setPreviewScreenIndex(maxIndex >= 0 ? maxIndex : null);
-    }
-  }, [agent?.screens?.length, editingScreenIndex, previewScreenIndex]);
 
   if (!agent) {
     return (
@@ -109,21 +95,25 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
       screenPrompts: { ...(agent.screenPrompts || {}), [newScreen.id]: '' },
     };
 
-    const newIndex = (agent.screens || []).length;
     onChange(updatedAgent);
-    setEditingScreenIndex(newIndex);
-    setPreviewScreenIndex(null);
+    
+    // Navigate to Screen Builder with the new screen
+    navigate('/screens', { 
+      state: { 
+        editScreen: newScreen,
+        agentId: agent.id,
+        agentName: agent.name
+      } 
+    });
   };
 
-  const handleUpdateScreen = (index: number, screen: Screen) => {
-    if (!agent.screens) return;
-
-    const updatedScreens = [...agent.screens];
-    updatedScreens[index] = screen;
-
-    onChange({
-      ...agent,
-      screens: updatedScreens,
+  const handleEditScreen = (screen: Screen) => {
+    navigate('/screens', { 
+      state: { 
+        editScreen: screen,
+        agentId: agent.id,
+        agentName: agent.name
+      } 
     });
   };
 
@@ -139,35 +129,6 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
       screens: updatedScreens,
       screenPrompts: remainingPrompts,
     });
-    
-    // Update editing index
-    if (editingScreenIndex !== null) {
-      if (index === editingScreenIndex) {
-        // Deleted the screen we were editing - select adjacent or close
-        if (updatedScreens.length === 0) {
-          setEditingScreenIndex(null);
-        } else {
-          setEditingScreenIndex(Math.min(index, updatedScreens.length - 1));
-        }
-      } else if (index < editingScreenIndex) {
-        // Deleted a screen before the one we were editing - decrement to stay on same logical screen
-        setEditingScreenIndex(editingScreenIndex - 1);
-      }
-      // If deleted screen is after editingScreenIndex, no change needed
-    }
-    
-    // Update preview index (same logic)
-    if (previewScreenIndex !== null) {
-      if (index === previewScreenIndex) {
-        if (updatedScreens.length === 0) {
-          setPreviewScreenIndex(null);
-        } else {
-          setPreviewScreenIndex(Math.min(index, updatedScreens.length - 1));
-        }
-      } else if (index < previewScreenIndex) {
-        setPreviewScreenIndex(previewScreenIndex - 1);
-      }
-    }
   };
 
   return (
@@ -382,22 +343,6 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
               Define screen-based UI for this agent. Screens enable visual interactions alongside voice.
             </p>
 
-            <div className="agent-screen-templates">
-              <span className="agent-screen-templates-label">From template:</span>
-              {SCREEN_TEMPLATES.map(template => (
-                <button
-                  key={template.id}
-                  className="agent-screen-template-btn"
-                  onClick={() => handleAddScreen(template.id)}
-                  disabled={disabled}
-                  title={template.description}
-                  type="button"
-                >
-                  {template.icon} {template.name}
-                </button>
-              ))}
-            </div>
-            
             {!agent.screens || agent.screens.length === 0 ? (
               <div className="screens-empty">
                 <p>No screens defined yet.</p>
@@ -411,74 +356,38 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
                 </button>
               </div>
             ) : (
-              <div className="agent-screens-grid">
-                <div className="agent-screens-list">
-                  {agent.screens.map((screen, index) => (
-                    <div 
-                      key={screen.id}
-                      className={`agent-screen-item ${editingScreenIndex === index ? 'editing' : ''} ${previewScreenIndex === index ? 'previewing' : ''}`}
-                    >
-                      <div className="agent-screen-item-header">
-                        <strong>{screen.title}</strong>
-                        <span className="agent-screen-item-id">{screen.id}</span>
-                      </div>
-                      <div className="agent-screen-item-meta">
-                        {screen.sections.length} section(s), {' '}
-                        {screen.sections.reduce((acc, s) => acc + s.elements.length, 0)} element(s)
-                      </div>
-                      <div className="agent-screen-item-actions">
-                        <button 
-                          onClick={() => setEditingScreenIndex(index)} 
-                          disabled={disabled}
-                          type="button"
-                        >
-                          ✏️ Edit
-                        </button>
-                        <button 
-                          onClick={() => setPreviewScreenIndex(index)} 
-                          disabled={disabled}
-                          type="button"
-                        >
-                          👁️ Preview
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteScreen(index)} 
-                          disabled={disabled}
-                          type="button"
-                        >
-                          🗑️
-                        </button>
-                      </div>
+              <div className="agent-screens-list">
+                {agent.screens.map((screen, index) => (
+                  <div 
+                    key={screen.id}
+                    className="agent-screen-item"
+                  >
+                    <div className="agent-screen-item-header">
+                      <strong>{screen.title}</strong>
+                      <span className="agent-screen-item-id">{screen.id}</span>
                     </div>
-                  ))}
-                </div>
-
-                {editingScreenIndex !== null && agent.screens[editingScreenIndex] && (
-                  <div className="agent-screen-editor-panel">
-                    <ScreenEditor
-                      screen={agent.screens[editingScreenIndex]}
-                      onChange={(screen) => handleUpdateScreen(editingScreenIndex, screen)}
-                      onClose={() => setEditingScreenIndex(null)}
-                      disabled={disabled}
-                    />
-                  </div>
-                )}
-
-                {previewScreenIndex !== null && agent.screens[previewScreenIndex] && (
-                  <div className="agent-screen-preview-panel">
-                    <div className="agent-screen-preview-header">
-                      <h4>Preview: {agent.screens[previewScreenIndex].title}</h4>
-                      <button onClick={() => setPreviewScreenIndex(null)} type="button">✕</button>
+                    <div className="agent-screen-item-meta">
+                      {screen.sections.length} section(s), {' '}
+                      {screen.sections.reduce((acc, s) => acc + s.elements.length, 0)} element(s)
                     </div>
-                    <ScreenProvider initialScreen={agent.screens[previewScreenIndex]}>
-                      <ScreenPreview
-                        screen={agent.screens[previewScreenIndex]}
-                        allScreens={agent.screens}
-                        showDeviceFrame={true}
-                      />
-                    </ScreenProvider>
+                    <div className="agent-screen-item-actions">
+                      <button 
+                        onClick={() => handleEditScreen(screen)} 
+                        disabled={disabled}
+                        type="button"
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteScreen(index)} 
+                        disabled={disabled}
+                        type="button"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
             )}
 

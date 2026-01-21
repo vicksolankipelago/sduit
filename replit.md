@@ -108,6 +108,8 @@ Uses PostgreSQL with Drizzle ORM. Schema defined in `shared/schema.ts`:
 
 ## Recent Changes
 
+- 2026-01-21: Screen cards on Screens page are now clickable to open the Screen Builder directly
+- 2026-01-21: Removed template section and preview button from AgentNodeEditor - Edit now navigates to Screen Builder
 - 2026-01-21: Screens page now shows all screens including those embedded in flows/journeys, with journey source info displayed
 - 2026-01-21: Added screen editing functionality to AgentNodeEditor - users can now add, edit, preview, and delete screens directly from the agent editor
 - 2026-01-21: Fixed transcript duplication bug where first text chunk was added twice
