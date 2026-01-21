@@ -14,10 +14,12 @@ import { toolLogger } from '../../utils/logger';
 // Type definitions
 export type EventTriggerCallback = (eventId: string, agentName: string) => void;
 export type RecordInputCallback = (title: string, summary: string, description?: string, storeKey?: string) => void;
+export type EndCallCallback = (reason?: string) => void;
 
 export interface JourneyRuntimeCallbacks {
   onEventTrigger?: EventTriggerCallback;
   onRecordInput?: RecordInputCallback;
+  onEndCall?: EndCallCallback;
 }
 
 export interface JourneyRuntimeResult {
@@ -38,6 +40,7 @@ export class JourneyRuntime {
   private agentScreensMap = new Map<string, Screen[]>();
   private eventTriggerCallback: EventTriggerCallback | null = null;
   private recordInputCallback: RecordInputCallback | null = null;
+  private endCallCallback: EndCallCallback | null = null;
 
   constructor(callbacks?: JourneyRuntimeCallbacks) {
     if (callbacks?.onEventTrigger) {
@@ -45,6 +48,9 @@ export class JourneyRuntime {
     }
     if (callbacks?.onRecordInput) {
       this.recordInputCallback = callbacks.onRecordInput;
+    }
+    if (callbacks?.onEndCall) {
+      this.endCallCallback = callbacks.onEndCall;
     }
   }
 
@@ -60,6 +66,13 @@ export class JourneyRuntime {
    */
   setRecordInputCallback(callback: RecordInputCallback): void {
     this.recordInputCallback = callback;
+  }
+
+  /**
+   * Set the end call callback for handling end_call tool calls
+   */
+  setEndCallCallback(callback: EndCallCallback): void {
+    this.endCallCallback = callback;
   }
 
   /**
@@ -114,6 +127,7 @@ export class JourneyRuntime {
     this.agentScreensMap.clear();
     this.eventTriggerCallback = null;
     this.recordInputCallback = null;
+    this.endCallCallback = null;
   }
 
   /**
@@ -153,6 +167,9 @@ export class JourneyRuntime {
     if (agentConfig.screens && agentConfig.screens.length > 0) {
       realtimeTools.push(this.createTriggerEventTool(agentName) as any);
     }
+
+    // Add end_call tool to all agents
+    realtimeTools.push(this.createEndCallTool(agentName) as any);
 
     return new RealtimeAgent({
       name: agentName,
@@ -342,6 +359,47 @@ export class JourneyRuntime {
       },
     });
   }
+
+  /**
+   * Create the end_call tool for ending the conversation
+   */
+  private createEndCallTool(agentName: string) {
+    const runtime = this;
+
+    interface EndCallParams {
+      reason?: string;
+    }
+
+    return (tool as any)({
+      name: 'end_call',
+      description: 'End the current call/conversation. Use this when the conversation is complete, the user wants to end the call, or the journey has reached its natural conclusion. This will disconnect the call and show a feedback form to the user.',
+      parameters: {
+        type: 'object' as const,
+        properties: {
+          reason: {
+            type: 'string',
+            description: 'Optional reason for ending the call (e.g., "conversation complete", "user requested", "journey finished")',
+          },
+        },
+        required: [] as const,
+        additionalProperties: false as const,
+      },
+      strict: false,
+      execute: async (input: EndCallParams) => {
+        const { reason } = input;
+
+        toolLogger.debug(`End call triggered by agent ${agentName}${reason ? `: ${reason}` : ''}`);
+
+        if (runtime.endCallCallback) {
+          runtime.endCallCallback(reason);
+        } else {
+          toolLogger.warn('End call callback not set. Call will not be ended.');
+        }
+
+        return `Call ending${reason ? `: ${reason}` : ''}`;
+      },
+    });
+  }
 }
 
 // ============================================================================
@@ -373,6 +431,14 @@ export function setEventTriggerCallback(callback: EventTriggerCallback): void {
  */
 export function setRecordInputCallback(callback: RecordInputCallback): void {
   getDefaultRuntime().setRecordInputCallback(callback);
+}
+
+/**
+ * Set the end call callback for handling end_call tool calls
+ * @deprecated Use JourneyRuntime class instead
+ */
+export function setEndCallCallback(callback: EndCallCallback): void {
+  getDefaultRuntime().setEndCallCallback(callback);
 }
 
 /**

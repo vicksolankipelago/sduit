@@ -110,6 +110,7 @@ Uses PostgreSQL with Drizzle ORM. Schema defined in `shared/schema.ts`:
 
 ## Recent Changes
 
+- 2026-01-21: Added end_call tool - AI agent can now call end_call() to end the conversation and show the feedback modal
 - 2026-01-21: Journeys are now shared across all users - all admins can see and edit all journeys
 - 2026-01-21: Screen cards on Screens page are now clickable to open the Screen Builder directly
 - 2026-01-21: Removed template section and preview button from AgentNodeEditor - Edit now navigates to Screen Builder

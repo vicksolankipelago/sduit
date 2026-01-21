@@ -956,6 +956,15 @@ Important guidelines:
         addLog('info', `✅ Recorded input dispatched to screen state`);
       }
       
+      // Handle end_call tool - disconnect and show feedback modal
+      if (toolName === 'end_call') {
+        addLog('info', `📞 End call requested${args.reason ? `: ${args.reason}` : ''}`);
+        // Use setTimeout to allow the tool response to be sent before disconnecting
+        setTimeout(() => {
+          disconnectFromRealtime();
+        }, 500);
+      }
+      
       // Trigger UI card for this function call with current agent context
       triggerFunctionUI(toolName, args, currentAgentRef.current);
     },
