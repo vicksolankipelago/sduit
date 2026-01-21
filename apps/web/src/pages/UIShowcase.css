@@ -163,6 +163,37 @@
   color: var(--text-global-secondary);
 }
 
+.ui-showcase-screen-card-source {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.75rem;
+  color: var(--text-global-secondary);
+  font-style: italic;
+}
+
+.ui-showcase-screen-card-badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: var(--primary-cta-default);
+  color: var(--text-on-primary);
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ui-showcase-screen-card-preview {
+  position: relative;
+}
+
+.ui-showcase-screen-card-hint {
+  font-size: 0.75rem;
+  color: var(--text-global-secondary);
+  font-style: italic;
+}
+
 .ui-showcase-screen-card-actions {
   display: flex;
   gap: 0.5rem;

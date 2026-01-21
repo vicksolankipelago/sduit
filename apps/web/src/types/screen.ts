@@ -38,6 +38,14 @@ export interface StandaloneScreenListItem {
   elementCount: number;
   /** ISO timestamp when the screen was last updated */
   updatedAt: string;
+  /** Source info for screens embedded in journeys */
+  source?: {
+    type: 'global' | 'journey';
+    journeyId?: string;
+    journeyName?: string;
+    agentId?: string;
+    agentName?: string;
+  };
 }
 
 /**

@@ -17,6 +17,7 @@ import {
   deleteScreen,
   duplicateScreen,
 } from '../services/screenStorage';
+import { listJourneys, loadJourney } from '../services/journeyStorage';
 
 type TabMode = 'screens' | 'elements' | 'builder';
 
@@ -43,8 +44,54 @@ const UIShowcase: React.FC = () => {
 
   const loadScreensList = async () => {
     setIsLoadingScreens(true);
-    const screens = await listScreens();
-    setScreensList(screens);
+    
+    // Load global screens
+    const globalScreens = await listScreens();
+    const globalScreensWithSource: StandaloneScreenListItem[] = globalScreens.map(s => ({
+      ...s,
+      source: { type: 'global' as const }
+    }));
+    
+    // Load screens from journeys
+    const journeyScreens: StandaloneScreenListItem[] = [];
+    try {
+      const journeyList = await listJourneys();
+      for (const journeyItem of journeyList) {
+        const journey = await loadJourney(journeyItem.id);
+        if (journey?.agents) {
+          for (const agent of journey.agents) {
+            if (agent.screens && agent.screens.length > 0) {
+              for (const screen of agent.screens) {
+                const elementCount = screen.sections?.reduce(
+                  (count, section) => count + (section.elements?.length || 0),
+                  0
+                ) || 0;
+                
+                journeyScreens.push({
+                  id: `${journey.id}:${agent.id}:${screen.id}`,
+                  title: screen.title || 'Untitled Screen',
+                  sectionCount: screen.sections?.length || 0,
+                  elementCount,
+                  updatedAt: journey.updatedAt || new Date().toISOString(),
+                  source: {
+                    type: 'journey',
+                    journeyId: journey.id,
+                    journeyName: journey.name,
+                    agentId: agent.id,
+                    agentName: agent.name
+                  }
+                });
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading journey screens:', error);
+    }
+    
+    // Merge both lists
+    setScreensList([...globalScreensWithSource, ...journeyScreens]);
     setIsLoadingScreens(false);
   };
 
@@ -325,45 +372,64 @@ const UIShowcase: React.FC = () => {
             </div>
           ) : (
             <div className="ui-showcase-screens-grid">
-              {screensList.map((screen) => (
-                <div key={screen.id} className="ui-showcase-screen-card">
-                  <div className="ui-showcase-screen-card-preview">
-                    <div className="ui-showcase-screen-card-icon">
-                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                        <line x1="3" y1="9" x2="21" y2="9" />
-                        <line x1="9" y1="21" x2="9" y2="9" />
-                      </svg>
+              {screensList.map((screen) => {
+                const isJourneyScreen = screen.source?.type === 'journey';
+                return (
+                  <div key={screen.id} className="ui-showcase-screen-card">
+                    <div className="ui-showcase-screen-card-preview">
+                      <div className="ui-showcase-screen-card-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                          <line x1="3" y1="9" x2="21" y2="9" />
+                          <line x1="9" y1="21" x2="9" y2="9" />
+                        </svg>
+                      </div>
+                      {isJourneyScreen && (
+                        <div className="ui-showcase-screen-card-badge">Flow Screen</div>
+                      )}
+                    </div>
+                    <div className="ui-showcase-screen-card-content">
+                      <h3 className="ui-showcase-screen-card-title">{screen.title}</h3>
+                      <p className="ui-showcase-screen-card-meta">
+                        {screen.sectionCount} sections · {screen.elementCount} elements
+                      </p>
+                      {isJourneyScreen && screen.source?.journeyName && (
+                        <p className="ui-showcase-screen-card-source">
+                          {screen.source.journeyName} → {screen.source.agentName || 'Agent'}
+                        </p>
+                      )}
+                    </div>
+                    <div className="ui-showcase-screen-card-actions">
+                      {isJourneyScreen ? (
+                        <span className="ui-showcase-screen-card-hint">
+                          Edit in Flow Builder
+                        </span>
+                      ) : (
+                        <>
+                          <button
+                            className="ui-showcase-screen-card-btn ui-showcase-screen-card-btn-primary"
+                            onClick={() => handleEditScreen(screen.id)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="ui-showcase-screen-card-btn"
+                            onClick={() => handleDuplicateScreen(screen.id)}
+                          >
+                            Duplicate
+                          </button>
+                          <button
+                            className="ui-showcase-screen-card-btn ui-showcase-screen-card-btn-danger"
+                            onClick={() => handleDeleteScreen(screen.id)}
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
-                  <div className="ui-showcase-screen-card-content">
-                    <h3 className="ui-showcase-screen-card-title">{screen.title}</h3>
-                    <p className="ui-showcase-screen-card-meta">
-                      {screen.sectionCount} sections · {screen.elementCount} elements
-                    </p>
-                  </div>
-                  <div className="ui-showcase-screen-card-actions">
-                    <button
-                      className="ui-showcase-screen-card-btn ui-showcase-screen-card-btn-primary"
-                      onClick={() => handleEditScreen(screen.id)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="ui-showcase-screen-card-btn"
-                      onClick={() => handleDuplicateScreen(screen.id)}
-                    >
-                      Duplicate
-                    </button>
-                    <button
-                      className="ui-showcase-screen-card-btn ui-showcase-screen-card-btn-danger"
-                      onClick={() => handleDeleteScreen(screen.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
