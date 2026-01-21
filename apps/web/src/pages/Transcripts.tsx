@@ -365,7 +365,7 @@ export const TranscriptsPage: React.FC = () => {
                         className={`transcripts-message ${item.role === 'user' ? 'user' : 'assistant'} ${notesMessageIndex === index ? 'selected' : ''}`}
                       >
                         <div className="transcripts-message-role">
-                          {item.role === 'user' ? 'Member' : 'Coach'}
+                          {item.role === 'user' ? (user?.firstName || 'User') : 'Agent'}
                         </div>
                         <div className="transcripts-message-content">{item.title}</div>
                         <div className="transcripts-message-footer">
