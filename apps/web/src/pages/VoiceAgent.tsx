@@ -33,7 +33,7 @@ import {
   downloadPromptAndTranscript
 } from '../utils/transcriptExport';
 import { journeyToRealtimeAgents, getStartingAgentName, setEventTriggerCallback } from '../lib/voiceAgent/journeyRuntime';
-import { listJourneys, loadJourney } from '../services/journeyStorage';
+import { listJourneys, loadJourney, downloadAllJourneysAsJSON, importAllJourneys } from '../services/journeyStorage';
 import { PQData, substitutePromptVariables, DEFAULT_PQ_DATA } from '../utils/promptTemplates';
 import { useAuth } from '../contexts/AuthContext';
 import { saveSession, DebouncedSessionSaver } from '../services/api/sessionService';
@@ -141,6 +141,10 @@ function VoiceAgentContent() {
   // Feedback form state
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [feedbackSessionId, setFeedbackSessionId] = useState<string | null>(null);
+  
+  // Import/Export state
+  const [importExportStatus, setImportExportStatus] = useState<string | null>(null);
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   // Session tracking for transcript export
   const sessionIdRef = useRef<string>(`session_${Date.now()}`);
@@ -1003,6 +1007,50 @@ Important guidelines:
     }
   };
 
+  // Handle export all journeys
+  const handleExportJourneys = async () => {
+    try {
+      setImportExportStatus('Exporting journeys...');
+      await downloadAllJourneysAsJSON();
+      setImportExportStatus('Journeys exported successfully!');
+      setTimeout(() => setImportExportStatus(null), 3000);
+    } catch (error) {
+      setImportExportStatus('Failed to export journeys');
+      setTimeout(() => setImportExportStatus(null), 3000);
+    }
+  };
+
+  // Handle import journeys from file
+  const handleImportJourneys = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      setImportExportStatus('Importing journeys...');
+      const text = await file.text();
+      const result = await importAllJourneys(text);
+      
+      if (result?.success) {
+        setImportExportStatus(result.message);
+        // Refresh journey list
+        const journeyList = await listJourneys();
+        setAvailableJourneys(journeyList);
+      } else {
+        setImportExportStatus('Failed to import journeys');
+      }
+      
+      setTimeout(() => setImportExportStatus(null), 5000);
+    } catch (error) {
+      setImportExportStatus('Failed to import journeys');
+      setTimeout(() => setImportExportStatus(null), 3000);
+    }
+    
+    // Reset file input
+    if (importFileRef.current) {
+      importFileRef.current.value = '';
+    }
+  };
+
   const handleStartJourney = useCallback(async (journeyId: string) => {
     console.log('🚀 handleStartJourney called with journeyId:', journeyId);
     
@@ -1161,6 +1209,33 @@ Important guidelines:
         <div className="voice-agent-session-view">
           {sessionStatus === 'DISCONNECTED' ? (
             <div className="journeys-grid-container">
+              {/* Import/Export Controls for Admins */}
+              {user?.role === 'admin' && (
+                <div className="journeys-sync-controls">
+                  <div className="journeys-sync-buttons">
+                    <button 
+                      className="journeys-sync-btn journeys-export-btn"
+                      onClick={handleExportJourneys}
+                      title="Export all journeys to JSON file"
+                    >
+                      <span>⬇️</span> Export All
+                    </button>
+                    <label className="journeys-sync-btn journeys-import-btn">
+                      <span>⬆️</span> Import
+                      <input
+                        ref={importFileRef}
+                        type="file"
+                        accept=".json"
+                        onChange={handleImportJourneys}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                  </div>
+                  {importExportStatus && (
+                    <div className="journeys-sync-status">{importExportStatus}</div>
+                  )}
+                </div>
+              )}
               <div className="journeys-grid">
                 {availableJourneys.map((journey) => {
                     // Map journey names to gradient backgrounds and icons

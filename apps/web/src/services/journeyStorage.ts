@@ -293,3 +293,64 @@ export function clearAllJourneys(): boolean {
     return false;
   }
 }
+
+// Export all journeys for syncing to production
+export async function exportAllJourneys(): Promise<{ exportedAt: string; count: number; journeys: any[] } | null> {
+  try {
+    const response = await fetch('/api/journeys/export/all', {
+      method: 'GET',
+      credentials: 'include',
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to export journeys');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to export all journeys:', error);
+    return null;
+  }
+}
+
+// Download all journeys as JSON file
+export async function downloadAllJourneysAsJSON(): Promise<void> {
+  const exportData = await exportAllJourneys();
+  if (!exportData) return;
+
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `all_journeys_${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  console.log(`Downloaded ${exportData.count} journeys`);
+}
+
+// Import journeys from JSON (for syncing from dev to production)
+export async function importAllJourneys(jsonData: string): Promise<{ success: boolean; message: string; created: number; updated: number; errors: string[] } | null> {
+  try {
+    const parsed = JSON.parse(jsonData);
+    const journeys = parsed.journeys || parsed;
+    
+    const response = await fetch('/api/journeys/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ journeys: Array.isArray(journeys) ? journeys : [journeys] }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to import journeys');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to import journeys:', error);
+    return null;
+  }
+}

@@ -68,6 +68,54 @@
   margin: 0 auto;
 }
 
+/* Journey Sync Controls */
+.journeys-sync-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.journeys-sync-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.journeys-sync-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid var(--border-default);
+  background: var(--background-light);
+  color: var(--text-global-primary);
+}
+
+.journeys-sync-btn:hover {
+  background: var(--background-hover);
+  border-color: var(--primary-cta-default);
+}
+
+.journeys-export-btn span,
+.journeys-import-btn span {
+  font-size: 1rem;
+}
+
+.journeys-sync-status {
+  font-size: 0.875rem;
+  color: var(--text-global-secondary);
+  padding: 0.5rem 1rem;
+  background: var(--background-light-card);
+  border-radius: 8px;
+}
+
 .journeys-grid-title {
   font-size: 1.75rem;
   font-weight: 700;
