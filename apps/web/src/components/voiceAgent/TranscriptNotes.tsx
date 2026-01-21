@@ -45,15 +45,27 @@ export const TranscriptNotes: React.FC<TranscriptNotesProps> = ({
   };
 
   const handleAddNote = async () => {
-    if (!newNoteContent.trim() || messageIndex === null) return;
+    console.log('handleAddNote called', { newNoteContent, messageIndex, sessionId });
+    
+    if (!newNoteContent.trim()) {
+      setError('Please enter a note before saving.');
+      return;
+    }
+    
+    if (messageIndex === null) {
+      setError('No message selected.');
+      return;
+    }
     
     setSubmitting(true);
     setError(null);
     try {
+      console.log('Creating note...', { sessionId, messageIndex, content: newNoteContent.trim() });
       await createNote(sessionId, {
         messageIndex,
         content: newNoteContent.trim(),
       });
+      console.log('Note created successfully');
       setNewNoteContent('');
       onClose();
     } catch (err) {
