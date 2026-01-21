@@ -12,6 +12,7 @@ import ScreenEditor from './ScreenEditor';
 import PromptEditor from './PromptEditor';
 import { ScreenProvider } from '../../contexts/voiceAgent/ScreenContext';
 import ScreenPreview from './ScreenPreview';
+import { TrashIcon, FileTextIcon, EditIcon, RocketIcon, TargetIcon, EyeIcon } from '../Icons';
 import './JourneyBuilder.css';
 
 interface JourneyBuilderProps {
@@ -381,10 +382,10 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                 onClick={() => handleDeleteJourney(currentJourney.id)}
                 disabled={disabled}
               >
-                🗑️ Delete
+                <TrashIcon size={14} /> Delete
               </button>
               <button className="journey-action-btn launch" onClick={handleLaunch} disabled={disabled}>
-                🚀 Launch Flow
+                <RocketIcon size={14} /> Launch Flow
               </button>
             </>
           )}
@@ -403,7 +404,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
               <h2>Welcome to Flow Builder</h2>
               <p>Create multi-agent conversation flows with visual editing</p>
               <button className="journey-welcome-btn" onClick={handleCreateNewJourney} type="button">
-                🎯 Create New Flow
+                <TargetIcon size={16} /> Create New Flow
               </button>
             </div>
           ) : (
@@ -449,7 +450,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                     className={`journey-builder-tab ${builderTab === 'prompts' ? 'active' : ''}`}
                     onClick={() => setBuilderTab('prompts')}
                   >
-                    📝 Prompts
+                    <FileTextIcon size={14} /> Prompts
                   </button>
                 </div>
               )}
@@ -561,13 +562,13 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                             </div>
                             <div className="journey-screen-item-actions">
                               <button onClick={() => setEditingScreenIndex(index)} disabled={disabled}>
-                                ✏️ Edit
+                                <EditIcon size={12} /> Edit
                               </button>
                               <button onClick={() => setPreviewScreenIndex(index)} disabled={disabled}>
-                                👁️ Preview
+                                <EyeIcon size={12} /> Preview
                               </button>
                               <button onClick={() => handleRemoveScreen(index)} disabled={disabled}>
-                                🗑️
+                                <TrashIcon size={12} />
                               </button>
                             </div>
                           </div>

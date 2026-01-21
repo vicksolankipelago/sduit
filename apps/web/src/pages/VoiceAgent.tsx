@@ -22,6 +22,7 @@ import MemberPersonaEditor from '../components/voiceAgent/MemberPersonaEditor';
 import FeedbackForm from '../components/voiceAgent/FeedbackForm';
 import VoiceControlBar from '../components/voiceAgent/VoiceControlBar';
 import { useAudioLevel } from '../hooks/voiceAgent/useAudioLevel';
+import { EditIcon, SettingsIcon } from '../components/Icons';
 
 import { SessionStatus, TranscriptItem } from '../types/voiceAgent';
 import { Journey, JourneyListItem } from '../types/journey';
@@ -1204,7 +1205,7 @@ Important guidelines:
                               }}
                               title="Edit flow"
                             >
-                              <span className="journey-card-edit-icon">✏️</span>
+                              <EditIcon size={14} />
                             </button>
                             <button
                               className="journey-card-settings-btn"
@@ -1214,7 +1215,7 @@ Important guidelines:
                               }}
                               title="Configure testing persona"
                             >
-                              <span className="journey-card-settings-icon">⚙️</span>
+                              <SettingsIcon size={14} />
                             </button>
                           </div>
                         </div>

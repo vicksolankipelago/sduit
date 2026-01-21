@@ -8,6 +8,7 @@
 import React, { useState } from 'react';
 import { Variable, VariableCategory, VARIABLE_CATEGORIES } from '../../types/variables';
 import { getOrderedCategories } from '../../hooks/useVariables';
+import { ListIcon } from '../Icons';
 import './VariablePanel.css';
 
 interface VariablePanelProps {
@@ -57,7 +58,7 @@ const VariablePanel: React.FC<VariablePanelProps> = ({
   return (
     <div className={`variable-panel ${mode} ${disabled ? 'disabled' : ''}`}>
       <div className="variable-panel-header">
-        <span className="variable-panel-header-icon">📋</span>
+        <span className="variable-panel-header-icon"><ListIcon size={16} /></span>
         <h3>Variables</h3>
       </div>
 

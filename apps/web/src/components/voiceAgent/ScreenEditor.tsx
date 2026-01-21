@@ -11,6 +11,7 @@ import {
 } from '../../types/journey';
 import { getElementMetadata, getElementsByCategory, ElementMetadataRegistry } from '../../lib/voiceAgent/elementRegistry';
 import ElementPropertyEditor from './ElementPropertyEditor';
+import { SettingsIcon, LayersIcon, ZapIcon, TrashIcon } from '../Icons';
 import './ScreenEditor.css';
 
 export interface ScreenEditorProps {
@@ -193,19 +194,19 @@ export const ScreenEditor: React.FC<ScreenEditorProps> = ({
           className={`screen-editor-tab ${activeTab === 'config' ? 'active' : ''}`}
           onClick={() => setActiveTab('config')}
         >
-          ⚙️ Configuration
+          <SettingsIcon size={14} /> Configuration
         </button>
         <button
           className={`screen-editor-tab ${activeTab === 'sections' ? 'active' : ''}`}
           onClick={() => setActiveTab('sections')}
         >
-          📐 Sections & Elements
+          <LayersIcon size={14} /> Sections & Elements
         </button>
         <button
           className={`screen-editor-tab ${activeTab === 'events' ? 'active' : ''}`}
           onClick={() => setActiveTab('events')}
         >
-          ⚡ Events
+          <ZapIcon size={14} /> Events
         </button>
       </div>
 
@@ -311,7 +312,7 @@ export const ScreenEditor: React.FC<ScreenEditorProps> = ({
                           disabled={disabled}
                           className="screen-editor-section-item-remove"
                         >
-                          🗑️
+                          <TrashIcon size={12} />
                         </button>
                       </div>
                     </div>
@@ -418,7 +419,7 @@ export const ScreenEditor: React.FC<ScreenEditorProps> = ({
                             disabled={disabled}
                             className="screen-editor-element-item-remove"
                           >
-                            🗑️
+                            <TrashIcon size={12} />
                           </button>
                         </div>
                       </div>
@@ -505,7 +506,7 @@ export const ScreenEditor: React.FC<ScreenEditorProps> = ({
                         disabled={disabled}
                         className="screen-editor-event-remove"
                       >
-                        🗑️
+                        <TrashIcon size={12} />
                       </button>
                     </div>
 

@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Screen, Journey } from '../../types/journey';
 import { useVariables } from '../../hooks/useVariables';
 import VariablePanel from './VariablePanel';
+import { ListIcon } from '../Icons';
 import './PromptEditor.css';
 
 export interface PromptEditorProps {
@@ -91,7 +92,7 @@ export const PromptEditor: React.FC<PromptEditorProps> = ({
             onClick={() => setShowVariables(!showVariables)}
             type="button"
           >
-            📋 Variables
+            <ListIcon size={14} /> Variables
           </button>
         </div>
       </div>

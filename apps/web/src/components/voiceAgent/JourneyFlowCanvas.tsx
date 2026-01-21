@@ -184,10 +184,10 @@ const JourneyFlowCanvas: React.FC<JourneyFlowCanvasProps> = ({
               
               <div className="agent-node-stats">
                 <span className="agent-stat">
-                  🔧 {agent.tools.length} tool{agent.tools.length !== 1 ? 's' : ''}
+                  {agent.tools.length} tool{agent.tools.length !== 1 ? 's' : ''}
                 </span>
                 <span className="agent-stat">
-                  ➡️ {agent.handoffs.length} handoff{agent.handoffs.length !== 1 ? 's' : ''}
+                  {agent.handoffs.length} handoff{agent.handoffs.length !== 1 ? 's' : ''}
                 </span>
               </div>
             </div>

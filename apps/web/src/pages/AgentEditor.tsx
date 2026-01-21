@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Agent, Journey } from '../types/journey';
 import { loadJourney, saveJourney } from '../services/journeyStorage';
 import AgentNodeEditor from '../components/voiceAgent/AgentNodeEditor';
+import { TrashIcon, SaveIcon } from '../components/Icons';
 import './AgentEditor.css';
 
 export const AgentEditorPage: React.FC = () => {
@@ -127,14 +128,14 @@ export const AgentEditorPage: React.FC = () => {
             disabled={isSaving}
             type="button"
           >
-            {isSaving ? 'Saving...' : '💾 Save'}
+            {isSaving ? 'Saving...' : <><SaveIcon size={14} /> Save</>}
           </button>
           <button 
             className="agent-editor-delete-btn" 
             onClick={handleDelete}
             type="button"
           >
-            🗑️ Delete
+            <TrashIcon size={14} /> Delete
           </button>
         </div>
       </div>

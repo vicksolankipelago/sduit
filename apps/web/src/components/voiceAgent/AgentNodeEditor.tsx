@@ -5,6 +5,7 @@ import { Agent, VOICE_OPTIONS, Screen } from '../../types/journey';
 import ToolEditor from './ToolEditor';
 import { SCREEN_TEMPLATES } from '../../lib/voiceAgent/screenTemplates';
 import { getAvailableTemplates, loadPromptTemplate, PromptTemplateKey } from '../../utils/promptTemplates';
+import { SettingsIcon, FileTextIcon, ToolIcon, EditIcon, TrashIcon } from '../Icons';
 import './AgentNodeEditor.css';
 
 interface AgentNodeEditorProps {
@@ -138,7 +139,7 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
   return (
     <div className={`agent-node-editor ${disabled ? 'disabled' : ''}`}>
       <div className="agent-editor-header">
-        <h3>⚙️ {agent.name}</h3>
+        <h3><SettingsIcon size={16} /> {agent.name}</h3>
         <button
           className="agent-editor-close"
           onClick={onClose}
@@ -155,14 +156,14 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
           onClick={() => setActiveTab('config')}
           type="button"
         >
-          📝 Configuration
+          <FileTextIcon size={14} /> Configuration
         </button>
         <button
           className={`agent-tab ${activeTab === 'tools' ? 'active' : ''}`}
           onClick={() => setActiveTab('tools')}
           type="button"
         >
-          🔧 Tools
+          <ToolIcon size={14} /> Tools
           {agent.tools.length > 0 && (
             <span className="agent-tab-badge">{agent.tools.length}</span>
           )}
@@ -380,14 +381,14 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
                         disabled={disabled}
                         type="button"
                       >
-                        ✏️ Edit
+                        <EditIcon size={12} /> Edit
                       </button>
                       <button 
                         onClick={() => handleDeleteScreen(index)} 
                         disabled={disabled}
                         type="button"
                       >
-                        🗑️
+                        <TrashIcon size={12} />
                       </button>
                     </div>
                   </div>

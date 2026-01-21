@@ -1139,7 +1139,7 @@ export const ElementPropertyEditor: React.FC<ElementPropertyEditorProps> = ({
         className="element-property-remove-btn"
         onClick={onRemove}
       >
-        🗑️ Remove Element
+        Remove Element
       </button>
     </div>
   );

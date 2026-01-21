@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Tool, DEFAULT_TOOL_PARAMETERS } from '../../types/journey';
 import { v4 as uuidv4 } from 'uuid';
+import { ToolIcon, TrashIcon } from '../Icons';
 import './ToolEditor.css';
 
 interface ToolEditorProps {
@@ -59,7 +60,7 @@ const ToolEditor: React.FC<ToolEditorProps> = ({
   return (
     <div className={`tool-editor ${disabled ? 'disabled' : ''}`}>
       <div className="tool-editor-header">
-        <h4>🔧 Tools</h4>
+        <h4><ToolIcon size={16} /> Tools</h4>
         <button
           className="tool-add-btn"
           onClick={handleAddTool}
@@ -102,7 +103,7 @@ const ToolEditor: React.FC<ToolEditorProps> = ({
                   disabled={disabled}
                   type="button"
                 >
-                  🗑️
+                  <TrashIcon size={12} />
                 </button>
               </div>
             ))}
