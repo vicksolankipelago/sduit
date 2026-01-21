@@ -12,7 +12,8 @@ import ScreenEditor from './ScreenEditor';
 import PromptEditor from './PromptEditor';
 import { ScreenProvider } from '../../contexts/voiceAgent/ScreenContext';
 import ScreenPreview from './ScreenPreview';
-import { TrashIcon, FileTextIcon, EditIcon, RocketIcon, TargetIcon, EyeIcon } from '../Icons';
+import { TrashIcon, FileTextIcon, EditIcon, RocketIcon, TargetIcon, EyeIcon, HistoryIcon, SaveIcon } from '../Icons';
+import VersionHistory from './VersionHistory';
 import './JourneyBuilder.css';
 
 interface JourneyBuilderProps {
@@ -44,6 +45,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const [isGeneratingScreens, setIsGeneratingScreens] = useState(false);
   const [_aiGenerationError, setAiGenerationError] = useState<string | null>(null);
   const [previewingSuggestion, setPreviewingSuggestion] = useState<ScreenSuggestion | null>(null);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
 
   useEffect(() => {
     // Load flow based on URL params
@@ -375,7 +377,14 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
           {currentJourney && (
             <>
               <button className="journey-action-btn" onClick={handleSaveJourney} disabled={disabled}>
-                💾 Save
+                <SaveIcon size={14} /> Save
+              </button>
+              <button
+                className="journey-action-btn"
+                onClick={() => setShowVersionHistory(true)}
+                disabled={disabled}
+              >
+                <HistoryIcon size={14} /> History
               </button>
               <button
                 className="journey-action-btn danger"
@@ -847,6 +856,23 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Version History Modal */}
+      {showVersionHistory && currentJourney && (
+        <VersionHistory
+          journeyId={currentJourney.id}
+          onClose={() => setShowVersionHistory(false)}
+          onRestore={(restored) => {
+            // The server returns a fully normalized Journey object
+            setCurrentJourney({
+              ...restored,
+              agents: restored.agents as Agent[],
+              voice: restored.voice || undefined,
+            } as Journey);
+            setShowVersionHistory(false);
+          }}
+        />
       )}
     </div>
   );

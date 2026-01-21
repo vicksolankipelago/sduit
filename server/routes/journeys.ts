@@ -196,6 +196,60 @@ router.get("/:id/versions/:versionId", isAuthenticated, async (req: any, res) =>
   }
 });
 
+// Restore a previous version of a journey
+router.post("/:id/versions/:versionId/restore", isAdmin, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const journey = await storage.getJourney(req.params.id);
+    
+    if (!journey) {
+      return res.status(404).json({ message: "Journey not found" });
+    }
+    
+    const version = await storage.getJourneyVersion(req.params.versionId);
+    
+    if (!version || version.journeyId !== req.params.id) {
+      return res.status(404).json({ message: "Version not found" });
+    }
+    
+    // Restore the journey to the selected version
+    const updated = await storage.updateJourney(
+      req.params.id,
+      {
+        name: version.name,
+        description: version.description,
+        systemPrompt: version.systemPrompt,
+        voice: version.voice,
+        agents: version.agents,
+        startingAgentId: version.startingAgentId,
+      },
+      userId,
+      `Restored from version ${version.versionNumber}`
+    );
+    
+    if (!updated) {
+      return res.status(500).json({ message: "Failed to restore version" });
+    }
+    
+    // Return normalized Journey shape matching GET/PUT endpoints
+    res.json({
+      id: updated.id,
+      name: updated.name,
+      description: updated.description,
+      systemPrompt: updated.systemPrompt,
+      voice: updated.voice,
+      agents: updated.agents,
+      startingAgentId: updated.startingAgentId,
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+      version: updated.version,
+    });
+  } catch (error) {
+    console.error("Error restoring journey version:", error);
+    res.status(500).json({ message: "Failed to restore version" });
+  }
+});
+
 router.delete("/:id", isAdmin, async (req: any, res) => {
   try {
     const journey = await storage.getJourney(req.params.id);
