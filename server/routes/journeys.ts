@@ -7,8 +7,8 @@ const router = Router();
 
 router.get("/", isAuthenticated, async (req: any, res) => {
   try {
-    const userId = req.user.id;
-    const journeys = await storage.listUserJourneys(userId);
+    // Admins see all journeys, test users see all journeys too (but can only test, not edit)
+    const journeys = await storage.listAllJourneys();
     
     const journeyList = journeys.map((j) => ({
       id: j.id,
@@ -33,10 +33,7 @@ router.get("/:id", isAuthenticated, async (req: any, res) => {
       return res.status(404).json({ message: "Journey not found" });
     }
     
-    if (journey.userId !== req.user.id) {
-      return res.status(403).json({ message: "Forbidden" });
-    }
-    
+    // All authenticated users can view journeys (admins edit, test users just view/test)
     res.json({
       id: journey.id,
       name: journey.name,
@@ -98,10 +95,7 @@ router.put("/:id", isAdmin, async (req: any, res) => {
       return res.status(404).json({ message: "Journey not found" });
     }
     
-    if (journey.userId !== req.user.id) {
-      return res.status(403).json({ message: "Forbidden" });
-    }
-    
+    // Admins can edit any journey
     const { name, description, systemPrompt, voice, agents, startingAgentId, version, changeNotes } = req.body;
     
     const updated = await storage.updateJourney(
@@ -150,10 +144,7 @@ router.get("/:id/versions", isAuthenticated, async (req: any, res) => {
       return res.status(404).json({ message: "Journey not found" });
     }
     
-    if (journey.userId !== req.user.id) {
-      return res.status(403).json({ message: "Forbidden" });
-    }
-    
+    // All authenticated users can view version history
     const versions = await storage.listJourneyVersions(req.params.id);
     
     res.json(versions.map(v => ({
@@ -179,10 +170,7 @@ router.get("/:id/versions/:versionId", isAuthenticated, async (req: any, res) =>
       return res.status(404).json({ message: "Journey not found" });
     }
     
-    if (journey.userId !== req.user.id) {
-      return res.status(403).json({ message: "Forbidden" });
-    }
-    
+    // All authenticated users can view specific versions
     const version = await storage.getJourneyVersion(req.params.versionId);
     
     if (!version || version.journeyId !== req.params.id) {
@@ -216,10 +204,7 @@ router.delete("/:id", isAdmin, async (req: any, res) => {
       return res.status(404).json({ message: "Journey not found" });
     }
     
-    if (journey.userId !== req.user.id) {
-      return res.status(403).json({ message: "Forbidden" });
-    }
-    
+    // Admins can delete any journey
     await storage.deleteJourney(req.params.id);
     res.json({ success: true });
   } catch (error) {
@@ -237,10 +222,7 @@ router.post("/:id/duplicate", isAdmin, async (req: any, res) => {
       return res.status(404).json({ message: "Journey not found" });
     }
     
-    if (original.userId !== userId) {
-      return res.status(403).json({ message: "Forbidden" });
-    }
-    
+    // Admins can duplicate any journey
     const idMapping: Record<string, string> = {};
     const originalAgents = (original.agents || []) as any[];
     const newAgents = originalAgents.map((agent: any) => {

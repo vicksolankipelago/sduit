@@ -33,6 +33,7 @@ export interface UpsertSessionMessageParams {
 
 export interface IStorage {
   listUserJourneys(userId: string): Promise<Journey[]>;
+  listAllJourneys(): Promise<Journey[]>;
   getJourney(journeyId: string): Promise<Journey | undefined>;
   createJourney(journey: InsertJourney): Promise<Journey>;
   updateJourney(journeyId: string, journey: Partial<InsertJourney>, userId: string, changeNotes?: string): Promise<Journey | undefined>;
@@ -70,6 +71,10 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   async listUserJourneys(userId: string): Promise<Journey[]> {
     return await db.select().from(journeys).where(eq(journeys.userId, userId)).orderBy(desc(journeys.updatedAt));
+  }
+
+  async listAllJourneys(): Promise<Journey[]> {
+    return await db.select().from(journeys).orderBy(desc(journeys.updatedAt));
   }
 
   async getJourney(journeyId: string): Promise<Journey | undefined> {
