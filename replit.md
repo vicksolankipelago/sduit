@@ -108,6 +108,8 @@ Uses PostgreSQL with Drizzle ORM. Schema defined in `shared/schema.ts`:
 
 ## Recent Changes
 
+- 2026-01-21: Added screen editing functionality to AgentNodeEditor - users can now add, edit, preview, and delete screens directly from the agent editor
+- 2026-01-21: Fixed transcript duplication bug where first text chunk was added twice
 - 2026-01-20: Added role-based access control (admin/test roles)
 - 2026-01-20: Added feedback system with ratings and comments linked to voice sessions
 - 2026-01-20: Updated navigation to show role-specific menu items
