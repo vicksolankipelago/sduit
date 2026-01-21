@@ -171,19 +171,6 @@
   font-style: italic;
 }
 
-.ui-showcase-screen-card-badge {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  background: rgba(0, 0, 0, 0.06);
-  color: var(--text-global-secondary);
-  font-size: 0.625rem;
-  font-weight: 600;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
 
 .ui-showcase-screen-card-clickable {
   cursor: pointer;

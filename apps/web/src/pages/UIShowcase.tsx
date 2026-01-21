@@ -445,9 +445,6 @@ const UIShowcase: React.FC = () => {
                           <line x1="9" y1="21" x2="9" y2="9" />
                         </svg>
                       </div>
-                      {isJourneyScreen && (
-                        <div className="ui-showcase-screen-card-badge">Flow Screen</div>
-                      )}
                     </div>
                     <div className="ui-showcase-screen-card-content">
                       <h3 className="ui-showcase-screen-card-title">{screen.title}</h3>
