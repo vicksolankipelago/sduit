@@ -93,7 +93,10 @@ const JourneyFlowCanvas: React.FC<JourneyFlowCanvasProps> = ({
     const rect = canvasRef.current.getBoundingClientRect();
     if (rect.width === 0) return;
     
-    const centerX = Math.max(200, rect.width / 2);
+    // Ensure cards are positioned with enough margin from edges
+    // Card is ~180px wide, with transform -50%, so need at least 100px from edge
+    const minX = 120;
+    const centerX = Math.max(minX, rect.width / 2);
     const startY = 120;
     const spacing = 160;
 

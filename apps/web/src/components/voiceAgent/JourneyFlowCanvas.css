@@ -2,9 +2,9 @@
   position: relative;
   width: 100%;
   height: 600px;
-  background: #fafafa;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
+  background: var(--background-light-card);
+  border: var(--border-input);
+  border-radius: var(--border-radius-sm);
   overflow: auto;
   cursor: grab;
 }
@@ -36,38 +36,38 @@
 .flow-agent-node {
   position: absolute;
   transform: translate(-50%, -50%);
-  background: #ffffff;
-  border: 3px solid #e0e0e0;
-  border-radius: 12px;
+  background: var(--background-light);
+  border: 2px solid var(--ui-element-outline-default);
+  border-radius: var(--border-radius-sm);
   padding: 1rem;
   min-width: 180px;
   cursor: move;
   transition: all 0.2s ease;
   z-index: 10;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-card);
 }
 
 .flow-agent-node:hover {
-  border-color: #1DB954;
-  box-shadow: 0 4px 12px rgba(29, 185, 84, 0.2);
+  border-color: var(--primary-cta-default);
+  box-shadow: var(--shadow-card-hover);
   z-index: 20;
 }
 
 .flow-agent-node.selected {
-  border-color: #1DB954;
-  background: #E8F5E9;
-  box-shadow: 0 4px 16px rgba(29, 185, 84, 0.3);
+  border-color: var(--primary-cta-default);
+  background: var(--background-action-hover);
+  box-shadow: var(--shadow-card-hover);
   z-index: 30;
 }
 
 .flow-agent-node.starting {
-  border-color: #FFB84D;
-  background: #FFF9E6;
+  border-color: var(--alert-warning-default);
+  background: var(--background-warning);
 }
 
 .flow-agent-node.starting.selected {
-  border-color: #F57C00;
-  background: #FFF4E6;
+  border-color: var(--alert-warning-hover);
+  background: var(--background-warning);
 }
 
 .flow-agent-node.dragging {
@@ -100,15 +100,15 @@
 }
 
 .agent-node-name {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1a1a1a;
+  font-size: var(--font-size-body-2);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-global-primary);
   margin-bottom: 0.25rem;
 }
 
 .agent-node-voice {
-  font-size: 0.75rem;
-  color: #6b7280;
+  font-size: var(--font-size-body-3);
+  color: var(--text-global-secondary);
   text-transform: capitalize;
 }
 
@@ -119,16 +119,16 @@
 }
 
 .agent-stat {
-  font-size: 0.75rem;
-  color: #6b7280;
+  font-size: var(--font-size-body-3);
+  color: var(--text-global-secondary);
 }
 
 .agent-node-set-start {
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
-  background: #ffffff;
-  border: 1px solid #e0e0e0;
+  background: var(--background-light);
+  border: var(--border-subtle);
   border-radius: 4px;
   width: 24px;
   height: 24px;
@@ -142,8 +142,8 @@
 }
 
 .agent-node-set-start:hover {
-  background: #FFF9E6;
-  border-color: #FFB84D;
+  background: var(--background-warning);
+  border-color: var(--alert-warning-default);
   transform: scale(1.1);
 }
 
@@ -151,22 +151,22 @@
   position: absolute;
   bottom: 1.5rem;
   right: 1.5rem;
-  padding: 0.875rem 1.5rem;
-  background: linear-gradient(135deg, #1DB954 0%, #1ed760 100%);
-  color: white;
+  padding: 0.75rem 1.25rem;
+  background: var(--primary-cta-default);
+  color: var(--text-button-primary);
   border: none;
-  border-radius: 8px;
-  font-size: 0.9375rem;
-  font-weight: 600;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-body-2);
+  font-weight: var(--font-weight-bold);
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(29, 185, 84, 0.3);
+  box-shadow: var(--shadow-card);
   z-index: 50;
 }
 
 .flow-add-agent-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(29, 185, 84, 0.4);
+  background: var(--primary-cta-hover);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .flow-empty-state {
@@ -175,20 +175,20 @@
   left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
-  color: #9ca3af;
+  color: var(--text-global-tertiary);
   pointer-events: none;
 }
 
 .flow-empty-state h3 {
   margin: 0 0 0.5rem 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #6b7280;
+  font-size: var(--font-size-body-1);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-global-secondary);
 }
 
 .flow-empty-state p {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: var(--font-size-body-2);
 }
 
 /* Responsive */

@@ -367,6 +367,12 @@
   box-shadow: 0 0 0 3px rgba(33, 38, 51, 0.08);
 }
 
+.journey-flow-section {
+  background: var(--background-light);
+  border-radius: var(--border-radius-sm);
+  padding: 1.5rem;
+}
+
 .journey-flow-section h4 {
   margin: 0 0 1rem 0;
   font-size: var(--font-size-body-2);
