@@ -124,37 +124,6 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
     );
   };
 
-  // Render a section
-  const renderSection = (section: Section, sectionIndex: number, startIndex: number): number => {
-    const filteredElements = filterElements(section.elements);
-    
-    if (filteredElements.length === 0) return startIndex;
-
-    const sectionClassName = [
-      'screen-preview-section',
-      `screen-preview-section-${section.position}`,
-      section.layout === 'grid' ? 'screen-preview-section-grid' : 'screen-preview-section-stack',
-      section.direction === 'horizontal' ? 'screen-preview-section-horizontal' : 'screen-preview-section-vertical',
-      section.scrollable !== false && section.position === 'body' ? 'screen-preview-section-scrollable' : '',
-    ].filter(Boolean).join(' ');
-
-    const rendered = (
-      <div key={section.id} className={sectionClassName}>
-        {section.title && (
-          <div className="screen-preview-section-title pelago-caption-2-bold">
-            {section.title}
-          </div>
-        )}
-        <div className="screen-preview-section-elements">
-          {filteredElements.map((element, index) => renderElement(element, index, sectionIndex, startIndex + index))}
-        </div>
-      </div>
-    );
-
-    sectionRenderCache.push(rendered);
-    return startIndex + filteredElements.length;
-  };
-
   // Group sections by position
   const sectionsByPosition = useMemo(() => {
     const grouped: Record<string, Section[]> = {
@@ -176,9 +145,61 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
     }
   };
 
-  // Helper to render sections sequentially and track element count for animations
-  const sectionRenderCache: React.ReactNode[] = [];
-  let elementCounter = 0;
+  // Pre-compute rendered sections using useMemo to avoid side effects during render
+  const renderedSections = useMemo(() => {
+    let counter = 0;
+    const renderSectionContent = (section: Section, sectionIndex: number, startIndex: number) => {
+      const filteredElements = filterElements(section.elements);
+      if (filteredElements.length === 0) return { node: null, nextIndex: startIndex };
+      
+      const sectionClassName = [
+        'screen-preview-section',
+        `screen-preview-section-${section.position}`,
+        section.layout === 'grid' ? 'screen-preview-section-grid' : 'screen-preview-section-stack',
+        section.direction === 'horizontal' ? 'screen-preview-section-horizontal' : 'screen-preview-section-vertical',
+        section.scrollable !== false && section.position === 'body' ? 'screen-preview-section-scrollable' : '',
+      ].filter(Boolean).join(' ');
+
+      const node = (
+        <div key={section.id} className={sectionClassName}>
+          {section.title && (
+            <div className="screen-preview-section-title pelago-caption-2-bold">
+              {section.title}
+            </div>
+          )}
+          <div className="screen-preview-section-elements">
+            {filteredElements.map((element, index) => renderElement(element, index, sectionIndex, startIndex + index))}
+          </div>
+        </div>
+      );
+      
+      return { node, nextIndex: startIndex + filteredElements.length };
+    };
+
+    const fixedTop: React.ReactNode[] = [];
+    const body: React.ReactNode[] = [];
+    const fixedBottom: React.ReactNode[] = [];
+
+    sectionsByPosition['fixed-top'].forEach((section, idx) => {
+      const result = renderSectionContent(section, idx, counter);
+      if (result.node) fixedTop.push(result.node);
+      counter = result.nextIndex;
+    });
+
+    sectionsByPosition['body'].forEach((section, idx) => {
+      const result = renderSectionContent(section, idx, counter);
+      if (result.node) body.push(result.node);
+      counter = result.nextIndex;
+    });
+
+    sectionsByPosition['fixed-bottom'].forEach((section, idx) => {
+      const result = renderSectionContent(section, idx, counter);
+      if (result.node) fixedBottom.push(result.node);
+      counter = result.nextIndex;
+    });
+
+    return { fixedTop, body, fixedBottom };
+  }, [sectionsByPosition, filterElements, renderElement]);
 
   const content = (
     <div className="screen-preview-container">
@@ -206,30 +227,21 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
       )}
 
       {/* Fixed Top Section */}
-      {sectionsByPosition['fixed-top'].length > 0 && (
+      {renderedSections.fixedTop.length > 0 && (
         <div className="screen-preview-fixed-top">
-          {sectionsByPosition['fixed-top'].map((section, idx) => {
-            elementCounter = renderSection(section, idx, elementCounter);
-            return sectionRenderCache[sectionRenderCache.length - 1];
-          })}
+          {renderedSections.fixedTop}
         </div>
       )}
 
       {/* Body Section (Scrollable) */}
       <div className="screen-preview-body">
-        {sectionsByPosition['body'].map((section, idx) => {
-          elementCounter = renderSection(section, idx, elementCounter);
-          return sectionRenderCache[sectionRenderCache.length - 1];
-        })}
+        {renderedSections.body}
       </div>
 
       {/* Fixed Bottom Section */}
-      {sectionsByPosition['fixed-bottom'].length > 0 && (
+      {renderedSections.fixedBottom.length > 0 && (
         <div className="screen-preview-fixed-bottom">
-          {sectionsByPosition['fixed-bottom'].map((section, idx) => {
-            elementCounter = renderSection(section, idx, elementCounter);
-            return sectionRenderCache[sectionRenderCache.length - 1];
-          })}
+          {renderedSections.fixedBottom}
         </div>
       )}
     </div>
