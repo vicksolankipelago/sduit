@@ -261,36 +261,6 @@
   font-style: italic;
 }
 
-.system-prompt-tips {
-  background: var(--background-light-card);
-  border-radius: var(--border-radius-sm);
-  padding: 1rem;
-  border: var(--border-subtle);
-}
-
-.system-prompt-tips h4 {
-  margin: 0 0 0.75rem 0;
-  font-size: var(--font-size-body-2);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-global-primary);
-}
-
-.system-prompt-tips ul {
-  margin: 0;
-  padding-left: 1.5rem;
-}
-
-.system-prompt-tips li {
-  margin-bottom: 0.375rem;
-  font-size: var(--font-size-body-3);
-  color: var(--text-global-secondary);
-  line-height: 1.5;
-}
-
-.system-prompt-tips li:last-child {
-  margin-bottom: 0;
-}
-
 @media (max-width: 768px) {
   .system-prompt-header {
     flex-direction: column;

@@ -143,16 +143,6 @@ const SystemPromptEditor: React.FC<SystemPromptEditorProps> = ({
           />
         </div>
       )}
-
-      <div className="system-prompt-tips">
-        <h4>Tips for effective system prompts</h4>
-        <ul>
-          <li>Define core personality traits and communication style</li>
-          <li>Set boundaries (what agents should/shouldn't do)</li>
-          <li>Establish tone and language guidelines</li>
-          <li>Keep it concise - agents will add their own specific instructions</li>
-        </ul>
-      </div>
     </div>
   );
 };
