@@ -561,10 +561,19 @@
   color: white;
   border-color: var(--accent-blue-default);
   opacity: 1;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+  transform: scale(1.05);
 }
 
 .transcripts-add-note-btn.has-notes:hover {
   background: var(--accent-blue-hover, #1d4ed8);
+  box-shadow: 0 3px 12px rgba(59, 130, 246, 0.5);
+  transform: scale(1.08);
+}
+
+.transcripts-add-note-btn.has-notes svg {
+  fill: white;
 }
 
 /* Responsive */
