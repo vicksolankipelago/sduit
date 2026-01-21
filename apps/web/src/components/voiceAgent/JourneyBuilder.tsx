@@ -172,33 +172,6 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     });
   };
 
-  // Keep for potential future use (delete from canvas)
-  const handleDeleteAgent = (agentId: string) => {
-    void agentId; // Silence unused warning for now
-    if (!currentJourney) return;
-    if (window.confirm('Delete this agent?')) {
-      const updatedAgents = currentJourney.agents.filter(a => a.id !== agentId);
-      
-      // Remove references from other agents' handoffs
-      const cleanedAgents = updatedAgents.map(a => ({
-        ...a,
-        handoffs: a.handoffs.filter(id => id !== agentId),
-      }));
-
-      setCurrentJourney({
-        ...currentJourney,
-        agents: cleanedAgents,
-        startingAgentId: currentJourney.startingAgentId === agentId 
-          ? (cleanedAgents[0]?.id || '') 
-          : currentJourney.startingAgentId,
-      });
-
-      if (selectedAgentId === agentId) {
-        setSelectedAgentId(null);
-      }
-    }
-  };
-
   const handleLaunch = () => {
     if (!currentJourney) return;
 
