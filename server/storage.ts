@@ -45,6 +45,7 @@ export interface IStorage {
   listUserSessions(userId: string, limit?: number, offset?: number): Promise<VoiceSession[]>;
   getSession(sessionId: string): Promise<VoiceSession | undefined>;
   getSessionById(id: string): Promise<VoiceSession | undefined>;
+  getSessionBySessionId(sessionId: string): Promise<VoiceSession | undefined>;
   saveSession(session: InsertVoiceSession): Promise<VoiceSession>;
   upsertSessionMessage(params: UpsertSessionMessageParams): Promise<VoiceSession>;
   deleteSession(sessionId: string): Promise<boolean>;
@@ -175,6 +176,11 @@ export class DatabaseStorage implements IStorage {
 
   async getSessionById(id: string): Promise<VoiceSession | undefined> {
     const [session] = await db.select().from(voiceSessions).where(eq(voiceSessions.id, id));
+    return session;
+  }
+
+  async getSessionBySessionId(sessionId: string): Promise<VoiceSession | undefined> {
+    const [session] = await db.select().from(voiceSessions).where(eq(voiceSessions.sessionId, sessionId));
     return session;
   }
 

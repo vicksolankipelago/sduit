@@ -556,6 +556,17 @@
   border-color: var(--primary-cta-default);
 }
 
+.transcripts-add-note-btn.has-notes {
+  background: var(--accent-blue-default);
+  color: white;
+  border-color: var(--accent-blue-default);
+  opacity: 1;
+}
+
+.transcripts-add-note-btn.has-notes:hover {
+  background: var(--accent-blue-hover, #1d4ed8);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .transcripts-page {

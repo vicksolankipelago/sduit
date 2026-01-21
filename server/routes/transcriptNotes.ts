@@ -8,7 +8,7 @@ router.get("/:sessionId/notes", isAuthenticated, async (req: any, res) => {
   try {
     const { sessionId } = req.params;
     
-    const session = await storage.getSessionById(sessionId);
+    const session = await storage.getSessionBySessionId(sessionId);
     if (!session) {
       return res.status(404).json({ message: "Session not found" });
     }
@@ -27,7 +27,7 @@ router.post("/:sessionId/notes", isAuthenticated, async (req: any, res) => {
     const { messageIndex, content, parentId } = req.body;
     const user = req.user;
     
-    const session = await storage.getSessionById(sessionId);
+    const session = await storage.getSessionBySessionId(sessionId);
     if (!session) {
       return res.status(404).json({ message: "Session not found" });
     }
@@ -59,6 +59,11 @@ router.patch("/:sessionId/notes/:noteId", isAuthenticated, async (req: any, res)
     const { sessionId, noteId } = req.params;
     const { content, status } = req.body;
     
+    const session = await storage.getSessionBySessionId(sessionId);
+    if (!session) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+    
     const note = await storage.getNote(noteId);
     if (!note) {
       return res.status(404).json({ message: "Note not found" });
@@ -83,6 +88,11 @@ router.patch("/:sessionId/notes/:noteId", isAuthenticated, async (req: any, res)
 router.delete("/:sessionId/notes/:noteId", isAuthenticated, async (req: any, res) => {
   try {
     const { sessionId, noteId } = req.params;
+    
+    const session = await storage.getSessionBySessionId(sessionId);
+    if (!session) {
+      return res.status(404).json({ message: "Session not found" });
+    }
     
     const note = await storage.getNote(noteId);
     if (!note) {

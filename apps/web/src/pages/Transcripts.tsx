@@ -9,6 +9,7 @@ import {
 } from '../services/api/sessionService';
 import { SessionExport, downloadSessionExport, downloadFormattedTranscript } from '../utils/transcriptExport';
 import { TranscriptNotes } from '../components/voiceAgent/TranscriptNotes';
+import { listNotes, TranscriptNote } from '../services/api/notesService';
 import './Transcripts.css';
 
 type ViewMode = 'list' | 'detail';
@@ -34,7 +35,12 @@ export const TranscriptsPage: React.FC = () => {
   // Notes state
   const [notesMessageIndex, setNotesMessageIndex] = useState<number | null>(null);
   const [showNotes, setShowNotes] = useState(false);
+  const [sessionNotes, setSessionNotes] = useState<TranscriptNote[]>([]);
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  const getNotesForMessage = (messageIndex: number) => {
+    return sessionNotes.filter(n => n.messageIndex === messageIndex && !n.parentId);
+  };
 
   // Load sessions on mount and when page changes
   useEffect(() => {
@@ -80,6 +86,14 @@ export const TranscriptsPage: React.FC = () => {
         setCurrentSession(fullSession);
         setViewMode('detail');
         setDetailTab('transcript');
+        // Load notes for this session
+        try {
+          const notes = await listNotes(fullSession.sessionId);
+          setSessionNotes(notes);
+        } catch (noteErr) {
+          console.error('Failed to load notes:', noteErr);
+          setSessionNotes([]);
+        }
       } else {
         setError('Session not found');
       }
@@ -88,6 +102,20 @@ export const TranscriptsPage: React.FC = () => {
       setError('Failed to load session details');
     } finally {
       setDetailLoading(false);
+    }
+  };
+
+  const handleNotesClose = async () => {
+    setShowNotes(false);
+    setNotesMessageIndex(null);
+    // Reload notes to show updated count
+    if (currentSession) {
+      try {
+        const notes = await listNotes(currentSession.sessionId);
+        setSessionNotes(notes);
+      } catch (err) {
+        console.error('Failed to reload notes:', err);
+      }
     }
   };
 
@@ -343,17 +371,17 @@ export const TranscriptsPage: React.FC = () => {
                         <div className="transcripts-message-footer">
                           <div className="transcripts-message-time">{item.timestamp}</div>
                           <button
-                            className="transcripts-add-note-btn"
+                            className={`transcripts-add-note-btn ${getNotesForMessage(index).length > 0 ? 'has-notes' : ''}`}
                             onClick={() => {
                               setNotesMessageIndex(index);
                               setShowNotes(true);
                             }}
-                            title="Add note"
+                            title={getNotesForMessage(index).length > 0 ? `${getNotesForMessage(index).length} note(s)` : 'Add note'}
                           >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
                             </svg>
-                            Note
+                            {getNotesForMessage(index).length > 0 ? `${getNotesForMessage(index).length}` : 'Note'}
                           </button>
                         </div>
                       </div>
@@ -366,10 +394,7 @@ export const TranscriptsPage: React.FC = () => {
                   <TranscriptNotes
                     sessionId={currentSession.sessionId}
                     messageIndex={notesMessageIndex}
-                    onClose={() => {
-                      setShowNotes(false);
-                      setNotesMessageIndex(null);
-                    }}
+                    onClose={handleNotesClose}
                   />
                 )}
               </div>
