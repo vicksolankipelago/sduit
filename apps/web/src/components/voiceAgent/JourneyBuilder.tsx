@@ -428,7 +428,6 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                 value={currentJourney.systemPrompt}
                 onChange={(systemPrompt) => setCurrentJourney({ ...currentJourney, systemPrompt })}
                 disabled={disabled}
-                journey={currentJourney}
               />
 
               {/* Builder Tabs */}
