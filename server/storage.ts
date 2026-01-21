@@ -1,5 +1,6 @@
 import { journeys, journeyVersions, type Journey, type InsertJourney, type JourneyVersion, type InsertJourneyVersion } from "../shared/models/journeys";
 import { voiceSessions, type VoiceSession, type InsertVoiceSession } from "../shared/models/voiceSessions";
+import { globalScreens, type GlobalScreen, type InsertGlobalScreen } from "../shared/models/globalScreens";
 import { db } from "./db";
 import { eq, desc, count } from "drizzle-orm";
 
@@ -47,6 +48,13 @@ export interface IStorage {
   upsertSessionMessage(params: UpsertSessionMessageParams): Promise<VoiceSession>;
   deleteSession(sessionId: string): Promise<boolean>;
   getSessionCount(userId: string): Promise<number>;
+
+  // Global screens
+  listGlobalScreens(): Promise<GlobalScreen[]>;
+  getGlobalScreen(screenId: string): Promise<GlobalScreen | undefined>;
+  createGlobalScreen(screen: InsertGlobalScreen): Promise<GlobalScreen>;
+  updateGlobalScreen(screenId: string, screen: Partial<InsertGlobalScreen>): Promise<GlobalScreen | undefined>;
+  deleteGlobalScreen(screenId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -259,6 +267,35 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return created;
     }
+  }
+
+  // Global screens methods
+  async listGlobalScreens(): Promise<GlobalScreen[]> {
+    return await db.select().from(globalScreens).orderBy(desc(globalScreens.updatedAt));
+  }
+
+  async getGlobalScreen(screenId: string): Promise<GlobalScreen | undefined> {
+    const [screen] = await db.select().from(globalScreens).where(eq(globalScreens.id, screenId));
+    return screen;
+  }
+
+  async createGlobalScreen(screen: InsertGlobalScreen): Promise<GlobalScreen> {
+    const [created] = await db.insert(globalScreens).values(screen).returning();
+    return created;
+  }
+
+  async updateGlobalScreen(screenId: string, updates: Partial<InsertGlobalScreen>): Promise<GlobalScreen | undefined> {
+    const [updated] = await db
+      .update(globalScreens)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(globalScreens.id, screenId))
+      .returning();
+    return updated;
+  }
+
+  async deleteGlobalScreen(screenId: string): Promise<boolean> {
+    await db.delete(globalScreens).where(eq(globalScreens.id, screenId));
+    return true;
   }
 }
 

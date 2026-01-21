@@ -2,14 +2,29 @@
  * Screen Storage Service
  *
  * Handles persistence for standalone screens.
- * Uses localStorage with future API support pattern.
+ * Supports hybrid storage: global screens from API + local screens from localStorage.
  */
 
 import { StandaloneScreen, StandaloneScreenListItem, screenToListItem } from '../types/screen';
+import * as globalScreenService from './api/screenService';
 import { v4 as uuidv4 } from 'uuid';
 
 const STORAGE_KEY = 'standalone-screens';
 const STORAGE_VERSION = '1.0.0';
+
+/**
+ * Extended list item with source information
+ */
+export interface HybridScreenListItem extends StandaloneScreenListItem {
+  isGlobal: boolean;
+}
+
+/**
+ * Extended screen with source information
+ */
+export interface HybridScreen extends StandaloneScreen {
+  isGlobal?: boolean;
+}
 
 /**
  * Get screens from localStorage
@@ -36,13 +51,45 @@ function setLocalStorageScreens(screens: StandaloneScreen[]): void {
 }
 
 /**
- * List all standalone screens
+ * List all screens (global + local)
  */
-export async function listScreens(): Promise<StandaloneScreenListItem[]> {
+export async function listScreens(): Promise<HybridScreenListItem[]> {
+  try {
+    // Fetch global screens from API
+    let globalScreens: HybridScreenListItem[] = [];
+    try {
+      const apiScreens = await globalScreenService.listGlobalScreens();
+      globalScreens = apiScreens.map((s) => ({ ...s, isGlobal: true }));
+    } catch (error) {
+      console.warn('Failed to fetch global screens, using local only:', error);
+    }
+
+    // Get local screens
+    const localScreens = getLocalStorageScreens();
+    const localItems: HybridScreenListItem[] = localScreens.map((s) => ({
+      ...screenToListItem(s),
+      isGlobal: false,
+    }));
+
+    // Combine and sort by updatedAt
+    const allScreens = [...globalScreens, ...localItems];
+    return allScreens.sort(
+      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
+  } catch (error) {
+    console.error('Failed to list screens:', error);
+    return [];
+  }
+}
+
+/**
+ * List screens synchronously (local only, for initial render)
+ */
+export function listScreensSync(): HybridScreenListItem[] {
   try {
     const screens = getLocalStorageScreens();
     return screens
-      .map(screenToListItem)
+      .map((s) => ({ ...screenToListItem(s), isGlobal: false }))
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   } catch (error) {
     console.error('Failed to list screens:', error);
@@ -51,27 +98,56 @@ export async function listScreens(): Promise<StandaloneScreenListItem[]> {
 }
 
 /**
- * List screens synchronously (for initial render)
+ * List only global screens
  */
-export function listScreensSync(): StandaloneScreenListItem[] {
+export async function listGlobalScreens(): Promise<HybridScreenListItem[]> {
   try {
-    const screens = getLocalStorageScreens();
-    return screens
-      .map(screenToListItem)
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    const apiScreens = await globalScreenService.listGlobalScreens();
+    return apiScreens.map((s) => ({ ...s, isGlobal: true }));
   } catch (error) {
-    console.error('Failed to list screens:', error);
+    console.error('Failed to list global screens:', error);
     return [];
   }
 }
 
 /**
- * Load a screen by ID
+ * List only local screens
  */
-export async function loadScreen(id: string): Promise<StandaloneScreen | null> {
+export function listLocalScreens(): HybridScreenListItem[] {
   try {
     const screens = getLocalStorageScreens();
-    return screens.find((s) => s.id === id) || null;
+    return screens
+      .map((s) => ({ ...screenToListItem(s), isGlobal: false }))
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  } catch (error) {
+    console.error('Failed to list local screens:', error);
+    return [];
+  }
+}
+
+/**
+ * Load a screen by ID (checks global first, then local)
+ */
+export async function loadScreen(id: string): Promise<HybridScreen | null> {
+  try {
+    // Try global first
+    try {
+      const globalScreen = await globalScreenService.loadGlobalScreen(id);
+      if (globalScreen) {
+        return { ...globalScreen, isGlobal: true };
+      }
+    } catch (error) {
+      // Global fetch failed, try local
+    }
+
+    // Try local
+    const screens = getLocalStorageScreens();
+    const localScreen = screens.find((s) => s.id === id);
+    if (localScreen) {
+      return { ...localScreen, isGlobal: false };
+    }
+
+    return null;
   } catch (error) {
     console.error(`Failed to load screen ${id}:`, error);
     return null;
@@ -79,7 +155,7 @@ export async function loadScreen(id: string): Promise<StandaloneScreen | null> {
 }
 
 /**
- * Save a screen (create or update)
+ * Save a local screen (create or update)
  */
 export async function saveScreen(screen: StandaloneScreen): Promise<boolean> {
   try {
@@ -111,7 +187,19 @@ export async function saveScreen(screen: StandaloneScreen): Promise<boolean> {
 }
 
 /**
- * Delete a screen by ID
+ * Save a global screen (admin only)
+ */
+export async function saveGlobalScreen(screen: StandaloneScreen): Promise<StandaloneScreen | null> {
+  try {
+    return await globalScreenService.saveGlobalScreen(screen);
+  } catch (error) {
+    console.error('Failed to save global screen:', error);
+    return null;
+  }
+}
+
+/**
+ * Delete a local screen by ID
  */
 export async function deleteScreen(id: string): Promise<boolean> {
   try {
@@ -128,7 +216,19 @@ export async function deleteScreen(id: string): Promise<boolean> {
 }
 
 /**
- * Duplicate a screen
+ * Delete a global screen (admin only)
+ */
+export async function deleteGlobalScreen(id: string): Promise<boolean> {
+  try {
+    return await globalScreenService.deleteGlobalScreen(id);
+  } catch (error) {
+    console.error(`Failed to delete global screen ${id}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Duplicate a local screen
  */
 export async function duplicateScreen(id: string): Promise<StandaloneScreen | null> {
   try {
@@ -142,6 +242,9 @@ export async function duplicateScreen(id: string): Promise<StandaloneScreen | nu
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+
+    // Remove the isGlobal flag for local storage
+    delete (duplicate as any).isGlobal;
 
     // Generate new IDs for sections and elements
     duplicate.sections = duplicate.sections.map((section) => ({
@@ -168,6 +271,18 @@ export async function duplicateScreen(id: string): Promise<StandaloneScreen | nu
 }
 
 /**
+ * Duplicate a global screen (admin only)
+ */
+export async function duplicateGlobalScreen(id: string): Promise<StandaloneScreen | null> {
+  try {
+    return await globalScreenService.duplicateGlobalScreen(id);
+  } catch (error) {
+    console.error(`Failed to duplicate global screen ${id}:`, error);
+    return null;
+  }
+}
+
+/**
  * Export screen data
  */
 export interface ScreenExport {
@@ -181,8 +296,12 @@ export async function exportScreen(id: string): Promise<ScreenExport | null> {
     const screen = await loadScreen(id);
     if (!screen) return null;
 
+    // Remove hybrid metadata for export
+    const exportScreen = { ...screen };
+    delete (exportScreen as any).isGlobal;
+
     return {
-      screen,
+      screen: exportScreen,
       exportedAt: new Date().toISOString(),
       exportVersion: STORAGE_VERSION,
     };
@@ -213,7 +332,7 @@ export async function downloadScreenAsJSON(id: string): Promise<void> {
 }
 
 /**
- * Import screen from JSON
+ * Import screen from JSON (saves to local storage)
  */
 export async function importScreen(jsonString: string): Promise<StandaloneScreen | null> {
   try {
@@ -239,7 +358,7 @@ export async function importScreen(jsonString: string): Promise<StandaloneScreen
 }
 
 /**
- * Clear all screens (for testing/reset)
+ * Clear all local screens (for testing/reset)
  */
 export function clearAllScreens(): boolean {
   try {

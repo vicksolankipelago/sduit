@@ -29,6 +29,7 @@ import { AnimatedComponentsElement } from '../../components/voiceAgent/elements/
 import { WeekCheckinSummaryElement } from '../../components/voiceAgent/elements/WeekCheckinSummaryElement';
 import { AgentMessageCardElement } from '../../components/voiceAgent/elements/AgentMessageCardElement';
 import { OpenQuestionElement } from '../../components/voiceAgent/elements/OpenQuestionElement';
+import { OrbElement } from '../../components/voiceAgent/elements/OrbElement';
 
 /**
  * Element Registry - Maps element types to React components
@@ -55,6 +56,7 @@ export const ElementRegistry: Record<ElementType, React.ComponentType<any>> = {
   'weekCheckinSummary': WeekCheckinSummaryElement,
   'agentMessageCard': AgentMessageCardElement,
   'openQuestion': OpenQuestionElement,
+  'orb': OrbElement,
 };
 
 /**
@@ -303,6 +305,20 @@ export const ElementMetadataRegistry: Record<ElementType, ElementMetadata> = {
     description: 'Open-ended question that shows summary after recording input',
     defaultData: { id: '', question: 'What would you like to share?' },
     defaultStyle: {},
+  },
+  'orb': {
+    type: 'orb',
+    displayName: 'Voice Orb',
+    category: 'interactive',
+    icon: '🔮',
+    description: '3D animated orb with audio reactivity for voice agent visualization',
+    defaultData: {
+      id: '',
+      colors: ['#A2CC6E', '#DDF1C4'],
+      agentState: null,
+      volumeMode: 'auto',
+    },
+    defaultStyle: { size: 'medium' },
   },
 };
 

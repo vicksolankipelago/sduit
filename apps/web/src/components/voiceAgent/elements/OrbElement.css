@@ -1,0 +1,12 @@
+.orb-element {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+}
+
+.orb-element .orb-canvas {
+  width: 100%;
+  height: 100%;
+}

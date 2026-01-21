@@ -59,7 +59,8 @@ export type ElementType =
   | 'miniWidget'
   | 'weekCheckinSummary'
   | 'agentMessageCard'
-  | 'openQuestion';
+  | 'openQuestion'
+  | 'orb';
 
 /**
  * Event Type - All supported event types
@@ -568,6 +569,33 @@ export interface OpenQuestionData {
 
 export interface OpenQuestionElementStyle {
   // No style properties needed for now
+}
+
+/**
+ * Orb Element (Voice Agent Visualization)
+ * Uses ElevenLabs UI Orb component with Three.js
+ */
+export interface OrbData {
+  id: string;
+  /** Custom gradient colors [start, end] */
+  colors?: [string, string];
+  /** Agent state for auto volume mode */
+  agentState?: 'thinking' | 'listening' | 'talking' | null;
+  /** Volume control mode - 'auto' for state-based, 'manual' for explicit volume */
+  volumeMode?: 'auto' | 'manual';
+  /** Seed for consistent animation patterns */
+  seed?: number;
+}
+
+export interface OrbElementStyle {
+  /** Size variant */
+  size?: 'small' | 'medium' | 'large';
+  /** Custom width (CSS value) */
+  width?: string;
+  /** Custom height (CSS value) */
+  height?: string;
+  /** Container background color */
+  backgroundColor?: string;
 }
 
 // ============================================================================
