@@ -8,6 +8,7 @@
 import { Journey } from '../../../types/journey';
 import { createPostWebPQJourney } from './postWebPQJourney';
 import { createGadPhq2Journey } from './gadPhq2Journey';
+import { createOrbIntakeJourney } from './orbIntakeJourney';
 
 /**
  * Load all default example journeys
@@ -15,12 +16,13 @@ import { createGadPhq2Journey } from './gadPhq2Journey';
  */
 export async function loadDefaultJourneys(): Promise<Journey[]> {
   try {
-    const [intakeCall, mentalHealth] = await Promise.all([
+    const [intakeCall, mentalHealth, orbIntake] = await Promise.all([
       createPostWebPQJourney(),
       createGadPhq2Journey(),
+      createOrbIntakeJourney(),
     ]);
 
-    return [intakeCall, mentalHealth];
+    return [intakeCall, mentalHealth, orbIntake];
   } catch (error) {
     console.error('Failed to load default journeys:', error);
     return [];
@@ -35,6 +37,7 @@ export function isDefaultJourney(journeyId: string): boolean {
     'default-post-web-pq',
     'default-gad-phq2',
     'default-dry-january',
+    'default-orb-intake',
   ].includes(journeyId);
 }
 
@@ -46,6 +49,7 @@ export function getDefaultJourneyIds(): string[] {
     'default-post-web-pq',
     'default-gad-phq2',
     'default-dry-january',
+    'default-orb-intake',
   ];
 }
 
