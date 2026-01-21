@@ -9,6 +9,7 @@ import journeysRouter from "./routes/journeys";
 import voiceSessionsRouter from "./routes/voiceSessions";
 import feedbackRouter from "./routes/feedback";
 import screensRouter from "./routes/screens";
+import transcriptNotesRouter from "./routes/transcriptNotes";
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ async function main() {
   
   app.use("/api/journeys", isAuthenticated, journeysRouter);
   app.use("/api/voice-sessions", isAuthenticated, voiceSessionsRouter);
+  app.use("/api/voice-sessions", isAuthenticated, transcriptNotesRouter);
   app.use("/api/feedback", isAuthenticated, feedbackRouter);
   app.use("/api/screens", isAuthenticated, screensRouter);
   

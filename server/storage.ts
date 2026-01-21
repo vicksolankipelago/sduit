@@ -1,8 +1,9 @@
 import { journeys, journeyVersions, type Journey, type InsertJourney, type JourneyVersion, type InsertJourneyVersion } from "../shared/models/journeys";
 import { voiceSessions, type VoiceSession, type InsertVoiceSession } from "../shared/models/voiceSessions";
 import { globalScreens, type GlobalScreen, type InsertGlobalScreen } from "../shared/models/globalScreens";
+import { transcriptNotes, type TranscriptNote, type InsertTranscriptNote } from "../shared/models/transcriptNotes";
 import { db } from "./db";
-import { eq, desc, count } from "drizzle-orm";
+import { eq, desc, count, and, isNull, asc } from "drizzle-orm";
 
 export interface TranscriptMessage {
   itemId: string;
@@ -55,6 +56,14 @@ export interface IStorage {
   createGlobalScreen(screen: InsertGlobalScreen): Promise<GlobalScreen>;
   updateGlobalScreen(screenId: string, screen: Partial<InsertGlobalScreen>): Promise<GlobalScreen | undefined>;
   deleteGlobalScreen(screenId: string): Promise<boolean>;
+
+  // Transcript notes
+  listSessionNotes(sessionId: string): Promise<TranscriptNote[]>;
+  getNote(noteId: string): Promise<TranscriptNote | undefined>;
+  createNote(note: InsertTranscriptNote): Promise<TranscriptNote>;
+  updateNote(noteId: string, updates: Partial<InsertTranscriptNote>): Promise<TranscriptNote | undefined>;
+  deleteNote(noteId: string): Promise<boolean>;
+  deleteNoteWithReplies(noteId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -295,6 +304,45 @@ export class DatabaseStorage implements IStorage {
 
   async deleteGlobalScreen(screenId: string): Promise<boolean> {
     await db.delete(globalScreens).where(eq(globalScreens.id, screenId));
+    return true;
+  }
+
+  // Transcript notes methods
+  async listSessionNotes(sessionId: string): Promise<TranscriptNote[]> {
+    return await db
+      .select()
+      .from(transcriptNotes)
+      .where(eq(transcriptNotes.sessionId, sessionId))
+      .orderBy(asc(transcriptNotes.createdAt));
+  }
+
+  async getNote(noteId: string): Promise<TranscriptNote | undefined> {
+    const [note] = await db.select().from(transcriptNotes).where(eq(transcriptNotes.id, noteId));
+    return note;
+  }
+
+  async createNote(note: InsertTranscriptNote): Promise<TranscriptNote> {
+    const [created] = await db.insert(transcriptNotes).values(note).returning();
+    return created;
+  }
+
+  async updateNote(noteId: string, updates: Partial<InsertTranscriptNote>): Promise<TranscriptNote | undefined> {
+    const [updated] = await db
+      .update(transcriptNotes)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(transcriptNotes.id, noteId))
+      .returning();
+    return updated;
+  }
+
+  async deleteNote(noteId: string): Promise<boolean> {
+    await db.delete(transcriptNotes).where(eq(transcriptNotes.id, noteId));
+    return true;
+  }
+
+  async deleteNoteWithReplies(noteId: string): Promise<boolean> {
+    await db.delete(transcriptNotes).where(eq(transcriptNotes.parentId, noteId));
+    await db.delete(transcriptNotes).where(eq(transcriptNotes.id, noteId));
     return true;
   }
 }

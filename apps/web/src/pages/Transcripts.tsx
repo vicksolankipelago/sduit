@@ -8,6 +8,7 @@ import {
   SessionListItem,
 } from '../services/api/sessionService';
 import { SessionExport, downloadSessionExport, downloadFormattedTranscript } from '../utils/transcriptExport';
+import { TranscriptNotes } from '../components/voiceAgent/TranscriptNotes';
 import './Transcripts.css';
 
 type ViewMode = 'list' | 'detail';
@@ -29,6 +30,10 @@ export const TranscriptsPage: React.FC = () => {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+
+  // Notes state
+  const [notesMessageIndex, setNotesMessageIndex] = useState<number | null>(null);
+  const [showNotes, setShowNotes] = useState(false);
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   // Load sessions on mount and when page changes
@@ -323,22 +328,49 @@ export const TranscriptsPage: React.FC = () => {
           {/* Tab Content */}
           <div className="transcripts-tab-content">
             {detailTab === 'transcript' && (
-              <div className="transcripts-conversation">
-                {transcriptMessages
-                  .map((item, index) => (
-                    <div
-                      key={item.itemId || index}
-                      className={`transcripts-message ${item.role === 'user' ? 'user' : 'assistant'}`}
-                    >
-                      <div className="transcripts-message-role">
-                        {item.role === 'user' ? 'Member' : 'Coach'}
+              <div className="transcripts-conversation-wrapper">
+                <div className={`transcripts-conversation ${showNotes ? 'with-notes' : ''}`}>
+                  {transcriptMessages
+                    .map((item, index) => (
+                      <div
+                        key={item.itemId || index}
+                        className={`transcripts-message ${item.role === 'user' ? 'user' : 'assistant'} ${notesMessageIndex === index ? 'selected' : ''}`}
+                      >
+                        <div className="transcripts-message-role">
+                          {item.role === 'user' ? 'Member' : 'Coach'}
+                        </div>
+                        <div className="transcripts-message-content">{item.title}</div>
+                        <div className="transcripts-message-footer">
+                          <div className="transcripts-message-time">{item.timestamp}</div>
+                          <button
+                            className="transcripts-add-note-btn"
+                            onClick={() => {
+                              setNotesMessageIndex(index);
+                              setShowNotes(true);
+                            }}
+                            title="Add note"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                            </svg>
+                            Note
+                          </button>
+                        </div>
                       </div>
-                      <div className="transcripts-message-content">{item.title}</div>
-                      <div className="transcripts-message-time">{item.timestamp}</div>
-                    </div>
-                  ))}
-                {transcriptMessages.length === 0 && (
-                  <div className="transcripts-empty-tab">No messages in this session</div>
+                    ))}
+                  {transcriptMessages.length === 0 && (
+                    <div className="transcripts-empty-tab">No messages in this session</div>
+                  )}
+                </div>
+                {showNotes && currentSession && (
+                  <TranscriptNotes
+                    sessionId={currentSession.sessionId}
+                    messageIndex={notesMessageIndex}
+                    onClose={() => {
+                      setShowNotes(false);
+                      setNotesMessageIndex(null);
+                    }}
+                  />
                 )}
               </div>
             )}

@@ -503,6 +503,59 @@
   margin: 0;
 }
 
+/* Transcript with Notes */
+.transcripts-conversation-wrapper {
+  display: flex;
+  gap: 1rem;
+}
+
+.transcripts-conversation.with-notes {
+  flex: 1;
+  min-width: 0;
+}
+
+.transcripts-conversation-wrapper .transcript-notes-panel {
+  width: 350px;
+  flex-shrink: 0;
+}
+
+.transcripts-message.selected {
+  outline: 2px solid var(--primary-cta-default);
+  outline-offset: 2px;
+}
+
+.transcripts-message-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.transcripts-add-note-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: none;
+  border: 1px solid var(--ui-element-divider);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.65rem;
+  cursor: pointer;
+  color: var(--text-global-secondary);
+  transition: all 0.15s ease;
+  opacity: 0;
+}
+
+.transcripts-message:hover .transcripts-add-note-btn {
+  opacity: 1;
+}
+
+.transcripts-add-note-btn:hover {
+  background: var(--secondary-hover);
+  color: var(--text-global-primary);
+  border-color: var(--primary-cta-default);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .transcripts-page {
@@ -524,5 +577,17 @@
   .transcripts-detail-actions {
     width: 100%;
     justify-content: flex-end;
+  }
+
+  .transcripts-conversation-wrapper {
+    flex-direction: column;
+  }
+
+  .transcripts-conversation-wrapper .transcript-notes-panel {
+    width: 100%;
+  }
+
+  .transcripts-add-note-btn {
+    opacity: 1;
   }
 }
