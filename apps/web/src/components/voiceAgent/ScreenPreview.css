@@ -1,7 +1,8 @@
 /* Device Frame */
 .screen-preview-device-frame {
-  width: 375px;
-  height: 812px;
+  width: 320px;
+  height: 580px;
+  max-height: calc(100vh - 200px);
   background-color: #000;
   border-radius: 36px;
   padding: 12px;
