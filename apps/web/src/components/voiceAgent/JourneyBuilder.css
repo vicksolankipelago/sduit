@@ -338,19 +338,17 @@
 .journey-description-label {
   display: block;
   margin-bottom: 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-global-secondary);
+  font-size: var(--font-size-body-2);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-global-primary);
 }
 
 .journey-description-field textarea {
   width: 100%;
   padding: 0.875rem;
   border: var(--border-input);
-  border-radius: 8px;
-  font-size: 0.9375rem;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-body-2);
   color: var(--text-global-primary);
   resize: vertical;
   font-family: inherit;
@@ -365,8 +363,8 @@
 
 .journey-flow-section h4 {
   margin: 0 0 1rem 0;
-  font-size: 1.125rem;
-  font-weight: 600;
+  font-size: var(--font-size-body-2);
+  font-weight: var(--font-weight-bold);
   color: var(--text-global-primary);
 }
 

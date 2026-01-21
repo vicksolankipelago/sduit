@@ -35,10 +35,10 @@
   gap: 0.5rem;
   padding: 0.625rem 1rem;
   background: var(--background-light-card);
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  border: var(--border-subtle);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-body-2);
+  font-weight: var(--font-weight-medium);
   color: var(--text-global-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -51,13 +51,13 @@
 
 .agent-editor-page-title h1 {
   margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: var(--font-size-header-3);
+  font-weight: var(--font-weight-bold);
   color: var(--text-global-primary);
 }
 
 .agent-editor-page-subtitle {
-  font-size: 0.875rem;
+  font-size: var(--font-size-body-2);
   color: var(--text-global-secondary);
 }
 
@@ -71,9 +71,9 @@
   background: var(--primary-cta-default);
   color: var(--text-button-primary);
   border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-body-2);
+  font-weight: var(--font-weight-bold);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -91,10 +91,10 @@
   padding: 0.625rem 1.25rem;
   background: var(--background-light-card);
   color: var(--alert-error-default);
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
+  border: var(--border-subtle);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-body-2);
+  font-weight: var(--font-weight-bold);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -113,7 +113,7 @@
   max-width: 1200px;
   margin: 0 auto;
   background: var(--background-light-card);
-  border-radius: 8px;
+  border-radius: var(--border-radius-sm);
   box-shadow: var(--shadow-card);
 }
 
