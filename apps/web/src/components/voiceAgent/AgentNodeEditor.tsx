@@ -367,8 +367,8 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
                     className="agent-screen-item"
                   >
                     <div className="agent-screen-item-header">
-                      <strong>{screen.title}</strong>
-                      <span className="agent-screen-item-id">{screen.id}</span>
+                      <strong>{screen.id}</strong>
+                      <span className="agent-screen-item-id">{screen.title}</span>
                     </div>
                     <div className="agent-screen-item-meta">
                       {screen.sections.length} section(s), {' '}
