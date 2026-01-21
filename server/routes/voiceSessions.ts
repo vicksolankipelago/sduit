@@ -197,7 +197,8 @@ router.get("/:sessionId/notes", isAuthenticated, async (req: any, res) => {
     if (!session) {
       return res.status(404).json({ message: "Session not found" });
     }
-    const notes = await storage.listSessionNotes(sessionId);
+    // Use session.id (database UUID) to query notes
+    const notes = await storage.listSessionNotes(session.id);
     res.json(notes);
   } catch (error) {
     console.error("Error listing notes:", error);
@@ -222,8 +223,9 @@ router.post("/:sessionId/notes", isAuthenticated, async (req: any, res) => {
       return res.status(400).json({ message: "messageIndex and content are required" });
     }
     
+    // Use session.id (database UUID) not sessionId (OpenAI session ID)
     const note = await storage.createNote({
-      sessionId,
+      sessionId: session.id,
       messageIndex,
       userId: user.id,
       userRole: user.role || "member",
