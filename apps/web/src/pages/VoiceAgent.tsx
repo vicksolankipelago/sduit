@@ -129,6 +129,7 @@ function VoiceAgentContent() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [currentJourney, setCurrentJourney] = useState<Journey | null>(null);
   const [availableJourneys, setAvailableJourneys] = useState<JourneyListItem[]>([]);
+  const [journeysLoading, setJourneysLoading] = useState(true);
   
   // Voice control state
   const [showKeyboardInput, setShowKeyboardInput] = useState(false);
@@ -184,34 +185,39 @@ function VoiceAgentContent() {
   // Load default journeys on first mount
   useEffect(() => {
     const loadJourneys = async () => {
-      // Refresh journey list on mount (cleanup happens automatically in listJourneys())
-      const journeyList = await listJourneys();
-      console.log('📋 Available journeys on mount:', journeyList.map(j => `${j.name} (${j.id})`));
-      setAvailableJourneys(journeyList);
+      setJourneysLoading(true);
+      try {
+        // Refresh journey list on mount (cleanup happens automatically in listJourneys())
+        const journeyList = await listJourneys();
+        console.log('📋 Available journeys on mount:', journeyList.map(j => `${j.name} (${j.id})`));
+        setAvailableJourneys(journeyList);
 
-      // Check if there's a journey to auto-launch (from Journey Builder)
-      const launchJourneyId = localStorage.getItem('voice-agent-launch-journey');
-      if (launchJourneyId) {
-        localStorage.removeItem('voice-agent-launch-journey'); // Clear flag
-        const journeyToLaunch = await loadJourney(launchJourneyId);
-        if (journeyToLaunch) {
-          setCurrentJourney(journeyToLaunch);
-          addLog('info', `🚀 Launching journey: ${journeyToLaunch.name}`);
-          // Auto-start after a brief delay
-          setTimeout(() => {
-            connectToRealtime(journeyToLaunch);
-          }, 500);
-          return;
+        // Check if there's a journey to auto-launch (from Journey Builder)
+        const launchJourneyId = localStorage.getItem('voice-agent-launch-journey');
+        if (launchJourneyId) {
+          localStorage.removeItem('voice-agent-launch-journey'); // Clear flag
+          const journeyToLaunch = await loadJourney(launchJourneyId);
+          if (journeyToLaunch) {
+            setCurrentJourney(journeyToLaunch);
+            addLog('info', `🚀 Launching journey: ${journeyToLaunch.name}`);
+            // Auto-start after a brief delay
+            setTimeout(() => {
+              connectToRealtime(journeyToLaunch);
+            }, 500);
+            return;
+          }
         }
-      }
 
-      if (!currentJourney && journeyList.length > 0) {
-        // Auto-load first journey but don't start it
-        const firstJourney = await loadJourney(journeyList[0].id);
-        if (firstJourney) {
-          setCurrentJourney(firstJourney);
-          addLog('info', `📋 Journey ready: ${firstJourney.name}`);
+        if (!currentJourney && journeyList.length > 0) {
+          // Auto-load first journey but don't start it
+          const firstJourney = await loadJourney(journeyList[0].id);
+          if (firstJourney) {
+            setCurrentJourney(firstJourney);
+            addLog('info', `📋 Journey ready: ${firstJourney.name}`);
+          }
         }
+      } finally {
+        setJourneysLoading(false);
       }
     };
 
@@ -1223,12 +1229,17 @@ Important guidelines:
                     );
                   })}
                   
-                  {availableJourneys.length === 0 && (
-                  <div className="journeys-empty-state">
-                    <h3>No flows available</h3>
-                    <p>Click "Create Flow" to get started</p>
-                  </div>
-                )}
+                  {journeysLoading && (
+                    <div className="journeys-loading-state">
+                      <p>Loading flows...</p>
+                    </div>
+                  )}
+                  {!journeysLoading && availableJourneys.length === 0 && (
+                    <div className="journeys-empty-state">
+                      <h3>No flows available</h3>
+                      <p>Click "Create Flow" to get started</p>
+                    </div>
+                  )}
               </div>
 
             </div>

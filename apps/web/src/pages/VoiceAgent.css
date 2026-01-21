@@ -250,6 +250,14 @@
   cursor: not-allowed;
 }
 
+.journeys-loading-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--text-global-secondary);
+  font-size: var(--font-size-body-2);
+}
+
 .journeys-empty-state {
   grid-column: 1 / -1;
   text-align: center;
