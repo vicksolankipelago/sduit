@@ -208,7 +208,7 @@
 
 .journey-list-item {
   background: var(--background-light);
-  border-radius: 10px;
+  border-radius: 8px;
   margin-bottom: 0.75rem;
   overflow: hidden;
   transition: all 0.2s ease;
@@ -483,10 +483,10 @@
   padding: 0.5rem 1rem;
   background: none;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   color: var(--text-global-secondary);
   font-family: inherit;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -518,8 +518,9 @@
 
 .journey-screens-header h4 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-global-primary);
 }
 
 .journey-add-screen-btn,
@@ -545,7 +546,7 @@
   padding: 3rem;
   text-align: center;
   background: var(--background-light-card);
-  border-radius: 12px;
+  border-radius: 8px;
   color: var(--text-global-secondary);
 }
 
@@ -562,7 +563,7 @@
   gap: 0.75rem;
   padding: 1rem;
   background: var(--background-light-card);
-  border-radius: 12px;
+  border-radius: 8px;
   height: fit-content;
   max-height: 600px;
   overflow-y: auto;
@@ -592,18 +593,19 @@
 }
 
 .journey-screen-item-header strong {
-  font-size: 14px;
+  font-size: 0.875rem;
+  font-weight: 600;
   color: var(--text-global-primary);
 }
 
 .journey-screen-item-id {
   font-family: 'Monaco', monospace;
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--text-global-tertiary);
 }
 
 .journey-screen-item-meta {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--text-global-secondary);
   margin-bottom: 0.75rem;
 }
@@ -619,7 +621,9 @@
   background: var(--background-light-card);
   border: none;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-global-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -631,7 +635,7 @@
 .journey-screen-editor-panel,
 .journey-screen-preview-panel {
   background: var(--background-light);
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -648,8 +652,9 @@
 
 .journey-screen-preview-header h4 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-global-primary);
 }
 
 .journey-screen-preview-header button {
@@ -681,8 +686,9 @@
 
 .journey-prompts-section h4 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-global-primary);
 }
 
 .journey-prompts-overview {
@@ -692,7 +698,7 @@
 }
 
 .journey-prompt-block {
-  border-radius: 12px;
+  border-radius: 8px;
   background: var(--background-light-card);
   padding: 1rem;
   display: flex;
@@ -709,7 +715,7 @@
 }
 
 .journey-prompt-block-meta {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--text-global-secondary);
   font-weight: 500;
 }
@@ -735,7 +741,7 @@
   padding: 3rem;
   text-align: center;
   background: var(--background-light-card);
-  border-radius: 12px;
+  border-radius: 8px;
   color: var(--text-global-secondary);
 }
 
@@ -772,7 +778,7 @@
 }
 
 .journey-screen-templates-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--text-global-tertiary);
   font-weight: 500;
 }
@@ -782,8 +788,9 @@
   background-color: var(--background-light-card);
   border: none;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
+  color: var(--text-global-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
 }
