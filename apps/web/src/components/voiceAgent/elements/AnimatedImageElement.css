@@ -9,6 +9,11 @@
   overflow: hidden;
 }
 
+.animated-image-placeholder-container {
+  position: relative;
+  border: 2px dashed var(--ui-element-outline-default);
+}
+
 .animated-image-placeholder {
   display: flex;
   align-items: center;
@@ -19,5 +24,7 @@
   color: var(--text-global-secondary);
   font-family: var(--font-family-grotesque);
   margin: 0 auto;
+  width: 100%;
+  height: 100%;
 }
 
