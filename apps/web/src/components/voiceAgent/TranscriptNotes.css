@@ -261,3 +261,12 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.transcript-notes-error {
+  background: var(--accent-red-default);
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-body-2);
+  margin-bottom: 0.5rem;
+}

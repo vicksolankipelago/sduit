@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TranscriptNote, listNotes, createNote, updateNote, deleteNote } from '../../services/api/notesService';
 import './TranscriptNotes.css';
 
@@ -19,17 +19,26 @@ export const TranscriptNotes: React.FC<TranscriptNotesProps> = ({
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     loadNotes();
   }, [sessionId]);
 
+  useEffect(() => {
+    if (!loading && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [loading]);
+
   const loadNotes = async () => {
     try {
       const allNotes = await listNotes(sessionId);
       setNotes(allNotes);
-    } catch (error) {
-      console.error('Failed to load notes:', error);
+    } catch (err) {
+      console.error('Failed to load notes:', err);
+      setError('Failed to load notes');
     } finally {
       setLoading(false);
     }
@@ -39,6 +48,7 @@ export const TranscriptNotes: React.FC<TranscriptNotesProps> = ({
     if (!newNoteContent.trim() || messageIndex === null) return;
     
     setSubmitting(true);
+    setError(null);
     try {
       await createNote(sessionId, {
         messageIndex,
@@ -46,8 +56,9 @@ export const TranscriptNotes: React.FC<TranscriptNotesProps> = ({
       });
       setNewNoteContent('');
       onClose();
-    } catch (error) {
-      console.error('Failed to create note:', error);
+    } catch (err) {
+      console.error('Failed to create note:', err);
+      setError('Failed to save note. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -244,10 +255,12 @@ export const TranscriptNotes: React.FC<TranscriptNotesProps> = ({
 
           {messageIndex !== null && (
             <div className="transcript-notes-add">
+              {error && <div className="transcript-notes-error">{error}</div>}
               <textarea
+                ref={textareaRef}
                 value={newNoteContent}
                 onChange={(e) => setNewNoteContent(e.target.value)}
-                placeholder="Add a note..."
+                placeholder="Type your note here..."
                 rows={3}
               />
               <button
@@ -255,7 +268,7 @@ export const TranscriptNotes: React.FC<TranscriptNotesProps> = ({
                 onClick={handleAddNote}
                 disabled={!newNoteContent.trim() || submitting}
               >
-                {submitting ? 'Adding...' : 'Add Note'}
+                {submitting ? 'Saving...' : 'Add Note'}
               </button>
             </div>
           )}
