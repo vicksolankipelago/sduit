@@ -232,7 +232,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   };
 
   const handleBackToList = () => {
-    navigate('/flows');
+    navigate('/');
   };
 
   const selectedAgent = currentJourney?.agents.find(a => a.id === selectedAgentId) || null;
