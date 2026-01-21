@@ -112,7 +112,7 @@ const SystemPromptEditor: React.FC<SystemPromptEditorProps> = ({
           </div>
         </div>
       ) : (
-        <div className={`system-prompt-editor-area ${showVariables ? 'with-variables' : ''}`}>
+        <div className="system-prompt-editor-area">
           <div className="system-prompt-textarea-wrapper">
             <textarea
               ref={textareaRef}
@@ -129,15 +129,18 @@ const SystemPromptEditor: React.FC<SystemPromptEditorProps> = ({
               <span>{characterCount} characters</span>
             </div>
           </div>
-          {showVariables && (
-            <VariablePanel
-              variables={variables}
-              variablesByCategory={variablesByCategory}
-              onInsert={handleInsertVariable}
-              mode="default"
-              disabled={disabled}
-            />
-          )}
+        </div>
+      )}
+
+      {showVariables && (
+        <div className="system-prompt-variables-section">
+          <VariablePanel
+            variables={variables}
+            variablesByCategory={variablesByCategory}
+            onInsert={handleInsertVariable}
+            mode="inline"
+            disabled={disabled}
+          />
         </div>
       )}
 

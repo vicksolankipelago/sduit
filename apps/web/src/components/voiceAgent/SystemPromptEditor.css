@@ -124,23 +124,73 @@
   margin-bottom: 1rem;
 }
 
-.system-prompt-editor-area.with-variables {
-  display: flex;
-  gap: 1rem;
-}
-
 .system-prompt-textarea-wrapper {
   flex: 1;
   min-width: 0;
 }
 
-.system-prompt-editor-area.with-variables .variable-panel {
-  flex-shrink: 0;
-  width: 280px;
-  max-height: none;
-  height: fit-content;
-  position: sticky;
-  top: 1rem;
+.system-prompt-variables-section {
+  margin-bottom: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.system-prompt-variables-section .variable-panel {
+  background: transparent;
+  padding: 0;
+}
+
+.system-prompt-variables-section .variable-panel.inline {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.system-prompt-variables-section .variable-panel.inline .variable-panel-header {
+  margin-bottom: 0;
+}
+
+.system-prompt-variables-section .variable-panel.inline .variable-category {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0.75rem;
+}
+
+.system-prompt-variables-section .variable-panel.inline .variable-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.system-prompt-variables-section .variable-panel.inline .variable-item {
+  display: inline-flex;
+  flex-direction: column;
+  padding: 0.5rem 0.75rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.system-prompt-variables-section .variable-panel.inline .variable-item:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+.system-prompt-variables-section .variable-panel.inline .variable-item-name {
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.8125rem;
+  color: #15803d;
+  font-weight: 600;
+}
+
+.system-prompt-variables-section .variable-panel.inline .variable-item-description {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.125rem;
 }
 
 .system-prompt-textarea {
@@ -227,17 +277,6 @@
 }
 
 /* Responsive */
-@media (max-width: 1024px) {
-  .system-prompt-editor-area.with-variables {
-    flex-direction: column;
-  }
-
-  .system-prompt-editor-area.with-variables .variable-panel {
-    width: 100%;
-    position: static;
-  }
-}
-
 @media (max-width: 768px) {
   .system-prompt-header {
     flex-direction: column;
