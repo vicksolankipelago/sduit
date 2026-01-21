@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { Journey, JourneyListItem, Agent, DEFAULT_SYSTEM_PROMPT, validateJourney, Screen } from '../../types/journey';
 import { listJourneys, loadJourney, saveJourney, deleteJourney, duplicateJourney } from '../../services/journeyStorage';
@@ -24,6 +24,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   onLaunchJourney,
   disabled = false,
 }) => {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [journeys, setJourneys] = useState<JourneyListItem[]>([]);
   const [currentJourney, setCurrentJourney] = useState<Journey | null>(null);
@@ -231,12 +232,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   };
 
   const handleBackToList = () => {
-    setViewMode('list');
-    setSelectedAgentId(null);
-    setEditingScreenIndex(null);
-    setPreviewScreenIndex(null);
-    setShowAgentModal(false);
-    setBuilderTab('flow');
+    navigate('/flows');
   };
 
   const selectedAgent = currentJourney?.agents.find(a => a.id === selectedAgentId) || null;
