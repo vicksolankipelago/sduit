@@ -19,11 +19,22 @@ router.post("/", isAuthenticated, async (req: any, res) => {
       return res.status(400).json({ message: "Rating must be between 1 and 5" });
     }
 
-    const [session] = await db
+    // Look up by sessionId field (client session ID) or database id
+    let session;
+    [session] = await db
       .select()
       .from(voiceSessions)
-      .where(eq(voiceSessions.id, voiceSessionId))
+      .where(eq(voiceSessions.sessionId, voiceSessionId))
       .limit(1);
+    
+    // Fallback to database ID lookup
+    if (!session) {
+      [session] = await db
+        .select()
+        .from(voiceSessions)
+        .where(eq(voiceSessions.id, voiceSessionId))
+        .limit(1);
+    }
 
     if (!session) {
       return res.status(404).json({ message: "Voice session not found" });
@@ -33,11 +44,12 @@ router.post("/", isAuthenticated, async (req: any, res) => {
       return res.status(403).json({ message: "You can only submit feedback for your own sessions" });
     }
 
+    // Use database ID for the foreign key
     const [newFeedback] = await db
       .insert(feedback)
       .values({
         userId,
-        voiceSessionId,
+        voiceSessionId: session.id,
         rating,
         comment: comment || null,
       })
