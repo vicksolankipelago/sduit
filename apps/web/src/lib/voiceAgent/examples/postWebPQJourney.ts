@@ -411,18 +411,6 @@ function createPostWebPQScreens(): Screen[] {
           scrollable: true,
           elements: [
             {
-              type: 'spacer',
-              state: {
-                id: 'top_spacer',
-              },
-              style: {
-                height: null,
-                width: null,
-                isFlexible: true,
-                direction: 'vertical',
-              },
-            },
-            {
               type: 'openQuestion',
               state: {
                 id: 'outcomes_question',
@@ -442,6 +430,18 @@ function createPostWebPQScreens(): Screen[] {
                   ],
                 },
               ],
+            },
+            {
+              type: 'spacer',
+              state: {
+                id: 'bottom_spacer',
+              },
+              style: {
+                height: null,
+                width: null,
+                isFlexible: true,
+                direction: 'vertical',
+              },
             },
           ],
         },
