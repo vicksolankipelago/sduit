@@ -436,15 +436,17 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
           ) : (
             <div className="journey-editor">
               {/* Journey Description */}
-              <div className="journey-description-field">
-                <label className="journey-description-label">Description</label>
-                <textarea
-                  value={currentJourney.description}
-                  onChange={(e) => setCurrentJourney({ ...currentJourney, description: e.target.value })}
-                  placeholder="Describe this flow..."
-                  disabled={disabled}
-                  rows={2}
-                />
+              <div className="journey-description-section">
+                <div className="journey-description-field">
+                  <label className="journey-description-label">Description</label>
+                  <textarea
+                    value={currentJourney.description}
+                    onChange={(e) => setCurrentJourney({ ...currentJourney, description: e.target.value })}
+                    placeholder="Describe this flow..."
+                    disabled={disabled}
+                    rows={2}
+                  />
+                </div>
               </div>
 
               {/* System Prompt */}

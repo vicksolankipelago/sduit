@@ -335,6 +335,12 @@
   gap: 1.5rem;
 }
 
+.journey-description-section {
+  background: var(--background-light);
+  border-radius: var(--border-radius-sm);
+  padding: 1.5rem;
+}
+
 .journey-description-label {
   display: block;
   margin-bottom: 0.5rem;
