@@ -517,6 +517,11 @@
 .transcripts-conversation-wrapper .transcript-notes-panel {
   width: 350px;
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
 }
 
 .transcripts-message.selected {
