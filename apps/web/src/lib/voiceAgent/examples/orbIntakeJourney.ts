@@ -115,7 +115,7 @@ function createOrbScreens(): Screen[] {
                 agentState: 'listening',
                 volumeMode: 'auto',
               },
-              style: { size: 'large' },
+              style: { size: 'medium' },
             },
             {
               type: 'spacer',
