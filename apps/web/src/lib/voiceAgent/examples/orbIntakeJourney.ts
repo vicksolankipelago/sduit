@@ -99,7 +99,7 @@ function createOrbScreens(): Screen[] {
             },
             {
               type: 'textBlock',
-              state: { id: 'welcome_subtitle', text: 'Your personal guide' },
+              state: { id: 'welcome_subtitle', text: 'Your personal AI guide' },
               style: { style: 'body1', alignment: 'center', color: 'secondary' },
             },
             {
@@ -121,11 +121,6 @@ function createOrbScreens(): Screen[] {
               type: 'spacer',
               state: { id: 'orb_bottom_spacer' },
               style: { height: 32, width: null, isFlexible: false, direction: 'vertical' },
-            },
-            {
-              type: 'textBlock',
-              state: { id: 'instruction', text: 'Tap to start talking' },
-              style: { style: 'caption', alignment: 'center', color: 'tertiary' },
             },
             {
               type: 'spacer',
