@@ -1,10 +1,9 @@
 import { Router } from "express";
-import { isAuthenticated } from "../auth";
 import { storage } from "../storage";
 
 const router = Router();
 
-router.get("/:sessionId/notes", isAuthenticated, async (req: any, res) => {
+router.get("/:sessionId/notes", async (req: any, res) => {
   try {
     const { sessionId } = req.params;
     
@@ -21,13 +20,16 @@ router.get("/:sessionId/notes", isAuthenticated, async (req: any, res) => {
   }
 });
 
-router.post("/:sessionId/notes", isAuthenticated, async (req: any, res) => {
+router.post("/:sessionId/notes", async (req: any, res) => {
+  console.log("POST notes request received:", req.params.sessionId, req.body);
   try {
     const { sessionId } = req.params;
     const { messageIndex, content, parentId } = req.body;
     const user = req.user;
     
+    console.log("Looking up session:", sessionId);
     const session = await storage.getSessionBySessionId(sessionId);
+    console.log("Session found:", !!session);
     if (!session) {
       return res.status(404).json({ message: "Session not found" });
     }
@@ -54,7 +56,7 @@ router.post("/:sessionId/notes", isAuthenticated, async (req: any, res) => {
   }
 });
 
-router.patch("/:sessionId/notes/:noteId", isAuthenticated, async (req: any, res) => {
+router.patch("/:sessionId/notes/:noteId", async (req: any, res) => {
   try {
     const { sessionId, noteId } = req.params;
     const { content, status } = req.body;
@@ -85,7 +87,7 @@ router.patch("/:sessionId/notes/:noteId", isAuthenticated, async (req: any, res)
   }
 });
 
-router.delete("/:sessionId/notes/:noteId", isAuthenticated, async (req: any, res) => {
+router.delete("/:sessionId/notes/:noteId", async (req: any, res) => {
   try {
     const { sessionId, noteId } = req.params;
     
