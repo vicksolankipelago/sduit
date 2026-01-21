@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
-import { Journey, JourneyListItem, Agent, DEFAULT_SYSTEM_PROMPT, validateJourney, Screen } from '../../types/journey';
-import { listJourneys, loadJourney, saveJourney, deleteJourney, duplicateJourney } from '../../services/journeyStorage';
+import { Journey, Agent, DEFAULT_SYSTEM_PROMPT, validateJourney, Screen } from '../../types/journey';
+import { loadJourney, saveJourney, deleteJourney, duplicateJourney } from '../../services/journeyStorage';
 import { SCREEN_TEMPLATES } from '../../lib/voiceAgent/screenTemplates';
 import { downloadAgentAsModule } from '../../services/screenExport';
 import { generateScreensFromPrompts, suggestionToScreen, ScreenSuggestion } from '../../services/aiScreenGenerator';
@@ -26,10 +26,9 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
 }) => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [journeys, setJourneys] = useState<JourneyListItem[]>([]);
   const [currentJourney, setCurrentJourney] = useState<Journey | null>(null);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'detail'>('detail');
   const [validationErrors, setValidationErrors] = useState<any[]>([]);
   const [builderTab, setBuilderTab] = useState<'flow' | 'screens' | 'prompts'>('flow');
   const [editingScreenIndex, setEditingScreenIndex] = useState<number | null>(null);
@@ -47,11 +46,8 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const [previewingSuggestion, setPreviewingSuggestion] = useState<ScreenSuggestion | null>(null);
 
   useEffect(() => {
-    // Load default journeys from codebase (async)
+    // Load flow based on URL params
     const initAndLoad = async () => {
-      const journeyList = await listJourneys();
-      setJourneys(journeyList);
-      
       // Check if we should auto-create a new flow
       if (searchParams.get('new') === 'true') {
         const newJourney: Journey = {
@@ -67,9 +63,9 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
         };
         setCurrentJourney(newJourney);
         setSelectedAgentId(null);
-        setViewMode('detail');
         // Clear the query param so refreshing doesn't create another new flow
         setSearchParams({}, { replace: true });
+        return;
       }
       
       // Check if we should load a specific flow for editing
@@ -79,21 +75,19 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
         if (journeyToEdit) {
           setCurrentJourney(journeyToEdit);
           setSelectedAgentId(null);
-          setViewMode('detail');
           // Clear the query param
           setSearchParams({}, { replace: true });
+          return;
         }
       }
+      
+      // No flow specified - redirect to main flows page
+      navigate('/');
     };
     
     initAndLoad();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const refreshJourneyList = async () => {
-    const journeyList = await listJourneys();
-    setJourneys(journeyList);
-  };
 
   const handleCreateNewJourney = () => {
     const newJourney: Journey = {
@@ -113,19 +107,6 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     setViewMode('detail');
   };
 
-  const handleLoadJourney = async (journeyId: string) => {
-    if (currentJourney?.id === journeyId) {
-      setViewMode('detail');
-      return;
-    }
-    const journey = await loadJourney(journeyId);
-    if (journey) {
-      setCurrentJourney(journey);
-      setSelectedAgentId(null);
-      setViewMode('detail');
-    }
-  };
-
   const handleSaveJourney = async () => {
     if (!currentJourney) return;
 
@@ -139,7 +120,6 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
 
     const saved = await saveJourney(currentJourney);
     if (saved) {
-      refreshJourneyList();
       alert(`Flow "${currentJourney.name}" saved successfully!`);
     } else {
       alert('Failed to save flow');
@@ -149,10 +129,8 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const handleDeleteJourney = (journeyId: string) => {
     if (window.confirm('Delete this flow? This cannot be undone.')) {
       deleteJourney(journeyId);
-      refreshJourneyList();
       if (currentJourney?.id === journeyId) {
-        setCurrentJourney(null);
-        setViewMode('list');
+        navigate('/');
       }
     }
   };
@@ -417,11 +395,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
           )}
         </div>
         <div className="journey-header-actions">
-          {viewMode === 'list' ? (
-            <button className="journey-create-btn" onClick={handleCreateNewJourney} type="button">
-              + New Flow
-            </button>
-          ) : currentJourney && (
+          {currentJourney && (
             <>
               <button className="journey-action-btn" onClick={handleSaveJourney} disabled={disabled}>
                 💾 Save
@@ -444,39 +418,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       <div className="journey-builder-layout">
         {/* Center Panel - Main Content */}
         <div className="journey-main-panel">
-          {viewMode === 'list' ? (
-            <div className="journey-list-view">
-              <div className="journey-list-view-header">
-                <h2>Flows</h2>
-                <p>Select a flow to view and edit details.</p>
-              </div>
-              {journeys.length === 0 ? (
-                <div className="journey-list-empty">
-                  <p>No flows yet</p>
-                  <button className="journey-create-empty-btn" onClick={handleCreateNewJourney} type="button">
-                    Create Your First Flow
-                  </button>
-                </div>
-              ) : (
-                <div className="journey-list-items">
-                  {journeys.map(journey => (
-                    <div
-                      key={journey.id}
-                      className={`journey-list-item ${currentJourney?.id === journey.id ? 'active' : ''}`}
-                    >
-                      <div className="journey-item-content" onClick={() => handleLoadJourney(journey.id)}>
-                        <div className="journey-item-name">{journey.name}</div>
-                        <div className="journey-item-meta">
-                          {journey.agentCount} agent{journey.agentCount !== 1 ? 's' : ''}
-                        </div>
-                      </div>
-                      <div className="journey-item-actions" />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : !currentJourney ? (
+          {!currentJourney ? (
             <div className="journey-welcome">
               <h2>Welcome to Flow Builder</h2>
               <p>Create multi-agent conversation flows with visual editing</p>
