@@ -40,12 +40,12 @@ export const TranscriptNotes: React.FC<TranscriptNotesProps> = ({
     
     setSubmitting(true);
     try {
-      const note = await createNote(sessionId, {
+      await createNote(sessionId, {
         messageIndex,
         content: newNoteContent.trim(),
       });
-      setNotes([...notes, note]);
       setNewNoteContent('');
+      onClose();
     } catch (error) {
       console.error('Failed to create note:', error);
     } finally {
