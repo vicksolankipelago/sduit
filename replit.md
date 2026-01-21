@@ -56,6 +56,7 @@ Uses PostgreSQL with Drizzle ORM. Schema defined in `shared/schema.ts`:
 - `users` - User profiles with email, hashed password, and role (admin/test)
 - `sessions` - Express session storage
 - `journeys` - User-created voice agent journeys
+- `journey_versions` - Version history for journeys (automatically created on every save)
 - `voice_sessions` - Saved voice session transcripts
 - `feedback` - User feedback linked to voice sessions (rating + comments)
 
@@ -94,8 +95,9 @@ Uses PostgreSQL with Drizzle ORM. Schema defined in `shared/schema.ts`:
 - `PUT /api/journeys/:id` - Update journey
 - `DELETE /api/journeys/:id` - Delete journey
 - `POST /api/journeys/:id/duplicate` - Duplicate journey
-- `GET /api/journeys/export/all` - Export all journeys as JSON (admin only)
-- `POST /api/journeys/import` - Import journeys from JSON (admin only)
+- `GET /api/journeys/:id/versions` - List version history for a journey
+- `GET /api/journeys/:id/versions/:versionId` - Get specific version details
+- `POST /api/journeys/:id/versions/:versionId/restore` - Restore to a previous version (admin only)
 
 ### Voice Sessions
 - `GET /api/voice-sessions` - List user's voice sessions
@@ -110,6 +112,9 @@ Uses PostgreSQL with Drizzle ORM. Schema defined in `shared/schema.ts`:
 
 ## Recent Changes
 
+- 2026-01-21: Added version history for prompts - users can view and restore previous versions of journeys via the History button
+- 2026-01-21: Replaced all emojis with professional SVG icons across the UI
+- 2026-01-21: Simplified System Prompt Editor by removing Variables, Preview, and Reset to Default buttons
 - 2026-01-21: Added end_call tool - AI agent can now call end_call() to end the conversation and show the feedback modal
 - 2026-01-21: Journeys are now shared across all users - all admins can see and edit all journeys
 - 2026-01-21: Screen cards on Screens page are now clickable to open the Screen Builder directly
