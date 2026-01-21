@@ -788,21 +788,22 @@ Important guidelines:
     },
     onTranscript: (role: string, text: string, isDone?: boolean) => {
       const roleKey = role as 'user' | 'assistant';
-      const ensureMessageId = () => {
+      const ensureMessageId = (): { id: string; isNew: boolean } => {
         const existingId = currentMessageIdsRef.current[roleKey];
-        if (existingId) return existingId;
+        if (existingId) return { id: existingId, isNew: false };
         const newId = `msg_${role}_${Date.now()}`;
         currentMessageIdsRef.current[roleKey] = newId;
         addTranscriptMessage(newId, roleKey, text, false);
-        return newId;
+        return { id: newId, isNew: true };
       };
 
       // Log transcripts
       if (role === 'user') {
-        const messageId = ensureMessageId();
+        const { id: messageId, isNew } = ensureMessageId();
         // Accumulate user message text
         userMessageBuffer.current += text;
-        if (messageId && text) {
+        // Only append if not a new message (new messages already have the text)
+        if (messageId && text && !isNew) {
           updateTranscriptMessage(messageId, text, true);
         }
         if (isDone) {
@@ -837,8 +838,9 @@ Important guidelines:
           // Don't set speaking state here - let audio element events handle it
         }
         assistantResponseBuffer.current += text;
-        const messageId = ensureMessageId();
-        if (messageId && text) {
+        const { id: messageId, isNew } = ensureMessageId();
+        // Only append if not a new message (new messages already have the text)
+        if (messageId && text && !isNew) {
           updateTranscriptMessage(messageId, text, true);
         }
         
