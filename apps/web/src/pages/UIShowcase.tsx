@@ -15,15 +15,17 @@ import {
   listScreens,
   loadScreen,
   saveScreen,
+  saveGlobalScreen,
   deleteScreen,
   duplicateScreen,
 } from '../services/screenStorage';
-import { listJourneys, loadJourney } from '../services/journeyStorage';
+import { listJourneys, loadJourney, saveJourney } from '../services/journeyStorage';
 
 interface LocationState {
   editScreen?: Screen;
   agentId?: string;
   agentName?: string;
+  journeyId?: string;
 }
 
 type TabMode = 'screens' | 'elements' | 'builder';
@@ -36,8 +38,9 @@ const UIShowcase: React.FC = () => {
   // Screens list state
   const [screensList, setScreensList] = useState<StandaloneScreenListItem[]>([]);
   const [isLoadingScreens, setIsLoadingScreens] = useState(true);
-  const [, setEditingScreenId] = useState<string | null>(null);
-  const [, setEditingAgentInfo] = useState<{ agentId?: string; agentName?: string } | null>(null);
+  const [editingScreenId, setEditingScreenId] = useState<string | null>(null);
+  const [editingAgentInfo, setEditingAgentInfo] = useState<{ agentId?: string; agentName?: string; journeyId?: string } | null>(null);
+  const [editingScreenSource, setEditingScreenSource] = useState<'new' | 'global' | 'journey'>('new');
 
   // Builder state
   const [builderScreen, setBuilderScreen] = useState<StandaloneScreen>(() => createStandaloneScreen(uuidv4(), 'New Screen'));
@@ -58,7 +61,12 @@ const UIShowcase: React.FC = () => {
       };
       setBuilderScreen(standaloneScreen);
       setEditingScreenId(state.editScreen.id);
-      setEditingAgentInfo({ agentId: state.agentId, agentName: state.agentName });
+      setEditingAgentInfo({ 
+        agentId: state.agentId, 
+        agentName: state.agentName,
+        journeyId: state.journeyId 
+      });
+      setEditingScreenSource(state.journeyId ? 'journey' : 'new');
       setSelectedElementIndex(null);
       setShowcaseMode('builder');
       
@@ -129,6 +137,8 @@ const UIShowcase: React.FC = () => {
     const newScreen = createStandaloneScreen(uuidv4(), 'New Screen');
     setBuilderScreen(newScreen);
     setEditingScreenId(null);
+    setEditingAgentInfo(null);
+    setEditingScreenSource('new');
     setSelectedElementIndex(null);
     setShowcaseMode('builder');
   };
@@ -149,8 +159,9 @@ const UIShowcase: React.FC = () => {
               updatedAt: journey.updatedAt || new Date().toISOString(),
             };
             setBuilderScreen(standaloneScreen);
-            setEditingScreenId(screenId);
-            setEditingAgentInfo({ agentId: agent.id, agentName: agent.name });
+            setEditingScreenId(actualScreenId);
+            setEditingAgentInfo({ agentId: agent.id, agentName: agent.name, journeyId });
+            setEditingScreenSource('journey');
             setSelectedElementIndex(null);
             setShowcaseMode('builder');
             return;
@@ -164,6 +175,7 @@ const UIShowcase: React.FC = () => {
         setBuilderScreen(screen);
         setEditingScreenId(screenId);
         setEditingAgentInfo(null);
+        setEditingScreenSource('global');
         setSelectedElementIndex(null);
         setShowcaseMode('builder');
       }
@@ -185,10 +197,59 @@ const UIShowcase: React.FC = () => {
   };
 
   const handleSaveScreen = async () => {
-    const success = await saveScreen(builderScreen);
-    if (success) {
-      await loadScreensList();
-      setEditingScreenId(builderScreen.id);
+    try {
+      if (editingScreenSource === 'journey' && editingAgentInfo?.journeyId && editingAgentInfo?.agentId) {
+        // Save to journey
+        const journey = await loadJourney(editingAgentInfo.journeyId);
+        if (journey) {
+          const agentIndex = journey.agents.findIndex(a => a.id === editingAgentInfo.agentId);
+          if (agentIndex >= 0) {
+            const agent = journey.agents[agentIndex];
+            const screenIndex = agent.screens?.findIndex(s => s.id === editingScreenId) ?? -1;
+            
+            // Convert StandaloneScreen back to Screen format
+            const updatedScreen: Screen = {
+              id: builderScreen.id,
+              title: builderScreen.title,
+              sections: builderScreen.sections,
+            };
+            
+            if (screenIndex >= 0 && agent.screens) {
+              agent.screens[screenIndex] = updatedScreen;
+            } else if (agent.screens) {
+              agent.screens.push(updatedScreen);
+            } else {
+              agent.screens = [updatedScreen];
+            }
+            
+            journey.agents[agentIndex] = agent;
+            journey.updatedAt = new Date().toISOString();
+            await saveJourney(journey);
+            await loadScreensList();
+            alert('Screen saved to journey!');
+          }
+        }
+      } else if (editingScreenSource === 'global' && editingScreenId) {
+        // Save to global API
+        const savedScreen = await saveGlobalScreen(builderScreen);
+        if (savedScreen) {
+          await loadScreensList();
+          setEditingScreenId(savedScreen.id);
+          alert('Screen saved!');
+        }
+      } else {
+        // Save as new global screen
+        const savedScreen = await saveGlobalScreen(builderScreen);
+        if (savedScreen) {
+          await loadScreensList();
+          setEditingScreenId(savedScreen.id);
+          setEditingScreenSource('global');
+          alert('Screen created!');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to save screen:', error);
+      alert('Failed to save screen');
     }
   };
 

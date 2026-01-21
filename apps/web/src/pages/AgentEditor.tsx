@@ -143,6 +143,7 @@ export const AgentEditorPage: React.FC = () => {
         <AgentNodeEditor
           agent={agent}
           allAgents={journey.agents}
+          journeyId={journeyId || undefined}
           onChange={handleAgentChange}
           onClose={handleBack}
           disabled={false}

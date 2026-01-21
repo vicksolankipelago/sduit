@@ -10,6 +10,7 @@ import './AgentNodeEditor.css';
 interface AgentNodeEditorProps {
   agent: Agent | null;
   allAgents: Agent[];
+  journeyId?: string;
   onChange: (agent: Agent) => void;
   onClose: () => void;
   disabled?: boolean;
@@ -18,6 +19,7 @@ interface AgentNodeEditorProps {
 const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
   agent,
   allAgents,
+  journeyId,
   onChange,
   onClose,
   disabled = false,
@@ -102,7 +104,8 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
       state: { 
         editScreen: newScreen,
         agentId: agent.id,
-        agentName: agent.name
+        agentName: agent.name,
+        journeyId
       } 
     });
   };
@@ -112,7 +115,8 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
       state: { 
         editScreen: screen,
         agentId: agent.id,
-        agentName: agent.name
+        agentName: agent.name,
+        journeyId
       } 
     });
   };
