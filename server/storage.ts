@@ -2,8 +2,13 @@ import { journeys, journeyVersions, type Journey, type InsertJourney, type Journ
 import { voiceSessions, type VoiceSession, type InsertVoiceSession } from "../shared/models/voiceSessions";
 import { globalScreens, type GlobalScreen, type InsertGlobalScreen } from "../shared/models/globalScreens";
 import { transcriptNotes, type TranscriptNote, type InsertTranscriptNote } from "../shared/models/transcriptNotes";
+import { users } from "../shared/models/auth";
 import { db } from "./db";
 import { eq, desc, count, and, isNull, asc } from "drizzle-orm";
+
+export interface VoiceSessionWithUser extends VoiceSession {
+  userName?: string;
+}
 
 export interface TranscriptMessage {
   itemId: string;
@@ -43,7 +48,8 @@ export interface IStorage {
   getJourneyVersion(versionId: string): Promise<JourneyVersion | undefined>;
   getLatestVersionNumber(journeyId: string): Promise<number>;
   
-  listUserSessions(userId: string, limit?: number, offset?: number): Promise<VoiceSession[]>;
+  listUserSessions(userId: string, limit?: number, offset?: number): Promise<VoiceSessionWithUser[]>;
+  listAllSessions(limit?: number, offset?: number): Promise<VoiceSessionWithUser[]>;
   getSession(sessionId: string): Promise<VoiceSession | undefined>;
   getSessionById(id: string): Promise<VoiceSession | undefined>;
   getSessionBySessionId(sessionId: string): Promise<VoiceSession | undefined>;
@@ -164,23 +170,49 @@ export class DatabaseStorage implements IStorage {
     return versions.length > 0 ? versions[0].versionNumber : 0;
   }
 
-  async listUserSessions(userId: string, limit = 50, offset = 0): Promise<VoiceSession[]> {
-    return await db
-      .select()
+  async listUserSessions(userId: string, limit = 50, offset = 0): Promise<VoiceSessionWithUser[]> {
+    const results = await db
+      .select({
+        session: voiceSessions,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+      })
       .from(voiceSessions)
+      .leftJoin(users, eq(voiceSessions.userId, users.id))
       .where(eq(voiceSessions.userId, userId))
       .orderBy(desc(voiceSessions.createdAt))
       .limit(limit)
       .offset(offset);
+    
+    return results.map(r => ({
+      ...r.session,
+      userName: r.firstName && r.lastName 
+        ? `${r.firstName} ${r.lastName}`.trim() 
+        : r.email || undefined,
+    }));
   }
 
-  async listAllSessions(limit = 50, offset = 0): Promise<VoiceSession[]> {
-    return await db
-      .select()
+  async listAllSessions(limit = 50, offset = 0): Promise<VoiceSessionWithUser[]> {
+    const results = await db
+      .select({
+        session: voiceSessions,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+      })
       .from(voiceSessions)
+      .leftJoin(users, eq(voiceSessions.userId, users.id))
       .orderBy(desc(voiceSessions.createdAt))
       .limit(limit)
       .offset(offset);
+    
+    return results.map(r => ({
+      ...r.session,
+      userName: r.firstName && r.lastName 
+        ? `${r.firstName} ${r.lastName}`.trim() 
+        : r.email || undefined,
+    }));
   }
 
   async getSession(sessionId: string): Promise<VoiceSession | undefined> {

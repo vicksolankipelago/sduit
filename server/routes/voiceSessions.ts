@@ -24,6 +24,7 @@ router.get("/", isAuthenticated, async (req: any, res) => {
       durationSeconds: s.durationTotalSeconds || 0,
       messageCount: s.statsTotalMessages || 0,
       createdAt: s.createdAt,
+      userName: s.userName,
     }));
     
     res.json(sessionList);

@@ -9,6 +9,7 @@ export interface SessionListItem {
   durationSeconds: number;
   messageCount: number;
   createdAt: string;
+  userName?: string;
 }
 
 export interface SaveMessageParams {

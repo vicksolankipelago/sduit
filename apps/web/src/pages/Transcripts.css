@@ -139,6 +139,15 @@
   text-overflow: ellipsis;
 }
 
+.transcripts-list-item-journey {
+  font-size: 0.8125rem;
+  color: var(--text-global-tertiary);
+  margin-left: 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .transcripts-list-item-agent {
   font-size: 0.8125rem;
   color: var(--text-global-secondary);

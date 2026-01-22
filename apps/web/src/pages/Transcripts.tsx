@@ -559,8 +559,13 @@ export const TranscriptsPage: React.FC = () => {
               >
                 <div className="transcripts-list-item-main">
                   <span className="transcripts-list-item-title">
-                    {session.journeyName || 'Untitled Session'}
+                    {session.userName || 'Unknown User'}
                   </span>
+                  {session.journeyName && (
+                    <span className="transcripts-list-item-journey">
+                      {session.journeyName}
+                    </span>
+                  )}
                 </div>
                 <div className="transcripts-list-item-meta">
                   <span className="transcripts-list-item-stats">
