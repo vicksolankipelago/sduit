@@ -46,6 +46,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const [_aiGenerationError, setAiGenerationError] = useState<string | null>(null);
   const [previewingSuggestion, setPreviewingSuggestion] = useState<ScreenSuggestion | null>(null);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
 
   useEffect(() => {
     // Load flow based on URL params
@@ -421,14 +422,41 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
               {/* Journey Description */}
               <div className="journey-description-section">
                 <div className="journey-description-field">
-                  <label className="journey-description-label">Description</label>
-                  <textarea
-                    value={currentJourney.description}
-                    onChange={(e) => setCurrentJourney({ ...currentJourney, description: e.target.value })}
-                    placeholder="Describe this flow..."
-                    disabled={disabled}
-                    rows={2}
-                  />
+                  <div className="journey-description-header">
+                    <label className="journey-description-label">Description</label>
+                    {!isEditingDescription && !disabled && (
+                      <button
+                        className="journey-description-edit-btn"
+                        onClick={() => setIsEditingDescription(true)}
+                        type="button"
+                      >
+                        <EditIcon size={12} /> Edit
+                      </button>
+                    )}
+                  </div>
+                  {isEditingDescription ? (
+                    <div className="journey-description-edit-wrapper">
+                      <textarea
+                        value={currentJourney.description}
+                        onChange={(e) => setCurrentJourney({ ...currentJourney, description: e.target.value })}
+                        placeholder="Describe this flow..."
+                        disabled={disabled}
+                        rows={2}
+                        autoFocus
+                      />
+                      <button
+                        className="journey-description-done-btn"
+                        onClick={() => setIsEditingDescription(false)}
+                        type="button"
+                      >
+                        Done
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="journey-description-text">
+                      {currentJourney.description || 'No description'}
+                    </p>
+                  )}
                 </div>
               </div>
 

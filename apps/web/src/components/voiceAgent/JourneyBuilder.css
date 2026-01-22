@@ -338,15 +338,54 @@
 .journey-description-section {
   background: var(--background-light);
   border-radius: var(--border-radius-sm);
-  padding: 1.5rem;
+  padding: 1rem 1.5rem;
+}
+
+.journey-description-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
 }
 
 .journey-description-label {
   display: block;
-  margin-bottom: 0.5rem;
   font-size: var(--font-size-body-2);
   font-weight: var(--font-weight-bold);
   color: var(--text-global-primary);
+  margin: 0;
+}
+
+.journey-description-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: none;
+  font-size: var(--font-size-body-3);
+  color: var(--text-global-secondary);
+  cursor: pointer;
+  border-radius: var(--border-radius-sm);
+  transition: all 0.2s ease;
+}
+
+.journey-description-edit-btn:hover {
+  background: var(--background-action-hover);
+  color: var(--text-global-primary);
+}
+
+.journey-description-text {
+  margin: 0;
+  font-size: var(--font-size-body-2);
+  color: var(--text-global-secondary);
+  line-height: 1.5;
+}
+
+.journey-description-edit-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .journey-description-field textarea {
@@ -365,6 +404,23 @@
   outline: none;
   border-color: var(--primary-cta-default);
   box-shadow: 0 0 0 3px rgba(33, 38, 51, 0.08);
+}
+
+.journey-description-done-btn {
+  align-self: flex-end;
+  padding: 0.375rem 0.75rem;
+  background: var(--primary-cta-default);
+  color: var(--text-button-primary);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-body-3);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.journey-description-done-btn:hover {
+  background: var(--primary-cta-hover);
 }
 
 .journey-flow-section {
