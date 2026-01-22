@@ -77,7 +77,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
         const journeyToEdit = await loadJourney(editId);
         if (journeyToEdit) {
           setCurrentJourney(journeyToEdit);
-          setSelectedAgentId(null);
+          setSelectedAgentId(journeyToEdit.agents.length > 0 ? journeyToEdit.agents[0].id : null);
           setIsLoading(false);
           // Clear the query param
           setSearchParams({}, { replace: true });

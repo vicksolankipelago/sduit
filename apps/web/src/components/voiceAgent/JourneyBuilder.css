@@ -1402,7 +1402,6 @@
   padding: 1.25rem;
   background: var(--background-light-card);
   border-radius: var(--border-radius-sm);
-  border: var(--border-subtle);
 }
 
 .journey-agent-selector-header {
@@ -1466,7 +1465,6 @@
   margin-top: 1.5rem;
   background: var(--background-light-card);
   border-radius: var(--border-radius-sm);
-  border: var(--border-subtle);
   overflow: hidden;
 }
 
