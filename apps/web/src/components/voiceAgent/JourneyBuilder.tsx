@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
-import { Journey, Agent, DEFAULT_SYSTEM_PROMPT, validateJourney, Screen } from '../../types/journey';
+import { Journey, Agent, DEFAULT_SYSTEM_PROMPT, validateJourney, Screen, VOICE_OPTIONS } from '../../types/journey';
 import { loadJourney, saveJourney, deleteJourney, duplicateJourney } from '../../services/journeyStorage';
 import { SCREEN_TEMPLATES } from '../../lib/voiceAgent/screenTemplates';
-import { downloadAgentAsModule } from '../../services/screenExport';
 import { generateScreensFromPrompts, suggestionToScreen, ScreenSuggestion } from '../../services/aiScreenGenerator';
-import JourneyFlowCanvas from './JourneyFlowCanvas';
+import { getAvailableTemplates, loadPromptTemplate, PromptTemplateKey } from '../../utils/promptTemplates';
 import SystemPromptEditor from './SystemPromptEditor';
-import ScreenEditor from './ScreenEditor';
-import PromptEditor from './PromptEditor';
+import ToolEditor from './ToolEditor';
 import { ScreenProvider } from '../../contexts/voiceAgent/ScreenContext';
 import ScreenPreview from './ScreenPreview';
-import { TrashIcon, FileTextIcon, EditIcon, RocketIcon, TargetIcon, EyeIcon, HistoryIcon, SaveIcon } from '../Icons';
+import { TrashIcon, FileTextIcon, EditIcon, RocketIcon, TargetIcon, HistoryIcon, SaveIcon, ToolIcon, SettingsIcon } from '../Icons';
 import VersionHistory from './VersionHistory';
 import './JourneyBuilder.css';
 
@@ -32,10 +30,6 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'detail'>('detail');
   const [validationErrors, setValidationErrors] = useState<any[]>([]);
-  const [builderTab, setBuilderTab] = useState<'flow' | 'screens' | 'prompts'>('flow');
-  const [editingScreenIndex, setEditingScreenIndex] = useState<number | null>(null);
-  const [previewScreenIndex, setPreviewScreenIndex] = useState<number | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   
   // AI Screen Generation state
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
@@ -47,6 +41,11 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const [previewingSuggestion, setPreviewingSuggestion] = useState<ScreenSuggestion | null>(null);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
+  
+  // Embedded agent editor state
+  const [agentEditorTab, setAgentEditorTab] = useState<'config' | 'tools' | 'screens'>('config');
+  const [loadingTemplate, setLoadingTemplate] = useState(false);
+  const [showTemplateMenu, setShowTemplateMenu] = useState(false);
 
   useEffect(() => {
     // Load flow based on URL params
@@ -194,6 +193,59 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   };
 
   const selectedAgent = currentJourney?.agents.find(a => a.id === selectedAgentId) || null;
+  const availableTemplates = getAvailableTemplates();
+  const availableHandoffTargets = currentJourney?.agents.filter(a => a.id !== selectedAgentId) || [];
+
+  const handleLoadTemplate = async (templateKey: PromptTemplateKey) => {
+    if (!selectedAgent) return;
+    setLoadingTemplate(true);
+    setShowTemplateMenu(false);
+    try {
+      const templateContent = await loadPromptTemplate(templateKey);
+      handleUpdateAgent({ ...selectedAgent, prompt: templateContent });
+    } catch (error) {
+      console.error('Failed to load template:', error);
+      alert('Failed to load prompt template. Please try again.');
+    } finally {
+      setLoadingTemplate(false);
+    }
+  };
+
+  const handleToggleHandoff = (targetAgentId: string) => {
+    if (!selectedAgent) return;
+    const handoffs = selectedAgent.handoffs.includes(targetAgentId)
+      ? selectedAgent.handoffs.filter(id => id !== targetAgentId)
+      : [...selectedAgent.handoffs, targetAgentId];
+    handleUpdateAgent({ ...selectedAgent, handoffs });
+  };
+
+  const handleEditScreen = (screen: Screen) => {
+    navigate('/screens', { 
+      state: { 
+        editScreen: screen,
+        agentId: selectedAgent?.id,
+        agentName: selectedAgent?.name,
+        journeyId: currentJourney?.id
+      } 
+    });
+  };
+
+  const handleDeleteAgent = () => {
+    if (!currentJourney || !selectedAgentId) return;
+    if (!window.confirm('Delete this agent? This cannot be undone.')) return;
+    
+    const updatedAgents = currentJourney.agents.filter(a => a.id !== selectedAgentId);
+    const newStartingAgentId = currentJourney.startingAgentId === selectedAgentId 
+      ? (updatedAgents.length > 0 ? updatedAgents[0].id : '')
+      : currentJourney.startingAgentId;
+    
+    setCurrentJourney({
+      ...currentJourney,
+      agents: updatedAgents,
+      startingAgentId: newStartingAgentId,
+    });
+    setSelectedAgentId(updatedAgents.length > 0 ? updatedAgents[0].id : null);
+  };
 
   const handleAddScreen = (templateId?: string) => {
     if (!selectedAgent) return;
@@ -229,28 +281,15 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     };
 
     handleUpdateAgent(updatedAgent);
-    setEditingScreenIndex((selectedAgent.screens || []).length);
-  };
-
-  const handleExportAgent = () => {
-    if (!selectedAgent) return;
     
-    try {
-      downloadAgentAsModule(selectedAgent);
-    } catch (error) {
-      alert(error instanceof Error ? error.message : 'Failed to export agent');
-    }
-  };
-
-  const handleUpdateScreen = (index: number, screen: Screen) => {
-    if (!selectedAgent || !selectedAgent.screens) return;
-
-    const updatedScreens = [...selectedAgent.screens];
-    updatedScreens[index] = screen;
-
-    handleUpdateAgent({
-      ...selectedAgent,
-      screens: updatedScreens,
+    // Navigate to Screen Builder with the new screen
+    navigate('/screens', { 
+      state: { 
+        editScreen: newScreen,
+        agentId: selectedAgent.id,
+        agentName: selectedAgent.name,
+        journeyId: currentJourney?.id
+      } 
     });
   };
 
@@ -263,15 +302,6 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       ...selectedAgent,
       screens: updatedScreens,
     });
-
-    if (editingScreenIndex === index) {
-      setEditingScreenIndex(null);
-    }
-  };
-
-  // AI Screen Generation handlers
-  const handleShowAICustomizeModal = () => {
-    setShowAICustomizeModal(true);
   };
 
   const handleAIGenerateScreens = async () => {
@@ -334,15 +364,6 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     setAiGeneratedSuggestions([]);
     setPreviewingSuggestion(null);
     setAiGenerationError(null);
-  };
-
-  const handleUpdateScreenPrompts = (screenPrompts: Record<string, string>) => {
-    if (!selectedAgent) return;
-
-    handleUpdateAgent({
-      ...selectedAgent,
-      screenPrompts,
-    });
   };
 
   return (
@@ -467,231 +488,281 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                 disabled={disabled}
               />
 
-              {/* Builder Tabs */}
-              {selectedAgentId && (
-                <div className="journey-builder-tabs">
-                  <button
-                    className={`journey-builder-tab ${builderTab === 'flow' ? 'active' : ''}`}
-                    onClick={() => setBuilderTab('flow')}
-                  >
-                    🔄 Agent Flow
-                  </button>
-                  <button
-                    className={`journey-builder-tab ${builderTab === 'screens' ? 'active' : ''}`}
-                    onClick={() => setBuilderTab('screens')}
-                  >
-                    📱 Screens
-                  </button>
-                  <button
-                    className={`journey-builder-tab ${builderTab === 'prompts' ? 'active' : ''}`}
-                    onClick={() => setBuilderTab('prompts')}
-                  >
-                    <FileTextIcon size={14} /> Prompts
-                  </button>
+              {/* Agent Selector */}
+              <div className="journey-agent-selector">
+                <div className="journey-agent-selector-header">
+                  <label className="journey-agent-selector-label">Agent</label>
                 </div>
-              )}
-
-              {/* Flow Canvas */}
-              {(!selectedAgentId || builderTab === 'flow') && (
-                <div className="journey-flow-section">
-                  <h4>Agent Flow</h4>
-                  <JourneyFlowCanvas
-                    agents={currentJourney.agents}
-                    startingAgentId={currentJourney.startingAgentId}
-                    selectedAgentId={selectedAgentId}
-                    onAgentSelect={async (agentId) => {
-                      setSelectedAgentId(agentId);
-                      // Navigate to full-screen agent editor (save first)
-                      if (!isDragging) {
-                        await saveJourney(currentJourney);
-                        navigate(`/builder/agent?journeyId=${currentJourney.id}&agentId=${agentId}`);
+                <div className="journey-agent-selector-row">
+                  <select
+                    className="journey-agent-dropdown"
+                    value={selectedAgentId || ''}
+                    onChange={(e) => {
+                      if (e.target.value === '__add_new__') {
+                        handleAddAgent();
+                      } else {
+                        setSelectedAgentId(e.target.value || null);
+                        setAgentEditorTab('config');
                       }
                     }}
-                    onAgentMove={(agentId, position) => {
-                      setIsDragging(true);
-                      setTimeout(() => setIsDragging(false), 100);
-                      const updatedAgents = currentJourney.agents.map(a =>
-                        a.id === agentId ? { ...a, position } : a
-                      );
-                      setCurrentJourney({ ...currentJourney, agents: updatedAgents });
-                    }}
-                    onAddAgent={handleAddAgent}
-                    onSetStartingAgent={(agentId) => {
-                      setCurrentJourney({ ...currentJourney, startingAgentId: agentId });
-                    }}
-                  />
-                </div>
-              )}
-
-              {/* Screens Tab */}
-              {selectedAgentId && builderTab === 'screens' && (
-                <div className="journey-screens-section">
-                  <div className="journey-screens-header">
-                    <h4>Screens for {selectedAgent?.name}</h4>
-                    <div className="journey-screens-header-actions">
-                      <div className="journey-add-screen-dropdown">
-                        <button 
-                          className="journey-add-screen-btn"
-                          onClick={() => handleAddScreen()}
-                          disabled={disabled}
-                        >
-                          + Add Screen
-                        </button>
-                        <div className="journey-screen-templates">
-                          <span className="journey-screen-templates-label">From template:</span>
-                          {SCREEN_TEMPLATES.map(template => (
-                            <button
-                              key={template.id}
-                              className="journey-screen-template-btn"
-                              onClick={() => handleAddScreen(template.id)}
-                              disabled={disabled}
-                              title={template.description}
-                            >
-                              {template.icon} {template.name}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <button
-                        className="journey-ai-generate-btn"
-                        onClick={handleShowAICustomizeModal}
-                        disabled={disabled || isGeneratingScreens}
-                        title="Use AI to generate screen suggestions based on agent prompts"
-                      >
-                        {isGeneratingScreens ? '⏳ Generating...' : '🤖 AI Auto-Generate'}
-                      </button>
-                      {selectedAgent?.screens && selectedAgent.screens.length > 0 && (
-                        <button
-                          className="journey-export-agent-btn"
-                          onClick={handleExportAgent}
-                          disabled={disabled}
-                        >
-                          💾 Export Module
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {!selectedAgent?.screens || selectedAgent.screens.length === 0 ? (
-                    <div className="journey-screens-empty">
-                      <p>No screens defined for this agent yet.</p>
-                      <button onClick={() => handleAddScreen()} disabled={disabled} className="journey-add-screen-empty-btn">
-                        + Create First Screen
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="journey-screens-grid">
-                      {/* Screen List */}
-                      <div className="journey-screens-list">
-                        {selectedAgent.screens.map((screen, index) => (
-                          <div 
-                            key={screen.id}
-                            className={`journey-screen-item ${editingScreenIndex === index ? 'editing' : ''} ${previewScreenIndex === index ? 'previewing' : ''}`}
-                          >
-                            <div className="journey-screen-item-header">
-                              <strong>{screen.title}</strong>
-                              <span className="journey-screen-item-id">{screen.id}</span>
-                            </div>
-                            <div className="journey-screen-item-meta">
-                              {screen.sections.length} section(s), {' '}
-                              {screen.sections.reduce((acc, s) => acc + s.elements.length, 0)} element(s)
-                            </div>
-                            <div className="journey-screen-item-actions">
-                              <button onClick={() => setEditingScreenIndex(index)} disabled={disabled}>
-                                <EditIcon size={12} /> Edit
-                              </button>
-                              <button onClick={() => setPreviewScreenIndex(index)} disabled={disabled}>
-                                <EyeIcon size={12} /> Preview
-                              </button>
-                              <button onClick={() => handleRemoveScreen(index)} disabled={disabled}>
-                                <TrashIcon size={12} />
-                              </button>
-                            </div>
-                          </div>
+                    disabled={disabled}
+                  >
+                    {currentJourney.agents.length === 0 ? (
+                      <option value="">No agents - add one below</option>
+                    ) : (
+                      <>
+                        <option value="">Select an agent...</option>
+                        {currentJourney.agents.map(agent => (
+                          <option key={agent.id} value={agent.id}>
+                            {agent.name}{currentJourney.startingAgentId === agent.id ? ' (Starting)' : ''}
+                          </option>
                         ))}
-                      </div>
-
-                      {/* Screen Editor */}
-                      {editingScreenIndex !== null && selectedAgent.screens[editingScreenIndex] && (
-                        <div className="journey-screen-editor-panel">
-                          <ScreenEditor
-                            screen={selectedAgent.screens[editingScreenIndex]}
-                            onChange={(screen) => handleUpdateScreen(editingScreenIndex, screen)}
-                            onClose={() => setEditingScreenIndex(null)}
-                            disabled={disabled}
-                          />
-                        </div>
-                      )}
-
-                      {/* Screen Preview */}
-                      {previewScreenIndex !== null && selectedAgent.screens[previewScreenIndex] && (
-                        <div className="journey-screen-preview-panel">
-                          <div className="journey-screen-preview-header">
-                            <h4>Preview: {selectedAgent.screens[previewScreenIndex].title}</h4>
-                            <button onClick={() => setPreviewScreenIndex(null)}>✕</button>
-                          </div>
-                          <ScreenProvider initialScreen={selectedAgent.screens[previewScreenIndex]}>
-                            <ScreenPreview
-                              screen={selectedAgent.screens[previewScreenIndex]}
-                              allScreens={selectedAgent.screens}
-                              showDeviceFrame={true}
-                            />
-                          </ScreenProvider>
-                        </div>
-                      )}
-                    </div>
+                      </>
+                    )}
+                    <option value="__add_new__">+ Add New Agent</option>
+                  </select>
+                  {selectedAgent && (
+                    <button
+                      className="journey-agent-delete-btn"
+                      onClick={handleDeleteAgent}
+                      disabled={disabled}
+                      title="Delete agent"
+                    >
+                      <TrashIcon size={14} />
+                    </button>
                   )}
                 </div>
-              )}
+              </div>
 
-              {/* Prompts Tab */}
-              {selectedAgentId && builderTab === 'prompts' && (
-                <div className="journey-prompts-section">
-                  <h4>Prompts for {selectedAgent?.name}</h4>
-                  <div className="journey-prompts-overview">
-                    <div className="journey-prompt-block">
-                      <div className="journey-prompt-block-header">
-                        <span>System Prompt</span>
-                        <span className="journey-prompt-block-meta">Applies to all agents</span>
-                      </div>
-                      <textarea
-                        value={currentJourney.systemPrompt}
-                        onChange={(e) => setCurrentJourney({ ...currentJourney, systemPrompt: e.target.value })}
-                        placeholder="Define global instructions for all agents..."
-                        disabled={disabled}
-                        rows={8}
-                      />
-                    </div>
-                    <div className="journey-prompt-block">
-                      <div className="journey-prompt-block-header">
-                        <span>Agent Prompt</span>
-                        <span className="journey-prompt-block-meta">Specific to this agent</span>
-                      </div>
-                      <textarea
-                        value={selectedAgent?.prompt || ''}
-                        onChange={(e) => {
-                          if (!selectedAgent) return;
-                          handleUpdateAgent({ ...selectedAgent, prompt: e.target.value });
-                        }}
-                        placeholder="Define specific instructions for this agent..."
-                        disabled={disabled}
-                        rows={8}
-                      />
-                    </div>
+              {/* Embedded Agent Editor */}
+              {selectedAgent && (
+                <div className="journey-agent-editor">
+                  {/* Agent Editor Tabs */}
+                  <div className="journey-agent-editor-tabs">
+                    <button
+                      className={`journey-agent-tab ${agentEditorTab === 'config' ? 'active' : ''}`}
+                      onClick={() => setAgentEditorTab('config')}
+                      type="button"
+                    >
+                      <SettingsIcon size={14} /> Configuration
+                    </button>
+                    <button
+                      className={`journey-agent-tab ${agentEditorTab === 'tools' ? 'active' : ''}`}
+                      onClick={() => setAgentEditorTab('tools')}
+                      type="button"
+                    >
+                      <ToolIcon size={14} /> Tools
+                      {selectedAgent.tools.length > 0 && (
+                        <span className="journey-agent-tab-badge">{selectedAgent.tools.length}</span>
+                      )}
+                    </button>
+                    <button
+                      className={`journey-agent-tab ${agentEditorTab === 'screens' ? 'active' : ''}`}
+                      onClick={() => setAgentEditorTab('screens')}
+                      type="button"
+                    >
+                      <FileTextIcon size={14} /> Screens
+                      {selectedAgent.screens && selectedAgent.screens.length > 0 && (
+                        <span className="journey-agent-tab-badge">{selectedAgent.screens.length}</span>
+                      )}
+                    </button>
                   </div>
-                  {!selectedAgent?.screens || selectedAgent.screens.length === 0 ? (
-                    <div className="journey-prompts-empty">
-                      <p>No screens defined. Add screens first to create prompts.</p>
-                    </div>
-                  ) : (
-                    <PromptEditor
-                      screens={selectedAgent.screens}
-                      screenPrompts={selectedAgent.screenPrompts || {}}
-                      onChange={handleUpdateScreenPrompts}
-                      disabled={disabled}
-                      journey={currentJourney}
-                    />
-                  )}
+
+                  <div className="journey-agent-editor-content">
+                    {/* Configuration Tab */}
+                    {agentEditorTab === 'config' && (
+                      <>
+                        <div className="journey-agent-section">
+                          <h4>Basic Information</h4>
+                          <div className="journey-agent-field">
+                            <label>Agent Name</label>
+                            <input
+                              type="text"
+                              value={selectedAgent.name}
+                              onChange={(e) => handleUpdateAgent({ ...selectedAgent, name: e.target.value })}
+                              placeholder="Agent Name"
+                              disabled={disabled}
+                            />
+                          </div>
+                          <div className="journey-agent-field">
+                            <label>Voice</label>
+                            <select
+                              value={selectedAgent.voice}
+                              onChange={(e) => handleUpdateAgent({ ...selectedAgent, voice: e.target.value })}
+                              disabled={disabled}
+                            >
+                              {VOICE_OPTIONS.map(option => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="journey-agent-field">
+                            <label>Handoff Description</label>
+                            <input
+                              type="text"
+                              value={selectedAgent.handoffDescription || ''}
+                              onChange={(e) => handleUpdateAgent({ ...selectedAgent, handoffDescription: e.target.value })}
+                              placeholder="Describe this agent's role in the flow"
+                              disabled={disabled}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="journey-agent-section">
+                          <div className="journey-agent-section-header">
+                            <h4>Agent Prompt</h4>
+                            <button
+                              className="journey-load-template-btn"
+                              onClick={() => setShowTemplateMenu(!showTemplateMenu)}
+                              disabled={disabled || loadingTemplate}
+                              type="button"
+                            >
+                              <FileTextIcon size={12} /> {loadingTemplate ? 'Loading...' : 'Load Template'}
+                            </button>
+                          </div>
+
+                          {showTemplateMenu && (
+                            <div className="journey-template-menu">
+                              <div className="journey-template-menu-header">
+                                <span>Select a template:</span>
+                                <button onClick={() => setShowTemplateMenu(false)} type="button">✕</button>
+                              </div>
+                              <div className="journey-template-list">
+                                {availableTemplates.map((template) => (
+                                  <button
+                                    key={template.key}
+                                    className="journey-template-option"
+                                    onClick={() => handleLoadTemplate(template.key)}
+                                    type="button"
+                                  >
+                                    <div className="journey-template-option-label">{template.label}</div>
+                                    <div className="journey-template-option-desc">{template.description}</div>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="journey-agent-field">
+                            <label>Instructions</label>
+                            <textarea
+                              value={selectedAgent.prompt}
+                              onChange={(e) => handleUpdateAgent({ ...selectedAgent, prompt: e.target.value })}
+                              placeholder="Define specific instructions for this agent..."
+                              disabled={disabled || loadingTemplate}
+                              rows={10}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="journey-agent-section">
+                          <h4>Handoffs</h4>
+                          <p className="journey-agent-section-desc">Select which agents this agent can hand off to</p>
+                          {availableHandoffTargets.length === 0 ? (
+                            <div className="journey-handoff-empty">
+                              No other agents available. Create more agents to enable handoffs.
+                            </div>
+                          ) : (
+                            <div className="journey-handoff-list">
+                              {availableHandoffTargets.map(targetAgent => (
+                                <label key={targetAgent.id} className="journey-handoff-option">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedAgent.handoffs.includes(targetAgent.id)}
+                                    onChange={() => handleToggleHandoff(targetAgent.id)}
+                                    disabled={disabled}
+                                  />
+                                  <span>{targetAgent.name}</span>
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="journey-agent-section">
+                          <h4>Starting Agent</h4>
+                          <label className="journey-starting-agent-option">
+                            <input
+                              type="checkbox"
+                              checked={currentJourney.startingAgentId === selectedAgent.id}
+                              onChange={() => setCurrentJourney({ ...currentJourney, startingAgentId: selectedAgent.id })}
+                              disabled={disabled}
+                            />
+                            <span>Set as starting agent</span>
+                          </label>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Tools Tab */}
+                    {agentEditorTab === 'tools' && (
+                      <div className="journey-agent-section">
+                        <ToolEditor
+                          tools={selectedAgent.tools}
+                          onChange={(tools) => handleUpdateAgent({ ...selectedAgent, tools })}
+                          disabled={disabled}
+                        />
+                      </div>
+                    )}
+
+                    {/* Screens Tab */}
+                    {agentEditorTab === 'screens' && (
+                      <div className="journey-agent-section journey-agent-screens-section">
+                        <div className="journey-agent-screens-header">
+                          <h4>Screens (SDUI)</h4>
+                          <button
+                            className="journey-agent-add-screen-btn"
+                            onClick={() => handleAddScreen()}
+                            disabled={disabled}
+                            type="button"
+                          >
+                            + Add Screen
+                          </button>
+                        </div>
+                        <p className="journey-agent-section-desc">
+                          Define screen-based UI for this agent. Screens enable visual interactions alongside voice.
+                        </p>
+
+                        {!selectedAgent.screens || selectedAgent.screens.length === 0 ? (
+                          <div className="journey-screens-empty">
+                            <p>No screens defined yet.</p>
+                            <button 
+                              onClick={() => handleAddScreen()} 
+                              disabled={disabled}
+                              className="journey-agent-add-screen-empty-btn"
+                              type="button"
+                            >
+                              + Create First Screen
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="journey-agent-screens-list">
+                            {selectedAgent.screens.map((screen, index) => (
+                              <div key={screen.id} className="journey-agent-screen-item">
+                                <div className="journey-agent-screen-item-header">
+                                  <strong>{screen.id}</strong>
+                                  <span className="journey-agent-screen-item-title">{screen.title}</span>
+                                </div>
+                                <div className="journey-agent-screen-item-meta">
+                                  {screen.sections.length} section(s), {screen.sections.reduce((acc, s) => acc + s.elements.length, 0)} element(s)
+                                </div>
+                                <div className="journey-agent-screen-item-actions">
+                                  <button onClick={() => handleEditScreen(screen)} disabled={disabled} type="button">
+                                    <EditIcon size={12} /> Edit
+                                  </button>
+                                  <button onClick={() => handleRemoveScreen(index)} disabled={disabled} type="button">
+                                    <TrashIcon size={12} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
