@@ -26,6 +26,40 @@
   gap: 1rem;
 }
 
+.system-prompt-edit-btn,
+.system-prompt-done-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--background-light-card);
+  border: var(--border-subtle);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-body-3);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-global-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.system-prompt-edit-btn:hover,
+.system-prompt-done-btn:hover {
+  background: var(--background-action-hover);
+  color: var(--text-global-primary);
+}
+
+.system-prompt-done-btn {
+  background: var(--primary-cta-default);
+  color: white;
+  border-color: var(--primary-cta-default);
+}
+
+.system-prompt-done-btn:hover {
+  background: var(--primary-cta-hover);
+  color: white;
+}
+
 .system-prompt-title {
   display: flex;
   flex-direction: column;
@@ -238,6 +272,45 @@
   font-size: 0.75rem;
   color: var(--text-global-tertiary);
   margin-top: 0.5rem;
+}
+
+.system-prompt-text-view {
+  background: var(--background-light-card);
+  border: var(--border-subtle);
+  border-radius: var(--border-radius-sm);
+  padding: 0.875rem;
+}
+
+.system-prompt-text {
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: var(--font-size-body-2);
+  line-height: 1.6;
+  color: var(--text-global-primary);
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.system-prompt-placeholder {
+  color: var(--text-global-tertiary);
+  font-style: italic;
+}
+
+.system-prompt-expand-btn {
+  display: block;
+  margin-top: 0.75rem;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: var(--font-size-body-3);
+  color: var(--primary-cta-default);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.system-prompt-expand-btn:hover {
+  color: var(--primary-cta-hover);
+  text-decoration: underline;
 }
 
 .system-prompt-preview {
