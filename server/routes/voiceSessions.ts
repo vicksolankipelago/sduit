@@ -7,10 +7,14 @@ const router = Router();
 router.get("/", isAuthenticated, async (req: any, res) => {
   try {
     const userId = req.user.id;
+    const userRole = req.user.role;
     const limit = parseInt(req.query.limit as string) || 50;
     const offset = parseInt(req.query.offset as string) || 0;
     
-    const sessions = await storage.listUserSessions(userId, limit, offset);
+    // Admins can see all sessions, test users only see their own
+    const sessions = userRole === 'admin' 
+      ? await storage.listAllSessions(limit, offset)
+      : await storage.listUserSessions(userId, limit, offset);
     
     const sessionList = sessions.map((s) => ({
       id: s.id,
@@ -66,7 +70,8 @@ router.get("/:sessionId", isAuthenticated, async (req: any, res) => {
       return res.status(404).json({ message: "Session not found" });
     }
     
-    if (session.userId !== req.user.id) {
+    // Admins can view any session, test users only their own
+    if (req.user.role !== 'admin' && session.userId !== req.user.id) {
       return res.status(403).json({ message: "Forbidden" });
     }
     
@@ -191,7 +196,8 @@ router.delete("/:sessionId", isAuthenticated, async (req: any, res) => {
       return res.status(404).json({ message: "Session not found" });
     }
     
-    if (session.userId !== req.user.id) {
+    // Admins can delete any session, test users only their own
+    if (req.user.role !== 'admin' && session.userId !== req.user.id) {
       return res.status(403).json({ message: "Forbidden" });
     }
     

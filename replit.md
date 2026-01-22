@@ -112,6 +112,7 @@ Uses PostgreSQL with Drizzle ORM. Schema defined in `shared/schema.ts`:
 
 ## Recent Changes
 
+- 2026-01-22: All transcripts are now visible to all admin users (shared like journeys)
 - 2026-01-21: Added version history for prompts - users can view and restore previous versions of journeys via the History button
 - 2026-01-21: Replaced all emojis with professional SVG icons across the UI
 - 2026-01-21: Simplified System Prompt Editor by removing Variables, Preview, and Reset to Default buttons

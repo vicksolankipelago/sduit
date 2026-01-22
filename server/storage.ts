@@ -174,6 +174,15 @@ export class DatabaseStorage implements IStorage {
       .offset(offset);
   }
 
+  async listAllSessions(limit = 50, offset = 0): Promise<VoiceSession[]> {
+    return await db
+      .select()
+      .from(voiceSessions)
+      .orderBy(desc(voiceSessions.createdAt))
+      .limit(limit)
+      .offset(offset);
+  }
+
   async getSession(sessionId: string): Promise<VoiceSession | undefined> {
     const [session] = await db.select().from(voiceSessions).where(eq(voiceSessions.sessionId, sessionId));
     return session;
