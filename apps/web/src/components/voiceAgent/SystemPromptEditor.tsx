@@ -28,21 +28,6 @@ const SystemPromptEditor: React.FC<SystemPromptEditorProps> = ({
         </div>
       </div>
 
-      <div className="system-prompt-info">
-        <p>
-          The system prompt defines core behaviors, communication style, and principles
-          that all agents in this journey will follow. Individual agents combine this
-          with their own specific prompts.
-        </p>
-        <div className="prompt-formula">
-          <span className="formula-part system">System Prompt</span>
-          <span className="formula-plus">+</span>
-          <span className="formula-part agent">Agent Prompt</span>
-          <span className="formula-equals">=</span>
-          <span className="formula-result">Final Instructions</span>
-        </div>
-      </div>
-
       <div className="system-prompt-editor-area">
         <div className="system-prompt-textarea-wrapper">
           <textarea
