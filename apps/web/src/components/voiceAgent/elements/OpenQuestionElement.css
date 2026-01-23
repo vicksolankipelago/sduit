@@ -31,7 +31,7 @@
 .open-question-summary {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   width: 100%;
   animation: fadeInUp 0.6s ease;
 }
