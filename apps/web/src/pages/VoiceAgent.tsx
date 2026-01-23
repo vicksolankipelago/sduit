@@ -742,13 +742,20 @@ Important guidelines:
 
       // Try immediately, then poll until audio stream is available
       if (!checkAndStartRecording()) {
+        console.log('🎙️ Audio stream not ready, polling...');
         const pollInterval = setInterval(() => {
           if (checkAndStartRecording()) {
+            console.log('🎙️ Audio stream found, recording started');
             clearInterval(pollInterval);
           }
         }, 100);
         // Clean up after 10 seconds to avoid infinite polling
-        setTimeout(() => clearInterval(pollInterval), 10000);
+        setTimeout(() => {
+          clearInterval(pollInterval);
+          console.log('🎙️ Polling timed out waiting for audio stream');
+        }, 10000);
+      } else {
+        console.log('🎙️ Recording started immediately');
       }
     }
 

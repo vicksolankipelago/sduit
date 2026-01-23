@@ -27,16 +27,22 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ sessionId, onError }) 
   const checkRecordingExists = async () => {
     setIsLoading(true);
     setError(null);
+    console.log(`🎧 AudioPlayer: Checking recording for session ${sessionId}`);
     try {
       const response = await fetch(`/api/recordings/${sessionId}`);
+      console.log(`🎧 AudioPlayer: Response status ${response.status} for session ${sessionId}`);
       if (response.ok) {
         const data = await response.json();
+        console.log(`🎧 AudioPlayer: Recording data for ${sessionId}:`, data);
         if (data.recording && data.recording.chunks && data.recording.chunks.length > 0) {
+          console.log(`🎧 AudioPlayer: Found ${data.recording.chunks.length} chunks for ${sessionId}`);
           setHasRecording(true);
         } else {
+          console.log(`🎧 AudioPlayer: No chunks found for ${sessionId}`);
           setHasRecording(false);
         }
       } else {
+        console.log(`🎧 AudioPlayer: Recording not found for ${sessionId}`);
         setHasRecording(false);
       }
     } catch (err) {
