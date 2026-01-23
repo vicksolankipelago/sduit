@@ -403,8 +403,8 @@ EXAMPLE showing minimal customization (defaults are applied):
  */
 app.post('/api/recording/start', async (req, res) => {
   try {
-    const sessionId = uuidv4();
-    const { metadata = {} } = req.body;
+    const { metadata = {}, sessionId: providedSessionId } = req.body;
+    const sessionId = providedSessionId || uuidv4();
 
     console.log(`🎙️ Starting recording session: ${sessionId}`);
 

@@ -12,6 +12,7 @@ interface UseStreamingRecordingOptions {
   metadata?: Record<string, unknown>;
   onChunkUploaded?: (chunkIndex: number) => void;
   onError?: (error: Error) => void;
+  customSessionId?: string; // Use this ID instead of generating one
 }
 
 /**
@@ -24,6 +25,7 @@ export function useStreamingRecording(options: UseStreamingRecordingOptions = {}
     metadata = {},
     onChunkUploaded,
     onError,
+    customSessionId,
   } = options;
 
   const [session, setSession] = useState<RecordingSession>({
@@ -92,8 +94,10 @@ export function useStreamingRecording(options: UseStreamingRecordingOptions = {}
 
   /**
    * Start recording with the given remote stream (agent audio)
+   * @param remoteStream - The MediaStream from the agent audio
+   * @param voiceSessionId - Optional: The voice session ID to link the recording to
    */
-  const startRecording = useCallback(async (remoteStream: MediaStream) => {
+  const startRecording = useCallback(async (remoteStream: MediaStream, voiceSessionId?: string) => {
     try {
       // Reset state
       chunkIndexRef.current = 0;
@@ -142,7 +146,10 @@ export function useStreamingRecording(options: UseStreamingRecordingOptions = {}
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ metadata }),
+        body: JSON.stringify({ 
+          metadata,
+          sessionId: voiceSessionId || customSessionId, // Use voice session ID if provided
+        }),
       });
 
       if (!startResponse.ok) {

@@ -731,8 +731,8 @@ Important guidelines:
         const remoteStream = audioElementRef.current.srcObject as MediaStream;
         startRecording(remoteStream);
 
-        // Also start streaming recording to server
-        startStreamingRecording(remoteStream).catch((error) => {
+        // Also start streaming recording to server (pass session ID to link with transcript)
+        startStreamingRecording(remoteStream, sessionIdRef.current).catch((error) => {
           console.error('Failed to start streaming recording:', error);
           addLog('warning', 'Streaming recording failed to start');
         });
