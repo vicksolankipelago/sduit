@@ -171,9 +171,6 @@ function VoiceAgentContent() {
 
   // Streaming recording - uploads to server in real-time
   const {
-    isRecording: isStreamingRecording,
-    sessionId: streamingSessionId,
-    chunkCount,
     startRecording: startStreamingRecording,
     stopRecording: stopStreamingRecording,
   } = useStreamingRecording({
