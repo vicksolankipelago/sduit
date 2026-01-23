@@ -1,6 +1,8 @@
 import React from 'react';
 import { ElementConfig, AnyCodable } from '../../types/journey';
 import { AVAILABLE_ANIMATIONS } from '../../utils/animationsList';
+import { COLOUR_ILLUSTRATIONS, MONO_ILLUSTRATIONS, getIllustrationLabel } from '../../utils/illustrationsList';
+import { BACKGROUND_COLORS } from '../../utils/pelagoColorsList';
 import './ElementPropertyEditor.css';
 
 // Type-safe style accessor helper
@@ -138,6 +140,24 @@ export const ElementPropertyEditor: React.FC<ElementPropertyEditorProps> = ({
                 placeholder="Card description"
                 rows={3}
               />
+            </FormField>
+            <FormField label="Image">
+              <select
+                value={element.state.imageName as string || ''}
+                onChange={(e) => handleDataChange('imageName', e.target.value)}
+              >
+                <option value="">Select an illustration...</option>
+                <optgroup label="Colour Illustrations">
+                  {COLOUR_ILLUSTRATIONS.map(name => (
+                    <option key={name} value={name}>{getIllustrationLabel(name)}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Mono Illustrations">
+                  {MONO_ILLUSTRATIONS.map(name => (
+                    <option key={name} value={name}>{getIllustrationLabel(name)}</option>
+                  ))}
+                </optgroup>
+              </select>
             </FormField>
           </>
         );
@@ -316,12 +336,17 @@ export const ElementPropertyEditor: React.FC<ElementPropertyEditorProps> = ({
               />
             </FormField>
             <FormField label="Background Color" required>
-              <input
-                type="text"
+              <select
                 value={element.state.backgroundColor as string || ''}
                 onChange={(e) => handleDataChange('backgroundColor', e.target.value)}
-                placeholder="backgroundTeaGreen"
-              />
+              >
+                <option value="">Select a color...</option>
+                {BACKGROUND_COLORS.map(color => (
+                  <option key={color.value} value={color.value}>
+                    {color.label}
+                  </option>
+                ))}
+              </select>
             </FormField>
             <FormField label="Option Value" required>
               <input
@@ -426,13 +451,23 @@ export const ElementPropertyEditor: React.FC<ElementPropertyEditorProps> = ({
 
       case 'image':
         return (
-          <FormField label="Image Name" required>
-            <input
-              type="text"
+          <FormField label="Image" required>
+            <select
               value={element.state.imageName as string || ''}
               onChange={(e) => handleDataChange('imageName', e.target.value)}
-              placeholder="image_name"
-            />
+            >
+              <option value="">Select an illustration...</option>
+              <optgroup label="Colour Illustrations">
+                {COLOUR_ILLUSTRATIONS.map(name => (
+                  <option key={name} value={name}>{getIllustrationLabel(name)}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Mono Illustrations">
+                {MONO_ILLUSTRATIONS.map(name => (
+                  <option key={name} value={name}>{getIllustrationLabel(name)}</option>
+                ))}
+              </optgroup>
+            </select>
           </FormField>
         );
 
@@ -743,12 +778,17 @@ export const ElementPropertyEditor: React.FC<ElementPropertyEditorProps> = ({
               />
             </FormField>
             <FormField label="Background Color">
-              <input
-                type="text"
+              <select
                 value={getStyleValue(element.style, 'backgroundColor', '')}
                 onChange={(e) => handleStyleChange('backgroundColor', e.target.value)}
-                placeholder="e.g., backgroundTeaGreen"
-              />
+              >
+                <option value="">Select a color...</option>
+                {BACKGROUND_COLORS.map(color => (
+                  <option key={color.value} value={color.value}>
+                    {color.label}
+                  </option>
+                ))}
+              </select>
             </FormField>
             <FormField label="Corner Radius">
               <input
@@ -773,12 +813,17 @@ export const ElementPropertyEditor: React.FC<ElementPropertyEditorProps> = ({
               />
             </FormField>
             <FormField label="Background Color">
-              <input
-                type="text"
+              <select
                 value={getStyleValue(element.style, 'backgroundColor', '')}
                 onChange={(e) => handleStyleChange('backgroundColor', e.target.value)}
-                placeholder="e.g., secondaryDisabled"
-              />
+              >
+                <option value="">Select a color...</option>
+                {BACKGROUND_COLORS.map(color => (
+                  <option key={color.value} value={color.value}>
+                    {color.label}
+                  </option>
+                ))}
+              </select>
             </FormField>
             <FormField label="Border Color">
               <input
@@ -847,12 +892,17 @@ export const ElementPropertyEditor: React.FC<ElementPropertyEditorProps> = ({
         return (
           <>
             <FormField label="Background Color">
-              <input
-                type="text"
+              <select
                 value={getStyleValue(element.style, 'backgroundColor', '')}
                 onChange={(e) => handleStyleChange('backgroundColor', e.target.value)}
-                placeholder="e.g., backgroundLightTeaGreen"
-              />
+              >
+                <option value="">Select a color...</option>
+                {BACKGROUND_COLORS.map(color => (
+                  <option key={color.value} value={color.value}>
+                    {color.label}
+                  </option>
+                ))}
+              </select>
             </FormField>
             <FormField label="Corner Radius">
               <input
@@ -877,12 +927,17 @@ export const ElementPropertyEditor: React.FC<ElementPropertyEditorProps> = ({
               />
             </FormField>
             <FormField label="Background Color">
-              <input
-                type="text"
+              <select
                 value={getStyleValue(element.style, 'backgroundColor', '')}
                 onChange={(e) => handleStyleChange('backgroundColor', e.target.value)}
-                placeholder="e.g., backgroundMistBlue"
-              />
+              >
+                <option value="">Select a color...</option>
+                {BACKGROUND_COLORS.map(color => (
+                  <option key={color.value} value={color.value}>
+                    {color.label}
+                  </option>
+                ))}
+              </select>
             </FormField>
             <FormField label="Border Color">
               <input
@@ -1050,12 +1105,17 @@ export const ElementPropertyEditor: React.FC<ElementPropertyEditorProps> = ({
         return (
           <>
             <FormField label="Background Color">
-              <input
-                type="text"
+              <select
                 value={getStyleValue(element.style, 'backgroundColor', '')}
                 onChange={(e) => handleStyleChange('backgroundColor', e.target.value)}
-                placeholder="backgroundLightCard"
-              />
+              >
+                <option value="">Select a color...</option>
+                {BACKGROUND_COLORS.map(color => (
+                  <option key={color.value} value={color.value}>
+                    {color.label}
+                  </option>
+                ))}
+              </select>
             </FormField>
             <FormField label="Corner Radius">
               <input
