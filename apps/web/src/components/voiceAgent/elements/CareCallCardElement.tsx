@@ -1,15 +1,18 @@
 import React from 'react';
-import { CareCallElementState, ScreenEvent } from '../../../types/journey';
+import { CareCallElementState, CareCallElementStyle, ScreenEvent } from '../../../types/journey';
+import { mapIOSColorToCSSVar } from '../../../hooks/usePelagoDesignSystem';
 import './CareCallCardElement.css';
 
 export interface CareCallCardElementProps {
   data: CareCallElementState;
+  style?: CareCallElementStyle;
   events?: ScreenEvent[];
   onEventTrigger?: (eventId: string) => void;
 }
 
 export const CareCallCardElement: React.FC<CareCallCardElementProps> = ({
   data,
+  style,
   events,
   onEventTrigger,
 }) => {
@@ -42,9 +45,32 @@ export const CareCallCardElement: React.FC<CareCallCardElementProps> = ({
     }
   };
 
+  const getCardStyle = (): React.CSSProperties => {
+    const styles: React.CSSProperties = {};
+
+    if (style?.backgroundColor) {
+      const cssVar = mapIOSColorToCSSVar(style.backgroundColor);
+      styles.backgroundColor = `var(${cssVar})`;
+    }
+
+    if (style?.borderColor) {
+      const cssVar = mapIOSColorToCSSVar(style.borderColor);
+      styles.borderColor = `var(${cssVar})`;
+      styles.borderWidth = '2px';
+      styles.borderStyle = 'solid';
+    }
+
+    if (style?.cornerRadius) {
+      styles.borderRadius = `${style.cornerRadius}px`;
+    }
+
+    return styles;
+  };
+
   return (
     <div 
       className="care-call-card-element"
+      style={getCardStyle()}
       data-element-id={data.id}
     >
       <div className="care-call-card-header">

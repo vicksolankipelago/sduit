@@ -193,8 +193,9 @@ export const ElementMetadataRegistry: Record<ElementType, ElementMetadata> = {
       duration: 30,
       callType: 'video call',
       ctaTitle: 'Join Call',
-      canBeJoined: true,
+      canBeJoined: false,
     },
+    defaultStyle: { backgroundColor: 'backgroundLightPink', borderColor: 'punchPink' },
   },
   'quoteCard': {
     type: 'quoteCard',

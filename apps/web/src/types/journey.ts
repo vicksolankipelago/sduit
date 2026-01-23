@@ -357,6 +357,12 @@ export interface CareCallData {
   callDetailsEventId?: string;
 }
 
+export interface CareCallElementStyle {
+  backgroundColor?: string;
+  borderColor?: string;
+  cornerRadius?: number;
+}
+
 /**
  * Quote Card Element
  */
