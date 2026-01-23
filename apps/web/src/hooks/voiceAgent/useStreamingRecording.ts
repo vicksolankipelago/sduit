@@ -99,6 +99,8 @@ export function useStreamingRecording(options: UseStreamingRecordingOptions = {}
    */
   const startRecording = useCallback(async (remoteStream: MediaStream, voiceSessionId?: string) => {
     try {
+      console.log(`🎙️ useStreamingRecording: Starting recording for session ${voiceSessionId || 'auto'}`);
+      
       // Reset state
       chunkIndexRef.current = 0;
       setSession(prev => ({ ...prev, error: null, chunkCount: 0 }));
@@ -159,6 +161,7 @@ export function useStreamingRecording(options: UseStreamingRecordingOptions = {}
 
       const { sessionId } = await startResponse.json();
       sessionIdRef.current = sessionId;
+      console.log(`🎙️ useStreamingRecording: Server assigned session ${sessionId}`);
 
       // Create MediaRecorder with timeslice for chunked recording
       const mediaRecorder = new MediaRecorder(destination.stream, {

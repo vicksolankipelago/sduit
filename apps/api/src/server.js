@@ -406,7 +406,7 @@ app.post('/api/recording/start', async (req, res) => {
     const { metadata = {}, sessionId: providedSessionId } = req.body;
     const sessionId = providedSessionId || uuidv4();
 
-    console.log(`🎙️ Starting recording session: ${sessionId}`);
+    console.log(`🎙️ Starting recording session: ${sessionId} (provided: ${providedSessionId || 'none'})`);
 
     const result = await recordingStorage.startSession(sessionId, metadata);
 
