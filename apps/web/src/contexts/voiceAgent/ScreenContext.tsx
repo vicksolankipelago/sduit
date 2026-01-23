@@ -55,17 +55,15 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
 
   // Update current screen when initialScreen prop changes
   React.useEffect(() => {
-    if (initialScreen && initialScreen.id !== currentScreen?.id) {
-      // If we're already on this screen (e.g. via internal navigation), don't reset
-      // But if the prop drives the screen, we should update
+    if (initialScreen) {
+      // Always update when the initialScreen changes to support live editing
       setCurrentScreenState(initialScreen);
-      setScreenState(initialScreen.state || {});
-      // Note: We don't automatically add to navigation stack here to avoid duplicates
-      // if the parent is driving navigation. 
-      // However, if we want back button to work, we might need to sync stacks.
-      // For now, let's assume external control means replacing the view.
+      // Only reset screen state if it's a different screen
+      if (initialScreen.id !== currentScreen?.id) {
+        setScreenState(initialScreen.state || {});
+      }
     }
-  }, [initialScreen?.id]);
+  }, [initialScreen]);
 
   // Sync module state from props if provided
   React.useEffect(() => {
