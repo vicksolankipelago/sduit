@@ -110,6 +110,16 @@ Uses PostgreSQL with Drizzle ORM. Schema defined in `shared/schema.ts`:
 - `GET /api/feedback/:id` - Get feedback by ID with transcript
 - `POST /api/feedback` - Submit feedback (rating 1-5, optional comment)
 
+### Recordings
+- `POST /api/recording/start` - Start a new recording session
+- `POST /api/recording/chunk` - Upload an audio chunk
+- `POST /api/recording/end` - End a recording session
+- `GET /api/recordings` - List all recordings
+- `GET /api/recordings/:sessionId` - Get recording session details
+- `GET /api/recordings/:sessionId/audio` - Stream full audio for playback
+- `GET /api/recordings/:sessionId/chunks/:chunkIndex` - Download a specific chunk
+- `DELETE /api/recordings/:sessionId` - Delete a recording session
+
 ## System Tool Calls
 
 The following system tools are automatically available to all agents in all flows:
@@ -118,6 +128,7 @@ The following system tools are automatically available to all agents in all flow
 
 ## Recent Changes
 
+- 2026-01-23: Added audio playback in transcript detail view - users can now listen to session recordings with play/pause and seek controls
 - 2026-01-23: Enhanced end_call system tool to properly wait for audio completion before disconnecting
 - 2026-01-22: Integrated agent editor directly into journey page - replaced drag-and-drop canvas with dropdown selector and embedded Configuration/Tools/Screens tabs
 - 2026-01-22: All transcripts are now visible to all admin users (shared like journeys)
