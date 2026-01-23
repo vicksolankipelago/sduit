@@ -74,7 +74,6 @@ export const CareCallCardElement: React.FC<CareCallCardElementProps> = ({
       data-element-id={data.id}
     >
       <div className="care-call-card-header">
-        <div className="care-call-card-icon">📞</div>
         <div className="care-call-card-header-text">
           <div className="care-call-card-type pelago-caption-2-bold">
             {data.callType.toUpperCase()}
