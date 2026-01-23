@@ -35,6 +35,13 @@
   border-color: #fca5a5;
 }
 
+.audio-player-unavailable {
+  color: var(--text-global-secondary, #6b7280);
+  font-size: 0.875rem;
+  background: var(--ui-element-background-subtle, #f9fafb);
+  border-color: var(--ui-element-divider, #e5e7eb);
+}
+
 .audio-player-play-btn {
   display: flex;
   align-items: center;

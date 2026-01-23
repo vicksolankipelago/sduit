@@ -9,6 +9,8 @@ import journeysRouter from "./routes/journeys";
 import voiceSessionsRouter from "./routes/voiceSessions";
 import feedbackRouter from "./routes/feedback";
 import screensRouter from "./routes/screens";
+import recordingsRouter from "./routes/recordings";
+import fileUpload from "express-fileupload";
 
 dotenv.config();
 
@@ -20,6 +22,10 @@ const PORT = parseInt(process.env.PORT || "5000");
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
+app.use(fileUpload({
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
+  abortOnLimit: true,
+}));
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok", message: "Voice Agent API server is running" });
@@ -36,6 +42,7 @@ async function main() {
   app.use("/api/voice-sessions", isAuthenticated, voiceSessionsRouter);
   app.use("/api/feedback", isAuthenticated, feedbackRouter);
   app.use("/api/screens", isAuthenticated, screensRouter);
+  app.use("/api/recordings", recordingsRouter);
   
   app.get("/api/debug/env", (req, res) => {
     res.json({

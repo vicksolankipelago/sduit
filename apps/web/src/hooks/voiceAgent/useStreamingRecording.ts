@@ -54,7 +54,7 @@ export function useStreamingRecording(options: UseStreamingRecordingOptions = {}
         new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
       );
 
-      const response = await fetch('/api/recording/chunk', {
+      const response = await fetch('/api/recordings/chunk', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -143,7 +143,7 @@ export function useStreamingRecording(options: UseStreamingRecordingOptions = {}
       }
 
       // Initialize recording session on server
-      const startResponse = await fetch('/api/recording/start', {
+      const startResponse = await fetch('/api/recordings/start', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -235,7 +235,7 @@ export function useStreamingRecording(options: UseStreamingRecordingOptions = {}
     // Finalize session on server
     if (sessionId) {
       try {
-        const response = await fetch('/api/recording/end', {
+        const response = await fetch('/api/recordings/end', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
