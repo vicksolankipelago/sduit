@@ -402,6 +402,26 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
             else if (realtimeEvent.type === 'response.done') {
               console.log('🏁 Response complete - checking for client-side tools and handoffs');
               
+              // If end_call was requested and we're waiting for disconnect, do it now
+              // This handles the case where no additional audio is generated after end_call
+              if (pendingDisconnectRef && pendingEndCallReason !== undefined) {
+                console.log('🔚 Response done with pending end_call - disconnecting now');
+                pendingDisconnectRef = false;
+                
+                // Small delay to ensure any audio finishes
+                setTimeout(() => {
+                  if (onEndCall) {
+                    console.log(`🔌 Executing end call callback from response.done...`);
+                    onEndCall(pendingEndCallReason || undefined);
+                  } else {
+                    console.log('🔌 No end call callback - disconnecting directly');
+                    disconnect();
+                  }
+                  pendingEndCallReason = undefined;
+                }, 500);
+                return; // Skip other processing since we're ending
+              }
+              
               // Tools execute client-side, not in Azure
               await detectAndExecuteClientSideTools(conversationContextRef);
               
