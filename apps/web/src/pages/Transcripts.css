@@ -267,6 +267,16 @@
   background: var(--ui-element-divider);
 }
 
+/* Audio Section */
+.transcripts-audio-section {
+  padding: 0 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.transcripts-audio-section:empty {
+  display: none;
+}
+
 .transcripts-detail-title {
   flex: 1;
 }

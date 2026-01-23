@@ -9,6 +9,7 @@ import {
 } from '../services/api/sessionService';
 import { SessionExport, downloadSessionExport, downloadFormattedTranscript } from '../utils/transcriptExport';
 import { TranscriptNotes } from '../components/voiceAgent/TranscriptNotes';
+import { AudioPlayer } from '../components/voiceAgent/AudioPlayer';
 import { listNotes, getNoteCounts, TranscriptNote } from '../services/api/notesService';
 import './Transcripts.css';
 
@@ -341,6 +342,11 @@ export const TranscriptsPage: React.FC = () => {
                 JSON
               </button>
             </div>
+          </div>
+
+          {/* Audio Player */}
+          <div className="transcripts-audio-section">
+            <AudioPlayer sessionId={currentSession.sessionId} />
           </div>
 
           {/* Tabs */}

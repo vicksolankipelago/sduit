@@ -566,6 +566,65 @@ app.get('/api/recordings/:sessionId/chunks/:chunkIndex', async (req, res) => {
 });
 
 /**
+ * Stream full recording audio by combining all chunks
+ * Returns a single audio/webm file with all chunks concatenated
+ */
+app.get('/api/recordings/:sessionId/audio', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    
+    // Get session manifest to find all chunks
+    const session = await recordingStorage.getSession(sessionId);
+    
+    if (!session) {
+      return res.status(404).json({
+        error: 'Recording not found'
+      });
+    }
+    
+    if (session.chunks.length === 0) {
+      return res.status(404).json({
+        error: 'No audio chunks found for this recording'
+      });
+    }
+    
+    console.log(`🎵 Loading audio for session ${sessionId} (${session.chunks.length} chunks)`);
+    
+    // Download all chunks - fail if any chunk is missing
+    const chunks = [];
+    for (let i = 0; i < session.chunks.length; i++) {
+      try {
+        const buffer = await recordingStorage.downloadChunk(sessionId, i);
+        chunks.push(buffer);
+      } catch (err) {
+        console.error(`Failed to download chunk ${i}:`, err);
+        return res.status(500).json({
+          error: `Failed to load audio: chunk ${i} is missing or corrupted`,
+          details: err.message
+        });
+      }
+    }
+    
+    // Concatenate all buffers
+    const fullAudio = Buffer.concat(chunks);
+    
+    res.set({
+      'Content-Type': 'audio/webm',
+      'Content-Length': fullAudio.length,
+      'Cache-Control': 'no-cache'
+    });
+    
+    res.send(fullAudio);
+  } catch (error) {
+    console.error('❌ Failed to load audio:', error);
+    res.status(500).json({
+      error: 'Failed to load audio',
+      details: error.message
+    });
+  }
+});
+
+/**
  * Delete a recording session
  */
 app.delete('/api/recordings/:sessionId', async (req, res) => {
