@@ -8,13 +8,12 @@ export interface ChecklistCardElementProps {
   style?: ChecklistCardElementStyle;
 }
 
-// Green filled circle with white checkmark - matches iOS SelectorCheck component
+// Black checkmark icon - matches Figma design
 const CheckmarkIcon: React.FC = () => (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="10" cy="10" r="10" fill="#4CAF50"/>
     <path
-      d="M6 10L9 13L14 7"
-      stroke="white"
+      d="M4 10L8 14L16 6"
+      stroke="black"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
