@@ -204,7 +204,7 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
   const content = (
     <div className="screen-preview-container">
       {/* Navigation Bar */}
-      {(!editable || navigationStack.length > 1) && (
+      {(screen.title || !editable || navigationStack.length > 1) && (
         <div className="screen-preview-nav-bar">
           {!screen.hidesBackButton && navigationStack.length > 1 && (
             <button 
@@ -215,7 +215,7 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
               ← Back
             </button>
           )}
-          {!editable && (
+          {screen.title && (
             <>
               <div className="screen-preview-title pelago-body-1-bold">
                 {screen.title}
