@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { Journey, Agent, DEFAULT_SYSTEM_PROMPT, validateJourney, Screen, VOICE_OPTIONS } from '../../types/journey';
 import { loadJourney, saveJourney, deleteJourney, duplicateJourney } from '../../services/journeyStorage';
+import { publishJourney as publishJourneyApi, unpublishJourney as unpublishJourneyApi, getPublishedJourney } from '../../services/api/journeyService';
 import { SCREEN_TEMPLATES } from '../../lib/voiceAgent/screenTemplates';
 import { generateScreensFromPrompts, suggestionToScreen, ScreenSuggestion } from '../../services/aiScreenGenerator';
 import { getAvailableTemplates, loadPromptTemplate, PromptTemplateKey } from '../../utils/promptTemplates';
@@ -41,6 +42,11 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const [previewingSuggestion, setPreviewingSuggestion] = useState<ScreenSuggestion | null>(null);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
+  
+  // Publishing state
+  const [isPublished, setIsPublished] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [hasUnpublishedChanges, setHasUnpublishedChanges] = useState(false);
   
   // Embedded agent editor state
   const [agentEditorTab, setAgentEditorTab] = useState<'config' | 'tools' | 'screens'>('config');
@@ -136,6 +142,98 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       if (currentJourney?.id === journeyId) {
         navigate('/');
       }
+    }
+  };
+
+  // Check publish status when journey loads
+  useEffect(() => {
+    const checkPublishStatus = async () => {
+      if (currentJourney?.id && !currentJourney.id.startsWith('new-')) {
+        try {
+          const published = await getPublishedJourney(currentJourney.id);
+          setIsPublished(!!published);
+          if (published) {
+            const journeyJson = JSON.stringify({
+              name: currentJourney.name,
+              description: currentJourney.description,
+              systemPrompt: currentJourney.systemPrompt,
+              agents: currentJourney.agents,
+              startingAgentId: currentJourney.startingAgentId,
+            });
+            const publishedJson = JSON.stringify({
+              name: published.name,
+              description: published.description,
+              systemPrompt: published.systemPrompt,
+              agents: published.agents,
+              startingAgentId: published.startingAgentId,
+            });
+            setHasUnpublishedChanges(journeyJson !== publishedJson);
+          } else {
+            setHasUnpublishedChanges(false);
+          }
+        } catch {
+          setIsPublished(false);
+          setHasUnpublishedChanges(false);
+        }
+      }
+    };
+    checkPublishStatus();
+  }, [currentJourney]);
+
+  const handlePublish = async () => {
+    if (!currentJourney) return;
+    
+    const errors = validateJourney(currentJourney);
+    if (errors.length > 0) {
+      alert(`Cannot publish: ${errors.length} validation error(s). Please fix them first.`);
+      return;
+    }
+    
+    const confirmMsg = isPublished 
+      ? 'Update the published version with your current changes?'
+      : 'Publish this flow to production? It will be available for live use.';
+    
+    if (!window.confirm(confirmMsg)) return;
+    
+    setIsPublishing(true);
+    try {
+      await saveJourney(currentJourney);
+      const result = await publishJourneyApi(currentJourney.id);
+      if (result.success) {
+        setIsPublished(true);
+        setHasUnpublishedChanges(false);
+        alert('Flow published successfully!');
+      } else {
+        alert('Failed to publish flow');
+      }
+    } catch (error) {
+      console.error('Publish error:', error);
+      alert('Failed to publish flow');
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  const handleUnpublish = async () => {
+    if (!currentJourney) return;
+    
+    if (!window.confirm('Unpublish this flow? It will no longer be available for live use.')) return;
+    
+    setIsPublishing(true);
+    try {
+      const result = await unpublishJourneyApi(currentJourney.id);
+      if (result.success) {
+        setIsPublished(false);
+        setHasUnpublishedChanges(false);
+        alert('Flow unpublished successfully');
+      } else {
+        alert('Failed to unpublish flow');
+      }
+    } catch (error) {
+      console.error('Unpublish error:', error);
+      alert('Failed to unpublish flow');
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -415,8 +513,35 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
               >
                 <TrashIcon size={14} /> Delete
               </button>
+              {isPublished ? (
+                <>
+                  <button 
+                    className={`journey-action-btn publish ${hasUnpublishedChanges ? 'has-changes' : ''}`}
+                    onClick={handlePublish} 
+                    disabled={disabled || isPublishing}
+                    title={hasUnpublishedChanges ? 'You have unpublished changes' : 'Update published version'}
+                  >
+                    <RocketIcon size={14} /> {isPublishing ? 'Publishing...' : hasUnpublishedChanges ? 'Publish Changes' : 'Republish'}
+                  </button>
+                  <button 
+                    className="journey-action-btn unpublish"
+                    onClick={handleUnpublish} 
+                    disabled={disabled || isPublishing}
+                  >
+                    Unpublish
+                  </button>
+                </>
+              ) : (
+                <button 
+                  className="journey-action-btn publish"
+                  onClick={handlePublish} 
+                  disabled={disabled || isPublishing}
+                >
+                  <RocketIcon size={14} /> {isPublishing ? 'Publishing...' : 'Publish to Prod'}
+                </button>
+              )}
               <button className="journey-action-btn launch" onClick={handleLaunch} disabled={disabled}>
-                <RocketIcon size={14} /> Launch Flow
+                <RocketIcon size={14} /> Test Flow
               </button>
             </>
           )}

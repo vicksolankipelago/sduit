@@ -1,4 +1,4 @@
-import { Journey, JourneyListItem } from '../../types/journey';
+import { Journey, JourneyListItem, PublishedJourney } from '../../types/journey';
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (response.status === 401) {
@@ -96,4 +96,39 @@ export async function createJourney(journey: Journey): Promise<Journey> {
     body: JSON.stringify(journey),
   });
   return handleResponse<Journey>(response);
+}
+
+export async function publishJourney(journeyId: string): Promise<{ success: boolean; publishedJourney?: { id: string; journeyId: string; name: string; publishedAt: string } }> {
+  const response = await fetch(`/api/journeys/${journeyId}/publish`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  return handleResponse(response);
+}
+
+export async function unpublishJourney(journeyId: string): Promise<{ success: boolean }> {
+  const response = await fetch(`/api/journeys/${journeyId}/unpublish`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  return handleResponse(response);
+}
+
+export async function getPublishedJourney(journeyId: string): Promise<PublishedJourney | null> {
+  const response = await fetch(`/api/journeys/${journeyId}/published`, {
+    credentials: 'include',
+  });
+  
+  if (response.status === 404) {
+    return null;
+  }
+  
+  return handleResponse<PublishedJourney>(response);
+}
+
+export async function listPublishedJourneys(): Promise<{ id: string; journeyId: string; name: string; description: string; publishedAt: string }[]> {
+  const response = await fetch('/api/journeys/published/all', {
+    credentials: 'include',
+  });
+  return handleResponse(response);
 }

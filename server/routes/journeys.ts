@@ -16,6 +16,9 @@ router.get("/", isAuthenticated, async (req: any, res) => {
       description: j.description || "",
       agentCount: Array.isArray(j.agents) ? (j.agents as any[]).length : 0,
       updatedAt: j.updatedAt,
+      status: j.status || "draft",
+      isPublished: j.isPublished || false,
+      publishedAt: j.publishedAt,
     }));
     
     res.json(journeyList);
@@ -45,6 +48,9 @@ router.get("/:id", isAuthenticated, async (req: any, res) => {
       createdAt: journey.createdAt,
       updatedAt: journey.updatedAt,
       version: journey.version,
+      status: journey.status || "draft",
+      isPublished: journey.isPublished || false,
+      publishedAt: journey.publishedAt,
     });
   } catch (error) {
     console.error("Error loading journey:", error);
@@ -264,6 +270,100 @@ router.delete("/:id", isAdmin, async (req: any, res) => {
   } catch (error) {
     console.error("Error deleting journey:", error);
     res.status(500).json({ message: "Failed to delete journey" });
+  }
+});
+
+// Publish a journey to production
+router.post("/:id/publish", isAdmin, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const journey = await storage.getJourney(req.params.id);
+    
+    if (!journey) {
+      return res.status(404).json({ message: "Journey not found" });
+    }
+    
+    const published = await storage.publishJourney(req.params.id, userId);
+    
+    if (!published) {
+      return res.status(500).json({ message: "Failed to publish journey" });
+    }
+    
+    res.json({
+      success: true,
+      publishedJourney: {
+        id: published.id,
+        journeyId: published.journeyId,
+        name: published.name,
+        publishedAt: published.publishedAt,
+      },
+    });
+  } catch (error) {
+    console.error("Error publishing journey:", error);
+    res.status(500).json({ message: "Failed to publish journey" });
+  }
+});
+
+// Unpublish a journey (remove from production)
+router.post("/:id/unpublish", isAdmin, async (req: any, res) => {
+  try {
+    const journey = await storage.getJourney(req.params.id);
+    
+    if (!journey) {
+      return res.status(404).json({ message: "Journey not found" });
+    }
+    
+    await storage.unpublishJourney(req.params.id);
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error unpublishing journey:", error);
+    res.status(500).json({ message: "Failed to unpublish journey" });
+  }
+});
+
+// Get published version of a journey
+router.get("/:id/published", isAuthenticated, async (req: any, res) => {
+  try {
+    const published = await storage.getPublishedJourney(req.params.id);
+    
+    if (!published) {
+      return res.status(404).json({ message: "No published version found" });
+    }
+    
+    res.json({
+      id: published.id,
+      journeyId: published.journeyId,
+      name: published.name,
+      description: published.description || "",
+      systemPrompt: published.systemPrompt,
+      voice: published.voice,
+      agents: published.agents,
+      startingAgentId: published.startingAgentId,
+      version: published.version,
+      publishedAt: published.publishedAt,
+    });
+  } catch (error) {
+    console.error("Error getting published journey:", error);
+    res.status(500).json({ message: "Failed to get published journey" });
+  }
+});
+
+// List all published journeys (for production use)
+router.get("/published/all", isAuthenticated, async (req: any, res) => {
+  try {
+    const publishedJourneys = await storage.listPublishedJourneys();
+    
+    res.json(publishedJourneys.map((p) => ({
+      id: p.id,
+      journeyId: p.journeyId,
+      name: p.name,
+      description: p.description || "",
+      publishedAt: p.publishedAt,
+    })));
+  } catch (error) {
+    console.error("Error listing published journeys:", error);
+    res.status(500).json({ message: "Failed to list published journeys" });
   }
 });
 

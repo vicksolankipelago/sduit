@@ -1,4 +1,4 @@
-import { journeys, journeyVersions, type Journey, type InsertJourney, type JourneyVersion, type InsertJourneyVersion } from "../shared/models/journeys";
+import { journeys, journeyVersions, publishedJourneys, type Journey, type InsertJourney, type JourneyVersion, type InsertJourneyVersion, type PublishedJourney, type InsertPublishedJourney } from "../shared/models/journeys";
 import { voiceSessions, type VoiceSession, type InsertVoiceSession } from "../shared/models/voiceSessions";
 import { globalScreens, type GlobalScreen, type InsertGlobalScreen } from "../shared/models/globalScreens";
 import { transcriptNotes, type TranscriptNote, type InsertTranscriptNote } from "../shared/models/transcriptNotes";
@@ -43,6 +43,12 @@ export interface IStorage {
   createJourney(journey: InsertJourney): Promise<Journey>;
   updateJourney(journeyId: string, journey: Partial<InsertJourney>, userId: string, changeNotes?: string): Promise<Journey | undefined>;
   deleteJourney(journeyId: string): Promise<boolean>;
+  
+  // Publishing methods
+  publishJourney(journeyId: string, userId: string): Promise<PublishedJourney | undefined>;
+  unpublishJourney(journeyId: string): Promise<boolean>;
+  getPublishedJourney(journeyId: string): Promise<PublishedJourney | undefined>;
+  listPublishedJourneys(): Promise<PublishedJourney[]>;
   
   listJourneyVersions(journeyId: string): Promise<JourneyVersion[]>;
   getJourneyVersion(versionId: string): Promise<JourneyVersion | undefined>;
@@ -141,6 +147,90 @@ export class DatabaseStorage implements IStorage {
   async deleteJourney(journeyId: string): Promise<boolean> {
     await db.delete(journeys).where(eq(journeys.id, journeyId));
     return true;
+  }
+
+  async publishJourney(journeyId: string, userId: string): Promise<PublishedJourney | undefined> {
+    const journey = await this.getJourney(journeyId);
+    if (!journey) return undefined;
+
+    // Check if there's already a published version
+    const existing = await this.getPublishedJourney(journeyId);
+    
+    if (existing) {
+      // Update existing published version
+      const [updated] = await db
+        .update(publishedJourneys)
+        .set({
+          name: journey.name,
+          description: journey.description || "",
+          systemPrompt: journey.systemPrompt,
+          voice: journey.voice,
+          agents: journey.agents,
+          startingAgentId: journey.startingAgentId,
+          version: journey.version,
+          publishedAt: new Date(),
+          publishedByUserId: userId,
+        })
+        .where(eq(publishedJourneys.journeyId, journeyId))
+        .returning();
+      
+      // Update the journey's published status
+      await db
+        .update(journeys)
+        .set({ isPublished: true, publishedAt: new Date(), status: "published" })
+        .where(eq(journeys.id, journeyId));
+      
+      return updated;
+    } else {
+      // Create new published version
+      const [created] = await db
+        .insert(publishedJourneys)
+        .values({
+          journeyId: journey.id,
+          userId: journey.userId,
+          name: journey.name,
+          description: journey.description || "",
+          systemPrompt: journey.systemPrompt,
+          voice: journey.voice,
+          agents: journey.agents,
+          startingAgentId: journey.startingAgentId,
+          version: journey.version,
+          publishedByUserId: userId,
+        })
+        .returning();
+      
+      // Update the journey's published status
+      await db
+        .update(journeys)
+        .set({ isPublished: true, publishedAt: new Date(), status: "published" })
+        .where(eq(journeys.id, journeyId));
+      
+      return created;
+    }
+  }
+
+  async unpublishJourney(journeyId: string): Promise<boolean> {
+    await db.delete(publishedJourneys).where(eq(publishedJourneys.journeyId, journeyId));
+    
+    // Update the journey's published status
+    await db
+      .update(journeys)
+      .set({ isPublished: false, publishedAt: null, status: "draft" })
+      .where(eq(journeys.id, journeyId));
+    
+    return true;
+  }
+
+  async getPublishedJourney(journeyId: string): Promise<PublishedJourney | undefined> {
+    const [published] = await db
+      .select()
+      .from(publishedJourneys)
+      .where(eq(publishedJourneys.journeyId, journeyId));
+    return published;
+  }
+
+  async listPublishedJourneys(): Promise<PublishedJourney[]> {
+    return await db.select().from(publishedJourneys).orderBy(desc(publishedJourneys.publishedAt));
   }
   
   async listJourneyVersions(journeyId: string): Promise<JourneyVersion[]> {

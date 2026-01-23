@@ -721,6 +721,26 @@ export interface JourneyListItem {
   description: string;
   agentCount: number;
   updatedAt: string;
+  status?: 'draft' | 'published';
+  isPublished?: boolean;
+  publishedAt?: string;
+}
+
+/**
+ * Published Journey
+ * Represents a journey that has been published to production
+ */
+export interface PublishedJourney {
+  id: string;
+  journeyId: string;
+  name: string;
+  description: string;
+  systemPrompt: string;
+  voice: string;
+  agents: Agent[];
+  startingAgentId: string;
+  version: string;
+  publishedAt: string;
 }
 
 /**
