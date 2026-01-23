@@ -460,6 +460,7 @@ function VoiceAgentContent() {
           agentConfig: journeyAgentConfig,
           allJourneyAgents: allJourneyAgentsMap,
           onEventTrigger: handleEventTrigger,
+          onEndCall: handleEndCall,
         });
         addLog('success', 'Successfully initiated voice agent connection');
         
@@ -503,6 +504,7 @@ Important guidelines:
           agentConfig: journeyAgentConfig,
           allJourneyAgents: allJourneyAgentsMap,
           onEventTrigger: handleEventTrigger,
+          onEndCall: handleEndCall,
         });
         addLog('success', 'Successfully initiated voice agent connection');
       }

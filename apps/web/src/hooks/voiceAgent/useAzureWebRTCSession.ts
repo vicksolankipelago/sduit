@@ -28,6 +28,7 @@ export interface AzureWebRTCConnectOptions {
   agentConfig?: { name: string; instructions: string; voice: string; tools?: any[]; handoffs?: string[] }; // Journey agent configuration
   allJourneyAgents?: Map<string, { name: string; instructions: string; voice: string; handoffs?: string[] }>; // All agents in journey for handoffs
   onEventTrigger?: (eventId: string, agentName: string) => void; // Callback for trigger_event tool
+  onEndCall?: (reason?: string) => void; // Callback for end_call system tool
 }
 
 export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {}) {
@@ -49,7 +50,7 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
   );
 
   const connect = useCallback(
-    async ({ audioElement, customInstructions, skipInitialGreeting, voice, customMicStream, agentConfig, allJourneyAgents, onEventTrigger }: AzureWebRTCConnectOptions) => {
+    async ({ audioElement, customInstructions, skipInitialGreeting, voice, customMicStream, agentConfig, allJourneyAgents, onEventTrigger, onEndCall }: AzureWebRTCConnectOptions) => {
       if (peerConnectionRef.current) {
         console.log('⚠️ Already connected, skipping');
         return;
@@ -199,6 +200,7 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
         // Track if baseline agent has given closing statement
         let baselineAgentHasCompletedRef = false;
         let pendingDisconnectRef = false; // Flag for when we're waiting for audio to finish
+        let pendingEndCallReason: string | undefined = undefined; // Reason for end_call if pending
         
         dataChannel.addEventListener('message', async (event) => {
           try {
@@ -231,7 +233,17 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                   
                   // Small delay to ensure audio fully finishes playing
                   setTimeout(() => {
-                    if (callbacks.onConversationComplete) {
+                    // Check if this was triggered by end_call tool (pendingEndCallReason is set to a string)
+                    if (pendingEndCallReason !== undefined) {
+                      if (onEndCall) {
+                        console.log(`🔌 Executing end call callback after audio completion...`);
+                        onEndCall(pendingEndCallReason || undefined);
+                      } else {
+                        console.log('🔌 No end call callback - disconnecting directly');
+                        disconnect();
+                      }
+                      pendingEndCallReason = undefined;
+                    } else if (callbacks.onConversationComplete) {
                       callbacks.onConversationComplete();
                     } else {
                       disconnect();
@@ -350,6 +362,34 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                   
                   // Tell Azure to continue the response
                   dataChannel.send(JSON.stringify({ type: 'response.create' }));
+                }
+                // Execute end_call system tool for ending the session
+                else if (name === 'end_call') {
+                  const { reason } = args;
+                  console.log(`📞 End call triggered${reason ? `: ${reason}` : ''}`);
+                  
+                  const result = `Call ending${reason ? `: ${reason}` : ''}`;
+                  
+                  // Notify callback
+                  callbacks.onToolCall?.(name, args, result);
+                  
+                  // Send function output back to Azure before disconnecting
+                  dataChannel.send(JSON.stringify({
+                    type: 'conversation.item.create',
+                    item: {
+                      type: 'function_call_output',
+                      call_id: call_id,
+                      output: JSON.stringify({ success: true, message: result })
+                    }
+                  }));
+                  
+                  // Tell Azure to continue the response (for any closing audio)
+                  dataChannel.send(JSON.stringify({ type: 'response.create' }));
+                  
+                  // Store reason and set pending flag to wait for audio completion
+                  pendingEndCallReason = reason || '';
+                  pendingDisconnectRef = true;
+                  console.log('⏰ End call requested - waiting for audio to finish before disconnecting...');
                 }
                 
                 lastToolCalledRef.current = name;
