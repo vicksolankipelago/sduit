@@ -2,6 +2,7 @@ import { Router } from "express";
 import { isAuthenticated, isAdmin } from "../auth";
 import { storage } from "../storage";
 import { v4 as uuidv4 } from "uuid";
+import { publishedFlowStorage } from "../services/publishedFlowStorage";
 
 const router = Router();
 
@@ -283,10 +284,32 @@ router.post("/:id/publish", isAdmin, async (req: any, res) => {
       return res.status(404).json({ message: "Journey not found" });
     }
     
+    // Save to local database (for dev environment tracking)
     const published = await storage.publishJourney(req.params.id, userId);
     
     if (!published) {
       return res.status(500).json({ message: "Failed to publish journey" });
+    }
+    
+    // Also save to Object Storage (shared between dev and prod)
+    try {
+      await publishedFlowStorage.savePublishedFlow({
+        id: published.id,
+        journeyId: published.journeyId,
+        name: published.name,
+        description: published.description || "",
+        systemPrompt: published.systemPrompt,
+        voice: published.voice,
+        agents: published.agents as any[],
+        startingAgentId: published.startingAgentId,
+        version: published.version,
+        publishedAt: published.publishedAt?.toISOString() || new Date().toISOString(),
+        publishedByUserId: userId,
+      });
+      console.log(`Published journey ${journey.name} to Object Storage for production`);
+    } catch (storageError) {
+      console.error("Warning: Failed to save to Object Storage:", storageError);
+      // Continue anyway - local publish still succeeded
     }
     
     res.json({
@@ -314,6 +337,14 @@ router.post("/:id/unpublish", isAdmin, async (req: any, res) => {
     }
     
     await storage.unpublishJourney(req.params.id);
+    
+    // Also remove from Object Storage
+    try {
+      await publishedFlowStorage.deletePublishedFlow(req.params.id);
+      console.log(`Unpublished journey ${journey.name} from Object Storage`);
+    } catch (storageError) {
+      console.error("Warning: Failed to remove from Object Storage:", storageError);
+    }
     
     res.json({ success: true });
   } catch (error) {
@@ -373,6 +404,35 @@ router.get("/environment", (req, res) => {
     isProduction: process.env.NODE_ENV === "production",
     environment: process.env.NODE_ENV || "development",
   });
+});
+
+// Production endpoints - fetch flows from Object Storage (shared between dev/prod)
+// These are public read-only endpoints since production runtime needs to load flows
+// List all production flows (from Object Storage)
+router.get("/production/list", async (req: any, res) => {
+  try {
+    const flows = await publishedFlowStorage.listPublishedFlows();
+    res.json(flows);
+  } catch (error) {
+    console.error("Error listing production flows:", error);
+    res.status(500).json({ message: "Failed to list production flows" });
+  }
+});
+
+// Get a specific production flow (from Object Storage)
+router.get("/production/:journeyId", async (req: any, res) => {
+  try {
+    const flow = await publishedFlowStorage.getPublishedFlow(req.params.journeyId);
+    
+    if (!flow) {
+      return res.status(404).json({ message: "Flow not found in production" });
+    }
+    
+    res.json(flow);
+  } catch (error) {
+    console.error("Error getting production flow:", error);
+    res.status(500).json({ message: "Failed to get production flow" });
+  }
 });
 
 router.post("/:id/duplicate", isAdmin, async (req: any, res) => {

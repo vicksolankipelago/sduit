@@ -139,3 +139,20 @@ export async function getEnvironment(): Promise<{ isProduction: boolean; environ
   });
   return handleResponse(response);
 }
+
+// Production endpoints - fetch from Object Storage (shared between dev and prod databases)
+// These are public read-only endpoints, no credentials needed
+export async function listProductionFlows(): Promise<{ journeyId: string; name: string; description: string; publishedAt: string }[]> {
+  const response = await fetch('/api/journeys/production/list');
+  return handleResponse(response);
+}
+
+export async function getProductionFlow(journeyId: string): Promise<PublishedJourney | null> {
+  const response = await fetch(`/api/journeys/production/${journeyId}`);
+  
+  if (response.status === 404) {
+    return null;
+  }
+  
+  return handleResponse<PublishedJourney>(response);
+}

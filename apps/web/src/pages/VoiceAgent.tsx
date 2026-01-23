@@ -35,7 +35,7 @@ import {
   downloadPromptAndTranscript
 } from '../utils/transcriptExport';
 import { journeyToRealtimeAgents, getStartingAgentName, setEventTriggerCallback } from '../lib/voiceAgent/journeyRuntime';
-import { listJourneys, loadJourney } from '../services/journeyStorage';
+import { listJourneysForRuntime, loadJourneyForRuntime } from '../services/journeyStorage';
 import { PQData, substitutePromptVariables, DEFAULT_PQ_DATA } from '../utils/promptTemplates';
 import { useAuth } from '../contexts/AuthContext';
 import { saveSession, DebouncedSessionSaver } from '../services/api/sessionService';
@@ -203,8 +203,8 @@ function VoiceAgentContent() {
     const loadJourneys = async () => {
       setJourneysLoading(true);
       try {
-        // Refresh journey list on mount (cleanup happens automatically in listJourneys())
-        const journeyList = await listJourneys();
+        // Refresh journey list on mount - uses production flows in production mode
+        const journeyList = await listJourneysForRuntime();
         console.log('📋 Available journeys on mount:', journeyList.map(j => `${j.name} (${j.id})`));
         setAvailableJourneys(journeyList);
 
@@ -212,7 +212,7 @@ function VoiceAgentContent() {
         const launchJourneyId = localStorage.getItem('voice-agent-launch-journey');
         if (launchJourneyId) {
           localStorage.removeItem('voice-agent-launch-journey'); // Clear flag
-          const journeyToLaunch = await loadJourney(launchJourneyId);
+          const journeyToLaunch = await loadJourneyForRuntime(launchJourneyId);
           if (journeyToLaunch) {
             setCurrentJourney(journeyToLaunch);
             addLog('info', `🚀 Launching journey: ${journeyToLaunch.name}`);
@@ -226,7 +226,7 @@ function VoiceAgentContent() {
 
         if (!currentJourney && journeyList.length > 0) {
           // Auto-load first journey but don't start it
-          const firstJourney = await loadJourney(journeyList[0].id);
+          const firstJourney = await loadJourneyForRuntime(journeyList[0].id);
           if (firstJourney) {
             setCurrentJourney(firstJourney);
             addLog('info', `📋 Journey ready: ${firstJourney.name}`);
@@ -1073,7 +1073,7 @@ Important guidelines:
     }
 
     try {
-      const journey = await loadJourney(journeyId);
+      const journey = await loadJourneyForRuntime(journeyId);
       if (journey) {
         addLog('info', `🎯 Starting journey: ${journey.name} (ID: ${journeyId})`);
         console.log('📝 Journey details:', { name: journey.name, id: journey.id, agents: journey.agents.length });

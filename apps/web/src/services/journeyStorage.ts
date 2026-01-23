@@ -7,6 +7,61 @@ const STORAGE_KEY = 'voice-agent-journeys';
 const STORAGE_VERSION = '1.0.0';
 const SEEDED_KEY = 'journeys-seeded-v2';
 
+// Cache for environment check
+let isProductionEnvironment: boolean | null = null;
+
+// Detect production environment using multiple signals
+// This is a fallback when API is unavailable - fail-closed to production for unknown domains
+function detectProductionFromUrl(): boolean {
+  const hostname = window.location.hostname;
+  
+  // Known development indicators - if any match, it's definitely development
+  const isDevelopment = 
+    hostname === 'localhost' || 
+    hostname === '127.0.0.1' ||
+    hostname.includes('.replit.dev') || // Replit development preview
+    hostname.includes('.dev.') || 
+    hostname.includes('-dev.') ||
+    hostname.includes('dev-') ||
+    hostname.startsWith('localhost:') ||
+    hostname.includes('staging.');
+  
+  // If it's clearly development, return false
+  if (isDevelopment) {
+    return false;
+  }
+  
+  // For any other domain (production Replit apps, custom domains, etc.)
+  // fail-closed to production to ensure published flows are used
+  return true;
+}
+
+export async function isProduction(): Promise<boolean> {
+  if (isProductionEnvironment !== null) {
+    return isProductionEnvironment;
+  }
+  
+  // First try URL-based detection as a reliable fallback
+  const urlBasedProduction = detectProductionFromUrl();
+  
+  try {
+    const env = await journeyApi.getEnvironment();
+    isProductionEnvironment = env.isProduction;
+    console.log(`[Environment] Detected ${env.isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} from API (NODE_ENV: ${env.environment})`);
+    return env.isProduction;
+  } catch (error) {
+    // If API fails, use URL-based detection (fail-closed to production for unknown domains)
+    console.warn(`[Environment] API check failed, using URL-based detection (${urlBasedProduction ? 'PRODUCTION' : 'DEVELOPMENT'}):`, error);
+    isProductionEnvironment = urlBasedProduction;
+    return urlBasedProduction;
+  }
+}
+
+// Force reset environment cache (useful for testing)
+export function resetEnvironmentCache(): void {
+  isProductionEnvironment = null;
+}
+
 async function seedDefaultJourneysIfNeeded(): Promise<void> {
   try {
     if (localStorage.getItem(SEEDED_KEY)) {
@@ -292,5 +347,84 @@ export function clearAllJourneys(): boolean {
     console.error('Failed to clear journeys:', error);
     return false;
   }
+}
+
+// Track production loading errors for diagnostics
+let lastProductionLoadError: Error | null = null;
+
+export function getLastProductionLoadError(): Error | null {
+  return lastProductionLoadError;
+}
+
+// Production-specific functions - load from Object Storage (shared between dev and prod)
+export async function listProductionJourneys(): Promise<JourneyListItem[]> {
+  lastProductionLoadError = null;
+  try {
+    const flows = await journeyApi.listProductionFlows();
+    console.log(`[Production] Loaded ${flows.length} published flows from Object Storage`);
+    return flows.map((flow) => ({
+      id: flow.journeyId,
+      name: flow.name,
+      description: flow.description,
+      agentCount: 0, // Not available in index
+      updatedAt: flow.publishedAt,
+      isPublished: true,
+      status: 'published' as const,
+    }));
+  } catch (error) {
+    lastProductionLoadError = error instanceof Error ? error : new Error(String(error));
+    console.error('[Production] Failed to list published flows - this may indicate a connectivity issue or Object Storage problem:', error);
+    return [];
+  }
+}
+
+export async function loadProductionJourney(journeyId: string): Promise<Journey | null> {
+  lastProductionLoadError = null;
+  try {
+    const flow = await journeyApi.getProductionFlow(journeyId);
+    if (!flow) {
+      console.warn(`[Production] Flow ${journeyId} not found in Object Storage - it may not be published`);
+      return null;
+    }
+    
+    console.log(`[Production] Loaded published flow: ${flow.name} (${journeyId})`);
+    
+    // Convert PublishedJourney to Journey format
+    return {
+      id: flow.journeyId,
+      name: flow.name,
+      description: flow.description,
+      systemPrompt: flow.systemPrompt,
+      voice: flow.voice,
+      agents: flow.agents,
+      startingAgentId: flow.startingAgentId,
+      version: flow.version,
+      createdAt: flow.publishedAt,
+      updatedAt: flow.publishedAt,
+    };
+  } catch (error) {
+    lastProductionLoadError = error instanceof Error ? error : new Error(String(error));
+    console.error(`[Production] Failed to load flow ${journeyId} - this may indicate a connectivity issue or Object Storage problem:`, error);
+    return null;
+  }
+}
+
+// Smart loading - automatically uses production flows in production environment
+export async function listJourneysForRuntime(): Promise<JourneyListItem[]> {
+  const isProd = await isProduction();
+  if (isProd) {
+    console.log('Production mode: Loading flows from Object Storage');
+    return listProductionJourneys();
+  }
+  return listJourneys();
+}
+
+export async function loadJourneyForRuntime(id: string): Promise<Journey | null> {
+  const isProd = await isProduction();
+  if (isProd) {
+    console.log('Production mode: Loading flow from Object Storage');
+    return loadProductionJourney(id);
+  }
+  return loadJourney(id);
 }
 

@@ -98,6 +98,11 @@ Uses PostgreSQL with Drizzle ORM. Schema defined in `shared/schema.ts`:
 - `GET /api/journeys/:id/versions` - List version history for a journey
 - `GET /api/journeys/:id/versions/:versionId` - Get specific version details
 - `POST /api/journeys/:id/versions/:versionId/restore` - Restore to a previous version (admin only)
+- `POST /api/journeys/:id/publish` - Publish journey to production (stores in Object Storage)
+- `POST /api/journeys/:id/unpublish` - Unpublish journey from production
+- `GET /api/journeys/environment` - Get current environment (development/production)
+- `GET /api/journeys/production/list` - List published flows (public endpoint)
+- `GET /api/journeys/production/:journeyId` - Get published flow (public endpoint)
 
 ### Voice Sessions
 - `GET /api/voice-sessions` - List user's voice sessions
@@ -126,8 +131,34 @@ The following system tools are automatically available to all agents in all flow
 
 - `end_call(reason?: string)` - Ends the current realtime session and closes the flow. The AI agent can call this tool when the conversation should end. The system will wait for any remaining audio to complete before disconnecting and showing the feedback modal.
 
+## Publishing System (Dev/Prod Separation)
+
+The application supports separate development and production environments with an explicit publishing workflow:
+
+### How It Works
+1. **Development**: Users create and iterate on journeys in the development database
+2. **Publishing**: When a journey is ready, users click "Publish" to copy it to Object Storage (shared between dev/prod)
+3. **Production**: The production runtime automatically loads published flows from Object Storage instead of the development database
+
+### Architecture
+- Development database: PostgreSQL (Replit's development database)
+- Production database: PostgreSQL (Replit's production database) 
+- Shared storage: Object Storage for published flows (JSON files)
+- Environment detection: Uses NODE_ENV on server, URL-based fallback on client
+
+### Key Files
+- `server/services/publishedFlowStorage.ts` - Object Storage service for published flows
+- `apps/web/src/services/journeyStorage.ts` - Client-side environment detection and flow loading
+- `shared/models/journeys.ts` - Database schema with publish status fields
+
+### Environment Detection
+The client detects environment using:
+1. API call to `/api/journeys/environment` (uses server's NODE_ENV)
+2. URL-based fallback: `.replit.dev` domains are development, all others default to production
+
 ## Recent Changes
 
+- 2026-01-23: Added dev/prod publishing system - users can now publish flows to production using Object Storage
 - 2026-01-23: Fixed audio recording and playback - recordings now properly save to Object Storage and play back in transcript view with correct duration display
 - 2026-01-23: Added audio playback in transcript detail view - users can now listen to session recordings with play/pause and seek controls
 - 2026-01-23: Enhanced end_call system tool to properly wait for audio completion before disconnecting
