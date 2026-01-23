@@ -1,6 +1,6 @@
 .checklist-card-element {
   padding: var(--spacing-md);
-  background-color: var(--background-light);
+  background-color: #FFFFFF;
   border-radius: var(--border-radius-sm);
   width: 100%;
   box-sizing: border-box;
