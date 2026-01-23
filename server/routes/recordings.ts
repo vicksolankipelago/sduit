@@ -236,18 +236,24 @@ router.get('/:sessionId/audio', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'No audio available' });
     }
 
-    res.setHeader('Content-Type', 'audio/webm');
-    res.setHeader('Accept-Ranges', 'bytes');
-
     const bucket = objectStorageClient.bucket(getBucketName());
     
+    // Download all chunks first to get total size
+    const chunks: Buffer[] = [];
     for (const chunk of manifest.chunks.sort((a, b) => a.index - b.index)) {
       const file = bucket.file(chunk.path);
       const [contents] = await file.download();
-      res.write(contents);
+      chunks.push(contents);
     }
-
-    res.end();
+    
+    const fullAudio = Buffer.concat(chunks);
+    
+    res.setHeader('Content-Type', 'audio/webm');
+    res.setHeader('Content-Length', fullAudio.length);
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'no-cache');
+    
+    res.send(fullAudio);
   } catch (error) {
     console.error('Failed to stream audio:', error);
     res.status(500).json({ error: 'Failed to stream audio', details: String(error) });
