@@ -355,18 +355,50 @@ const UIShowcase: React.FC = () => {
   };
 
   const currentElements = builderScreen.sections.find(s => s.position === 'body')?.elements || [];
-  const selectedElement = selectedElementIndex !== null ? currentElements[selectedElementIndex] : null;
+  
+  // Find the selected element across all sections
+  const findSelectedElement = (): { element: ElementConfig | null; sectionPosition: string | null } => {
+    if (selectedElementIndex === null) return { element: null, sectionPosition: null };
+    
+    // First check body section (primary section for editing)
+    const bodySection = builderScreen.sections.find(s => s.position === 'body');
+    if (bodySection && selectedElementIndex < bodySection.elements.length) {
+      return { element: bodySection.elements[selectedElementIndex], sectionPosition: 'body' };
+    }
+    
+    return { element: null, sectionPosition: null };
+  };
+  
+  const { element: selectedElement, sectionPosition: selectedSectionPosition } = findSelectedElement();
   const selectedElementId = selectedElement?.state.id as string | undefined;
 
   const handleElementSelectFromPreview = (elementId: string, _sectionIndex: number, _elementIndex: number) => {
-    const bodySection = builderScreen.sections.find(s => s.position === 'body');
-    if (!bodySection) return;
-
-    const index = bodySection.elements.findIndex(el => el.state.id === elementId);
-    if (index !== -1) {
-      setSelectedElementIndex(index);
+    // Search all sections for the element
+    for (const section of builderScreen.sections) {
+      const index = section.elements.findIndex(el => el.state.id === elementId);
+      if (index !== -1) {
+        // For now, we support editing body section elements primarily
+        // Store the element ID so we can find it later
+        if (section.position === 'body') {
+          setSelectedElementIndex(index);
+        } else {
+          // For non-body sections, find the equivalent position in body
+          // or add support for tracking section position
+          const bodySection = builderScreen.sections.find(s => s.position === 'body');
+          if (bodySection) {
+            const bodyIndex = bodySection.elements.findIndex(el => el.state.id === elementId);
+            if (bodyIndex !== -1) {
+              setSelectedElementIndex(bodyIndex);
+            }
+          }
+        }
+        return;
+      }
     }
   };
+  
+  // Suppress unused variable warnings
+  void selectedSectionPosition;
 
   void draggedElementIndex; void _dragOverIndex; void setDraggedElementIndex; void setDragOverIndex;
 

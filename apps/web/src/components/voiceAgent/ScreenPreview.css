@@ -295,6 +295,12 @@
   border-radius: 8px;
   padding: 4px;
   margin: -4px;
+  position: relative;
+}
+
+/* Ensure clicks are captured by the editable wrapper, not child elements */
+.screen-preview-element-editable > * {
+  pointer-events: none;
 }
 
 .screen-preview-element-editable:hover {
