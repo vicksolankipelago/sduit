@@ -183,6 +183,107 @@
   font-style: italic;
 }
 
+/* System Tools Styling */
+.tool-list-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.tool-list-section:last-child {
+  margin-bottom: 0;
+}
+
+.tool-list-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  padding: 0.25rem 0;
+}
+
+.tool-item-system {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-color: #7dd3fc;
+}
+
+.tool-item-system:hover {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  border-color: #38bdf8;
+}
+
+.tool-item-system.active {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-color: #3b82f6;
+}
+
+.tool-item-badge {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 0.125rem 0.375rem;
+  background: #3b82f6;
+  color: white;
+  border-radius: 4px;
+  letter-spacing: 0.03em;
+}
+
+.tool-list-empty {
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: #9ca3af;
+}
+
+.tool-list-empty p {
+  margin: 0;
+}
+
+.tool-details-system {
+  background: linear-gradient(135deg, #f0f9ff 0%, #f8fafc 100%);
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.tool-system-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #3b82f6;
+  background: #dbeafe;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.tool-details-system input:disabled,
+.tool-details-system textarea:disabled {
+  background: #f8fafc;
+  color: #374151;
+  cursor: not-allowed;
+}
+
+.tool-details-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #9ca3af;
+  font-size: 0.9375rem;
+}
+
+.tool-details-empty p {
+  margin: 0;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .tool-editor-layout {
