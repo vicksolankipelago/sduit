@@ -12,9 +12,12 @@ export const ImageElement: React.FC<ImageElementProps> = ({
   style,
 }) => {
   const getImageSrc = (): string => {
-    // For now, return a placeholder or map to actual image assets
-    // In production, this would map to actual image URLs or asset imports
-    return `/assets/images/${data.imageName}.png`;
+    // Support both legacy .png in images folder and new .svg in illustrations folder
+    const imageName = data.imageName;
+    if (imageName.startsWith('Colour') || imageName.startsWith('Mono')) {
+      return `/illustrations/${imageName}.svg`;
+    }
+    return `/images/${imageName}.png`;
   };
 
   const getImageClassName = (): string => {

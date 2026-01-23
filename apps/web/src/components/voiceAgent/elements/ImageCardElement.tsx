@@ -35,7 +35,12 @@ export const ImageCardElement: React.FC<ImageCardElementProps> = ({
   };
 
   const getImageSrc = (): string => {
-    return `/assets/images/${style.imageName}.png`;
+    const imageName = style.imageName;
+    // Support both legacy .png in images folder and new .svg in illustrations folder
+    if (imageName?.startsWith('Colour') || imageName?.startsWith('Mono')) {
+      return `/illustrations/${imageName}.svg`;
+    }
+    return `/images/${imageName}.png`;
   };
 
   return (

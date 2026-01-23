@@ -123,7 +123,7 @@ export const ElementMetadataRegistry: Record<ElementType, ElementMetadata> = {
     category: 'core',
     icon: '🖼️',
     description: 'Display images',
-    defaultData: { id: '', imageName: 'placeholder' },
+    defaultData: { id: '', imageName: 'ColourSuccess' },
     defaultStyle: { width: 200, height: 200, contentMode: 'fit' },
   },
   'spacer': {
@@ -150,7 +150,7 @@ export const ElementMetadataRegistry: Record<ElementType, ElementMetadata> = {
     icon: '🃏',
     description: 'Card with image, title, and description',
     defaultData: { id: '', title: 'Title', description: 'Description' },
-    defaultStyle: { imageName: 'Success', imageWidth: 72, imageHeight: 72, backgroundColor: 'backgroundTeaGreen', cornerRadius: 8 },
+    defaultStyle: { imageName: 'ColourManThumbsUp', imageWidth: 72, imageHeight: 72, backgroundColor: 'backgroundTeaGreen', cornerRadius: 8 },
   },
   'textCard': {
     type: 'textCard',
