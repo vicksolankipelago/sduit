@@ -87,6 +87,7 @@
   background: var(--ui-element-divider);
   border-radius: 2px;
   cursor: pointer;
+  transition: background 0.1s ease-out;
 }
 
 .audio-player-slider::-webkit-slider-thumb {
@@ -97,7 +98,7 @@
   border-radius: 50%;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  transition: transform 0.15s ease;
+  transition: transform 0.15s ease, left 0.1s ease-out;
 }
 
 .audio-player-slider::-webkit-slider-thumb:hover {
