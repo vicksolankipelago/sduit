@@ -754,12 +754,22 @@ export const ElementPropertyEditor: React.FC<ElementPropertyEditorProps> = ({
         return (
           <>
             <FormField label="Image Name" required>
-              <input
-                type="text"
+              <select
                 value={getStyleValue(element.style, 'imageName', '')}
                 onChange={(e) => handleStyleChange('imageName', e.target.value)}
-                placeholder="e.g., Success"
-              />
+              >
+                <option value="">Select an illustration...</option>
+                <optgroup label="Colour Illustrations">
+                  {COLOUR_ILLUSTRATIONS.map(name => (
+                    <option key={name} value={name}>{getIllustrationLabel(name)}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Mono Illustrations">
+                  {MONO_ILLUSTRATIONS.map(name => (
+                    <option key={name} value={name}>{getIllustrationLabel(name)}</option>
+                  ))}
+                </optgroup>
+              </select>
             </FormField>
             <FormField label="Image Width">
               <input
