@@ -110,8 +110,15 @@ Uses PostgreSQL with Drizzle ORM. Schema defined in `shared/schema.ts`:
 - `GET /api/feedback/:id` - Get feedback by ID with transcript
 - `POST /api/feedback` - Submit feedback (rating 1-5, optional comment)
 
+## System Tool Calls
+
+The following system tools are automatically available to all agents in all flows:
+
+- `end_call(reason?: string)` - Ends the current realtime session and closes the flow. The AI agent can call this tool when the conversation should end. The system will wait for any remaining audio to complete before disconnecting and showing the feedback modal.
+
 ## Recent Changes
 
+- 2026-01-23: Enhanced end_call system tool to properly wait for audio completion before disconnecting
 - 2026-01-22: Integrated agent editor directly into journey page - replaced drag-and-drop canvas with dropdown selector and embedded Configuration/Tools/Screens tabs
 - 2026-01-22: All transcripts are now visible to all admin users (shared like journeys)
 - 2026-01-21: Added version history for prompts - users can view and restore previous versions of journeys via the History button
