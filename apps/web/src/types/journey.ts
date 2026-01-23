@@ -377,6 +377,15 @@ export interface QuoteCardElementStyle {
 }
 
 /**
+ * Large Question Option Pill - For showing reward points or badges
+ */
+export interface LargeQuestionOptionPill {
+  text: string;
+  iconName?: string; // e.g., 'coin', 'star', 'check'
+  backgroundColor?: string; // CSS color value
+}
+
+/**
  * Large Question Element
  */
 export interface LargeQuestionOption {
@@ -384,6 +393,7 @@ export interface LargeQuestionOption {
   title: string;
   description?: string;
   imageName?: string;
+  pill?: LargeQuestionOptionPill;
 }
 
 export interface LargeQuestionData {

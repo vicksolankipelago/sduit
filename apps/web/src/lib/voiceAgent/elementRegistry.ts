@@ -259,9 +259,9 @@ export const ElementMetadataRegistry: Record<ElementType, ElementMetadata> = {
     displayName: 'Mini Widget',
     category: 'interactive',
     icon: '📊',
-    description: 'Compact widget card',
-    defaultData: { id: '', title: 'Widget', content: '0' },
-    defaultStyle: { backgroundColor: 'backgroundLightCard', textColor: 'textGlobalPrimary' },
+    description: 'Compact widget card with customizable colors and icons',
+    defaultData: { id: '', title: '7', content: 'Day streak', titleIconName: null, showActionArrow: false },
+    defaultStyle: { backgroundColor: 'backgroundLightMintGreen', textColor: 'textGlobalPrimary' },
   },
   'animatedImage': {
     type: 'animatedImage',
