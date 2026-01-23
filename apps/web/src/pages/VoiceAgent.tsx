@@ -723,16 +723,32 @@ Important guidelines:
       // We'll set micStream to null to disable audio visualization
       // This prevents duplicate microphone access which causes issues
 
-      // Start recording if we have audio
-      if (audioElementRef.current?.srcObject) {
-        const remoteStream = audioElementRef.current.srcObject as MediaStream;
-        startRecording(remoteStream);
+      // Start recording when audio stream becomes available
+      // The audio stream is assigned asynchronously via ontrack event
+      const checkAndStartRecording = () => {
+        if (audioElementRef.current?.srcObject) {
+          const remoteStream = audioElementRef.current.srcObject as MediaStream;
+          startRecording(remoteStream);
 
-        // Also start streaming recording to server (pass session ID to link with transcript)
-        startStreamingRecording(remoteStream, sessionIdRef.current).catch((error) => {
-          console.error('Failed to start streaming recording:', error);
-          addLog('warning', 'Streaming recording failed to start');
-        });
+          // Also start streaming recording to server (pass session ID to link with transcript)
+          startStreamingRecording(remoteStream, sessionIdRef.current).catch((error) => {
+            console.error('Failed to start streaming recording:', error);
+            addLog('warning', 'Streaming recording failed to start');
+          });
+          return true;
+        }
+        return false;
+      };
+
+      // Try immediately, then poll until audio stream is available
+      if (!checkAndStartRecording()) {
+        const pollInterval = setInterval(() => {
+          if (checkAndStartRecording()) {
+            clearInterval(pollInterval);
+          }
+        }, 100);
+        // Clean up after 10 seconds to avoid infinite polling
+        setTimeout(() => clearInterval(pollInterval), 10000);
       }
     }
 
