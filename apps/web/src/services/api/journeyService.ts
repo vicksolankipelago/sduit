@@ -132,3 +132,10 @@ export async function listPublishedJourneys(): Promise<{ id: string; journeyId: 
   });
   return handleResponse(response);
 }
+
+export async function getEnvironment(): Promise<{ isProduction: boolean; environment: string }> {
+  const response = await fetch('/api/journeys/environment', {
+    credentials: 'include',
+  });
+  return handleResponse(response);
+}

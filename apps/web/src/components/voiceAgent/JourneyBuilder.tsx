@@ -490,6 +490,9 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                 disabled={disabled}
                 className="journey-name-input"
               />
+              <span className={`journey-status-badge ${isPublished ? (hasUnpublishedChanges ? 'has-changes' : 'published') : 'draft'}`}>
+                {isPublished ? (hasUnpublishedChanges ? 'Unpublished Changes' : 'Published') : 'Draft'}
+              </span>
             </div>
           )}
         </div>

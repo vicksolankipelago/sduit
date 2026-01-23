@@ -367,6 +367,14 @@ router.get("/published/all", isAuthenticated, async (req: any, res) => {
   }
 });
 
+// Get environment info for frontend
+router.get("/environment", (req, res) => {
+  res.json({
+    isProduction: process.env.NODE_ENV === "production",
+    environment: process.env.NODE_ENV || "development",
+  });
+});
+
 router.post("/:id/duplicate", isAdmin, async (req: any, res) => {
   try {
     const userId = req.user.id;
