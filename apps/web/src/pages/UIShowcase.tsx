@@ -477,9 +477,6 @@ const UIShowcase: React.FC = () => {
         )}
         {showcaseMode === 'builder' && (
           <div className="ui-showcase-builder-actions">
-            <button className="ui-showcase-back-btn" onClick={() => setShowcaseMode('screens')}>
-              Back to Screens
-            </button>
             <button className="ui-showcase-save-btn" onClick={handleSaveScreen}>
               Save Screen
             </button>
