@@ -38,6 +38,39 @@ app.get("/api/health", (req, res) => {
 async function main() {
   setupAuth(app);
   
+  // Public routes for production runtime - must be registered before authenticated routes
+  const { publishedFlowStorage } = await import("./services/publishedFlowStorage");
+  
+  app.get("/api/journeys/environment", (req, res) => {
+    res.json({
+      isProduction: process.env.NODE_ENV === "production",
+      environment: process.env.NODE_ENV || "development",
+    });
+  });
+  
+  app.get("/api/journeys/production/list", async (req, res) => {
+    try {
+      const flows = await publishedFlowStorage.listPublishedFlows();
+      res.json(flows);
+    } catch (error) {
+      console.error("Error listing production flows:", error);
+      res.status(500).json({ message: "Failed to list production flows" });
+    }
+  });
+  
+  app.get("/api/journeys/production/:journeyId", async (req, res) => {
+    try {
+      const flow = await publishedFlowStorage.getPublishedFlow(req.params.journeyId);
+      if (!flow) {
+        return res.status(404).json({ message: "Flow not found in production" });
+      }
+      res.json(flow);
+    } catch (error) {
+      console.error("Error getting production flow:", error);
+      res.status(500).json({ message: "Failed to get production flow" });
+    }
+  });
+
   app.use("/api/journeys", isAuthenticated, journeysRouter);
   app.use("/api/voice-sessions", isAuthenticated, voiceSessionsRouter);
   app.use("/api/feedback", isAuthenticated, feedbackRouter);
