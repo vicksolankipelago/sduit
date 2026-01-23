@@ -7,6 +7,7 @@
   background-color: #FFFFFF;
   width: 100%;
   box-sizing: border-box;
+  overflow: hidden; /* Prevent content overflow */
 }
 
 .text-card-element-with-checkmark {
@@ -41,4 +42,7 @@
   color: var(--text-global-primary);
   line-height: 24px;
   white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
