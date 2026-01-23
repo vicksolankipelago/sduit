@@ -5,6 +5,8 @@ import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedroc
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { v4 as uuidv4 } from 'uuid';
+import { recordingStorage } from './services/recordingStorage.js';
 
 // Get directory name in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -22,7 +24,7 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // Increase limit for audio chunk uploads
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -391,6 +393,203 @@ EXAMPLE showing minimal customization (defaults are applied):
   }
 });
 
+// ============================================
+// Recording API Endpoints
+// ============================================
+
+/**
+ * Start a new recording session
+ * Creates a session and manifest in Replit Object Storage
+ */
+app.post('/api/recording/start', async (req, res) => {
+  try {
+    const sessionId = uuidv4();
+    const { metadata = {} } = req.body;
+
+    console.log(`🎙️ Starting recording session: ${sessionId}`);
+
+    const result = await recordingStorage.startSession(sessionId, metadata);
+
+    res.json({
+      success: true,
+      sessionId: result.sessionId,
+      message: 'Recording session started'
+    });
+  } catch (error) {
+    console.error('❌ Failed to start recording:', error);
+    res.status(500).json({
+      error: 'Failed to start recording session',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * Upload an audio chunk
+ * Receives base64-encoded audio data and uploads to storage
+ */
+app.post('/api/recording/chunk', async (req, res) => {
+  try {
+    const { sessionId, chunkIndex, audioData } = req.body;
+
+    if (!sessionId || chunkIndex === undefined || !audioData) {
+      return res.status(400).json({
+        error: 'Missing required fields: sessionId, chunkIndex, audioData'
+      });
+    }
+
+    // Convert base64 to buffer
+    const buffer = Buffer.from(audioData, 'base64');
+
+    console.log(`📦 Uploading chunk ${chunkIndex} for session ${sessionId} (${buffer.length} bytes)`);
+
+    const result = await recordingStorage.uploadChunk(sessionId, chunkIndex, buffer);
+
+    res.json({
+      success: true,
+      chunkPath: result.chunkPath,
+      chunkIndex: result.chunkIndex,
+      size: result.size
+    });
+  } catch (error) {
+    console.error('❌ Failed to upload chunk:', error);
+    res.status(500).json({
+      error: 'Failed to upload audio chunk',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * End a recording session
+ * Marks the session as complete
+ */
+app.post('/api/recording/end', async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+
+    if (!sessionId) {
+      return res.status(400).json({
+        error: 'Missing required field: sessionId'
+      });
+    }
+
+    console.log(`🏁 Ending recording session: ${sessionId}`);
+
+    const manifest = await recordingStorage.endSession(sessionId);
+
+    res.json({
+      success: true,
+      sessionId,
+      totalChunks: manifest.chunks.length,
+      totalDuration: manifest.totalDuration,
+      status: manifest.status
+    });
+  } catch (error) {
+    console.error('❌ Failed to end recording:', error);
+    res.status(500).json({
+      error: 'Failed to end recording session',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * List all recordings
+ */
+app.get('/api/recordings', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const recordings = await recordingStorage.listRecordings(limit);
+
+    res.json({
+      success: true,
+      recordings,
+      count: recordings.length
+    });
+  } catch (error) {
+    console.error('❌ Failed to list recordings:', error);
+    res.status(500).json({
+      error: 'Failed to list recordings',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * Get a specific recording session
+ */
+app.get('/api/recordings/:sessionId', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const session = await recordingStorage.getSession(sessionId);
+
+    if (!session) {
+      return res.status(404).json({
+        error: 'Recording not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      recording: session
+    });
+  } catch (error) {
+    console.error('❌ Failed to get recording:', error);
+    res.status(500).json({
+      error: 'Failed to get recording',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * Download a specific chunk from a recording
+ */
+app.get('/api/recordings/:sessionId/chunks/:chunkIndex', async (req, res) => {
+  try {
+    const { sessionId, chunkIndex } = req.params;
+    const buffer = await recordingStorage.downloadChunk(sessionId, parseInt(chunkIndex));
+
+    res.set({
+      'Content-Type': 'audio/webm',
+      'Content-Disposition': `attachment; filename="chunk-${chunkIndex}.webm"`
+    });
+    res.send(buffer);
+  } catch (error) {
+    console.error('❌ Failed to download chunk:', error);
+    res.status(500).json({
+      error: 'Failed to download chunk',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * Delete a recording session
+ */
+app.delete('/api/recordings/:sessionId', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    console.log(`🗑️ Deleting recording session: ${sessionId}`);
+
+    const result = await recordingStorage.deleteSession(sessionId);
+
+    res.json({
+      success: true,
+      deleted: result.deleted,
+      sessionId: result.sessionId
+    });
+  } catch (error) {
+    console.error('❌ Failed to delete recording:', error);
+    res.status(500).json({
+      error: 'Failed to delete recording',
+      details: error.message
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════════════════════════╗
@@ -403,7 +602,15 @@ app.listen(PORT, () => {
 ║    - GET  /health              (Health check)             ║
 ║    - GET  /api/session         (Create Azure session)     ║
 ║    - POST /api/session         (Create Azure session)     ║
-║    - POST /generate-screens    (AI Screen Generation)      ║
+║    - POST /generate-screens    (AI Screen Generation)     ║
+║                                                            ║
+║  🎙️  Recording Endpoints:                                  ║
+║    - POST /api/recording/start (Start recording)          ║
+║    - POST /api/recording/chunk (Upload audio chunk)       ║
+║    - POST /api/recording/end   (End recording)            ║
+║    - GET  /api/recordings      (List recordings)          ║
+║    - GET  /api/recordings/:id  (Get recording)            ║
+║    - DELETE /api/recordings/:id (Delete recording)        ║
 ║                                                            ║
 ║  ⚡ Azure OpenAI Configuration:                            ║
 ║     AZURE_OPENAI_ENDPOINT                                  ║

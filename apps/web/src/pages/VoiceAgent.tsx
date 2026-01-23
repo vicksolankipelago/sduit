@@ -13,6 +13,7 @@ import { useEvent } from '../contexts/voiceAgent/EventContext';
 import { useAgentUI } from '../contexts/voiceAgent/AgentUIContext';
 import { useAzureWebRTCSession } from '../hooks/voiceAgent/useAzureWebRTCSession';
 import useAudioDownload from '../hooks/voiceAgent/useAudioDownload';
+import { useStreamingRecording } from '../hooks/voiceAgent/useStreamingRecording';
 import { VoiceAgentAudioRouter } from '../utils/voiceAgent/audioRouting';
 
 // Components
@@ -167,6 +168,23 @@ function VoiceAgentContent() {
   const userMessageBuffer = useRef<string>('');
 
   const { startRecording, stopRecording } = useAudioDownload();
+
+  // Streaming recording - uploads to server in real-time
+  const {
+    isRecording: isStreamingRecording,
+    sessionId: streamingSessionId,
+    chunkCount,
+    startRecording: startStreamingRecording,
+    stopRecording: stopStreamingRecording,
+  } = useStreamingRecording({
+    chunkDuration: 5000, // 5 second chunks
+    onChunkUploaded: (chunkIndex) => {
+      console.log(`📤 Chunk ${chunkIndex + 1} uploaded to storage`);
+    },
+    onError: (error) => {
+      addLog('warning', `Recording upload error: ${error.message}`);
+    },
+  });
 
   const addLog = (type: LogEntry['type'], message: string, details?: any) => {
     const logEntry: LogEntry = {
@@ -707,11 +725,17 @@ Important guidelines:
       // The WebRTC connection already has the microphone
       // We'll set micStream to null to disable audio visualization
       // This prevents duplicate microphone access which causes issues
-      
+
       // Start recording if we have audio
       if (audioElementRef.current?.srcObject) {
         const remoteStream = audioElementRef.current.srcObject as MediaStream;
         startRecording(remoteStream);
+
+        // Also start streaming recording to server
+        startStreamingRecording(remoteStream).catch((error) => {
+          console.error('Failed to start streaming recording:', error);
+          addLog('warning', 'Streaming recording failed to start');
+        });
       }
     }
 
@@ -725,8 +749,13 @@ Important guidelines:
       }
       // Always stop recording to release mic usage
       stopRecording();
+
+      // Stop streaming recording
+      stopStreamingRecording().catch((error) => {
+        console.error('Failed to stop streaming recording:', error);
+      });
     }
-    
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionStatus]);
 
