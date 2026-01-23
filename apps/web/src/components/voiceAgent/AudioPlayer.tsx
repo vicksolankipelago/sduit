@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { logger } from '../../utils/logger';
 import './AudioPlayer.css';
+
+const audioLogger = logger.namespace('AudioPlayer');
 
 interface AudioPlayerProps {
   sessionId: string;
@@ -27,30 +30,30 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ sessionId, onError }) 
   const checkRecordingExists = async () => {
     setIsLoading(true);
     setError(null);
-    console.log(`🎧 AudioPlayer: Checking recording for session ${sessionId}`);
+    audioLogger.debug(`Checking recording for session ${sessionId}`);
     try {
       const response = await fetch(`/api/recordings/${sessionId}`);
-      console.log(`🎧 AudioPlayer: Response status ${response.status} for session ${sessionId}`);
+      audioLogger.debug(`Response status ${response.status} for session ${sessionId}`);
       if (response.ok) {
         const data = await response.json();
-        console.log(`🎧 AudioPlayer: Recording data for ${sessionId}:`, data);
+        audioLogger.debug(`Recording data for ${sessionId}:`, data);
         if (data.recording && data.recording.chunks && data.recording.chunks.length > 0) {
-          console.log(`🎧 AudioPlayer: Found ${data.recording.chunks.length} chunks for ${sessionId}`);
+          audioLogger.debug(`Found ${data.recording.chunks.length} chunks for ${sessionId}`);
           setHasRecording(true);
           // Use the totalDuration from manifest as fallback
           if (data.recording.totalDuration) {
             setDuration(data.recording.totalDuration);
           }
         } else {
-          console.log(`🎧 AudioPlayer: No chunks found for ${sessionId}`);
+          audioLogger.debug(`No chunks found for ${sessionId}`);
           setHasRecording(false);
         }
       } else {
-        console.log(`🎧 AudioPlayer: Recording not found for ${sessionId}`);
+        audioLogger.debug(`Recording not found for ${sessionId}`);
         setHasRecording(false);
       }
     } catch (err) {
-      console.error('Failed to check recording:', err);
+      audioLogger.error('Failed to check recording:', err);
       setHasRecording(false);
     } finally {
       setIsLoading(false);
@@ -64,7 +67,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ sessionId, onError }) 
       audioRef.current.pause();
     } else {
       audioRef.current.play().catch(err => {
-        console.error('Failed to play audio:', err);
+        audioLogger.error('Failed to play audio:', err);
         setError('Failed to play audio');
         onError?.('Failed to play audio');
       });

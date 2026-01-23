@@ -1,21 +1,34 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import { isAuthenticated } from "../auth";
 import { storage } from "../storage";
+import { sessionLogger } from "../utils/logger";
+import * as apiResponse from "../utils/response";
 
 const router = Router();
 
-router.get("/", isAuthenticated, async (req: any, res) => {
+router.get("/", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const userId = req.user.id;
-    const userRole = req.user.role;
-    const limit = parseInt(req.query.limit as string) || 50;
-    const offset = parseInt(req.query.offset as string) || 0;
-    
+    const userId = (req.user as any)?.id;
+    const userRole = (req.user as any)?.role;
+
+    if (!userId) {
+      return apiResponse.unauthorized(res);
+    }
+
+    const limitParam = req.query.limit as string;
+    const offsetParam = req.query.offset as string;
+    const limit = limitParam ? parseInt(limitParam, 10) : 50;
+    const offset = offsetParam ? parseInt(offsetParam, 10) : 0;
+
+    if (isNaN(limit) || isNaN(offset) || limit < 0 || offset < 0) {
+      return apiResponse.validationError(res, "limit and offset must be non-negative integers");
+    }
+
     // Admins can see all sessions, test users only see their own
-    const sessions = userRole === 'admin' 
+    const sessions = userRole === 'admin'
       ? await storage.listAllSessions(limit, offset)
       : await storage.listUserSessions(userId, limit, offset);
-    
+
     const sessionList = sessions.map((s) => ({
       id: s.id,
       sessionId: s.sessionId,
@@ -26,57 +39,72 @@ router.get("/", isAuthenticated, async (req: any, res) => {
       createdAt: s.createdAt,
       userName: s.userName,
     }));
-    
-    res.json(sessionList);
+
+    return apiResponse.success(res, sessionList);
   } catch (error) {
-    console.error("Error listing sessions:", error);
-    res.status(500).json({ message: "Failed to list sessions" });
+    sessionLogger.error("Error listing sessions:", error);
+    return apiResponse.serverError(res, "Failed to list sessions");
   }
 });
 
-router.get("/count", isAuthenticated, async (req: any, res) => {
+router.get("/count", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const userId = req.user.id;
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return apiResponse.unauthorized(res);
+    }
+
     const count = await storage.getSessionCount(userId);
-    res.json({ count });
+    return apiResponse.success(res, { count });
   } catch (error) {
-    console.error("Error counting sessions:", error);
-    res.status(500).json({ message: "Failed to count sessions" });
+    sessionLogger.error("Error counting sessions:", error);
+    return apiResponse.serverError(res, "Failed to count sessions");
   }
 });
 
-router.post("/note-counts", isAuthenticated, async (req: any, res) => {
+router.post("/note-counts", isAuthenticated, async (req: Request, res: Response) => {
   try {
     const { sessionIds } = req.body;
     if (!Array.isArray(sessionIds)) {
-      return res.status(400).json({ message: "sessionIds must be an array" });
+      return apiResponse.validationError(res, "sessionIds must be an array");
     }
+    if (sessionIds.length === 0) {
+      return apiResponse.success(res, {});
+    }
+
     const counts = await storage.countNotesForSessions(sessionIds);
-    res.json(counts);
+    return apiResponse.success(res, counts);
   } catch (error) {
-    console.error("Error counting notes:", error);
-    res.status(500).json({ message: "Failed to count notes" });
+    sessionLogger.error("Error counting notes:", error);
+    return apiResponse.serverError(res, "Failed to count notes");
   }
 });
 
-router.get("/:sessionId", isAuthenticated, async (req: any, res) => {
+router.get("/:sessionId", isAuthenticated, async (req: Request, res: Response) => {
   try {
+    const userId = (req.user as any)?.id;
+    const userRole = (req.user as any)?.role;
+
+    if (!userId) {
+      return apiResponse.unauthorized(res);
+    }
+
     // Try looking up by database ID first, then by OpenAI sessionId
     let session = await storage.getSessionById(req.params.sessionId);
     if (!session) {
       session = await storage.getSession(req.params.sessionId);
     }
-    
+
     if (!session) {
-      return res.status(404).json({ message: "Session not found" });
+      return apiResponse.notFound(res, "Session");
     }
-    
+
     // Admins can view any session, test users only their own
-    if (req.user.role !== 'admin' && session.userId !== req.user.id) {
-      return res.status(403).json({ message: "Forbidden" });
+    if (userRole !== 'admin' && session.userId !== userId) {
+      return apiResponse.forbidden(res);
     }
-    
-    res.json({
+
+    return apiResponse.success(res, {
       sessionId: session.sessionId,
       exportedAt: session.exportedAt,
       duration: {
@@ -110,16 +138,24 @@ router.get("/:sessionId", isAuthenticated, async (req: any, res) => {
       },
     });
   } catch (error) {
-    console.error("Error loading session:", error);
-    res.status(500).json({ message: "Failed to load session" });
+    sessionLogger.error("Error loading session:", error);
+    return apiResponse.serverError(res, "Failed to load session");
   }
 });
 
-router.post("/", isAuthenticated, async (req: any, res) => {
+router.post("/", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const userId = req.user.id;
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return apiResponse.unauthorized(res);
+    }
+
     const sessionData = req.body;
-    
+
+    if (!sessionData.sessionId) {
+      return apiResponse.validationError(res, "sessionId is required");
+    }
+
     const session = await storage.saveSession({
       userId,
       sessionId: sessionData.sessionId,
@@ -142,29 +178,33 @@ router.post("/", isAuthenticated, async (req: any, res) => {
       statsToolCalls: sessionData.stats?.toolCalls || 0,
       statsBreadcrumbs: sessionData.stats?.breadcrumbs || 0,
     });
-    
-    res.json({ success: true, id: session.id });
+
+    return apiResponse.success(res, { id: session.id }, 201);
   } catch (error) {
-    console.error("Error saving session:", error);
-    res.status(500).json({ message: "Failed to save session" });
+    sessionLogger.error("Error saving session:", error);
+    return apiResponse.serverError(res, "Failed to save session");
   }
 });
 
-router.put("/:sessionId/message", isAuthenticated, async (req: any, res) => {
+router.put("/:sessionId/message", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const userId = req.user.id;
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return apiResponse.unauthorized(res);
+    }
+
     const { sessionId } = req.params;
     const { message, journey, agent } = req.body;
-    
+
     if (!message || !message.itemId) {
-      return res.status(400).json({ message: "Message with itemId is required" });
+      return apiResponse.validationError(res, "Message with itemId is required");
     }
-    
+
     const existingSession = await storage.getSession(sessionId);
     if (existingSession && existingSession.userId !== userId) {
-      return res.status(403).json({ message: "Forbidden" });
+      return apiResponse.forbidden(res);
     }
-    
+
     const session = await storage.upsertSessionMessage({
       userId,
       sessionId,
@@ -177,73 +217,83 @@ router.put("/:sessionId/message", isAuthenticated, async (req: any, res) => {
       agentPrompt: agent?.prompt,
       agentTools: agent?.tools || [],
     });
-    
-    res.json({ success: true, id: session.id });
+
+    return apiResponse.success(res, { id: session.id });
   } catch (error) {
-    console.error("Error upserting session message:", error);
-    res.status(500).json({ message: "Failed to save message" });
+    sessionLogger.error("Error upserting session message:", error);
+    return apiResponse.serverError(res, "Failed to save message");
   }
 });
 
-router.delete("/:sessionId", isAuthenticated, async (req: any, res) => {
+router.delete("/:sessionId", isAuthenticated, async (req: Request, res: Response) => {
   try {
+    const userId = (req.user as any)?.id;
+    const userRole = (req.user as any)?.role;
+
+    if (!userId) {
+      return apiResponse.unauthorized(res);
+    }
+
     // Try looking up by database ID first, then by OpenAI sessionId
     let session = await storage.getSessionById(req.params.sessionId);
     if (!session) {
       session = await storage.getSession(req.params.sessionId);
     }
-    
+
     if (!session) {
-      return res.status(404).json({ message: "Session not found" });
+      return apiResponse.notFound(res, "Session");
     }
-    
+
     // Admins can delete any session, test users only their own
-    if (req.user.role !== 'admin' && session.userId !== req.user.id) {
-      return res.status(403).json({ message: "Forbidden" });
+    if (userRole !== 'admin' && session.userId !== userId) {
+      return apiResponse.forbidden(res);
     }
-    
+
     await storage.deleteSession(session.sessionId);
-    res.json({ success: true });
+    return apiResponse.success(res, { deleted: true });
   } catch (error) {
-    console.error("Error deleting session:", error);
-    res.status(500).json({ message: "Failed to delete session" });
+    sessionLogger.error("Error deleting session:", error);
+    return apiResponse.serverError(res, "Failed to delete session");
   }
 });
 
 // Notes routes
-router.get("/:sessionId/notes", isAuthenticated, async (req: any, res) => {
+router.get("/:sessionId/notes", isAuthenticated, async (req: Request, res: Response) => {
   try {
     const { sessionId } = req.params;
     const session = await storage.getSessionBySessionId(sessionId);
     if (!session) {
-      return res.status(404).json({ message: "Session not found" });
+      return apiResponse.notFound(res, "Session");
     }
     // Use session.id (database UUID) to query notes
     const notes = await storage.listSessionNotes(session.id);
-    res.json(notes);
+    return apiResponse.success(res, notes);
   } catch (error) {
-    console.error("Error listing notes:", error);
-    res.status(500).json({ message: "Failed to list notes" });
+    sessionLogger.error("Error listing notes:", error);
+    return apiResponse.serverError(res, "Failed to list notes");
   }
 });
 
-router.post("/:sessionId/notes", isAuthenticated, async (req: any, res) => {
-  console.log("POST notes request:", req.params.sessionId, req.body);
+router.post("/:sessionId/notes", isAuthenticated, async (req: Request, res: Response) => {
   try {
     const { sessionId } = req.params;
     const { messageIndex, content, parentId } = req.body;
-    const user = req.user;
-    
+    const user = req.user as any;
+
+    if (!user?.id) {
+      return apiResponse.unauthorized(res);
+    }
+
     const session = await storage.getSessionBySessionId(sessionId);
     if (!session) {
-      console.log("Session not found:", sessionId);
-      return res.status(404).json({ message: "Session not found" });
+      sessionLogger.debug("Session not found:", sessionId);
+      return apiResponse.notFound(res, "Session");
     }
-    
+
     if (typeof messageIndex !== "number" || !content) {
-      return res.status(400).json({ message: "messageIndex and content are required" });
+      return apiResponse.validationError(res, "messageIndex (number) and content (string) are required");
     }
-    
+
     // Use session.id (database UUID) not sessionId (OpenAI session ID)
     const note = await storage.createNote({
       sessionId: session.id,
@@ -255,69 +305,69 @@ router.post("/:sessionId/notes", isAuthenticated, async (req: any, res) => {
       status: "todo",
       parentId: parentId || null,
     });
-    
-    console.log("Note created:", note.id);
-    res.json(note);
+
+    sessionLogger.debug("Note created:", note.id);
+    return apiResponse.success(res, note, 201);
   } catch (error) {
-    console.error("Error creating note:", error);
-    res.status(500).json({ message: "Failed to create note" });
+    sessionLogger.error("Error creating note:", error);
+    return apiResponse.serverError(res, "Failed to create note");
   }
 });
 
-router.patch("/:sessionId/notes/:noteId", isAuthenticated, async (req: any, res) => {
+router.patch("/:sessionId/notes/:noteId", isAuthenticated, async (req: Request, res: Response) => {
   try {
     const { sessionId, noteId } = req.params;
     const { content, status } = req.body;
-    
+
     const session = await storage.getSessionBySessionId(sessionId);
     if (!session) {
-      return res.status(404).json({ message: "Session not found" });
+      return apiResponse.notFound(res, "Session");
     }
-    
+
     const note = await storage.getNote(noteId);
     if (!note) {
-      return res.status(404).json({ message: "Note not found" });
+      return apiResponse.notFound(res, "Note");
     }
-    
+
     if (note.sessionId !== sessionId) {
-      return res.status(403).json({ message: "Note does not belong to this session" });
+      return apiResponse.forbidden(res, "Note does not belong to this session");
     }
-    
+
     const updates: any = {};
     if (content !== undefined) updates.content = content;
     if (status !== undefined) updates.status = status;
-    
+
     const updatedNote = await storage.updateNote(noteId, updates);
-    res.json(updatedNote);
+    return apiResponse.success(res, updatedNote);
   } catch (error) {
-    console.error("Error updating note:", error);
-    res.status(500).json({ message: "Failed to update note" });
+    sessionLogger.error("Error updating note:", error);
+    return apiResponse.serverError(res, "Failed to update note");
   }
 });
 
-router.delete("/:sessionId/notes/:noteId", isAuthenticated, async (req: any, res) => {
+router.delete("/:sessionId/notes/:noteId", isAuthenticated, async (req: Request, res: Response) => {
   try {
     const { sessionId, noteId } = req.params;
-    
+
     const session = await storage.getSessionBySessionId(sessionId);
     if (!session) {
-      return res.status(404).json({ message: "Session not found" });
+      return apiResponse.notFound(res, "Session");
     }
-    
+
     const note = await storage.getNote(noteId);
     if (!note) {
-      return res.status(404).json({ message: "Note not found" });
+      return apiResponse.notFound(res, "Note");
     }
-    
+
     if (note.sessionId !== sessionId) {
-      return res.status(403).json({ message: "Note does not belong to this session" });
+      return apiResponse.forbidden(res, "Note does not belong to this session");
     }
-    
+
     await storage.deleteNoteWithReplies(noteId);
-    res.json({ success: true });
+    return apiResponse.success(res, { deleted: true });
   } catch (error) {
-    console.error("Error deleting note:", error);
-    res.status(500).json({ message: "Failed to delete note" });
+    sessionLogger.error("Error deleting note:", error);
+    return apiResponse.serverError(res, "Failed to delete note");
   }
 });
 

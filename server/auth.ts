@@ -1,6 +1,6 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { scrypt, randomBytes, timingSafeEqual, createHash } from "crypto";
@@ -9,6 +9,8 @@ import { users, type SelectUser } from "../shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { pool } from "./db";
+import { authLogger } from "./utils/logger";
+import * as apiResponse from "./utils/response";
 
 function generateResetToken(): string {
   return randomBytes(32).toString("hex");
@@ -127,8 +129,8 @@ export function setupAuth(app: Express) {
         });
       });
     } catch (error) {
-      console.error("Registration error:", error);
-      res.status(500).json({ message: "Registration failed" });
+      authLogger.error("Registration error:", error);
+      return apiResponse.serverError(res, "Registration failed");
     }
   });
 
@@ -206,8 +208,8 @@ export function setupAuth(app: Express) {
       // For demo, we return the token directly
       const resetUrl = `/reset-password?token=${resetToken}`;
       
-      console.log(`Password reset requested for ${email}. Reset URL: ${resetUrl}`);
-      
+      authLogger.info(`Password reset requested for ${email}. Reset URL: ${resetUrl}`);
+
       res.status(200).json({ 
         message: "If an account exists with this email, a reset link has been generated",
         // Return reset URL for demo purposes only - remove in production
@@ -215,8 +217,8 @@ export function setupAuth(app: Express) {
         token: resetToken,
       });
     } catch (error) {
-      console.error("Forgot password error:", error);
-      res.status(500).json({ message: "Failed to process request" });
+      authLogger.error("Forgot password error:", error);
+      return apiResponse.serverError(res, "Failed to process request");
     }
   });
 
@@ -264,25 +266,25 @@ export function setupAuth(app: Express) {
 
       res.status(200).json({ message: "Password reset successfully" });
     } catch (error) {
-      console.error("Reset password error:", error);
-      res.status(500).json({ message: "Failed to reset password" });
+      authLogger.error("Reset password error:", error);
+      return apiResponse.serverError(res, "Failed to reset password");
     }
   });
 }
 
-export function isAuthenticated(req: any, res: any, next: any) {
+export function isAuthenticated(req: Request, res: Response, next: NextFunction) {
   if (req.isAuthenticated()) {
     return next();
   }
-  res.status(401).json({ message: "Unauthorized" });
+  return apiResponse.unauthorized(res);
 }
 
-export function isAdmin(req: any, res: any, next: any) {
+export function isAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: "Unauthorized" });
+    return apiResponse.unauthorized(res);
   }
   if (req.user?.role !== 'admin') {
-    return res.status(403).json({ message: "Admin access required" });
+    return apiResponse.forbidden(res, "Admin access required");
   }
   return next();
 }

@@ -22,6 +22,7 @@ import SessionLogViewer, { LogEntry } from '../components/voiceAgent/SessionLogV
 import MemberPersonaEditor from '../components/voiceAgent/MemberPersonaEditor';
 import FeedbackForm from '../components/voiceAgent/FeedbackForm';
 import VoiceControlBar from '../components/voiceAgent/VoiceControlBar';
+import { ErrorBoundary } from '../components/voiceAgent/ErrorBoundary';
 import { useAudioLevel } from '../hooks/voiceAgent/useAudioLevel';
 import { EditIcon, SettingsIcon } from '../components/Icons';
 
@@ -1331,13 +1332,15 @@ Important guidelines:
 // Wrapper with Providers
 const VoiceAgent: React.FC = () => {
   return (
-    <TranscriptProvider>
-      <EventProvider>
-        <AgentUIProvider>
-          <VoiceAgentContent />
-        </AgentUIProvider>
-      </EventProvider>
-    </TranscriptProvider>
+    <ErrorBoundary componentName="VoiceAgent">
+      <TranscriptProvider>
+        <EventProvider>
+          <AgentUIProvider>
+            <VoiceAgentContent />
+          </AgentUIProvider>
+        </EventProvider>
+      </TranscriptProvider>
+    </ErrorBoundary>
   );
 };
 

@@ -1,88 +1,51 @@
 import { StandaloneScreen, StandaloneScreenListItem } from '../../types/screen';
-
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (response.status === 401) {
-    window.location.href = '/login';
-    throw new Error('Unauthorized');
-  }
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Request failed' }));
-    throw new Error(error.message || 'Request failed');
-  }
-
-  return response.json();
-}
+import { api, ApiError } from './apiClient';
 
 export async function listGlobalScreens(): Promise<StandaloneScreenListItem[]> {
-  const response = await fetch('/api/screens', {
-    credentials: 'include',
-  });
-  return handleResponse<StandaloneScreenListItem[]>(response);
+  return api.get<StandaloneScreenListItem[]>('/api/screens');
 }
 
 export async function loadGlobalScreen(screenId: string): Promise<StandaloneScreen | null> {
-  const response = await fetch(`/api/screens/${screenId}`, {
-    credentials: 'include',
-  });
-
-  if (response.status === 404) {
-    return null;
+  try {
+    return await api.get<StandaloneScreen>(`/api/screens/${screenId}`);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
   }
-
-  return handleResponse<StandaloneScreen>(response);
 }
 
 export async function saveGlobalScreen(screen: StandaloneScreen): Promise<StandaloneScreen> {
   const isNew = !screen.id || screen.id.startsWith('new-');
 
   if (isNew) {
-    const response = await fetch('/api/screens', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(screen),
-    });
-    return handleResponse<StandaloneScreen>(response);
+    return api.post<StandaloneScreen>('/api/screens', screen);
   } else {
-    const response = await fetch(`/api/screens/${screen.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(screen),
-    });
-    return handleResponse<StandaloneScreen>(response);
+    return api.put<StandaloneScreen>(`/api/screens/${screen.id}`, screen);
   }
 }
 
 export async function deleteGlobalScreen(screenId: string): Promise<boolean> {
-  const response = await fetch(`/api/screens/${screenId}`, {
-    method: 'DELETE',
-    credentials: 'include',
-  });
-  await handleResponse<{ success: boolean }>(response);
+  await api.delete<{ deleted: boolean }>(`/api/screens/${screenId}`);
   return true;
 }
 
 export async function duplicateGlobalScreen(screenId: string): Promise<StandaloneScreen | null> {
-  const response = await fetch(`/api/screens/${screenId}/duplicate`, {
-    method: 'POST',
-    credentials: 'include',
-  });
-
-  if (response.status === 404) {
-    return null;
+  try {
+    return await api.post<StandaloneScreen>(`/api/screens/${screenId}/duplicate`);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
   }
-
-  return handleResponse<StandaloneScreen>(response);
 }
 
 export async function globalScreenExists(screenId: string): Promise<boolean> {
   try {
-    const response = await fetch(`/api/screens/${screenId}`, {
-      credentials: 'include',
-    });
-    return response.ok;
+    await api.get<StandaloneScreen>(`/api/screens/${screenId}`);
+    return true;
   } catch {
     return false;
   }

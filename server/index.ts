@@ -11,6 +11,8 @@ import feedbackRouter from "./routes/feedback";
 import screensRouter from "./routes/screens";
 import recordingsRouter from "./routes/recordings";
 import fileUpload from "express-fileupload";
+import { serverLogger, sessionLogger, bedrockLogger } from "./utils/logger";
+import * as apiResponse from "./utils/response";
 
 dotenv.config();
 
@@ -66,22 +68,16 @@ async function main() {
       }
 
       if (!apiKey) {
-        console.error("AZURE_OPENAI_API_KEY environment variable is not set");
-        return res.status(500).json({
-          error: "Azure OpenAI API key not configured",
-          details: "AZURE_OPENAI_API_KEY environment variable is missing",
-        });
+        sessionLogger.error("AZURE_OPENAI_API_KEY environment variable is not set");
+        return apiResponse.configError(res, "Azure OpenAI API key not configured", "AZURE_OPENAI_API_KEY environment variable is missing");
       }
 
       if (!endpoint) {
-        console.error("AZURE_OPENAI_ENDPOINT environment variable is not set");
-        return res.status(500).json({
-          error: "Azure OpenAI endpoint not configured",
-          details: "AZURE_OPENAI_ENDPOINT environment variable is missing",
-        });
+        sessionLogger.error("AZURE_OPENAI_ENDPOINT environment variable is not set");
+        return apiResponse.configError(res, "Azure OpenAI endpoint not configured", "AZURE_OPENAI_ENDPOINT environment variable is missing");
       }
 
-      console.log("Creating ephemeral key for WebRTC connection...");
+      sessionLogger.info("Creating ephemeral key for WebRTC connection...");
 
       const sessionsUrl = `${endpoint}/openai/realtimeapi/sessions?api-version=${apiVersion}`;
 
@@ -99,15 +95,12 @@ async function main() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Failed to create session:", response.status, errorText);
-        return res.status(response.status).json({
-          error: "Failed to create ephemeral session",
-          details: errorText,
-        });
+        sessionLogger.error("Failed to create session:", response.status, errorText);
+        return apiResponse.error(res, "Failed to create ephemeral session", response.status, "SESSION_CREATE_FAILED", errorText);
       }
 
       const sessionData = await response.json();
-      console.log("Ephemeral key created:", sessionData.id);
+      sessionLogger.info("Ephemeral key created:", sessionData.id);
 
       const regionMatch = endpoint.match(/-(swedencentral|eastus2)\.openai\.azure\.com/);
       const region = regionMatch ? regionMatch[1] : "swedencentral";
@@ -119,11 +112,8 @@ async function main() {
         region: region,
       });
     } catch (err: any) {
-      console.error("Error creating ephemeral key:", err.message);
-      res.status(500).json({
-        error: "Failed to create ephemeral key",
-        details: err.message,
-      });
+      sessionLogger.error("Error creating ephemeral key:", err.message);
+      return apiResponse.serverError(res, "Failed to create ephemeral key", err.message);
     }
   });
 
@@ -142,10 +132,10 @@ async function main() {
 
         if (decodedCredentials.includes(":")) {
           [accessKeyId, secretAccessKey] = decodedCredentials.split(":");
-          console.log("Decoded ABSK token successfully");
+          bedrockLogger.debug("Decoded ABSK token successfully");
         }
       } catch (error: any) {
-        console.error("Failed to decode token:", error.message);
+        bedrockLogger.error("Failed to decode token:", error.message);
       }
     } else if (bearerToken.includes(":")) {
       [accessKeyId, secretAccessKey] = bearerToken.split(":");
@@ -157,26 +147,29 @@ async function main() {
   app.post("/generate-screens", async (req, res) => {
     const { systemPrompt, agentPrompt, agentName, existingScreens, customInstructions } = req.body;
 
-    if (!systemPrompt || !agentPrompt) {
-      return res.status(400).json({
-        error: "systemPrompt and agentPrompt are required",
-      });
+    if (!systemPrompt || typeof systemPrompt !== 'string') {
+      return apiResponse.validationError(res, "systemPrompt is required and must be a string");
+    }
+    if (!agentPrompt || typeof agentPrompt !== 'string') {
+      return apiResponse.validationError(res, "agentPrompt is required and must be a string");
+    }
+    if (agentName && typeof agentName !== 'string') {
+      return apiResponse.validationError(res, "agentName must be a string");
+    }
+    if (existingScreens && !Array.isArray(existingScreens)) {
+      return apiResponse.validationError(res, "existingScreens must be an array");
     }
 
     const bearerToken = process.env.AWS_BEARER_TOKEN_BEDROCK;
     if (!bearerToken) {
-      return res.status(500).json({
-        error: "AWS_BEARER_TOKEN_BEDROCK not configured. Please set it in .env file.",
-      });
+      return apiResponse.configError(res, "AWS_BEARER_TOKEN_BEDROCK not configured", "Please set it in .env file");
     }
 
     try {
       const { accessKeyId, secretAccessKey } = parseBedrockToken(bearerToken);
 
       if (!accessKeyId || !secretAccessKey) {
-        return res.status(500).json({
-          error: "Failed to parse AWS bearer token. Ensure it's in ABSK format.",
-        });
+        return apiResponse.configError(res, "Failed to parse AWS bearer token", "Ensure it's in ABSK format");
       }
 
       const bedrockClient = new BedrockRuntimeClient({
@@ -185,7 +178,7 @@ async function main() {
       });
 
       const modelId = "global.anthropic.claude-opus-4-5-20251101-v1:0";
-      console.log(`Generating screens using Bedrock (Claude Opus 4.5)`);
+      bedrockLogger.info("Generating screens using Bedrock (Claude Opus 4.5)");
 
       const elementDefaults = {
         button: { state: { id: "", title: "Button", isDisabled: false }, style: { style: "primary", size: "large" } },
@@ -281,11 +274,11 @@ Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
         body: JSON.stringify(requestBody),
       });
 
-      console.log("Sending request to Bedrock...");
-      const apiResponse = await bedrockClient.send(command);
+      bedrockLogger.info("Sending request to Bedrock...");
+      const bedrockResponse = await bedrockClient.send(command);
 
-      const responseBody = JSON.parse(new TextDecoder().decode(apiResponse.body));
-      console.log("Received response from Bedrock");
+      const responseBody = JSON.parse(new TextDecoder().decode(bedrockResponse.body));
+      bedrockLogger.info("Received response from Bedrock");
 
       let content = "";
       if (responseBody.content && Array.isArray(responseBody.content)) {
@@ -300,14 +293,12 @@ Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
       const parsed = JSON.parse(content);
       const suggestions = Array.isArray(parsed) ? parsed : (parsed.screens || []);
 
-      console.log(`Generated ${suggestions.length} screen suggestions`);
+      bedrockLogger.info(`Generated ${suggestions.length} screen suggestions`);
 
-      res.json({ suggestions });
+      return apiResponse.success(res, { suggestions });
     } catch (error: any) {
-      console.error("Error generating screens:", error);
-      res.status(500).json({
-        error: error.message || "Failed to generate screens",
-      });
+      bedrockLogger.error("Error generating screens:", error);
+      return apiResponse.serverError(res, error.message || "Failed to generate screens");
     }
   });
 
@@ -323,8 +314,8 @@ Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
   });
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`API Server running on port ${PORT}`);
+    serverLogger.info(`API Server running on port ${PORT}`);
   });
 }
 
-main().catch(console.error);
+main().catch((err) => serverLogger.error("Server startup failed:", err));

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
+import { ErrorBoundary } from './components/voiceAgent/ErrorBoundary';
 import { LoginPage } from './pages/Login';
 import { ForgotPasswordPage } from './pages/ForgotPassword';
 import { ResetPasswordPage } from './pages/ResetPassword';
@@ -21,10 +22,11 @@ const queryClient = new QueryClient();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
+    <ErrorBoundary componentName="App">
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
             {/* Public routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -45,9 +47,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               <Route path="screens" element={<UIShowcase />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );

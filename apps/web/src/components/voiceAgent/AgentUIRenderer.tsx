@@ -1,8 +1,11 @@
 import React from 'react';
 import { useAgentUI } from '../../contexts/voiceAgent/AgentUIContext';
 import { ScreenProvider } from '../../contexts/voiceAgent/ScreenContext';
+import { logger } from '../../utils/logger';
 import ScreenPreview from './ScreenPreview';
 import './AgentUIRenderer.css';
+
+const uiLogger = logger.namespace('AgentUIRenderer');
 
 interface AgentUIRendererProps {
   bottomBar?: React.ReactNode;
@@ -20,7 +23,7 @@ export default function AgentUIRenderer({ bottomBar, onOpenSettings, onExit }: A
 
   // Debug logging
   React.useEffect(() => {
-    console.log('🎨 AgentUIRenderer state:', {
+    uiLogger.debug('State:', {
       screenRenderingMode,
       screenCount: currentAgentScreens?.length || 0,
       currentScreenId,
@@ -32,7 +35,7 @@ export default function AgentUIRenderer({ bottomBar, onOpenSettings, onExit }: A
   if (screenRenderingMode && currentAgentScreens && currentScreenId) {
     const currentScreen = currentAgentScreens.find(s => s.id === currentScreenId);
 
-    console.log('🎨 Rendering screen:', currentScreenId, currentScreen ? 'found' : 'NOT FOUND');
+    uiLogger.debug('Rendering screen:', currentScreenId, currentScreen ? 'found' : 'NOT FOUND');
 
     // Only render if we have a valid screen to avoid context errors
     if (currentScreen && currentScreen.id) {
