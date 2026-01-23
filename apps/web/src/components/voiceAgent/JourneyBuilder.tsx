@@ -6,7 +6,6 @@ import { loadJourney, saveJourney, deleteJourney, duplicateJourney } from '../..
 import { publishJourney as publishJourneyApi, unpublishJourney as unpublishJourneyApi, getPublishedJourney } from '../../services/api/journeyService';
 import { SCREEN_TEMPLATES } from '../../lib/voiceAgent/screenTemplates';
 import { generateScreensFromPrompts, suggestionToScreen, ScreenSuggestion } from '../../services/aiScreenGenerator';
-import { getAvailableTemplates, loadPromptTemplate, PromptTemplateKey } from '../../utils/promptTemplates';
 import SystemPromptEditor from './SystemPromptEditor';
 import ToolEditor from './ToolEditor';
 import { ScreenProvider } from '../../contexts/voiceAgent/ScreenContext';
@@ -50,8 +49,6 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   
   // Embedded agent editor state
   const [agentEditorTab, setAgentEditorTab] = useState<'config' | 'tools' | 'screens'>('config');
-  const [loadingTemplate, setLoadingTemplate] = useState(false);
-  const [showTemplateMenu, setShowTemplateMenu] = useState(false);
 
   useEffect(() => {
     // Load flow based on URL params
@@ -291,23 +288,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   };
 
   const selectedAgent = currentJourney?.agents.find(a => a.id === selectedAgentId) || null;
-  const availableTemplates = getAvailableTemplates();
   const availableHandoffTargets = currentJourney?.agents.filter(a => a.id !== selectedAgentId) || [];
-
-  const handleLoadTemplate = async (templateKey: PromptTemplateKey) => {
-    if (!selectedAgent) return;
-    setLoadingTemplate(true);
-    setShowTemplateMenu(false);
-    try {
-      const templateContent = await loadPromptTemplate(templateKey);
-      handleUpdateAgent({ ...selectedAgent, prompt: templateContent });
-    } catch (error) {
-      console.error('Failed to load template:', error);
-      alert('Failed to load prompt template. Please try again.');
-    } finally {
-      setLoadingTemplate(false);
-    }
-  };
 
   const handleToggleHandoff = (targetAgentId: string) => {
     if (!selectedAgent) return;
@@ -739,47 +720,14 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                         </div>
 
                         <div className="journey-agent-section">
-                          <div className="journey-agent-section-header">
-                            <h4>Agent Prompt</h4>
-                            <button
-                              className="journey-load-template-btn"
-                              onClick={() => setShowTemplateMenu(!showTemplateMenu)}
-                              disabled={disabled || loadingTemplate}
-                              type="button"
-                            >
-                              <FileTextIcon size={12} /> {loadingTemplate ? 'Loading...' : 'Load Template'}
-                            </button>
-                          </div>
-
-                          {showTemplateMenu && (
-                            <div className="journey-template-menu">
-                              <div className="journey-template-menu-header">
-                                <span>Select a template:</span>
-                                <button onClick={() => setShowTemplateMenu(false)} type="button">✕</button>
-                              </div>
-                              <div className="journey-template-list">
-                                {availableTemplates.map((template) => (
-                                  <button
-                                    key={template.key}
-                                    className="journey-template-option"
-                                    onClick={() => handleLoadTemplate(template.key)}
-                                    type="button"
-                                  >
-                                    <div className="journey-template-option-label">{template.label}</div>
-                                    <div className="journey-template-option-desc">{template.description}</div>
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
+                          <h4>Agent Prompt</h4>
                           <div className="journey-agent-field">
                             <label>Instructions</label>
                             <textarea
                               value={selectedAgent.prompt}
                               onChange={(e) => handleUpdateAgent({ ...selectedAgent, prompt: e.target.value })}
                               placeholder="Define specific instructions for this agent..."
-                              disabled={disabled || loadingTemplate}
+                              disabled={disabled}
                               rows={10}
                             />
                           </div>

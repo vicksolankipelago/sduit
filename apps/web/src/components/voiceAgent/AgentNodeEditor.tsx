@@ -4,7 +4,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { Agent, VOICE_OPTIONS, Screen } from '../../types/journey';
 import ToolEditor from './ToolEditor';
 import { SCREEN_TEMPLATES } from '../../lib/voiceAgent/screenTemplates';
-import { getAvailableTemplates, loadPromptTemplate, PromptTemplateKey } from '../../utils/promptTemplates';
 import { SettingsIcon, FileTextIcon, ToolIcon, EditIcon, TrashIcon } from '../Icons';
 import './AgentNodeEditor.css';
 
@@ -26,8 +25,6 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
   disabled = false,
 }) => {
   const navigate = useNavigate();
-  const [loadingTemplate, setLoadingTemplate] = useState(false);
-  const [showTemplateMenu, setShowTemplateMenu] = useState(false);
   const [activeTab, setActiveTab] = useState<'config' | 'tools' | 'screens'>('config');
 
   if (!agent) {
@@ -49,23 +46,7 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
     handleUpdate({ handoffs });
   };
 
-  const handleLoadTemplate = async (templateKey: PromptTemplateKey) => {
-    setLoadingTemplate(true);
-    setShowTemplateMenu(false);
-    try {
-      const templateContent = await loadPromptTemplate(templateKey);
-      handleUpdate({ prompt: templateContent });
-      console.log(`✅ Loaded template: ${templateKey}`);
-    } catch (error) {
-      console.error('Failed to load template:', error);
-      alert('Failed to load prompt template. Please try again.');
-    } finally {
-      setLoadingTemplate(false);
-    }
-  };
-
   const availableHandoffTargets = allAgents.filter(a => a.id !== agent.id);
-  const availableTemplates = getAvailableTemplates();
 
   const handleAddScreen = (templateId?: string) => {
     let newScreen: Screen;
@@ -228,64 +209,21 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
 
         {/* Prompt */}
         <div className="agent-section">
-          <div className="agent-section-header-with-actions">
-            <h4>Agent Prompt</h4>
-            <div className="prompt-template-actions">
-              <button
-                className="load-template-btn"
-                onClick={() => setShowTemplateMenu(!showTemplateMenu)}
-                disabled={disabled || loadingTemplate}
-                type="button"
-                title="Load a prompt template"
-              >
-                {loadingTemplate ? '⏳ Loading...' : '📄 Load Template'}
-              </button>
-            </div>
-          </div>
-
-          {showTemplateMenu && (
-            <div className="template-menu">
-              <div className="template-menu-header">
-                <span>Select a template:</span>
-                <button
-                  className="template-menu-close"
-                  onClick={() => setShowTemplateMenu(false)}
-                  type="button"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="template-list">
-                {availableTemplates.map((template) => (
-                  <button
-                    key={template.key}
-                    className="template-option"
-                    onClick={() => handleLoadTemplate(template.key)}
-                    type="button"
-                  >
-                    <div className="template-option-label">{template.label}</div>
-                    <div className="template-option-description">{template.description}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          
+          <h4>Agent Prompt</h4>
           <div className="agent-field">
             <label>Instructions</label>
             <textarea
               value={agent.prompt}
               onChange={(e) => handleUpdate({ prompt: e.target.value })}
               placeholder="Define specific instructions for this agent..."
-              disabled={disabled || loadingTemplate}
+              disabled={disabled}
               rows={10}
             />
             <span className="agent-field-hint">
               Combined with system prompt to create final instructions for this agent.
-              Use "Load Template" to load pre-configured prompts like voice_agent_prompt.txt
             </span>
-              </div>
-            </div>
+          </div>
+        </div>
 
             {/* Handoffs */}
             <div className="agent-section">
