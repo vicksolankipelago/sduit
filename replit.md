@@ -128,6 +128,7 @@ The following system tools are automatically available to all agents in all flow
 
 ## Recent Changes
 
+- 2026-01-23: Fixed audio recording and playback - recordings now properly save to Object Storage and play back in transcript view with correct duration display
 - 2026-01-23: Added audio playback in transcript detail view - users can now listen to session recordings with play/pause and seek controls
 - 2026-01-23: Enhanced end_call system tool to properly wait for audio completion before disconnecting
 - 2026-01-22: Integrated agent editor directly into journey page - replaced drag-and-drop canvas with dropdown selector and embedded Configuration/Tools/Screens tabs

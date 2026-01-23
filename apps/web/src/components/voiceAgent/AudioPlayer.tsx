@@ -37,6 +37,10 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ sessionId, onError }) 
         if (data.recording && data.recording.chunks && data.recording.chunks.length > 0) {
           console.log(`🎧 AudioPlayer: Found ${data.recording.chunks.length} chunks for ${sessionId}`);
           setHasRecording(true);
+          // Use the totalDuration from manifest as fallback
+          if (data.recording.totalDuration) {
+            setDuration(data.recording.totalDuration);
+          }
         } else {
           console.log(`🎧 AudioPlayer: No chunks found for ${sessionId}`);
           setHasRecording(false);
@@ -75,7 +79,11 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ sessionId, onError }) 
 
   const handleLoadedMetadata = () => {
     if (audioRef.current) {
-      setDuration(audioRef.current.duration);
+      const audioDuration = audioRef.current.duration;
+      // Only update if we got a valid duration from the audio element
+      if (audioDuration && isFinite(audioDuration) && audioDuration > 0) {
+        setDuration(audioDuration);
+      }
     }
   };
 
