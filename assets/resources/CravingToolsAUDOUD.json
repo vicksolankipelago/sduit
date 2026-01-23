@@ -1,0 +1,356 @@
+[
+    {
+        "title": "When you're stressed…",
+        "items": [
+            {
+                "id": 8,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxPeacefulPlace.m4a",
+				"imageName": "A_peaceful_place",
+				"background": "BackgroundMistBlue",
+                "title": "A peaceful place",
+                "technique": "Distraction",
+                "length": 143,
+                "type": "audio"
+            },
+            {
+                "id": 12,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxStarryNight.m4a",
+				"imageName": "A_starry_night",
+				"background": "BackgroundCerulean",
+                "title": "A starry night",
+                "technique": "StarryNight",
+                "length": 205,
+                "type": "audio"
+            },
+            {
+                "id": 14,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/colour-green-audio.m4a",
+				"imageName": "Breathe",
+				"background": "BackgroundTeaGreen",
+                "title": "Colour Breathing: Peace",
+                "technique": "ColourGreen",
+                "length": 300,
+                "type": "audio",
+                "isMindfulness": true
+            },
+            {
+                "id": 3,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxDeepBreathing.m4a",
+				"imageName": "Deep_breathing",
+				"background": "BackgroundSuccess",
+                "title": "Deep breathing",
+                "technique": "DeepBreathing",
+                "length": 235,
+                "type": "audio",
+                "isMindfulness": true
+            },
+            {
+                "id": 5,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxMuscleRelaxation.m4a",
+				"imageName": "Muscle_relaxation",
+				"background": "BackgroundPeach",
+                "title": "Muscle relaxation",
+                "technique": "PMR",
+                "length": 412,
+                "type": "audio"
+            },
+            {
+                "id": 2,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxUrgeSurfing.m4a",
+				"imageName": "Urge_surfing",
+				"background": "BackgroundPunchPink",
+                "title": "Urge surfing",
+                "technique": "UrgeSurfing",
+                "length": 202,
+                "type": "audio"
+            },
+            {
+                "id": 6,
+                "fileName": null,
+				"imageName": "Breathe",
+				"background": "BackgroundMistBlue",
+                "title": "Breathe",
+                "technique": "Breathe",
+                "length": 300,
+                "type": "breathing",
+                "startName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxBreatheInitial.m4a",
+                "loopName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxBreatheLoop.m4a",
+                "isMindfulness": true
+                
+            },
+            {
+                "id": 15,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/colour-pink-audio.m4a",
+				"imageName": "Color_breathing",
+				"background": "BackgroundPunchPink",
+                "title": "Colour Breathing: Stress",
+                "technique": "ColourPink",
+                "length": 300,
+                "type": "audio",
+                "isMindfulness": true
+            }
+        ]
+    },
+    {
+        "title": "When you need motivation...",
+        "items": [
+            {
+                "id": 11,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxSacrifices_v2.m4a",
+                "imageName": "MonoSpeechBubble",
+				"background": "BackgroundPeach",
+                "title": "Finding your why",
+                "technique": "Sacrifices",
+                "length": 67,
+                "type": "audio"
+            },
+            {
+                "id": 9,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxChallengeYourself_v2.m4a",
+				"imageName": "Challenge_yourself",
+				"background": "BackgroundLightPunchPink",
+                "title": "Challenge yourself",
+                "technique": "ChallengeYourself",
+                "length": 85,
+                "type": "audio"
+            },
+            {
+                "id": 16,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/colour-red-audio.m4a",
+				"imageName": "Color_breathing",
+				"background": "BackgroundLightMaroon",
+                "title": "Colour Breathing: Motivation",
+                "technique": "ColourRed",
+                "length": 300,
+                "type": "audio",
+                "isMindfulness": true
+            }
+        ]
+    },
+    {
+        "title": "When the craving is strong…",
+        "items": [
+            {
+                "id": 3,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxDeepBreathing.m4a",
+				"imageName": "Deep_breathing",
+				"background": "BackgroundSuccess",
+				"title": "Deep breathing",
+                "technique": "DeepBreathing",
+                "length": 235,
+                "type": "audio",
+                "isMindfulness": true
+            },
+            {
+                "id": 2,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxUrgeSurfing.m4a",
+				"imageName": "Urge_surfing",
+				"background": "BackgroundPunchPink",
+				"title": "Urge surfing",
+                "technique": "UrgeSurfing",
+                "length": 202,
+                "type": "audio"
+            },
+            {
+                "id": 6,
+                "fileName": null,
+				"imageName": "Breathe",
+				"background": "BackgroundMistBlue",
+                "title": "Breathe",
+                "technique": "Breathe",
+                "length": 300,
+                "type": "breathing",
+                "startName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxBreatheInitial.m4a",
+                "loopName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxBreatheLoop.m4a",
+                "isMindfulness": true
+            },
+            {
+                "id": 9,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxChallengeYourself_v2.m4a",
+				"imageName": "Challenge_yourself",
+				"background": "BackgroundLightPunchPink",
+                "title": "Challenge yourself",
+                "technique": "ChallengeYourself",
+                "length": 85,
+                "type": "audio"
+            },
+            {
+                "id": 12,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxStarryNight.m4a",
+				"imageName": "A_starry_night",
+				"background": "BackgroundCerulean",
+                "title": "A starry night",
+                "technique": "StarryNight",
+                "length": 205,
+                "type": "audio"
+            },
+            {
+                "id": 11,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxSacrifices_v2.m4a",
+				"imageName": "MonoSpeechBubble",
+				"background": "BackgroundPeach",
+                "title": "Finding your why",
+                "technique": "Sacrifices",
+                "length": 67,
+                "type": "audio"
+            },
+            {
+                "id": 7,
+                "fileName": "toolboxDistraction.m4v",
+				"imageName": "Distraction",
+				"background": "BackgroundLightTan",
+                "title": "Distraction",
+                "technique": "Distraction",
+                "length": 120,
+                "type": "video"
+            },
+            {
+                "id": 17,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/colour-blue-audio.m4a",
+				"imageName": "Color_breathing",
+				"background": "BackgroundCerulean",
+                "title": "Colour Breathing: Calm",
+                "technique": "ColourBlue",
+                "length": 300,
+                "type": "audio",
+                "isMindfulness": true
+            }
+        ]
+    },
+    {
+        "title": "When you're bored…",
+        "items": [
+            {
+                "id": 8,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxPeacefulPlace.m4a",
+				"imageName": "A_peaceful_place",
+				"background": "BackgroundMistBlue",
+                "title": "A peaceful place",
+                "technique": "Distraction",
+                "length": 143,
+                "type": "audio"
+            },
+            {
+                "id": 12,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxStarryNight.m4a",
+				"imageName": "A_starry_night",
+				"background": "BackgroundCerulean",
+                "title": "A starry night",
+                "technique": "StarryNight",
+                "length": 205,
+                "type": "audio"
+            },
+            {
+                "id": 3,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxDeepBreathing.m4a",
+				"imageName": "Deep_breathing",
+				"background": "BackgroundSuccess",
+                "title": "Deep breathing",
+                "technique": "DeepBreathing",
+                "length": 235,
+                "type": "audio",
+                "isMindfulness": true
+            },
+            {
+                "id": 5,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxMuscleRelaxation.m4a",
+				"imageName": "Muscle_relaxation",
+				"background": "BackgroundPeach",
+                "title": "Muscle relaxation",
+                "technique": "PMR",
+                "length": 412,
+                "type": "audio"
+            },
+            {
+                "id": 7,
+                "fileName": "toolboxDistraction.m4v",
+				"imageName": "Distraction",
+				"background": "BackgroundLightTan",
+                "title": "Distraction",
+                "technique": "Distraction",
+                "length": 120,
+                "type": "video"
+            },
+            {
+                "id": 6,
+                "fileName": null,
+				"imageName": "Breathe",
+				"background": "BackgroundMistBlue",
+                "title": "Breathe",
+                "technique": "Breathe",
+                "length": 300,
+                "type": "breathing",
+                "startName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxBreatheInitial.m4a",
+                "loopName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxBreatheLoop.m4a",
+                "isMindfulness": true
+            },
+        ]
+    },
+    {
+        "title": "When you need distraction…",
+        "items": [
+            {
+                "id": 7,
+                "fileName": "toolboxDistraction.m4v",
+				"imageName": "Distraction",
+				"background": "BackgroundLightTan",
+                "title": "Distraction",
+                "technique": "Distraction",
+                "length": 120,
+                "type": "video"
+            },
+            {
+                "id": 8,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxPeacefulPlace.m4a",
+				"imageName": "A_peaceful_place",
+				"background": "BackgroundMistBlue",
+                "title": "A peaceful place",
+                "technique": "Distraction",
+                "length": 143,
+                "type": "audio"
+            },
+            {
+                "id": 12,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxStarryNight.m4a",
+				"imageName": "A_starry_night",
+				"background": "BackgroundCerulean",
+                "title": "A starry night",
+                "technique": "StarryNight",
+                "length": 205,
+                "type": "audio"
+            },
+            {
+                "id": 3,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxDeepBreathing.m4a",
+				"imageName": "Deep_breathing",
+				"background": "BackgroundSuccess",
+                "title": "Deep breathing",
+                "technique": "DeepBreathing",
+                "length": 235,
+                "type": "audio",
+                "isMindfulness": true
+            },
+            {
+                "id": 4,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxDistraction.m4a",
+				"imageName": "Distraction",
+				"background": "BackgroundLightTan",
+                "title": "Distraction",
+                "technique": "Distraction",
+                "length": 143,
+                "type": "audio"
+            },
+            {
+                "id": 16,
+                "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/colour-red-audio.m4a",
+				"imageName": "Community_motivation",
+				"background": "BackgroundSuccess",
+                "title": "Colour Breathing: Motivation",
+                "technique": "ColourRed",
+                "length": 300,
+                "type": "audio",
+                "isMindfulness": true
+            }
+        ]
+    }
+]

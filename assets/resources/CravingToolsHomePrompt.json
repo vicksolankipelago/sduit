@@ -1,0 +1,34 @@
+[
+    {
+        "id": 6,
+        "fileName": null,
+		"imageName": "Breathe",
+		"background": "BackgroundMistBlue",
+        "title": "Breathe",
+        "technique": "Breathe",
+        "length": 300,
+        "type": "breathing",
+        "startName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxBreatheInitial.m4a",
+        "loopName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxBreatheLoop.m4a"
+    },
+    {
+        "id": 7,
+        "fileName": "toolboxDistraction.m4v",
+        "imageName": "Distraction",
+		"background": "BackgroundTan",
+        "title": "Distraction",
+        "technique": "Distraction",
+        "length": 120,
+        "type": "video"
+    },
+    {
+        "id": 2,
+        "fileName": "https://s3.eu-west-2.amazonaws.com/quit-genius-assets/audio/toolboxUrgeSurfing.m4a",
+        "imageName": "Urge_surfing",
+		"background": "BackgroundPunchPink",
+        "title": "Urge surfing",
+        "technique": "UrgeSurfing",
+        "length": 202,
+        "type": "audio"
+    }
+]
