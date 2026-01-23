@@ -589,7 +589,7 @@ const UIShowcase: React.FC = () => {
                 <div key={metadata.type} className="ui-showcase-item">
                   <div className="ui-showcase-item-header">
                     <h3>
-                      {metadata.icon} {metadata.displayName}
+                      {metadata.displayName}
                     </h3>
                     <span className="ui-showcase-item-tag">{metadata.type}</span>
                   </div>
