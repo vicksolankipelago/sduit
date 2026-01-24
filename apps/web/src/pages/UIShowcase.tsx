@@ -47,6 +47,7 @@ const UIShowcase: React.FC = () => {
   const [selectedElementIndex, setSelectedElementIndex] = useState<number | null>(null);
   const [draggedElementIndex, setDraggedElementIndex] = useState<number | null>(null);
   const [_dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [showCodeView, setShowCodeView] = useState(false);
 
   // Check for navigation state with a screen to edit
   useEffect(() => {
@@ -796,16 +797,49 @@ const UIShowcase: React.FC = () => {
 
           {/* Center - Live Preview */}
           <div className="ui-showcase-builder-preview">
-            <ScreenProvider initialScreen={builderScreen}>
-              <ScreenPreview
-                screen={builderScreen}
-                allScreens={[builderScreen]}
-                showDeviceFrame={true}
-                editable={true}
-                selectedElementId={selectedElementId}
-                onElementSelect={handleElementSelectFromPreview}
-              />
-            </ScreenProvider>
+            <div className="ui-showcase-preview-header">
+              <button
+                className={`ui-showcase-view-toggle ${!showCodeView ? 'active' : ''}`}
+                onClick={() => setShowCodeView(false)}
+              >
+                Preview
+              </button>
+              <button
+                className={`ui-showcase-view-toggle ${showCodeView ? 'active' : ''}`}
+                onClick={() => setShowCodeView(true)}
+              >
+                Code
+              </button>
+            </div>
+            
+            {showCodeView ? (
+              <div className="ui-showcase-code-view">
+                <textarea
+                  className="ui-showcase-code-editor"
+                  value={JSON.stringify(builderScreen, null, 2)}
+                  onChange={(e) => {
+                    try {
+                      const parsed = JSON.parse(e.target.value);
+                      setBuilderScreen(parsed);
+                    } catch {
+                      // Invalid JSON, ignore
+                    }
+                  }}
+                  spellCheck={false}
+                />
+              </div>
+            ) : (
+              <ScreenProvider initialScreen={builderScreen}>
+                <ScreenPreview
+                  screen={builderScreen}
+                  allScreens={[builderScreen]}
+                  showDeviceFrame={true}
+                  editable={true}
+                  selectedElementId={selectedElementId}
+                  onElementSelect={handleElementSelectFromPreview}
+                />
+              </ScreenProvider>
+            )}
           </div>
 
           {/* Right Sidebar - Element Editor */}
