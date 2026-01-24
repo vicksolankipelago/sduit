@@ -10,7 +10,7 @@ import SystemPromptEditor from './SystemPromptEditor';
 import ToolEditor from './ToolEditor';
 import { ScreenProvider } from '../../contexts/voiceAgent/ScreenContext';
 import ScreenPreview from './ScreenPreview';
-import { TrashIcon, FileTextIcon, EditIcon, RocketIcon, TargetIcon, HistoryIcon, SaveIcon, ToolIcon, SettingsIcon } from '../Icons';
+import { TrashIcon, FileTextIcon, EditIcon, RocketIcon, TargetIcon, HistoryIcon, SaveIcon, ToolIcon, SettingsIcon, MoreIcon, DownloadIcon, UploadIcon } from '../Icons';
 import VersionHistory from './VersionHistory';
 import './JourneyBuilder.css';
 
@@ -41,6 +41,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const [previewingSuggestion, setPreviewingSuggestion] = useState<ScreenSuggestion | null>(null);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   
   // Publishing state
   const [isPublished, setIsPublished] = useState(false);
@@ -565,56 +566,81 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
               <button className="journey-action-btn" onClick={handleSaveJourney} disabled={disabled}>
                 <SaveIcon size={14} /> Save
               </button>
-              <button
-                className="journey-action-btn"
-                onClick={() => setShowVersionHistory(true)}
-                disabled={disabled}
-              >
-                <HistoryIcon size={14} /> History
-              </button>
-              <button
-                className="journey-action-btn danger"
-                onClick={() => handleDeleteJourney(currentJourney.id)}
-                disabled={disabled}
-              >
-                <TrashIcon size={14} /> Delete
-              </button>
               {isPublished ? (
-                <>
-                  <button 
-                    className={`journey-action-btn publish ${hasUnpublishedChanges ? 'has-changes' : ''}`}
-                    onClick={handlePublish} 
-                    disabled={disabled || isPublishing}
-                    title={hasUnpublishedChanges ? 'You have unpublished changes' : 'Update published version'}
-                  >
-                    <RocketIcon size={14} /> {isPublishing ? 'Publishing...' : hasUnpublishedChanges ? 'Publish Changes' : 'Republish'}
-                  </button>
-                  <button 
-                    className="journey-action-btn unpublish"
-                    onClick={handleUnpublish} 
-                    disabled={disabled || isPublishing}
-                  >
-                    Unpublish
-                  </button>
-                </>
+                <button 
+                  className={`journey-action-btn publish ${hasUnpublishedChanges ? 'has-changes' : ''}`}
+                  onClick={handlePublish} 
+                  disabled={disabled || isPublishing}
+                  title={hasUnpublishedChanges ? 'You have unpublished changes' : 'Update published version'}
+                >
+                  <RocketIcon size={14} /> {isPublishing ? 'Publishing...' : hasUnpublishedChanges ? 'Publish Changes' : 'Republish'}
+                </button>
               ) : (
                 <button 
                   className="journey-action-btn publish"
                   onClick={handlePublish} 
                   disabled={disabled || isPublishing}
                 >
-                  <RocketIcon size={14} /> {isPublishing ? 'Publishing...' : 'Publish to Prod'}
+                  <RocketIcon size={14} /> {isPublishing ? 'Publishing...' : 'Publish'}
                 </button>
               )}
-              <button className="journey-action-btn export" onClick={handleExport} disabled={disabled}>
-                <FileTextIcon size={14} /> Export
-              </button>
-              <button className="journey-action-btn import" onClick={handleImport} disabled={disabled}>
-                <FileTextIcon size={14} /> Import
-              </button>
               <button className="journey-action-btn launch" onClick={handleLaunch} disabled={disabled}>
-                <RocketIcon size={14} /> Test Flow
+                <RocketIcon size={14} /> Test
               </button>
+              <div className="journey-more-menu-container">
+                <button 
+                  className={`journey-action-btn more-btn ${showMoreMenu ? 'active' : ''}`}
+                  onClick={() => setShowMoreMenu(!showMoreMenu)}
+                  disabled={disabled}
+                >
+                  <MoreIcon size={16} />
+                </button>
+                {showMoreMenu && (
+                  <>
+                    <div className="journey-more-menu-backdrop" onClick={() => setShowMoreMenu(false)} />
+                    <div className="journey-more-menu">
+                      <button
+                        className="journey-more-menu-item"
+                        onClick={() => { setShowVersionHistory(true); setShowMoreMenu(false); }}
+                        disabled={disabled}
+                      >
+                        <HistoryIcon size={14} /> History
+                      </button>
+                      <button 
+                        className="journey-more-menu-item" 
+                        onClick={() => { handleExport(); setShowMoreMenu(false); }} 
+                        disabled={disabled}
+                      >
+                        <DownloadIcon size={14} /> Export
+                      </button>
+                      <button 
+                        className="journey-more-menu-item" 
+                        onClick={() => { handleImport(); setShowMoreMenu(false); }} 
+                        disabled={disabled}
+                      >
+                        <UploadIcon size={14} /> Import
+                      </button>
+                      {isPublished && (
+                        <button 
+                          className="journey-more-menu-item danger"
+                          onClick={() => { handleUnpublish(); setShowMoreMenu(false); }} 
+                          disabled={disabled || isPublishing}
+                        >
+                          Unpublish
+                        </button>
+                      )}
+                      <div className="journey-more-menu-divider" />
+                      <button
+                        className="journey-more-menu-item danger"
+                        onClick={() => { handleDeleteJourney(currentJourney.id); setShowMoreMenu(false); }}
+                        disabled={disabled}
+                      >
+                        <TrashIcon size={14} /> Delete
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </>
           )}
         </div>

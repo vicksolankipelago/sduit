@@ -109,7 +109,77 @@
 
 .journey-header-actions {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.journey-more-menu-container {
+  position: relative;
+}
+
+.journey-action-btn.more-btn {
+  padding: 0.625rem;
+  min-width: 40px;
+}
+
+.journey-action-btn.more-btn.active {
+  background: var(--background-action-hover);
+}
+
+.journey-more-menu-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 99;
+}
+
+.journey-more-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: var(--background-light-card);
+  border: 1px solid var(--ui-element-divider);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 160px;
+  z-index: 100;
+  overflow: hidden;
+}
+
+.journey-more-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.625rem 1rem;
+  background: none;
+  border: none;
+  font-size: 0.875rem;
+  color: var(--text-global-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.journey-more-menu-item:hover {
+  background: var(--background-action-hover);
+}
+
+.journey-more-menu-item.danger {
+  color: var(--alert-error-default);
+}
+
+.journey-more-menu-item.danger:hover {
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.journey-more-menu-divider {
+  height: 1px;
+  background: var(--ui-element-divider);
+  margin: 4px 0;
 }
 
 .journey-action-btn {
