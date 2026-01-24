@@ -76,6 +76,24 @@ router.get("/:sessionId", isAuthenticated, async (req: any, res) => {
       return res.status(403).json({ message: "Forbidden" });
     }
     
+    // Fetch full journey config if journeyId exists
+    let journeyConfig: any = null;
+    if (session.journeyId) {
+      const journey = await storage.getJourney(session.journeyId);
+      if (journey) {
+        journeyConfig = {
+          id: journey.id,
+          name: journey.name,
+          description: journey.description || "",
+          systemPrompt: journey.systemPrompt,
+          voice: journey.voice,
+          agents: journey.agents,
+          startingAgentId: journey.startingAgentId,
+          version: journey.version,
+        };
+      }
+    }
+    
     res.json({
       sessionId: session.sessionId,
       exportedAt: session.exportedAt,
@@ -91,6 +109,7 @@ router.get("/:sessionId", isAuthenticated, async (req: any, res) => {
             voice: session.journeyVoice || "",
           }
         : undefined,
+      journeyConfig: journeyConfig,
       agent: session.agentId
         ? {
             id: session.agentId,

@@ -23,6 +23,16 @@ export interface SessionExport {
     name: string;
     voice: string;
   };
+  journeyConfig?: {
+    id: string;
+    name: string;
+    description: string;
+    systemPrompt: string;
+    voice: string | null;
+    agents: any[];
+    startingAgentId: string;
+    version: string;
+  };
   agent?: {
     id: string;
     name: string;
