@@ -126,7 +126,7 @@
   margin-top: 0.5rem;
   background: var(--background-action-hover);
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text-global-secondary);
   font-size: 0.75rem;
   cursor: pointer;

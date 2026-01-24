@@ -69,7 +69,7 @@
 .settings-select {
   padding: 8px 12px;
   border: 1px solid var(--ui-element-outline-default, #c4c4c4);
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 14px;
   background: #fff;
   min-width: 140px;

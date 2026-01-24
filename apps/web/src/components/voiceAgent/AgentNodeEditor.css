@@ -112,7 +112,7 @@
   color: var(--text-button-primary);
   font-size: var(--font-size-body-3);
   font-weight: var(--font-weight-bold);
-  border-radius: 10px;
+  border-radius: 8px;
   line-height: 1;
 }
 
@@ -339,7 +339,7 @@
   border: none;
   width: 24px;
   height: 24px;
-  border-radius: 4px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -694,7 +694,7 @@
   border: none;
   width: 24px;
   height: 24px;
-  border-radius: 4px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;

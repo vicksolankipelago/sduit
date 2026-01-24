@@ -162,7 +162,7 @@
   color: var(--text-link-primary-default);
   background-color: var(--background-light);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 13px;
   font-family: 'Monaco', 'Menlo', monospace;
 }
@@ -177,7 +177,7 @@
   display: inline-block;
   padding: 4px 8px;
   background-color: var(--background-light-tea-green);
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 12px;
 }
 
@@ -233,7 +233,7 @@
   color: var(--text-link-primary-default);
   background-color: var(--background-light);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 8px;
   font-family: 'Monaco', 'Menlo', monospace;
 }
 

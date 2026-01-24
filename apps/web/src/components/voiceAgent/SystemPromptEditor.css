@@ -218,7 +218,7 @@
   padding: 0.5rem 0.75rem;
   background: var(--background-light-tea-green);
   border: 1px solid var(--background-tea-green);
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
