@@ -6,7 +6,7 @@ import './UIShowcase.css';
 // Import SDUI elements
 import { ElementMetadataRegistry, getElementsByCategory } from '../lib/voiceAgent/elementRegistry';
 import { getElementComponent } from '../lib/voiceAgent/elementRegistry';
-import { Screen, ElementConfig, ElementType } from '../types/journey';
+import { Screen, ElementConfig, ElementType, ScreenEvent, EventType } from '../types/journey';
 import { StandaloneScreen, StandaloneScreenListItem, createStandaloneScreen } from '../types/screen';
 import { ScreenProvider } from '../contexts/voiceAgent/ScreenContext';
 import ScreenPreview from '../components/voiceAgent/ScreenPreview';
@@ -465,6 +465,36 @@ const UIShowcase: React.FC = () => {
     });
   };
 
+  const handleAddEvent = () => {
+    const newEvent: ScreenEvent = {
+      id: `event-${uuidv4().slice(0, 8)}`,
+      type: 'onLoad',
+      action: [],
+    };
+    setBuilderScreen({
+      ...builderScreen,
+      events: [...(builderScreen.events || []), newEvent],
+    });
+  };
+
+  const handleRemoveEvent = (index: number) => {
+    const updatedEvents = [...(builderScreen.events || [])];
+    updatedEvents.splice(index, 1);
+    setBuilderScreen({
+      ...builderScreen,
+      events: updatedEvents,
+    });
+  };
+
+  const handleUpdateEvent = (index: number, updates: Partial<ScreenEvent>) => {
+    const updatedEvents = [...(builderScreen.events || [])];
+    updatedEvents[index] = { ...updatedEvents[index], ...updates };
+    setBuilderScreen({
+      ...builderScreen,
+      events: updatedEvents,
+    });
+  };
+
   return (
     <div className="ui-showcase">
       {/* Header */}
@@ -800,8 +830,84 @@ const UIShowcase: React.FC = () => {
                 />
               </div>
             ) : (
-              <div className="ui-showcase-builder-empty-editor">
-                <p>Click an element in the preview or select from the list to edit its properties</p>
+              <div className="ui-showcase-builder-screen-props">
+                <h3>Screen Properties</h3>
+                
+                <div className="ui-showcase-screen-events">
+                  <div className="ui-showcase-screen-events-header">
+                    <h4>Events</h4>
+                    <button 
+                      className="ui-showcase-add-event-btn"
+                      onClick={handleAddEvent}
+                    >
+                      + Add Event
+                    </button>
+                  </div>
+                  
+                  {(builderScreen.events || []).length === 0 ? (
+                    <p className="ui-showcase-empty-state">
+                      No events defined. Events allow navigation and state updates when the screen loads or elements are interacted with.
+                    </p>
+                  ) : (
+                    <div className="ui-showcase-events-list">
+                      {(builderScreen.events || []).map((event, index) => (
+                        <div key={index} className="ui-showcase-event-item">
+                          <div className="ui-showcase-event-header">
+                            <input
+                              type="text"
+                              value={event.id}
+                              onChange={(e) => handleUpdateEvent(index, { id: e.target.value })}
+                              placeholder="event-id"
+                              className="ui-showcase-event-id"
+                            />
+                            <select
+                              value={event.type}
+                              onChange={(e) => handleUpdateEvent(index, { type: e.target.value as EventType })}
+                              className="ui-showcase-event-type"
+                            >
+                              <option value="onStart">onStart</option>
+                              <option value="onLoad">onLoad</option>
+                              <option value="onSubmit">onSubmit</option>
+                              <option value="onClose">onClose</option>
+                              <option value="onAppear">onAppear</option>
+                              <option value="onDisappear">onDisappear</option>
+                              <option value="onSelected">onSelected</option>
+                              <option value="onToggle">onToggle</option>
+                              <option value="onToggleOn">onToggleOn</option>
+                              <option value="onToggleOff">onToggleOff</option>
+                              <option value="onAnimationComplete">onAnimationComplete</option>
+                              <option value="custom">custom</option>
+                            </select>
+                            <button
+                              onClick={() => handleRemoveEvent(index)}
+                              className="ui-showcase-event-remove"
+                              title="Remove event"
+                            >
+                              ×
+                            </button>
+                          </div>
+                          
+                          <div className="ui-showcase-event-actions">
+                            <label>Actions (JSON):</label>
+                            <textarea
+                              value={JSON.stringify(event.action, null, 2)}
+                              onChange={(e) => {
+                                try {
+                                  const action = JSON.parse(e.target.value);
+                                  handleUpdateEvent(index, { action });
+                                } catch {
+                                  // Invalid JSON, ignore
+                                }
+                              }}
+                              rows={4}
+                              placeholder='[{"type": "navigation", "deeplink": "screen://next-screen"}]'
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
