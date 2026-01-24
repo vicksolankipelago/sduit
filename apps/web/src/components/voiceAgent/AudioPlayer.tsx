@@ -9,6 +9,7 @@ interface AudioPlayerProps {
 export const AudioPlayer: React.FC<AudioPlayerProps> = ({ sessionId, onError }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isBuffering, setIsBuffering] = useState(false);
   const [hasRecording, setHasRecording] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -106,7 +107,16 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ sessionId, onError }) 
   const handleError = () => {
     setError('Failed to load audio recording');
     setIsPlaying(false);
+    setIsBuffering(false);
     onError?.('Failed to load audio recording');
+  };
+
+  const handleWaiting = () => {
+    setIsBuffering(true);
+  };
+
+  const handleCanPlay = () => {
+    setIsBuffering(false);
   };
 
   const formatTime = (seconds: number): string => {
@@ -164,15 +174,21 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ sessionId, onError }) 
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={handleEnded}
         onError={handleError}
+        onWaiting={handleWaiting}
+        onCanPlay={handleCanPlay}
+        onCanPlayThrough={handleCanPlay}
         preload="metadata"
       />
 
       <button
-        className="audio-player-play-btn"
+        className={`audio-player-play-btn ${isBuffering ? 'audio-player-play-btn-loading' : ''}`}
         onClick={handlePlayPause}
-        title={isPlaying ? 'Pause' : 'Play'}
+        title={isBuffering ? 'Loading...' : isPlaying ? 'Pause' : 'Play'}
+        disabled={isBuffering}
       >
-        {isPlaying ? (
+        {isBuffering ? (
+          <div className="audio-player-btn-spinner" />
+        ) : isPlaying ? (
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <rect x="6" y="4" width="4" height="16" rx="1" />
             <rect x="14" y="4" width="4" height="16" rx="1" />
