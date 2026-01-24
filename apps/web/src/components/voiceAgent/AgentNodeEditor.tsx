@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { Agent, VOICE_OPTIONS, Screen } from '../../types/journey';
 import ToolEditor from './ToolEditor';
 import { SCREEN_TEMPLATES } from '../../lib/voiceAgent/screenTemplates';
-import { SettingsIcon, FileTextIcon, ToolIcon, EditIcon, TrashIcon } from '../Icons';
+import { SettingsIcon, FileTextIcon, ToolIcon, EditIcon, TrashIcon, UploadIcon } from '../Icons';
 import './AgentNodeEditor.css';
 
 interface AgentNodeEditorProps {
@@ -26,6 +26,8 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
 }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'config' | 'tools' | 'screens'>('config');
+  const [showScreensCodeView, setShowScreensCodeView] = useState(false);
+  const screensImportRef = useRef<HTMLInputElement>(null);
 
   if (!agent) {
     return (
@@ -115,6 +117,35 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
       screens: updatedScreens,
       screenPrompts: remainingPrompts,
     });
+  };
+
+  const handleImportScreens = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const imported = JSON.parse(content);
+        
+        if (Array.isArray(imported)) {
+          handleUpdate({ screens: imported });
+        } else if (imported.screens && Array.isArray(imported.screens)) {
+          handleUpdate({ 
+            screens: imported.screens,
+            screenPrompts: imported.screenPrompts ?? agent.screenPrompts,
+          });
+        }
+      } catch {
+        alert('Invalid JSON file');
+      }
+    };
+    reader.readAsText(file);
+    
+    if (screensImportRef.current) {
+      screensImportRef.current.value = '';
+    }
   };
 
   return (
@@ -272,6 +303,38 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
             <div className="agent-screens-header">
               <h4>Screens (SDUI)</h4>
               <div className="agent-screens-actions">
+                <div className="agent-screens-view-toggle">
+                  <button
+                    className={`agent-view-toggle-btn ${!showScreensCodeView ? 'active' : ''}`}
+                    onClick={() => setShowScreensCodeView(false)}
+                    type="button"
+                  >
+                    List
+                  </button>
+                  <button
+                    className={`agent-view-toggle-btn ${showScreensCodeView ? 'active' : ''}`}
+                    onClick={() => setShowScreensCodeView(true)}
+                    type="button"
+                  >
+                    Code
+                  </button>
+                </div>
+                <input
+                  ref={screensImportRef}
+                  type="file"
+                  accept=".json"
+                  onChange={handleImportScreens}
+                  style={{ display: 'none' }}
+                />
+                <button
+                  className="agent-import-btn"
+                  onClick={() => screensImportRef.current?.click()}
+                  disabled={disabled}
+                  type="button"
+                  title="Import screens from JSON"
+                >
+                  <UploadIcon size={14} /> Import
+                </button>
                 <button
                   className="agent-add-screen-btn"
                   onClick={() => handleAddScreen()}
@@ -286,7 +349,29 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
               Define screen-based UI for this agent. Screens enable visual interactions alongside voice.
             </p>
 
-            {!agent.screens || agent.screens.length === 0 ? (
+            {showScreensCodeView ? (
+              <div className="agent-screens-code-view">
+                <textarea
+                  className="agent-screens-code-editor"
+                  value={JSON.stringify({ screens: agent.screens || [], screenPrompts: agent.screenPrompts || {} }, null, 2)}
+                  onChange={(e) => {
+                    try {
+                      const parsed = JSON.parse(e.target.value);
+                      if (parsed.screens && Array.isArray(parsed.screens)) {
+                        handleUpdate({ 
+                          screens: parsed.screens,
+                          screenPrompts: parsed.screenPrompts ?? agent.screenPrompts,
+                        });
+                      }
+                    } catch {
+                      // Invalid JSON, ignore
+                    }
+                  }}
+                  disabled={disabled}
+                  spellCheck={false}
+                />
+              </div>
+            ) : !agent.screens || agent.screens.length === 0 ? (
               <div className="screens-empty">
                 <p>No screens defined yet.</p>
                 <button 
