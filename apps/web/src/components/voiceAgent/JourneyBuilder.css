@@ -188,6 +188,19 @@
   cursor: not-allowed;
 }
 
+.journey-action-btn.export,
+.journey-action-btn.import {
+  background: var(--background-light);
+  color: var(--text-global-secondary);
+  border: 1px solid var(--border-light);
+}
+
+.journey-action-btn.export:hover:not(:disabled),
+.journey-action-btn.import:hover:not(:disabled) {
+  background: var(--background-action-hover);
+  color: var(--text-global-primary);
+}
+
 .journey-builder-layout {
   display: flex;
   flex: 1;

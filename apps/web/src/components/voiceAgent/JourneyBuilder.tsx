@@ -234,6 +234,88 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     }
   };
 
+  const handleExport = async () => {
+    if (!currentJourney) return;
+    
+    try {
+      const response = await fetch(`/api/journeys/${currentJourney.id}/export`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to export journey');
+      }
+      
+      const exportData = await response.json();
+      
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentJourney.name.replace(/[^a-z0-9]/gi, '_')}_export.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Failed to export flow');
+    }
+  };
+
+  const handleImport = async () => {
+    if (!currentJourney) return;
+    
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      
+      try {
+        const text = await file.text();
+        const importData = JSON.parse(text);
+        
+        if (!importData.journey) {
+          alert('Invalid import file: missing journey data');
+          return;
+        }
+        
+        if (!window.confirm(`Import config from "${file.name}"? This will update the current flow with the imported settings.`)) {
+          return;
+        }
+        
+        const response = await fetch(`/api/journeys/${currentJourney.id}/import`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: text,
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Failed to import');
+        }
+        
+        const result = await response.json();
+        
+        setCurrentJourney({
+          ...currentJourney,
+          ...result.journey,
+        });
+        
+        alert('Flow updated successfully from import!');
+      } catch (error) {
+        console.error('Import error:', error);
+        alert('Failed to import flow: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      }
+    };
+    
+    input.click();
+  };
+
   // Temporarily unused - can be re-enabled when duplicate button is added to UI
   void duplicateJourney; // Silence unused import warning
 
@@ -524,6 +606,12 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                   <RocketIcon size={14} /> {isPublishing ? 'Publishing...' : 'Publish to Prod'}
                 </button>
               )}
+              <button className="journey-action-btn export" onClick={handleExport} disabled={disabled}>
+                <FileTextIcon size={14} /> Export
+              </button>
+              <button className="journey-action-btn import" onClick={handleImport} disabled={disabled}>
+                <FileTextIcon size={14} /> Import
+              </button>
               <button className="journey-action-btn launch" onClick={handleLaunch} disabled={disabled}>
                 <RocketIcon size={14} /> Test Flow
               </button>

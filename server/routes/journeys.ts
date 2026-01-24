@@ -490,4 +490,102 @@ router.post("/:id/duplicate", isAdmin, async (req: any, res) => {
   }
 });
 
+// Export journey config with transcripts for external review
+router.get("/:id/export", isAuthenticated, async (req: any, res) => {
+  try {
+    const journey = await storage.getJourney(req.params.id);
+    
+    if (!journey) {
+      return res.status(404).json({ message: "Journey not found" });
+    }
+    
+    // Get recent voice sessions for this journey to include transcripts
+    const sessions = await storage.getSessionsByJourneyId(journey.id, 10);
+    
+    const transcripts = sessions.map((session: any) => ({
+      sessionId: session.sessionId,
+      createdAt: session.createdAt,
+      durationSeconds: session.durationTotalSeconds || 0,
+      transcript: session.transcript || [],
+    }));
+    
+    // Build export object with prompt, config, and transcripts
+    const exportData = {
+      exportVersion: "1.0",
+      exportedAt: new Date().toISOString(),
+      journey: {
+        id: journey.id,
+        name: journey.name,
+        description: journey.description || "",
+        systemPrompt: journey.systemPrompt,
+        voice: journey.voice,
+        agents: journey.agents,
+        startingAgentId: journey.startingAgentId,
+        version: journey.version,
+      },
+      recentTranscripts: transcripts,
+    };
+    
+    res.json(exportData);
+  } catch (error) {
+    console.error("Error exporting journey:", error);
+    res.status(500).json({ message: "Failed to export journey" });
+  }
+});
+
+// Import journey config to update an existing journey
+router.post("/:id/import", isAdmin, async (req: any, res) => {
+  try {
+    const existingJourney = await storage.getJourney(req.params.id);
+    
+    if (!existingJourney) {
+      return res.status(404).json({ message: "Journey not found" });
+    }
+    
+    const importData = req.body;
+    
+    // Validate import data structure
+    if (!importData.journey) {
+      return res.status(400).json({ message: "Invalid import format: missing 'journey' field" });
+    }
+    
+    const importedJourney = importData.journey;
+    const userId = req.user.id;
+    
+    // Update the journey with imported config - use ?? to preserve empty/cleared values
+    const updatedJourney = await storage.updateJourney(req.params.id, {
+      name: importedJourney.name ?? existingJourney.name,
+      description: importedJourney.description ?? existingJourney.description,
+      systemPrompt: importedJourney.systemPrompt ?? existingJourney.systemPrompt,
+      voice: importedJourney.voice ?? existingJourney.voice,
+      agents: importedJourney.agents ?? existingJourney.agents,
+      startingAgentId: importedJourney.startingAgentId ?? existingJourney.startingAgentId,
+      version: importedJourney.version ?? existingJourney.version,
+    }, userId, "Imported from external config");
+    
+    if (!updatedJourney) {
+      return res.status(500).json({ message: "Failed to update journey" });
+    }
+    
+    res.json({
+      success: true,
+      message: "Journey updated successfully from import",
+      journey: {
+        id: updatedJourney.id,
+        name: updatedJourney.name,
+        description: updatedJourney.description || "",
+        systemPrompt: updatedJourney.systemPrompt,
+        voice: updatedJourney.voice,
+        agents: updatedJourney.agents,
+        startingAgentId: updatedJourney.startingAgentId,
+        updatedAt: updatedJourney.updatedAt,
+        version: updatedJourney.version,
+      },
+    });
+  } catch (error) {
+    console.error("Error importing journey:", error);
+    res.status(500).json({ message: "Failed to import journey" });
+  }
+});
+
 export default router;

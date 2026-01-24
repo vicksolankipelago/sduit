@@ -97,6 +97,8 @@ Uses PostgreSQL with Drizzle ORM. Schema defined in `shared/schema.ts`:
 - `POST /api/journeys/:id/duplicate` - Duplicate journey
 - `GET /api/journeys/:id/versions` - List version history for a journey
 - `GET /api/journeys/:id/versions/:versionId` - Get specific version details
+- `GET /api/journeys/:id/export` - Export journey config with transcripts (for external review)
+- `POST /api/journeys/:id/import` - Import journey config to update flow (admin only)
 - `POST /api/journeys/:id/versions/:versionId/restore` - Restore to a previous version (admin only)
 - `POST /api/journeys/:id/publish` - Publish journey to production (stores in Object Storage)
 - `POST /api/journeys/:id/unpublish` - Unpublish journey from production
