@@ -30,6 +30,15 @@
   font-size: 14px;
 }
 
+.login-container .admin-subtitle {
+  margin: 0 0 8px 0;
+  color: #8b5cf6;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .auth-tabs {
   display: flex;
   gap: 8px;

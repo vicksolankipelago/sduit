@@ -91,6 +91,7 @@ export function setupAuth(app: Express) {
     done(null, user || null);
   });
 
+  // Default registration creates 'member' role users
   app.post("/api/register", async (req, res, next) => {
     try {
       const { email, password, firstName, lastName } = req.body;
@@ -115,6 +116,7 @@ export function setupAuth(app: Express) {
           password: await hashPassword(password),
           firstName: firstName || null,
           lastName: lastName || null,
+          role: 'member',
         })
         .returning();
 
@@ -128,6 +130,49 @@ export function setupAuth(app: Express) {
       });
     } catch (error) {
       console.error("Registration error:", error);
+      res.status(500).json({ message: "Registration failed" });
+    }
+  });
+
+  // Admin registration endpoint - creates 'admin' role users
+  app.post("/api/admin/register", async (req, res, next) => {
+    try {
+      const { email, password, firstName, lastName } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      if (password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+
+      const [existingUser] = await getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "Email already registered" });
+      }
+
+      const [user] = await db
+        .insert(users)
+        .values({
+          email,
+          password: await hashPassword(password),
+          firstName: firstName || null,
+          lastName: lastName || null,
+          role: 'admin',
+        })
+        .returning();
+
+      req.session.regenerate((err) => {
+        if (err) return next(err);
+        req.login(user, (err) => {
+          if (err) return next(err);
+          const { password: _, ...userWithoutPassword } = user;
+          res.status(201).json(userWithoutPassword);
+        });
+      });
+    } catch (error) {
+      console.error("Admin registration error:", error);
       res.status(500).json({ message: "Registration failed" });
     }
   });

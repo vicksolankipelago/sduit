@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
-type UserRole = 'admin' | 'test';
+type UserRole = 'admin' | 'member' | 'test';
 
 interface User {
   id: string;
@@ -28,8 +28,10 @@ interface AuthContextValue {
   loading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isMember: boolean;
   login: (credentials: LoginCredentials) => Promise<{ success: boolean; error?: string }>;
   register: (data: RegisterData) => Promise<{ success: boolean; error?: string }>;
+  registerAdmin: (data: RegisterData) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -123,6 +125,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const registerAdmin = useCallback(async (data: RegisterData) => {
+    try {
+      const response = await fetch("/api/admin/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const result = await response.json();
+        return { success: false, error: result.message || "Registration failed" };
+      }
+
+      const userData = await response.json();
+      setUser(userData);
+      return { success: true };
+    } catch (error) {
+      console.error("Admin registration error:", error);
+      return { success: false, error: "An error occurred during registration" };
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await fetch("/api/logout", {
@@ -141,8 +166,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loading,
       isAuthenticated: !!user,
       isAdmin: user?.role === 'admin',
+      isMember: user?.role === 'member',
       login,
       register,
+      registerAdmin,
       logout,
       refreshUser,
     }}>

@@ -6,6 +6,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
 import { LoginPage } from './pages/Login';
+import { AdminLoginPage } from './pages/AdminLogin';
 import { ForgotPasswordPage } from './pages/ForgotPassword';
 import { ResetPasswordPage } from './pages/ResetPassword';
 import VoiceAgent from './pages/VoiceAgent';
@@ -14,6 +15,7 @@ import { TranscriptsPage } from './pages/Transcripts';
 import UIShowcase from './pages/UIShowcase';
 import { SettingsPage } from './pages/Settings';
 import { AgentEditorPage } from './pages/AgentEditor';
+import { MobilePreviewPage } from './pages/MobilePreview';
 import './styles/pelago-design-system.css';
 import './pages/Login.css';
 
@@ -27,8 +29,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/admin" element={<AdminLoginPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/preview/:journeyId" element={<MobilePreviewPage />} />
 
             {/* Protected routes with layout */}
             <Route

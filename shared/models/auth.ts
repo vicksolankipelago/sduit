@@ -14,7 +14,7 @@ export const sessions = pgTable(
 );
 
 // User roles
-export type UserRole = 'admin' | 'test';
+export type UserRole = 'admin' | 'member' | 'test';
 
 // User storage table.
 export const users = pgTable("users", {
@@ -24,7 +24,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  role: varchar("role", { length: 20 }).notNull().default('admin'),
+  role: varchar("role", { length: 20 }).notNull().default('member'),
   passwordResetToken: varchar("password_reset_token"),
   passwordResetExpires: timestamp("password_reset_expires"),
   createdAt: timestamp("created_at").defaultNow(),

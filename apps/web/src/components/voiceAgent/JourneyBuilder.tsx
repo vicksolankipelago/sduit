@@ -12,6 +12,7 @@ import { ScreenProvider } from '../../contexts/voiceAgent/ScreenContext';
 import ScreenPreview from './ScreenPreview';
 import { TrashIcon, FileTextIcon, EditIcon, RocketIcon, TargetIcon, HistoryIcon, SaveIcon, ToolIcon, SettingsIcon, MoreIcon, DownloadIcon, UploadIcon } from '../Icons';
 import VersionHistory from './VersionHistory';
+import { useAuth } from '../../contexts/AuthContext';
 import './JourneyBuilder.css';
 
 interface JourneyBuilderProps {
@@ -24,6 +25,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   disabled = false,
 }) => {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [currentJourney, setCurrentJourney] = useState<Journey | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -551,7 +553,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                 value={currentJourney.name}
                 onChange={(e) => setCurrentJourney({ ...currentJourney, name: e.target.value })}
                 placeholder="Flow Name"
-                disabled={disabled}
+                disabled={disabled || !isAdmin}
                 className="journey-name-input"
               />
               <span className={`journey-status-badge ${isPublished ? (hasUnpublishedChanges ? 'has-changes' : 'published') : 'draft'}`}>
@@ -563,10 +565,12 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
         <div className="journey-header-actions">
           {currentJourney && (
             <>
-              <button className="journey-action-btn" onClick={handleSaveJourney} disabled={disabled}>
-                <SaveIcon size={14} /> Save
-              </button>
-              {isPublished ? (
+              {isAdmin && (
+                <button className="journey-action-btn" onClick={handleSaveJourney} disabled={disabled}>
+                  <SaveIcon size={14} /> Save
+                </button>
+              )}
+              {isAdmin && (isPublished ? (
                 <button 
                   className={`journey-action-btn publish ${hasUnpublishedChanges ? 'has-changes' : ''}`}
                   onClick={handlePublish} 
@@ -583,7 +587,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                 >
                   <RocketIcon size={14} /> {isPublishing ? 'Publishing...' : 'Publish'}
                 </button>
-              )}
+              ))}
               <button className="journey-action-btn launch" onClick={handleLaunch} disabled={disabled}>
                 <RocketIcon size={14} /> Test
               </button>
@@ -613,14 +617,16 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                       >
                         <DownloadIcon size={14} /> Export
                       </button>
-                      <button 
-                        className="journey-more-menu-item" 
-                        onClick={() => { handleImport(); setShowMoreMenu(false); }} 
-                        disabled={disabled}
-                      >
-                        <UploadIcon size={14} /> Import
-                      </button>
-                      {isPublished && (
+                      {isAdmin && (
+                        <button 
+                          className="journey-more-menu-item" 
+                          onClick={() => { handleImport(); setShowMoreMenu(false); }} 
+                          disabled={disabled}
+                        >
+                          <UploadIcon size={14} /> Import
+                        </button>
+                      )}
+                      {isAdmin && isPublished && (
                         <button 
                           className="journey-more-menu-item danger"
                           onClick={() => { handleUnpublish(); setShowMoreMenu(false); }} 
@@ -629,14 +635,18 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                           Unpublish
                         </button>
                       )}
-                      <div className="journey-more-menu-divider" />
-                      <button
-                        className="journey-more-menu-item danger"
-                        onClick={() => { handleDeleteJourney(currentJourney.id); setShowMoreMenu(false); }}
-                        disabled={disabled}
-                      >
-                        <TrashIcon size={14} /> Delete
-                      </button>
+                      {isAdmin && (
+                        <>
+                          <div className="journey-more-menu-divider" />
+                          <button
+                            className="journey-more-menu-item danger"
+                            onClick={() => { handleDeleteJourney(currentJourney.id); setShowMoreMenu(false); }}
+                            disabled={disabled}
+                          >
+                            <TrashIcon size={14} /> Delete
+                          </button>
+                        </>
+                      )}
                     </div>
                   </>
                 )}
@@ -668,7 +678,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                 <div className="journey-description-field">
                   <div className="journey-description-header">
                     <label className="journey-description-label">Description</label>
-                    {!isEditingDescription && !disabled && (
+                    {isAdmin && !isEditingDescription && !disabled && (
                       <button
                         className="journey-description-edit-btn"
                         onClick={() => setIsEditingDescription(true)}
@@ -678,7 +688,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                       </button>
                     )}
                   </div>
-                  {isEditingDescription ? (
+                  {isEditingDescription && isAdmin ? (
                     <div className="journey-description-edit-wrapper">
                       <textarea
                         value={currentJourney.description}
@@ -708,7 +718,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
               <SystemPromptEditor
                 value={currentJourney.systemPrompt}
                 onChange={(systemPrompt) => setCurrentJourney({ ...currentJourney, systemPrompt })}
-                disabled={disabled}
+                disabled={disabled || !isAdmin}
               />
 
               {/* Agent Selector */}
@@ -742,9 +752,9 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                         ))}
                       </>
                     )}
-                    <option value="__add_new__">+ Add New Agent</option>
+                    {isAdmin && <option value="__add_new__">+ Add New Agent</option>}
                   </select>
-                  {selectedAgent && (
+                  {isAdmin && selectedAgent && (
                     <button
                       className="journey-agent-delete-btn"
                       onClick={handleDeleteAgent}
@@ -804,7 +814,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                               value={selectedAgent.name}
                               onChange={(e) => handleUpdateAgent({ ...selectedAgent, name: e.target.value })}
                               placeholder="Agent Name"
-                              disabled={disabled}
+                              disabled={disabled || !isAdmin}
                             />
                           </div>
                           <div className="journey-agent-field">
@@ -812,7 +822,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                             <select
                               value={selectedAgent.voice}
                               onChange={(e) => handleUpdateAgent({ ...selectedAgent, voice: e.target.value })}
-                              disabled={disabled}
+                              disabled={disabled || !isAdmin}
                             >
                               {VOICE_OPTIONS.map(option => (
                                 <option key={option.value} value={option.value}>
@@ -828,7 +838,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                               value={selectedAgent.handoffDescription || ''}
                               onChange={(e) => handleUpdateAgent({ ...selectedAgent, handoffDescription: e.target.value })}
                               placeholder="Describe this agent's role in the flow"
-                              disabled={disabled}
+                              disabled={disabled || !isAdmin}
                             />
                           </div>
                         </div>
@@ -841,7 +851,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                               value={selectedAgent.prompt}
                               onChange={(e) => handleUpdateAgent({ ...selectedAgent, prompt: e.target.value })}
                               placeholder="Define specific instructions for this agent..."
-                              disabled={disabled}
+                              disabled={disabled || !isAdmin}
                               rows={10}
                             />
                           </div>
@@ -862,7 +872,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                                     type="checkbox"
                                     checked={selectedAgent.handoffs.includes(targetAgent.id)}
                                     onChange={() => handleToggleHandoff(targetAgent.id)}
-                                    disabled={disabled}
+                                    disabled={disabled || !isAdmin}
                                   />
                                   <span>{targetAgent.name}</span>
                                 </label>
@@ -878,7 +888,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                               type="checkbox"
                               checked={currentJourney.startingAgentId === selectedAgent.id}
                               onChange={() => setCurrentJourney({ ...currentJourney, startingAgentId: selectedAgent.id })}
-                              disabled={disabled}
+                              disabled={disabled || !isAdmin}
                             />
                             <span>Set as starting agent</span>
                           </label>
@@ -892,7 +902,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                         <ToolEditor
                           tools={selectedAgent.tools}
                           onChange={(tools) => handleUpdateAgent({ ...selectedAgent, tools })}
-                          disabled={disabled}
+                          disabled={disabled || !isAdmin}
                         />
                       </div>
                     )}
@@ -902,14 +912,16 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                       <div className="journey-agent-section journey-agent-screens-section">
                         <div className="journey-agent-screens-header">
                           <h4>Screens (SDUI)</h4>
-                          <button
-                            className="journey-agent-add-screen-btn"
-                            onClick={() => handleAddScreen()}
-                            disabled={disabled}
-                            type="button"
-                          >
-                            + Add Screen
-                          </button>
+                          {isAdmin && (
+                            <button
+                              className="journey-agent-add-screen-btn"
+                              onClick={() => handleAddScreen()}
+                              disabled={disabled}
+                              type="button"
+                            >
+                              + Add Screen
+                            </button>
+                          )}
                         </div>
                         <p className="journey-agent-section-desc">
                           Define screen-based UI for this agent. Screens enable visual interactions alongside voice.
@@ -918,14 +930,16 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                         {!selectedAgent.screens || selectedAgent.screens.length === 0 ? (
                           <div className="journey-screens-empty">
                             <p>No screens defined yet.</p>
-                            <button 
-                              onClick={() => handleAddScreen()} 
-                              disabled={disabled}
-                              className="journey-agent-add-screen-empty-btn"
-                              type="button"
-                            >
-                              + Create First Screen
-                            </button>
+                            {isAdmin && (
+                              <button 
+                                onClick={() => handleAddScreen()} 
+                                disabled={disabled}
+                                className="journey-agent-add-screen-empty-btn"
+                                type="button"
+                              >
+                                + Create First Screen
+                              </button>
+                            )}
                           </div>
                         ) : (
                           <div className="journey-agent-screens-list">
@@ -938,14 +952,16 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                                 <div className="journey-agent-screen-item-meta">
                                   {screen.sections.length} section(s), {screen.sections.reduce((acc, s) => acc + s.elements.length, 0)} element(s)
                                 </div>
-                                <div className="journey-agent-screen-item-actions">
-                                  <button onClick={() => handleEditScreen(screen)} disabled={disabled} type="button">
-                                    <EditIcon size={12} /> Edit
-                                  </button>
-                                  <button onClick={() => handleRemoveScreen(index)} disabled={disabled} type="button">
-                                    <TrashIcon size={12} />
-                                  </button>
-                                </div>
+                                {isAdmin && (
+                                  <div className="journey-agent-screen-item-actions">
+                                    <button onClick={() => handleEditScreen(screen)} disabled={disabled} type="button">
+                                      <EditIcon size={12} /> Edit
+                                    </button>
+                                    <button onClick={() => handleRemoveScreen(index)} disabled={disabled} type="button">
+                                      <TrashIcon size={12} />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>

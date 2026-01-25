@@ -6,6 +6,29 @@ import { publishedFlowStorage } from "../services/publishedFlowStorage";
 
 const router = Router();
 
+// Public preview endpoint - no authentication required
+// Returns minimal journey data for mobile preview sharing
+router.get("/preview/:id", async (req: any, res) => {
+  try {
+    const journey = await storage.getJourney(req.params.id);
+    
+    if (!journey) {
+      return res.status(404).json({ message: "Journey not found" });
+    }
+
+    // Return only the data needed for preview rendering
+    res.json({
+      id: journey.id,
+      name: journey.name,
+      agents: journey.agents,
+      startingAgentId: journey.startingAgentId,
+    });
+  } catch (error) {
+    console.error("Error fetching journey preview:", error);
+    res.status(500).json({ message: "Failed to load journey preview" });
+  }
+});
+
 router.get("/", isAuthenticated, async (req: any, res) => {
   try {
     // Admins see all journeys, test users see all journeys too (but can only test, not edit)

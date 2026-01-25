@@ -57,7 +57,7 @@ function VoiceAgentContent() {
     navigateToScreen,
     updateModuleState
   } = useAgentUI();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
@@ -1121,12 +1121,14 @@ Important guidelines:
       {sessionStatus === 'DISCONNECTED' && (
         <div className="voice-agent-header">
           <h2 className="voice-agent-title">Flows</h2>
-          <button
-            className="voice-agent-create-btn"
-            onClick={() => navigate('/builder?new=true')}
-          >
-            Create Flow
-          </button>
+          {isAdmin && (
+            <button
+              className="voice-agent-create-btn"
+              onClick={() => navigate('/builder?new=true')}
+            >
+              Create Flow
+            </button>
+          )}
         </div>
       )}
 
@@ -1248,16 +1250,18 @@ Important guidelines:
                         >
                           <span className="journey-card-icon">{style.icon}</span>
                           <div className="journey-card-actions">
-                            <button
-                              className="journey-card-edit-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/builder?id=${journey.id}`);
-                              }}
-                              title="Edit flow"
-                            >
-                              <EditIcon size={14} />
-                            </button>
+                            {isAdmin && (
+                              <button
+                                className="journey-card-edit-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/builder?id=${journey.id}`);
+                                }}
+                                title="Edit flow"
+                              >
+                                <EditIcon size={14} />
+                              </button>
+                            )}
                             <button
                               className="journey-card-settings-btn"
                               onClick={(e) => {
