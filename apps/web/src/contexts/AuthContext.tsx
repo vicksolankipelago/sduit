@@ -1,4 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { logger } from '../utils/logger';
+
+const authLogger = logger.namespace('Auth');
 
 type UserRole = 'admin' | 'member' | 'test';
 
@@ -54,7 +57,7 @@ async function fetchUser(): Promise<User | null> {
 
     return response.json();
   } catch (error) {
-    console.error("Failed to fetch user:", error);
+    authLogger.error("Failed to fetch user:", error);
     return null;
   }
 }
@@ -97,7 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(userData);
       return { success: true };
     } catch (error) {
-      console.error("Login error:", error);
+      authLogger.error("Login error:", error);
       return { success: false, error: "An error occurred during login" };
     }
   }, []);
@@ -120,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(userData);
       return { success: true };
     } catch (error) {
-      console.error("Registration error:", error);
+      authLogger.error("Registration error:", error);
       return { success: false, error: "An error occurred during registration" };
     }
   }, []);
@@ -156,7 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       setUser(null);
     } catch (error) {
-      console.error("Logout error:", error);
+      authLogger.error("Logout error:", error);
     }
   }, []);
 

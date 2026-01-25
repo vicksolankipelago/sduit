@@ -1,5 +1,9 @@
 import { SessionExport } from '../../utils/transcriptExport';
 import { TranscriptItem } from '../../types/voiceAgent';
+import { logger } from '../../utils/logger';
+import { api, ApiError } from './apiClient';
+
+const sessionLogger = logger.namespace('SessionService');
 
 export interface SessionListItem {
   id: string;
@@ -24,51 +28,27 @@ export interface SaveMessageParams {
     id: string;
     name: string;
     prompt?: string;
-    tools?: any[];
+    tools?: unknown[];
   };
 }
 
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (response.status === 401) {
-    window.location.href = '/login';
-    throw new Error('Unauthorized');
-  }
-  
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Request failed' }));
-    throw new Error(error.message || 'Request failed');
-  }
-  
-  return response.json();
-}
-
 export async function saveSession(sessionExport: SessionExport): Promise<void> {
-  const response = await fetch('/api/voice-sessions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify(sessionExport),
-  });
-  await handleResponse<{ success: boolean }>(response);
+  await api.post<{ success: boolean }>('/api/voice-sessions', sessionExport);
 }
 
 export async function listUserSessions(limit = 50, offset = 0): Promise<SessionListItem[]> {
-  const response = await fetch(`/api/voice-sessions?limit=${limit}&offset=${offset}`, {
-    credentials: 'include',
-  });
-  return handleResponse<SessionListItem[]>(response);
+  return api.get<SessionListItem[]>(`/api/voice-sessions?limit=${limit}&offset=${offset}`);
 }
 
 export async function loadSession(sessionId: string): Promise<SessionExport | null> {
-  const response = await fetch(`/api/voice-sessions/${sessionId}`, {
-    credentials: 'include',
-  });
-  
-  if (response.status === 404) {
-    return null;
+  try {
+    return await api.get<SessionExport>(`/api/voice-sessions/${sessionId}`);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
   }
-  
-  return handleResponse<SessionExport>(response);
 }
 
 export async function loadSessionById(id: string): Promise<SessionExport | null> {
@@ -76,11 +56,7 @@ export async function loadSessionById(id: string): Promise<SessionExport | null>
 }
 
 export async function deleteSession(sessionId: string): Promise<boolean> {
-  const response = await fetch(`/api/voice-sessions/${sessionId}`, {
-    method: 'DELETE',
-    credentials: 'include',
-  });
-  await handleResponse<{ success: boolean }>(response);
+  await api.delete<{ success: boolean }>(`/api/voice-sessions/${sessionId}`);
   return true;
 }
 
@@ -89,32 +65,20 @@ export async function deleteSessionById(id: string): Promise<boolean> {
 }
 
 export async function getSessionCount(): Promise<number> {
-  const response = await fetch('/api/voice-sessions/count', {
-    credentials: 'include',
-  });
-  const data = await handleResponse<{ count: number }>(response);
+  const data = await api.get<{ count: number }>('/api/voice-sessions/count');
   return data.count;
 }
 
 export async function getSessionsForJourney(journeyId: string, limit = 20): Promise<SessionListItem[]> {
-  const response = await fetch(`/api/voice-sessions?journeyId=${journeyId}&limit=${limit}`, {
-    credentials: 'include',
-  });
-  return handleResponse<SessionListItem[]>(response);
+  return api.get<SessionListItem[]>(`/api/voice-sessions?journeyId=${journeyId}&limit=${limit}`);
 }
 
 export async function saveSessionMessage(params: SaveMessageParams): Promise<void> {
-  const response = await fetch(`/api/voice-sessions/${params.sessionId}/message`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({
-      message: params.message,
-      journey: params.journey,
-      agent: params.agent,
-    }),
+  await api.put<{ success: boolean }>(`/api/voice-sessions/${params.sessionId}/message`, {
+    message: params.message,
+    journey: params.journey,
+    agent: params.agent,
   });
-  await handleResponse<{ success: boolean }>(response);
 }
 
 export class DebouncedSessionSaver {
@@ -144,7 +108,7 @@ export class DebouncedSessionSaver {
 
   queueMessage(message: TranscriptItem): void {
     if (!this.sessionId) {
-      console.warn('DebouncedSessionSaver: sessionId not configured');
+      sessionLogger.warn('DebouncedSessionSaver: sessionId not configured');
       return;
     }
 
@@ -177,7 +141,7 @@ export class DebouncedSessionSaver {
             journey: this.journey,
             agent: this.agent,
           }).catch(err => {
-            console.error('Failed to save message:', message.itemId, err);
+            sessionLogger.error(`Failed to save message: ${message.itemId}`, err);
             this.onError?.(err);
           })
         )
@@ -202,3 +166,6 @@ export class DebouncedSessionSaver {
     this.isSaving = false;
   }
 }
+
+// Re-export ApiError for consumers that need it
+export { ApiError };

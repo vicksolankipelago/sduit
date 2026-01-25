@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { SessionStatus } from '../../types/voiceAgent';
+import { voiceAgentLogger } from '../../utils/logger';
 import {
   getInitialAgent,
   getNextAgent,
@@ -52,16 +53,16 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
   const connect = useCallback(
     async ({ audioElement, customInstructions, skipInitialGreeting, voice, customMicStream, agentConfig, allJourneyAgents, onEventTrigger, onEndCall }: AzureWebRTCConnectOptions) => {
       if (peerConnectionRef.current) {
-        console.log('⚠️ Already connected, skipping');
+        voiceAgentLogger.warn('Already connected, skipping');
         return;
       }
 
-      console.log('🔄 Starting WebRTC connection to Azure OpenAI...');
+      voiceAgentLogger.info('Starting WebRTC connection to Azure OpenAI...');
       updateStatus('CONNECTING');
 
       try {
         // Step 1: Get ephemeral key from our server
-        console.log('1️⃣ Fetching ephemeral key...');
+        voiceAgentLogger.debug('Fetching ephemeral key...');
         const sessionResponse = await fetch('/api/session');
         
         if (!sessionResponse.ok) {
@@ -77,25 +78,25 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
           throw new Error('Invalid session data from server');
         }
         
-        console.log('✅ Ephemeral key received');
-        console.log('📍 WebRTC URL:', webrtcUrl);
-        console.log('🚀 Deployment:', deployment);
+        voiceAgentLogger.debug('Ephemeral key received');
+        voiceAgentLogger.debug('WebRTC URL:', webrtcUrl);
+        voiceAgentLogger.debug('Deployment:', deployment);
 
         // Step 2: Create RTCPeerConnection
-        console.log('2️⃣ Creating RTCPeerConnection...');
+        voiceAgentLogger.debug('Creating RTCPeerConnection...');
         const peerConnection = new RTCPeerConnection();
         peerConnectionRef.current = peerConnection;
 
         // Step 3: Set up audio element for receiving model's voice
         if (audioElement) {
           peerConnection.ontrack = (event) => {
-            console.log('🎵 Received audio track from model');
+            voiceAgentLogger.debug('Received audio track from model');
             audioElement.srcObject = event.streams[0];
           };
         }
 
         // Step 4: Add user's microphone (or custom stream for persona)
-        console.log('3️⃣ Requesting microphone access...');
+        voiceAgentLogger.debug('Requesting microphone access...');
         const stream = customMicStream || await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: true,
@@ -107,21 +108,21 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
         // Store stream ref for cleanup (only if we own it, not custom)
         if (!customMicStream) {
           micStreamRef.current = stream;
-          console.log('🎤 Using microphone with echo cancellation enabled');
+          voiceAgentLogger.debug('Using microphone with echo cancellation enabled');
         } else {
-          console.log('🎤 Using custom audio stream (routed from agent)');
+          voiceAgentLogger.debug('Using custom audio stream (routed from agent)');
         }
         const audioTrack = stream.getAudioTracks()[0];
         peerConnection.addTrack(audioTrack, stream);
-        console.log('✅ Microphone added to peer connection');
+        voiceAgentLogger.debug('Microphone added to peer connection');
 
         // Step 5: Create data channel for events
-        console.log('4️⃣ Creating data channel...');
+        voiceAgentLogger.debug('Creating data channel...');
         const dataChannel = peerConnection.createDataChannel('oai-events');
         dataChannelRef.current = dataChannel;
 
         dataChannel.addEventListener('open', () => {
-          console.log('✅ Data channel opened');
+          voiceAgentLogger.info('Data channel opened');
           updateStatus('CONNECTED');
           
           // Initialize with journey agent if provided, otherwise use default greeter agent
@@ -132,15 +133,15 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
           // Store all journey agents for handoff support
           if (allJourneyAgents) {
             journeyAgentsMapRef.current = allJourneyAgents;
-            console.log(`🎯 Journey Mode: Loaded ${allJourneyAgents.size} agent(s) with screen support`);
+            voiceAgentLogger.info(`Journey Mode: Loaded ${allJourneyAgents.size} agent(s) with screen support`);
           } else {
             journeyAgentsMapRef.current.clear();
-            console.log('🔄 Multi-Agent Mode: Using legacy handoff system');
+            voiceAgentLogger.debug('Multi-Agent Mode: Using legacy handoff system');
           }
           
           // Apply custom prompt if provided (for non-journey agents)
           if (!agentConfig && callbacks.customPrompts && callbacks.customPrompts[initialAgent.name]) {
-            console.log('📝 Using custom prompt for', initialAgent.name);
+            voiceAgentLogger.debug('Using custom prompt for', initialAgent.name);
             initialAgent = {
               ...initialAgent,
               instructions: callbacks.customPrompts[initialAgent.name]
@@ -152,7 +153,7 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
           // Use custom instructions if provided (for persona), otherwise use agent config
           let agentToUse = initialAgent;
           if (customInstructions) {
-            console.log('🎭 Using custom instructions for this session');
+            voiceAgentLogger.debug('Using custom instructions for this session');
             agentToUse = {
               ...initialAgent,
               instructions: customInstructions
@@ -161,11 +162,11 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
           
           const sessionConfig = createSessionUpdate(agentToUse, undefined, voice);
           
-          console.log('📤 Sending initial session configuration for agent:', initialAgent.name);
+          voiceAgentLogger.debug('Sending initial session configuration for agent:', initialAgent.name);
           const instructionsStr = typeof agentToUse.instructions === 'string' ? agentToUse.instructions : '';
-          console.log('📋 Agent instructions preview:', instructionsStr.substring(0, 200) + '...');
+          voiceAgentLogger.debug('Agent instructions preview:', instructionsStr.substring(0, 200) + '...');
           if (voice) {
-            console.log('🎵 Using voice:', voice);
+            voiceAgentLogger.debug('Using voice:', voice);
           }
           dataChannel.send(JSON.stringify(sessionConfig));
           
@@ -177,17 +178,17 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
           
           // Trigger agent to greet the user first (unless disabled, e.g., for persona)
           if (!skipInitialGreeting) {
-            console.log('🎤 Triggering initial agent greeting...');
+            voiceAgentLogger.debug('Triggering initial agent greeting...');
             setTimeout(() => {
               if (dataChannel.readyState === 'open') {
                 dataChannel.send(JSON.stringify({
                   type: 'response.create'
                 }));
-                console.log('✅ Initial response triggered');
+                voiceAgentLogger.debug('Initial response triggered');
               }
             }, 1000);
           } else {
-            console.log('⏭️ Skipping initial greeting (persona mode)');
+            voiceAgentLogger.debug('Skipping initial greeting (persona mode)');
           }
         });
 
@@ -205,7 +206,7 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
         dataChannel.addEventListener('message', async (event) => {
           try {
             const realtimeEvent = JSON.parse(event.data);
-            console.log('📥 Received event:', realtimeEvent.type);
+            voiceAgentLogger.debug('Received event:', realtimeEvent.type);
             
             callbacks.onEvent?.(realtimeEvent);
             
@@ -228,7 +229,7 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                 
                 // If we're waiting to disconnect after conversation completion, do it now
                 if (pendingDisconnectRef) {
-                  console.log('🔚 Audio finished - now disconnecting');
+                  voiceAgentLogger.debug('Audio finished - now disconnecting');
                   pendingDisconnectRef = false;
                   
                   // Small delay to ensure audio fully finishes playing
@@ -236,10 +237,10 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                     // Check if this was triggered by end_call tool (pendingEndCallReason is set to a string)
                     if (pendingEndCallReason !== undefined) {
                       if (onEndCall) {
-                        console.log(`🔌 Executing end call callback after audio completion...`);
+                        voiceAgentLogger.debug('Executing end call callback after audio completion...');
                         onEndCall(pendingEndCallReason || undefined);
                       } else {
-                        console.log('🔌 No end call callback - disconnecting directly');
+                        voiceAgentLogger.debug('No end call callback - disconnecting directly');
                         disconnect();
                       }
                       pendingEndCallReason = undefined;
@@ -256,11 +257,11 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
             // Handle function calls from Azure
             else if (realtimeEvent.type === 'response.function_call_arguments.done') {
               const { call_id, name, arguments: argsString } = realtimeEvent;
-              console.log(`🔧 Function call from Azure: ${name}`, { call_id });
+              voiceAgentLogger.debug(`Function call from Azure: ${name}`, { call_id });
               
               try {
                 const args = JSON.parse(argsString);
-                console.log(`   Args:`, args);
+                voiceAgentLogger.debug('Args:', args);
                 
                 // Execute trigger_event tool for screen navigation
                 if (name === 'trigger_event' && args.eventId) {
@@ -277,16 +278,16 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                   
                   // Enforce default delay for specific events if not provided
                   if (delay === 0 && [
-                    'navigate_to_outcomes', 
-                    'navigate_to_motivation', 
-                    'navigate_to_intention', 
+                    'navigate_to_outcomes',
+                    'navigate_to_motivation',
+                    'navigate_to_intention',
                     'navigate_to_checkin_commitment'
                   ].includes(eventId)) {
                     delay = 2;
-                    console.log(`⚠️ Enforcing default 2s delay for event '${eventId}'`);
+                    voiceAgentLogger.warn(`Enforcing default 2s delay for event '${eventId}'`);
                   }
 
-                  console.log(`📢 Triggering event: ${eventId} (delay: ${delay}s)`);
+                  voiceAgentLogger.debug(`Triggering event: ${eventId} (delay: ${delay}s)`);
                   
                   const trigger = () => {
                     // Call the event trigger callback
@@ -321,7 +322,7 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                 // Execute record_input tool for capturing user responses
                 else if (name === 'record_input' && args.title) {
                   const { title, summary = '', description: _description = '', nextEventId, delay: rawDelay } = args;
-                  console.log(`📝 Recording input - Title: ${title}, Summary: ${summary}, NextEvent: ${nextEventId}`);
+                  voiceAgentLogger.debug(`Recording input - Title: ${title}, Summary: ${summary}, NextEvent: ${nextEventId}`);
                   
                   // Parse delay robustly
                   let delay = 2; // Default delay if not provided
@@ -343,9 +344,9 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                     const enforcedDelay = delay > 0 ? delay : (
                       ['navigate_to_outcomes','navigate_to_motivation','navigate_to_intention','navigate_to_checkin_commitment'].includes(nextEventId) ? 2 : 0
                     );
-                    console.log(`⏳ Auto-scheduling event '${nextEventId}' with ${enforcedDelay}s delay from record_input`);
+                    voiceAgentLogger.debug(`Auto-scheduling event '${nextEventId}' with ${enforcedDelay}s delay from record_input`);
                     setTimeout(() => {
-                      console.log(`📢 Triggering auto-event: ${nextEventId}`);
+                      voiceAgentLogger.debug(`Triggering auto-event: ${nextEventId}`);
                       onEventTrigger(nextEventId, currentAgentRef.current);
                     }, enforcedDelay * 1000);
                   }
@@ -366,7 +367,7 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                 // Execute end_call system tool for ending the session
                 else if (name === 'end_call') {
                   const { reason } = args;
-                  console.log(`📞 End call triggered${reason ? `: ${reason}` : ''}`);
+                  voiceAgentLogger.info(`End call triggered${reason ? `: ${reason}` : ''}`);
                   
                   const result = `Call ending${reason ? `: ${reason}` : ''}`;
                   
@@ -389,32 +390,32 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                   // Store reason and set pending flag to wait for audio completion
                   pendingEndCallReason = reason || '';
                   pendingDisconnectRef = true;
-                  console.log('⏰ End call requested - waiting for audio to finish before disconnecting...');
+                  voiceAgentLogger.debug('End call requested - waiting for audio to finish before disconnecting...');
                 }
                 
                 lastToolCalledRef.current = name;
               } catch (err) {
-                console.error('❌ Error handling function call:', err);
+                voiceAgentLogger.error('Error handling function call:', err);
               }
             }
             
             // Handle response completion - trigger client-side tool detection and agent handoffs
             else if (realtimeEvent.type === 'response.done') {
-              console.log('🏁 Response complete - checking for client-side tools and handoffs');
+              voiceAgentLogger.debug('Response complete - checking for client-side tools and handoffs');
               
               // If end_call was requested and we're waiting for disconnect, do it now
               // This handles the case where no additional audio is generated after end_call
               if (pendingDisconnectRef && pendingEndCallReason !== undefined) {
-                console.log('🔚 Response done with pending end_call - disconnecting now');
+                voiceAgentLogger.debug('Response done with pending end_call - disconnecting now');
                 pendingDisconnectRef = false;
-                
+
                 // Small delay to ensure any audio finishes
                 setTimeout(() => {
                   if (onEndCall) {
-                    console.log(`🔌 Executing end call callback from response.done...`);
+                    voiceAgentLogger.debug('Executing end call callback from response.done...');
                     onEndCall(pendingEndCallReason || undefined);
                   } else {
-                    console.log('🔌 No end call callback - disconnecting directly');
+                    voiceAgentLogger.debug('No end call callback - disconnecting directly');
                     disconnect();
                   }
                   pendingEndCallReason = undefined;
@@ -442,7 +443,7 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                 );
                 
                 if (hasClosingPhrase && !baselineAgentHasCompletedRef) {
-                  console.log('✅ Baseline agent has completed its FINAL closing statement');
+                  voiceAgentLogger.info('Baseline agent has completed its FINAL closing statement');
                   baselineAgentHasCompletedRef = true;
                   
                   // Log completion
@@ -454,7 +455,7 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                   
                   // Set flag to disconnect once audio finishes
                   pendingDisconnectRef = true;
-                  console.log('⏰ Waiting for audio to finish before disconnecting...');
+                  voiceAgentLogger.debug('Waiting for audio to finish before disconnecting...');
                 }
               }
               
@@ -466,7 +467,7 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
             }
             
           } catch (err) {
-            console.error('❌ Error parsing event:', err);
+            voiceAgentLogger.error('Error parsing event:', err);
           }
         });
         
@@ -477,10 +478,10 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
         const detectAndExecuteClientSideTools = async (context: { lastUserMessage: string, lastAssistantMessage: string }) => {
           const currentAgent = currentAgentRef.current;
           const userMsg = context.lastUserMessage.toLowerCase();
-          
-          console.log('🔍 Detecting client-side tools for agent:', currentAgent);
-          console.log('   User:', context.lastUserMessage.substring(0, 100));
-          console.log('   Assistant:', context.lastAssistantMessage.substring(0, 100));
+
+          voiceAgentLogger.debug('Detecting client-side tools for agent:', currentAgent);
+          voiceAgentLogger.debug('User:', context.lastUserMessage.substring(0, 100));
+          voiceAgentLogger.debug('Assistant:', context.lastAssistantMessage.substring(0, 100));
           
           let toolTriggered = false;
           
@@ -512,7 +513,7 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                 substance = 'opioids';
               }
               
-              console.log('🎯 Triggering log_substance:', substance);
+              voiceAgentLogger.debug('Triggering log_substance:', substance);
               const result = await executeTool('log_substance', { substance }, toolContext);
               lastToolCalledRef.current = 'log_substance';
               callbacks.onToolCall?.('log_substance', { substance }, result);
@@ -531,7 +532,7 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
               else if (userMsg.includes('health') || userMsg.includes('feel')) category = 'health';
               else if (userMsg.includes('work') || userMsg.includes('job')) category = 'career';
               
-              console.log('💪 Triggering log_motivation_or_goal:', entryType, content.substring(0, 50));
+              voiceAgentLogger.debug('Triggering log_motivation_or_goal:', entryType, content.substring(0, 50));
               const result = await executeTool('log_motivation_or_goal', { entryType, content, category }, toolContext);
               lastToolCalledRef.current = 'log_motivation_or_goal';
               callbacks.onToolCall?.('log_motivation_or_goal', { entryType, content, category }, result);
@@ -539,22 +540,22 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
             }
             
             // Baseline agent: detect drink mentions
-            else if (currentAgent === 'baselineCalculationAgent' && 
+            else if (currentAgent === 'baselineCalculationAgent' &&
                      (userMsg.includes('beer') || userMsg.includes('wine') || userMsg.includes('drink'))) {
               // This is simplified - in reality you'd parse out drink details
-              console.log('🍺 User mentioned drinks - tool would be triggered with parsed details');
+              voiceAgentLogger.debug('User mentioned drinks - tool would be triggered with parsed details');
               // For now, just mark as attempted
               // In a full implementation, you'd parse: drinkType, amount, frequency from the message
             }
             
             if (toolTriggered) {
-              console.log('✅ Client-side tool executed successfully');
+              voiceAgentLogger.debug('Client-side tool executed successfully');
             } else {
-              console.log('ℹ️ No tool triggered for this turn');
+              voiceAgentLogger.debug('No tool triggered for this turn');
             }
             
-          } catch (err: any) {
-            console.error('❌ Error executing client-side tool:', err);
+          } catch (err: unknown) {
+            voiceAgentLogger.error('Error executing client-side tool:', err);
           }
         };
         
@@ -568,7 +569,7 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
             eventType: event?.type
           };
           
-          console.log('🔍 Checking for agent handoff...', handoffAttempt);
+          voiceAgentLogger.debug('Checking for agent handoff...', handoffAttempt);
           
           // Log handoff attempt to session logs
           if (callbacks.onEvent) {
@@ -586,7 +587,7 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
             if (currentJourneyAgent?.handoffs && currentJourneyAgent.handoffs.length > 0) {
               // This agent has handoffs configured - check if conditions are met
               // For now, handoffs are manual (triggered by tools or explicit logic)
-              console.log(`📋 Current agent has ${currentJourneyAgent.handoffs.length} potential handoff(s):`, currentJourneyAgent.handoffs);
+              voiceAgentLogger.debug(`Current agent has ${currentJourneyAgent.handoffs.length} potential handoff(s):`, currentJourneyAgent.handoffs);
               // Handoff logic would go here based on tools or conditions
             }
             // Don't log anything for journey agents without handoffs - they use screen navigation
@@ -599,12 +600,12 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
           }
           
           if (nextAgent) {
-            console.log(`🤝 Agent handoff triggered: ${currentAgentRef.current} -> ${nextAgent.name}`);
+            voiceAgentLogger.info(`Agent handoff triggered: ${currentAgentRef.current} -> ${nextAgent.name}`);
             
             // Apply custom prompt if provided
             let agentToUse = nextAgent;
             if (callbacks.customPrompts && callbacks.customPrompts[nextAgent.name]) {
-              console.log('📝 Using custom prompt for', nextAgent.name);
+              voiceAgentLogger.debug('Using custom prompt for', nextAgent.name);
               agentToUse = {
                 ...nextAgent,
                 instructions: callbacks.customPrompts[nextAgent.name]
@@ -617,7 +618,7 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
             
             // Update session with new agent configuration
             const sessionConfig = createSessionUpdate(agentToUse);
-            console.log('📤 Sending session update for new agent:', nextAgent.name);
+            voiceAgentLogger.debug('Sending session update for new agent:', nextAgent.name);
             channel.send(JSON.stringify(sessionConfig));
             
             // Notify about handoff
@@ -633,22 +634,22 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
         };
 
         dataChannel.addEventListener('close', () => {
-          console.log('🔌 Data channel closed');
+          voiceAgentLogger.debug('Data channel closed');
           updateStatus('DISCONNECTED');
         });
 
         dataChannel.addEventListener('error', (event) => {
-          console.error('❌ Data channel error:', event);
+          voiceAgentLogger.error('Data channel error:', event);
         });
 
         // Step 6: Create and send SDP offer
-        console.log('5️⃣ Creating SDP offer...');
+        voiceAgentLogger.debug('Creating SDP offer...');
         const offer = await peerConnection.createOffer();
         await peerConnection.setLocalDescription(offer);
-        console.log('✅ Local SDP set');
+        voiceAgentLogger.debug('Local SDP set');
 
         // Step 7: Send offer to Azure and get answer
-        console.log('6️⃣ Sending SDP offer to Azure...');
+        voiceAgentLogger.debug('Sending SDP offer to Azure...');
         let sdpUrl: string;
         try {
           const url = new URL(webrtcUrl);
@@ -675,7 +676,7 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
         }
 
         const answerSdp = await sdpResponse.text();
-        console.log('✅ Received SDP answer from Azure');
+        voiceAgentLogger.debug('Received SDP answer from Azure');
 
         // Step 8: Set remote description
         const answer: RTCSessionDescriptionInit = {
@@ -683,22 +684,22 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
           sdp: answerSdp
         };
         await peerConnection.setRemoteDescription(answer);
-        console.log('✅ Remote SDP set - WebRTC connection established!');
+        voiceAgentLogger.info('Remote SDP set - WebRTC connection established!');
 
         // Handle connection state changes
         peerConnection.onconnectionstatechange = () => {
-          console.log('🔄 Connection state:', peerConnection.connectionState);
+          voiceAgentLogger.debug('Connection state:', peerConnection.connectionState);
           if (peerConnection.connectionState === 'failed' || peerConnection.connectionState === 'disconnected') {
             updateStatus('DISCONNECTED');
           }
         };
 
-      } catch (err: any) {
-        console.error('❌ Error establishing WebRTC connection:');
-        console.error('Error message:', err.message);
-        console.error('Full error:', err);
+      } catch (err: unknown) {
+        const error = err as Error;
+        voiceAgentLogger.error('Error establishing WebRTC connection:', error.message);
+        voiceAgentLogger.error('Full error:', err);
         updateStatus('DISCONNECTED');
-        alert(`Failed to connect: ${err.message || 'Unknown error'}`);
+        alert(`Failed to connect: ${error.message || 'Unknown error'}`);
         throw err;
       }
     },
@@ -706,14 +707,14 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
   );
 
   const disconnect = useCallback(() => {
-    console.log('🔌 Disconnecting WebRTC session...');
+    voiceAgentLogger.debug('Disconnecting WebRTC session...');
 
     // Stop microphone stream tracks to release the mic
     if (micStreamRef.current) {
-      console.log('🎤 Stopping microphone tracks...');
+      voiceAgentLogger.debug('Stopping microphone tracks...');
       micStreamRef.current.getTracks().forEach(track => {
         track.stop();
-        console.log(`   Stopped track: ${track.kind}`);
+        voiceAgentLogger.debug(`Stopped track: ${track.kind}`);
       });
       micStreamRef.current = null;
     }
@@ -734,14 +735,14 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
     isAssistantSpeakingRef.current = false;
 
     updateStatus('DISCONNECTED');
-    console.log('✅ Disconnected');
+    voiceAgentLogger.info('Disconnected');
   }, [updateStatus]);
 
-  const sendMessage = useCallback((message: any) => {
+  const sendMessage = useCallback((message: unknown) => {
     if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
       dataChannelRef.current.send(JSON.stringify(message));
     } else {
-      console.warn('⚠️ Cannot send message: data channel not open');
+      voiceAgentLogger.warn('Cannot send message: data channel not open');
     }
   }, []);
 
@@ -749,10 +750,10 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
     if (micStreamRef.current) {
       micStreamRef.current.getAudioTracks().forEach(track => {
         track.enabled = !muted;
-        console.log(`🎤 Microphone ${muted ? 'muted' : 'unmuted'} (track.enabled = ${track.enabled})`);
+        voiceAgentLogger.debug(`Microphone ${muted ? 'muted' : 'unmuted'} (track.enabled = ${track.enabled})`);
       });
     } else {
-      console.warn('⚠️ Cannot mute: no microphone stream available');
+      voiceAgentLogger.warn('Cannot mute: no microphone stream available');
     }
   }, []);
 

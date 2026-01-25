@@ -1,12 +1,14 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import { isAuthenticated, isAdmin } from "../auth";
 import { storage } from "../storage";
 import { v4 as uuidv4 } from "uuid";
+import { screenLogger } from "../utils/logger";
+import * as apiResponse from "../utils/response";
 
 const router = Router();
 
 // List all global screens (all authenticated users can read)
-router.get("/", isAuthenticated, async (req: any, res) => {
+router.get("/", isAuthenticated, async (req: Request, res: Response) => {
   try {
     const screens = await storage.listGlobalScreens();
 
@@ -22,23 +24,23 @@ router.get("/", isAuthenticated, async (req: any, res) => {
       updatedAt: s.updatedAt,
     }));
 
-    res.json(screenList);
+    return apiResponse.success(res, screenList);
   } catch (error) {
-    console.error("Error listing screens:", error);
-    res.status(500).json({ message: "Failed to list screens" });
+    screenLogger.error("Error listing screens:", error);
+    return apiResponse.serverError(res, "Failed to list screens");
   }
 });
 
 // Get a single global screen
-router.get("/:id", isAuthenticated, async (req: any, res) => {
+router.get("/:id", isAuthenticated, async (req: Request, res: Response) => {
   try {
     const screen = await storage.getGlobalScreen(req.params.id);
 
     if (!screen) {
-      return res.status(404).json({ message: "Screen not found" });
+      return apiResponse.notFound(res, "Screen");
     }
 
-    res.json({
+    return apiResponse.success(res, {
       id: screen.id,
       title: screen.title,
       description: screen.description || "",
@@ -52,15 +54,19 @@ router.get("/:id", isAuthenticated, async (req: any, res) => {
       updatedAt: screen.updatedAt,
     });
   } catch (error) {
-    console.error("Error loading screen:", error);
-    res.status(500).json({ message: "Failed to load screen" });
+    screenLogger.error("Error loading screen:", error);
+    return apiResponse.serverError(res, "Failed to load screen");
   }
 });
 
 // Create a new global screen (admin only)
-router.post("/", isAdmin, async (req: any, res) => {
+router.post("/", isAdmin, async (req: Request, res: Response) => {
   try {
-    const userId = req.user.id;
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return apiResponse.unauthorized(res);
+    }
+
     const { title, description, tags, sections, events, state, hidesBackButton, version } = req.body;
 
     const screen = await storage.createGlobalScreen({
@@ -76,7 +82,7 @@ router.post("/", isAdmin, async (req: any, res) => {
       createdBy: userId,
     });
 
-    res.json({
+    return apiResponse.success(res, {
       id: screen.id,
       title: screen.title,
       description: screen.description || "",
@@ -88,20 +94,20 @@ router.post("/", isAdmin, async (req: any, res) => {
       version: screen.version,
       createdAt: screen.createdAt,
       updatedAt: screen.updatedAt,
-    });
+    }, 201);
   } catch (error) {
-    console.error("Error creating screen:", error);
-    res.status(500).json({ message: "Failed to create screen" });
+    screenLogger.error("Error creating screen:", error);
+    return apiResponse.serverError(res, "Failed to create screen");
   }
 });
 
 // Update a global screen (admin only)
-router.put("/:id", isAdmin, async (req: any, res) => {
+router.put("/:id", isAdmin, async (req: Request, res: Response) => {
   try {
     const screen = await storage.getGlobalScreen(req.params.id);
 
     if (!screen) {
-      return res.status(404).json({ message: "Screen not found" });
+      return apiResponse.notFound(res, "Screen");
     }
 
     const { title, description, tags, sections, events, state, hidesBackButton, version } = req.body;
@@ -118,10 +124,10 @@ router.put("/:id", isAdmin, async (req: any, res) => {
     });
 
     if (!updated) {
-      return res.status(500).json({ message: "Failed to update screen" });
+      return apiResponse.serverError(res, "Failed to update screen");
     }
 
-    res.json({
+    return apiResponse.success(res, {
       id: updated.id,
       title: updated.title,
       description: updated.description || "",
@@ -135,36 +141,40 @@ router.put("/:id", isAdmin, async (req: any, res) => {
       updatedAt: updated.updatedAt,
     });
   } catch (error) {
-    console.error("Error updating screen:", error);
-    res.status(500).json({ message: "Failed to update screen" });
+    screenLogger.error("Error updating screen:", error);
+    return apiResponse.serverError(res, "Failed to update screen");
   }
 });
 
 // Delete a global screen (admin only)
-router.delete("/:id", isAdmin, async (req: any, res) => {
+router.delete("/:id", isAdmin, async (req: Request, res: Response) => {
   try {
     const screen = await storage.getGlobalScreen(req.params.id);
 
     if (!screen) {
-      return res.status(404).json({ message: "Screen not found" });
+      return apiResponse.notFound(res, "Screen");
     }
 
     await storage.deleteGlobalScreen(req.params.id);
-    res.json({ success: true });
+    return apiResponse.success(res, { deleted: true });
   } catch (error) {
-    console.error("Error deleting screen:", error);
-    res.status(500).json({ message: "Failed to delete screen" });
+    screenLogger.error("Error deleting screen:", error);
+    return apiResponse.serverError(res, "Failed to delete screen");
   }
 });
 
 // Duplicate a global screen (admin only)
-router.post("/:id/duplicate", isAdmin, async (req: any, res) => {
+router.post("/:id/duplicate", isAdmin, async (req: Request, res: Response) => {
   try {
-    const userId = req.user.id;
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return apiResponse.unauthorized(res);
+    }
+
     const original = await storage.getGlobalScreen(req.params.id);
 
     if (!original) {
-      return res.status(404).json({ message: "Screen not found" });
+      return apiResponse.notFound(res, "Screen");
     }
 
     const duplicate = await storage.createGlobalScreen({
@@ -180,7 +190,7 @@ router.post("/:id/duplicate", isAdmin, async (req: any, res) => {
       createdBy: userId,
     });
 
-    res.json({
+    return apiResponse.success(res, {
       id: duplicate.id,
       title: duplicate.title,
       description: duplicate.description || "",
@@ -192,10 +202,10 @@ router.post("/:id/duplicate", isAdmin, async (req: any, res) => {
       version: duplicate.version,
       createdAt: duplicate.createdAt,
       updatedAt: duplicate.updatedAt,
-    });
+    }, 201);
   } catch (error) {
-    console.error("Error duplicating screen:", error);
-    res.status(500).json({ message: "Failed to duplicate screen" });
+    screenLogger.error("Error duplicating screen:", error);
+    return apiResponse.serverError(res, "Failed to duplicate screen");
   }
 });
 

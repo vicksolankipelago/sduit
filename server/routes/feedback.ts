@@ -1,22 +1,27 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import { isAuthenticated } from "../auth";
 import { db } from "../db";
 import { feedback, voiceSessions } from "../../shared/schema";
 import { eq, desc } from "drizzle-orm";
+import { feedbackLogger } from "../utils/logger";
+import * as apiResponse from "../utils/response";
 
 const router = Router();
 
-router.post("/", isAuthenticated, async (req: any, res) => {
+router.post("/", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const userId = req.user.id;
-    const { voiceSessionId, rating, comment } = req.body;
-
-    if (!voiceSessionId || !rating) {
-      return res.status(400).json({ message: "voiceSessionId and rating are required" });
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return apiResponse.unauthorized(res);
     }
 
-    if (rating < 1 || rating > 5) {
-      return res.status(400).json({ message: "Rating must be between 1 and 5" });
+    const { voiceSessionId, rating, comment } = req.body;
+
+    if (!voiceSessionId) {
+      return apiResponse.validationError(res, "voiceSessionId is required");
+    }
+    if (typeof rating !== "number" || rating < 1 || rating > 5) {
+      return apiResponse.validationError(res, "rating must be a number between 1 and 5");
     }
 
     // Look up by sessionId field (client session ID) or database id
@@ -26,7 +31,7 @@ router.post("/", isAuthenticated, async (req: any, res) => {
       .from(voiceSessions)
       .where(eq(voiceSessions.sessionId, voiceSessionId))
       .limit(1);
-    
+
     // Fallback to database ID lookup
     if (!session) {
       [session] = await db
@@ -37,11 +42,11 @@ router.post("/", isAuthenticated, async (req: any, res) => {
     }
 
     if (!session) {
-      return res.status(404).json({ message: "Voice session not found" });
+      return apiResponse.notFound(res, "Voice session");
     }
 
     if (session.userId !== userId) {
-      return res.status(403).json({ message: "You can only submit feedback for your own sessions" });
+      return apiResponse.forbidden(res, "You can only submit feedback for your own sessions");
     }
 
     // Use database ID for the foreign key
@@ -55,17 +60,21 @@ router.post("/", isAuthenticated, async (req: any, res) => {
       })
       .returning();
 
-    res.status(201).json(newFeedback);
+    return apiResponse.success(res, newFeedback, 201);
   } catch (error) {
-    console.error("Error creating feedback:", error);
-    res.status(500).json({ message: "Failed to save feedback" });
+    feedbackLogger.error("Error creating feedback:", error);
+    return apiResponse.serverError(res, "Failed to save feedback");
   }
 });
 
-router.get("/", isAuthenticated, async (req: any, res) => {
+router.get("/", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const userId = req.user.id;
-    const isAdmin = req.user.role === 'admin';
+    const userId = (req.user as any)?.id;
+    const isAdmin = (req.user as any)?.role === 'admin';
+
+    if (!userId) {
+      return apiResponse.unauthorized(res);
+    }
 
     let feedbackList;
     if (isAdmin) {
@@ -100,17 +109,21 @@ router.get("/", isAuthenticated, async (req: any, res) => {
         .orderBy(desc(feedback.createdAt));
     }
 
-    res.json(feedbackList);
+    return apiResponse.success(res, feedbackList);
   } catch (error) {
-    console.error("Error fetching feedback:", error);
-    res.status(500).json({ message: "Failed to fetch feedback" });
+    feedbackLogger.error("Error fetching feedback:", error);
+    return apiResponse.serverError(res, "Failed to fetch feedback");
   }
 });
 
-router.get("/:id", isAuthenticated, async (req: any, res) => {
+router.get("/:id", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const userId = req.user.id;
-    const isAdmin = req.user.role === 'admin';
+    const userId = (req.user as any)?.id;
+    const isAdmin = (req.user as any)?.role === 'admin';
+
+    if (!userId) {
+      return apiResponse.unauthorized(res);
+    }
 
     const [fb] = await db
       .select({
@@ -130,17 +143,17 @@ router.get("/:id", isAuthenticated, async (req: any, res) => {
       .limit(1);
 
     if (!fb) {
-      return res.status(404).json({ message: "Feedback not found" });
+      return apiResponse.notFound(res, "Feedback");
     }
 
     if (!isAdmin && fb.userId !== userId) {
-      return res.status(403).json({ message: "Forbidden" });
+      return apiResponse.forbidden(res);
     }
 
-    res.json(fb);
+    return apiResponse.success(res, fb);
   } catch (error) {
-    console.error("Error fetching feedback:", error);
-    res.status(500).json({ message: "Failed to fetch feedback" });
+    feedbackLogger.error("Error fetching feedback:", error);
+    return apiResponse.serverError(res, "Failed to fetch feedback");
   }
 });
 
