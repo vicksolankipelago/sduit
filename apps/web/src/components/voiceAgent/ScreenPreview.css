@@ -188,6 +188,7 @@
   flex-direction: column;
   position: relative;
   z-index: auto;
+  flex-shrink: 0; /* Prevent sections from shrinking within body */
 }
 
 .screen-preview-section-fixed-top,
@@ -198,13 +199,23 @@
 .screen-preview-section-body {
   padding: 0 var(--padding-horizontal-standard);
   padding-bottom: var(--spacing-sm);
-  flex: 1 1 auto; /* Allow growing to fill space */
+  flex: 0 0 auto; /* Don't grow or shrink - use content height */
   display: flex;
   flex-direction: column;
-  min-height: 0;
   align-items: flex-start; /* Align to top */
   justify-content: flex-start; /* Start from top */
   position: relative;
+}
+
+/* Scrollable sections need to grow to fill space and enable internal scrolling */
+.screen-preview-section-body.screen-preview-section-scrollable {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Scrollable sections can shrink to allow scrolling */
+.screen-preview-section.screen-preview-section-scrollable {
+  flex-shrink: 1;
 }
 
 /* In direct SDUI mode, use even less padding */
@@ -222,12 +233,17 @@
 .screen-preview-section-elements {
   display: flex;
   gap: var(--spacing-md);
-  flex: 1 1 auto; /* Allow growing to fill space */
-  min-height: 0;
+  flex: 0 0 auto; /* Don't grow or shrink - use content height */
   width: 100%; /* Ensure full width */
   align-items: stretch; /* Stretch items to full width */
   justify-content: flex-start; /* Start from top */
   position: relative;
+}
+
+/* Scrollable section elements need to grow to fill space */
+.screen-preview-section-scrollable .screen-preview-section-elements {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .screen-preview-section-stack .screen-preview-section-elements {
@@ -292,6 +308,15 @@
 .screen-preview-element:has(.spacer-element-flexible) {
   flex: 1 1 0;
   min-height: 0;
+}
+
+/* Allow sections with flexible spacers to grow and fill available space */
+.screen-preview-section-body:has(.spacer-element-flexible) {
+  flex: 1 1 auto;
+}
+
+.screen-preview-section-elements:has(.spacer-element-flexible) {
+  flex: 1 1 auto;
 }
 
 .screen-preview-element-editable {
