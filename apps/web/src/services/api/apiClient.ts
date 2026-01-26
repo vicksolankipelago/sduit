@@ -95,19 +95,32 @@ export async function apiRequest<T>(
   url: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const defaultOptions: RequestInit = {
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
   };
 
-  const mergedOptions = { ...defaultOptions, ...options };
+  if (options.headers) {
+    if (options.headers instanceof Headers) {
+      options.headers.forEach((value, key) => {
+        headers[key] = value;
+      });
+    } else if (Array.isArray(options.headers)) {
+      options.headers.forEach(([key, value]) => {
+        headers[key] = value;
+      });
+    } else {
+      Object.assign(headers, options.headers);
+    }
+  }
 
-  // Don't set Content-Type for FormData or when explicitly removed
-  if (options.body instanceof FormData || options.headers?.['Content-Type'] === undefined) {
-    delete (mergedOptions.headers as Record<string, string>)['Content-Type'];
+  const mergedOptions: RequestInit = {
+    credentials: 'include',
+    ...options,
+    headers,
+  };
+
+  if (options.body instanceof FormData) {
+    delete headers['Content-Type'];
   }
 
   try {
