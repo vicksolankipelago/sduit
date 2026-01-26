@@ -364,11 +364,13 @@ export class JourneyRuntime {
 
     interface EndCallParams {
       reason?: string;
+      feedbackScreenId?: string;
+      delaySeconds?: number;
     }
 
     return (tool as any)({
       name: 'end_call',
-      description: 'End the current call/conversation. Use this when the conversation is complete, the user wants to end the call, or the journey has reached its natural conclusion. This will disconnect the call and show a feedback form to the user.',
+      description: 'End the current call/conversation. Use this when the conversation is complete, the user wants to end the call, or the journey has reached its natural conclusion. This will trigger the feedback screen (if specified) and then disconnect the call after the delay.',
       parameters: {
         type: 'object' as const,
         properties: {
@@ -376,23 +378,47 @@ export class JourneyRuntime {
             type: 'string',
             description: 'Optional reason for ending the call (e.g., "conversation complete", "user requested", "journey finished")',
           },
+          feedbackScreenId: {
+            type: 'string',
+            description: 'Optional screen ID to navigate to before ending (e.g., "feedback_screen", "goodbye_screen"). If not provided, will attempt to find a feedback/goodbye screen automatically.',
+          },
+          delaySeconds: {
+            type: 'number',
+            description: 'Optional delay in seconds before disconnecting after showing the feedback screen. Defaults to 5 seconds if a feedback screen is shown.',
+          },
         },
         required: [] as const,
         additionalProperties: false as const,
       },
       strict: false,
       execute: async (input: EndCallParams) => {
-        const { reason } = input;
+        const { reason, feedbackScreenId, delaySeconds } = input;
 
         toolLogger.debug(`End call triggered by agent ${agentName}${reason ? `: ${reason}` : ''}`);
 
-        if (runtime.endCallCallback) {
-          runtime.endCallCallback(reason);
-        } else {
-          toolLogger.warn('End call callback not set. Call will not be ended.');
+        // Trigger feedback screen event if a screen ID is provided or by default
+        const showFeedback = feedbackScreenId !== undefined || true; // Always try to show feedback
+        if (showFeedback && runtime.eventTriggerCallback) {
+          toolLogger.debug(`Triggering feedback screen before ending call: ${feedbackScreenId || 'auto-detect'}`);
+          // Pass the screen ID in the event ID, or use the generic event
+          const eventId = feedbackScreenId ? `navigate_to_${feedbackScreenId}` : 'show_feedback_screen';
+          runtime.eventTriggerCallback(eventId, agentName);
         }
 
-        return `Call ending${reason ? `: ${reason}` : ''}`;
+        // Calculate delay - default to 5 seconds if showing feedback, 0 otherwise
+        const delay = delaySeconds !== undefined ? delaySeconds * 1000 : (showFeedback ? 5000 : 0);
+        
+        toolLogger.debug(`Scheduling disconnect in ${delay}ms`);
+        
+        setTimeout(() => {
+          if (runtime.endCallCallback) {
+            runtime.endCallCallback(reason);
+          } else {
+            toolLogger.warn('End call callback not set. Call will not be ended.');
+          }
+        }, delay);
+
+        return `Call ending${reason ? `: ${reason}` : ''}${feedbackScreenId ? `. Navigating to ${feedbackScreenId} first.` : '. Feedback screen triggered.'} Disconnecting in ${delay / 1000} seconds.`;
       },
     });
   }

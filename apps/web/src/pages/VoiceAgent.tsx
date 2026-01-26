@@ -293,6 +293,43 @@ function VoiceAgentContent() {
     const handleEventTrigger = (eventId: string, agentName: string) => {
       addLog('event', `📢 Screen event triggered: ${eventId}`, { agentName });
       
+      // Handle direct screen navigation events (e.g., "navigate_to_feedback_screen")
+      if (eventId.startsWith('navigate_to_')) {
+        const targetScreenId = eventId.replace('navigate_to_', '');
+        addLog('info', `📱 Direct navigation event - navigating to screen: ${targetScreenId}`);
+        if (navigateToScreen) {
+          navigateToScreen(targetScreenId);
+        } else {
+          addLog('warning', '⚠️ navigateToScreen not available');
+        }
+        return;
+      }
+      
+      // Special handling for feedback screen event (triggered by end_call tool)
+      if (eventId === 'show_feedback_screen') {
+        addLog('info', '📋 Feedback screen event triggered - navigating to feedback screen');
+        // Navigate to a feedback screen if it exists in the journey
+        const currentAgentConfig = journeyWithPQData.agents.find(a => {
+          const name = a.name.replace(/[^a-zA-Z0-9]+(.)/g, (_, char) => char.toUpperCase()).replace(/^(.)/, (char) => char.toLowerCase());
+          return name === agentName;
+        });
+        
+        // Look for a screen with id containing 'feedback' or navigate to the first feedback screen
+        const feedbackScreen = currentAgentConfig?.screens?.find(s => 
+          s.id.toLowerCase().includes('feedback') || 
+          s.id.toLowerCase().includes('goodbye') ||
+          s.id.toLowerCase().includes('end')
+        );
+        
+        if (feedbackScreen && navigateToScreen) {
+          addLog('info', `📱 Navigating to feedback screen: ${feedbackScreen.id}`);
+          navigateToScreen(feedbackScreen.id);
+        } else {
+          addLog('warning', '⚠️ No feedback screen found in journey - feedback modal will be shown after disconnect');
+        }
+        return;
+      }
+      
       // Find the current agent to get its screens
       const currentAgentConfig = journeyWithPQData.agents.find(a => {
         const name = a.name.replace(/[^a-zA-Z0-9]+(.)/g, (_, char) => char.toUpperCase()).replace(/^(.)/, (char) => char.toLowerCase());
