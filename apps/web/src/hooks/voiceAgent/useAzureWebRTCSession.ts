@@ -277,14 +277,10 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                   }
                   
                   // Enforce default delay for specific events if not provided
-                  if (delay === 0 && [
-                    'navigate_to_outcomes',
-                    'navigate_to_motivation',
-                    'navigate_to_intention',
-                    'navigate_to_checkin_commitment'
-                  ].includes(eventId)) {
+                  // Dynamically enforce delay for navigation events (any event starting with 'navigate_to_')
+                  if (delay === 0 && eventId.startsWith('navigate_to_')) {
                     delay = 2;
-                    voiceAgentLogger.warn(`Enforcing default 2s delay for event '${eventId}'`);
+                    voiceAgentLogger.warn(`Enforcing default 2s delay for navigation event '${eventId}'`);
                   }
 
                   voiceAgentLogger.debug(`Triggering event: ${eventId} (delay: ${delay}s)`);
@@ -341,8 +337,9 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                   
                   // Handle automatic navigation if requested (journey mode handles its own navigation)
                   if (nextEventId && onEventTrigger) {
+                    // Dynamically enforce delay for navigation events (any event starting with 'navigate_to_')
                     const enforcedDelay = delay > 0 ? delay : (
-                      ['navigate_to_outcomes','navigate_to_motivation','navigate_to_intention','navigate_to_checkin_commitment'].includes(nextEventId) ? 2 : 0
+                      nextEventId.startsWith('navigate_to_') ? 2 : 0
                     );
                     voiceAgentLogger.debug(`Auto-scheduling event '${nextEventId}' with ${enforcedDelay}s delay from record_input`);
                     setTimeout(() => {

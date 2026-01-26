@@ -294,13 +294,9 @@ export class JourneyRuntime {
       delay?: number | string;
     }
 
-    // Events that require a default delay to let users read content
-    const DELAYED_EVENTS = [
-      'navigate_to_outcomes',
-      'navigate_to_motivation',
-      'navigate_to_intention',
-      'navigate_to_checkin_commitment',
-    ];
+    // Navigation events dynamically get a default delay to let users read content
+    // Any event starting with 'navigate_to_' will be treated as a navigation event
+    const isNavigationEvent = (eventId: string) => eventId.startsWith('navigate_to_');
 
     return (tool as any)({
       name: 'trigger_event',
@@ -333,10 +329,10 @@ export class JourneyRuntime {
           if (isNaN(delay)) delay = 0;
         }
 
-        // Enforce delay for specific navigation events if not provided
-        if (delay === 0 && DELAYED_EVENTS.includes(eventId)) {
+        // Enforce delay for navigation events if not provided
+        if (delay === 0 && isNavigationEvent(eventId)) {
           delay = 2; // Default delay
-          toolLogger.debug(`Enforcing default 2s delay for event '${eventId}'`);
+          toolLogger.debug(`Enforcing default 2s delay for navigation event '${eventId}'`);
         }
 
         toolLogger.debug(`Event triggered: ${eventId} by agent ${agentName} (delay: ${delay}s)`);

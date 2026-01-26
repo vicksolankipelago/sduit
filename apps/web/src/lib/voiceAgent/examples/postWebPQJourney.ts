@@ -537,17 +537,120 @@ function createPostWebPQScreens(): Screen[] {
               style: {},
               events: [
                 {
-                  id: 'navigate_to_checkin_commitment',
+                  id: 'navigate_to_rewards',
                   type: 'custom',
                   conditions: [],
                   action: [
                     {
                       type: 'navigation',
-                      deeplink: 'checkin-commitment',
+                      deeplink: 'rewards',
                     },
                   ],
                 },
               ],
+            },
+          ],
+        },
+      ],
+      events: [
+        {
+          id: 'navigate_to_rewards',
+          type: 'custom',
+          conditions: [],
+          action: [
+            {
+              type: 'navigation',
+              deeplink: 'rewards',
+            },
+          ],
+        },
+      ],
+    },
+
+    // Screen 7: rewards
+    {
+      id: 'rewards',
+      title: '',
+      hidesBackButton: true,
+      sections: [
+        {
+          id: 'content_section',
+          title: '',
+          position: 'body',
+          layout: 'stack',
+          direction: 'vertical',
+          scrollable: true,
+          elements: [
+            {
+              type: 'spacer',
+              state: {
+                id: 'top_spacer',
+              },
+              style: {
+                height: null,
+                width: null,
+                isFlexible: true,
+                direction: 'vertical',
+              },
+            },
+            {
+              type: 'animatedImage',
+              state: {
+                id: 'rewards_animation',
+                lottieName: 'COLOR_Pelago_Rewards',
+              },
+              style: {
+                width: 280,
+                height: 280,
+              },
+            },
+            {
+              type: 'textBlock',
+              state: {
+                id: 'rewards_title',
+                text: 'Earn rewards as you go',
+              },
+              style: {
+                style: 'heading1',
+                alignment: 'center',
+                color: 'primary',
+              },
+            },
+            {
+              type: 'spacer',
+              state: {
+                id: 'mid_spacer',
+              },
+              style: {
+                height: 16,
+                width: null,
+                isFlexible: false,
+                direction: 'vertical',
+              },
+            },
+            {
+              type: 'textBlock',
+              state: {
+                id: 'rewards_description',
+                text: 'Every check-in earns you points that you can redeem for rewards. The more consistent you are, the more you earn!',
+              },
+              style: {
+                style: 'body1',
+                alignment: 'center',
+                color: 'secondary',
+              },
+            },
+            {
+              type: 'spacer',
+              state: {
+                id: 'bottom_spacer',
+              },
+              style: {
+                height: null,
+                width: null,
+                isFlexible: true,
+                direction: 'vertical',
+              },
             },
           ],
         },
@@ -567,7 +670,7 @@ function createPostWebPQScreens(): Screen[] {
       ],
     },
 
-    // Screen 7: checkin-commitment
+    // Screen 8: checkin-commitment (was Screen 7)
     {
       id: 'checkin-commitment',
       title: '',
