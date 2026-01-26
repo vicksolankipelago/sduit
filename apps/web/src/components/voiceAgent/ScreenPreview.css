@@ -266,6 +266,11 @@
   position: relative;
 }
 
+/* Text cards should span full width in grid layouts */
+.screen-preview-section-grid .screen-preview-element:has(.text-card-element) {
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 360px) {
   .screen-preview-section-grid .screen-preview-section-elements {
     grid-template-columns: repeat(1, minmax(0, 1fr));

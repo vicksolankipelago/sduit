@@ -7,7 +7,8 @@
   background-color: #FFFFFF;
   width: 100%;
   box-sizing: border-box;
-  overflow: hidden; /* Prevent content overflow */
+  overflow: visible; /* Allow content to determine height */
+  height: auto; /* Dynamic height based on content */
 }
 
 .text-card-element-with-checkmark {
