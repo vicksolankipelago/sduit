@@ -52,6 +52,8 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   
   // Embedded agent editor state
   const [agentEditorTab, setAgentEditorTab] = useState<'config' | 'tools' | 'screens'>('config');
+  const [showScreensJsonView, setShowScreensJsonView] = useState(false);
+  const [screensJsonValue, setScreensJsonValue] = useState('');
 
   useEffect(() => {
     // Load flow based on URL params
@@ -374,6 +376,17 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
 
   const selectedAgent = currentJourney?.agents.find(a => a.id === selectedAgentId) || null;
   const availableHandoffTargets = currentJourney?.agents.filter(a => a.id !== selectedAgentId) || [];
+
+  // Sync JSON value when selected agent or screens change
+  useEffect(() => {
+    if (selectedAgent && showScreensJsonView) {
+      const jsonObj = {
+        screens: selectedAgent.screens || [],
+        screenPrompts: selectedAgent.screenPrompts || {},
+      };
+      setScreensJsonValue(JSON.stringify(jsonObj, null, 2));
+    }
+  }, [selectedAgent?.id, selectedAgent?.screens, selectedAgent?.screenPrompts, showScreensJsonView]);
 
   const handleToggleHandoff = (targetAgentId: string) => {
     if (!selectedAgent) return;
@@ -912,22 +925,86 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                       <div className="journey-agent-section journey-agent-screens-section">
                         <div className="journey-agent-screens-header">
                           <h4>Screens (SDUI)</h4>
-                          {isAdmin && (
-                            <button
-                              className="journey-agent-add-screen-btn"
-                              onClick={() => handleAddScreen()}
-                              disabled={disabled}
-                              type="button"
-                            >
-                              + Add Screen
-                            </button>
-                          )}
+                          <div className="journey-agent-screens-actions">
+                            <div className="journey-screens-view-toggle">
+                              <button
+                                className={`journey-view-toggle-btn ${!showScreensJsonView ? 'active' : ''}`}
+                                onClick={() => setShowScreensJsonView(false)}
+                                type="button"
+                              >
+                                UI
+                              </button>
+                              <button
+                                className={`journey-view-toggle-btn ${showScreensJsonView ? 'active' : ''}`}
+                                onClick={() => {
+                                  const jsonObj = {
+                                    screens: selectedAgent.screens || [],
+                                    screenPrompts: selectedAgent.screenPrompts || {},
+                                  };
+                                  setScreensJsonValue(JSON.stringify(jsonObj, null, 2));
+                                  setShowScreensJsonView(true);
+                                }}
+                                type="button"
+                              >
+                                JSON
+                              </button>
+                            </div>
+                            {isAdmin && !showScreensJsonView && (
+                              <button
+                                className="journey-agent-add-screen-btn"
+                                onClick={() => handleAddScreen()}
+                                disabled={disabled}
+                                type="button"
+                              >
+                                + Add Screen
+                              </button>
+                            )}
+                          </div>
                         </div>
                         <p className="journey-agent-section-desc">
                           Define screen-based UI for this agent. Screens enable visual interactions alongside voice.
                         </p>
 
-                        {!selectedAgent.screens || selectedAgent.screens.length === 0 ? (
+                        {showScreensJsonView ? (
+                          <div className="journey-screens-json-view">
+                            <textarea
+                              className="journey-screens-json-editor"
+                              value={screensJsonValue}
+                              onChange={(e) => setScreensJsonValue(e.target.value)}
+                              disabled={disabled || !isAdmin}
+                              spellCheck={false}
+                              placeholder='{"screens": [], "screenPrompts": {}}'
+                            />
+                            {isAdmin && (
+                              <div className="journey-screens-json-actions">
+                                <button
+                                  className="journey-screens-json-save-btn"
+                                  onClick={() => {
+                                    try {
+                                      const parsed = JSON.parse(screensJsonValue);
+                                      if (parsed.screens && Array.isArray(parsed.screens)) {
+                                        handleUpdateAgent({
+                                          ...selectedAgent,
+                                          screens: parsed.screens,
+                                          screenPrompts: parsed.screenPrompts ?? selectedAgent.screenPrompts,
+                                        });
+                                        alert('Screens updated. Click "Save" to persist changes.');
+                                      } else {
+                                        alert('Invalid JSON: "screens" must be an array');
+                                      }
+                                    } catch (e) {
+                                      alert('Invalid JSON format: ' + (e instanceof Error ? e.message : 'Parse error'));
+                                    }
+                                  }}
+                                  disabled={disabled}
+                                  type="button"
+                                >
+                                  Apply Changes
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ) : !selectedAgent.screens || selectedAgent.screens.length === 0 ? (
                           <div className="journey-screens-empty">
                             <p>No screens defined yet.</p>
                             {isAdmin && (
