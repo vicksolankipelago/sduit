@@ -34,6 +34,13 @@ Security features:
 - Session regeneration on login/register to prevent session fixation
 - Session destruction and cookie clearing on logout
 
+### Terms & Conditions
+- Members must accept terms before using the application
+- Terms modal appears after registration/login for members who haven't accepted
+- Covers consent for voice recording, data processing, and AI model training
+- Accept terms: POST to `/api/auth/accept-terms` (updates user's termsAcceptedAt timestamp)
+- Admins are not required to accept terms
+
 ## User Roles
 
 The application supports two user roles:
@@ -160,6 +167,7 @@ The client detects environment using:
 
 ## Recent Changes
 
+- 2026-01-27: Added terms & conditions modal - members must accept terms covering voice recording consent and AI model training before using the app
 - 2026-01-27: Added audio-synced transcript scrolling - messages now display audio timestamps, auto-scroll during playback, and highlight the currently playing message. Click any message to jump to that point in the recording.
 - 2026-01-23: Added dev/prod publishing system - users can now publish flows to production using Object Storage
 - 2026-01-23: Fixed audio recording and playback - recordings now properly save to Object Storage and play back in transcript view with correct duration display
