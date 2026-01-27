@@ -327,7 +327,8 @@ function VoiceAgentContent() {
       
       // Handle direct screen navigation events (e.g., "navigate_to_feedback_screen")
       if (eventId.startsWith('navigate_to_')) {
-        const targetScreenId = eventId.replace('navigate_to_', '');
+        // Convert underscores to hyphens since screen IDs use hyphens (e.g., "about_you" -> "about-you")
+        const targetScreenId = eventId.replace('navigate_to_', '').replace(/_/g, '-');
         addLog('info', `📱 Direct navigation event - navigating to screen: ${targetScreenId}`);
         if (navigateToScreen) {
           navigateToScreen(targetScreenId);
