@@ -27,14 +27,14 @@
   z-index: 1000;
 }
 
-/* Top controls container - positioned top right */
+/* Top controls container - positioned top right, outside the device frame */
 .agent-ui-top-controls {
-  position: absolute;
+  position: fixed;
   top: 1rem;
   right: 1rem;
   display: flex;
   gap: 0.5rem;
-  z-index: 10;
+  z-index: 1100;
 }
 
 /* Control buttons (Exit and Settings) */
