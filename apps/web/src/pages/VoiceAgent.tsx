@@ -1187,8 +1187,8 @@ Important guidelines:
         onExit={sessionStatus === 'CONNECTED' && isPreviewMode ? handleEndCall : undefined}
       />
       
-      {/* Header - Show when disconnected */}
-      {sessionStatus === 'DISCONNECTED' && (
+      {/* Header - Show when disconnected and NOT in preview mode */}
+      {sessionStatus === 'DISCONNECTED' && !isPreviewMode && (
         <div className="voice-agent-header">
           <h2 className="voice-agent-title">Flows</h2>
           {isAdmin && (
@@ -1289,7 +1289,8 @@ Important guidelines:
         </div>
       )}
 
-      {/* Journeys Content */}
+      {/* Journeys Content - Hide in preview mode */}
+      {!isPreviewMode && (
       <div className="voice-agent-content">
         <div className="voice-agent-session-view">
           {sessionStatus === 'DISCONNECTED' ? (
@@ -1383,6 +1384,7 @@ Important guidelines:
           ) : null}
         </div>
       </div>
+      )}
       
       {/* Feedback Form Modal */}
       {showFeedbackForm && feedbackSessionId && (
