@@ -777,8 +777,12 @@ Important guidelines:
     setSessionStatus("DISCONNECTED");
     addLog('success', 'Disconnected successfully');
     
-    // Show feedback form if session was saved successfully
-    if (sessionSaved) {
+    // Show feedback form if session was saved successfully OR if in preview mode
+    if (sessionSaved || isPreviewMode) {
+      // Ensure feedbackSessionId is set for the form to render
+      if (!feedbackSessionId) {
+        setFeedbackSessionId(sessionIdRef.current);
+      }
       setShowFeedbackForm(true);
     }
   };
