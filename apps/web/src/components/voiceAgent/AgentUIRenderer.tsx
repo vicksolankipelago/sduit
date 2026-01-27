@@ -36,6 +36,11 @@ export default function AgentUIRenderer({ bottomBar, onOpenSettings, onExit }: A
     const currentScreen = currentAgentScreens.find(s => s.id === currentScreenId);
 
     uiLogger.debug('Rendering screen:', currentScreenId, currentScreen ? 'found' : 'NOT FOUND');
+    
+    if (!currentScreen) {
+      uiLogger.debug('Available screen IDs:', currentAgentScreens.map(s => s.id));
+      uiLogger.debug('Requested screen ID:', currentScreenId);
+    }
 
     // Only render if we have a valid screen to avoid context errors
     if (currentScreen && currentScreen.id) {

@@ -393,7 +393,29 @@ function VoiceAgentContent() {
             } catch {
               // Not a URL, use as-is
             }
-            addLog('info', `🎯 Navigating to screen: ${targetScreenId}`);
+            
+            // Handle "next-screen" placeholder - navigate to the next screen in sequence
+            if (targetScreenId === 'next-screen' && currentAgentConfig?.screens) {
+              const screens = currentAgentConfig.screens;
+              // Find the current screen's index by checking which screen matches the current screen ID
+              const currentScreenIdx = screens.findIndex(s => {
+                // Try to find the screen that triggered this event
+                const hasEvent = s.events?.some(e => e.id === eventId) || 
+                  s.sections.some(sec => sec.elements.some(el => el.events?.some((e: any) => e.id === eventId)));
+                return hasEvent;
+              });
+              
+              if (currentScreenIdx !== -1 && currentScreenIdx < screens.length - 1) {
+                targetScreenId = screens[currentScreenIdx + 1].id;
+                addLog('info', `🎯 Navigating to next screen: ${targetScreenId} (index ${currentScreenIdx + 1})`);
+              } else {
+                addLog('warning', `⚠️ No next screen available after index ${currentScreenIdx}`);
+                return;
+              }
+            } else {
+              addLog('info', `🎯 Navigating to screen: ${targetScreenId}`);
+            }
+            
             navigateToScreen?.(targetScreenId);
           }
 
