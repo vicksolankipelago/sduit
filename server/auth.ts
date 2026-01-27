@@ -215,6 +215,36 @@ export function setupAuth(app: Express) {
     res.json(userWithoutPassword);
   });
 
+  // Accept terms and conditions
+  app.post("/api/auth/accept-terms", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const userId = (req.user as SelectUser).id;
+      
+      const [updatedUser] = await db
+        .update(users)
+        .set({ 
+          termsAcceptedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userId))
+        .returning();
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const { password: _, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error accepting terms:", error);
+      res.status(500).json({ message: "Failed to accept terms" });
+    }
+  });
+
   // Forgot password - generates reset token
   app.post("/api/forgot-password", async (req, res) => {
     try {

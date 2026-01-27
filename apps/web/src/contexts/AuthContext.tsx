@@ -12,6 +12,7 @@ interface User {
   lastName: string | null;
   profileImageUrl: string | null;
   role: UserRole;
+  termsAcceptedAt: string | null;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -32,11 +33,13 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isAdmin: boolean;
   isMember: boolean;
+  hasAcceptedTerms: boolean;
   login: (credentials: LoginCredentials) => Promise<{ success: boolean; error?: string }>;
   register: (data: RegisterData) => Promise<{ success: boolean; error?: string }>;
   registerAdmin: (data: RegisterData) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  acceptTerms: () => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -163,6 +166,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const acceptTerms = useCallback(async () => {
+    try {
+      const response = await fetch("/api/auth/accept-terms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const result = await response.json();
+        return { success: false, error: result.message || "Failed to accept terms" };
+      }
+
+      const userData = await response.json();
+      setUser(userData);
+      return { success: true };
+    } catch (error) {
+      authLogger.error("Accept terms error:", error);
+      return { success: false, error: "An error occurred while accepting terms" };
+    }
+  }, []);
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -170,11 +195,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isAuthenticated: !!user,
       isAdmin: user?.role === 'admin',
       isMember: user?.role === 'member',
+      hasAcceptedTerms: !!user?.termsAcceptedAt,
       login,
       register,
       registerAdmin,
       logout,
       refreshUser,
+      acceptTerms,
     }}>
       {children}
     </AuthContext.Provider>
