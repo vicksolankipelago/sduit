@@ -1,16 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { Navigation } from './Navigation';
 import './Layout.css';
 
 export const Layout: React.FC = () => {
   const navigate = useNavigate();
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
-
-  useEffect(() => {
-    const previewMode = localStorage.getItem('voice-agent-preview-mode') === 'true';
-    setIsPreviewMode(previewMode);
-  }, []);
+  // Initialize preview mode directly from localStorage to avoid flash
+  const [isPreviewMode, setIsPreviewMode] = useState(() => {
+    return localStorage.getItem('voice-agent-preview-mode') === 'true';
+  });
 
   const handleExitPreview = () => {
     localStorage.removeItem('voice-agent-preview-mode');
