@@ -10,7 +10,7 @@ import SystemPromptEditor from './SystemPromptEditor';
 import ToolEditor from './ToolEditor';
 import { ScreenProvider } from '../../contexts/voiceAgent/ScreenContext';
 import ScreenPreview from './ScreenPreview';
-import { TrashIcon, FileTextIcon, EditIcon, RocketIcon, TargetIcon, HistoryIcon, SaveIcon, ToolIcon, SettingsIcon, MoreIcon, DownloadIcon, UploadIcon } from '../Icons';
+import { TrashIcon, FileTextIcon, EditIcon, RocketIcon, TargetIcon, HistoryIcon, SaveIcon, ToolIcon, SettingsIcon, MoreIcon, DownloadIcon, UploadIcon, LinkIcon } from '../Icons';
 import VersionHistory from './VersionHistory';
 import { useAuth } from '../../contexts/AuthContext';
 import './JourneyBuilder.css';
@@ -321,6 +321,21 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     input.click();
   };
 
+  const handleShareLink = async () => {
+    if (!currentJourney) return;
+    
+    const baseUrl = window.location.origin;
+    const shareUrl = `${baseUrl}/preview/${currentJourney.id}`;
+    
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      alert('Link copied to clipboard!');
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      prompt('Copy this link:', shareUrl);
+    }
+  };
+
   // Temporarily unused - can be re-enabled when duplicate button is added to UI
   void duplicateJourney; // Silence unused import warning
 
@@ -629,6 +644,13 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                         disabled={disabled}
                       >
                         <DownloadIcon size={14} /> Export
+                      </button>
+                      <button 
+                        className="journey-more-menu-item" 
+                        onClick={() => { handleShareLink(); setShowMoreMenu(false); }} 
+                        disabled={disabled}
+                      >
+                        <LinkIcon size={14} /> Share Link
                       </button>
                       {isAdmin && (
                         <button 
