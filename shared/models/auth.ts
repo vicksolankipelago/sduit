@@ -27,6 +27,7 @@ export const users = pgTable("users", {
   role: varchar("role", { length: 20 }).notNull().default('member'),
   passwordResetToken: varchar("password_reset_token"),
   passwordResetExpires: timestamp("password_reset_expires"),
+  termsAcceptedAt: timestamp("terms_accepted_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
