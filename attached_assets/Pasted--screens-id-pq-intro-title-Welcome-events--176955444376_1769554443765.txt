@@ -1,0 +1,1275 @@
+{
+  "screens": [
+    {
+      "id": "pq-intro",
+      "title": "Welcome",
+      "events": [
+        {
+          "id": "navigate_to_pq_program_summary",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "pq-program-summary"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            },
+            {
+              "type": "animatedImage",
+              "state": {
+                "id": "welcome_animation",
+                "lottieName": "COLOR_Pelago_Boat"
+              },
+              "style": {
+                "width": 300,
+                "height": 300
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "welcome_title",
+                "text": "Welcome to Pelago"
+              },
+              "style": {
+                "color": "primary",
+                "style": "heading1",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "mid_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 16,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "setup_body",
+                "text": "Let's get you set up with a personalized plan"
+              },
+              "style": {
+                "color": "secondary",
+                "style": "body1",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "bottom_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "pq-program-summary",
+      "title": "Your program, based on what you shared",
+      "events": [
+        {
+          "id": "navigate_to_about_you",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "about-you"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "imageCard",
+              "state": {
+                "id": "results_card",
+                "title": "Welcome Jack!",
+                "imageName": "MonoBeingActive",
+                "description": "Drink less and maintain a healthy lifestyle"
+              },
+              "style": {
+                "imageName": "MonoCyclist",
+                "imageWidth": 72,
+                "imageHeight": 72,
+                "cornerRadius": 16,
+                "backgroundColor": "card"
+              }
+            },
+            {
+              "type": "checklistCard",
+              "state": {
+                "id": "next_steps_checklist",
+                "title": null,
+                "itemTitles": [
+                  "Daily check-ins to track progress",
+                  "Personalized insights and tips",
+                  "Support from care team",
+                  "Resources tailored to your goals"
+                ]
+              },
+              "style": {
+                "cornerRadius": 12,
+                "backgroundColor": "backgroundLight"
+              }
+            },
+            {
+              "type": "quoteCard",
+              "state": {
+                "id": "empty_appointment_quote",
+                "message": "\"Our care team is here to give guidance based on your unique goals, whenever you are ready!\"",
+                "jobTitle": "Juliette, Pelago VP Care Team"
+              },
+              "style": {
+                "imageName": null
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "bottom_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "about-you",
+      "title": null,
+      "events": [
+        {
+          "id": "navigate_to_outcomes",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "outcomes"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "openQuestion",
+              "state": {
+                "id": "about_you_question",
+                "question": "What brings you to Pelago?"
+              },
+              "style": {},
+              "events": [
+                {
+                  "id": "navigate_to_outcomes",
+                  "type": "custom",
+                  "action": [
+                    {
+                      "type": "navigation",
+                      "deeplink": "outcomes"
+                    }
+                  ],
+                  "conditions": []
+                }
+              ]
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "outcomes",
+      "title": null,
+      "events": [
+        {
+          "id": "navigate_to_motivation",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "motivation"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            },
+            {
+              "type": "openQuestion",
+              "state": {
+                "id": "outcomes_question",
+                "question": "What would you like to achieve with Pelago?"
+              },
+              "style": {},
+              "events": [
+                {
+                  "id": "navigate_to_motivation",
+                  "type": "custom",
+                  "action": [
+                    {
+                      "type": "navigation",
+                      "deeplink": "motivation"
+                    }
+                  ],
+                  "conditions": []
+                }
+              ]
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "motivation",
+      "title": null,
+      "events": [
+        {
+          "id": "navigate_to_intention",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "intention"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "openQuestion",
+              "state": {
+                "id": "motivation_question",
+                "question": "And what's motivating you to make that change?"
+              },
+              "style": {},
+              "events": [
+                {
+                  "id": "navigate_to_intention",
+                  "type": "custom",
+                  "action": [
+                    {
+                      "type": "navigation",
+                      "deeplink": "intention"
+                    }
+                  ],
+                  "conditions": []
+                }
+              ]
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "intention",
+      "title": null,
+      "events": [
+        {
+          "id": "navigate_to_cm_rewards_intro",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "cm-rewards-intro"
+            }
+          ],
+          "conditions": []
+        },
+        {
+          "id": "navigate_to_checkin_commitment",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "checkin-commitment"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "openQuestion",
+              "state": {
+                "id": "intention_question",
+                "question": "What would you like to put a little focus on this week?"
+              },
+              "style": {},
+              "events": [
+                {
+                  "id": "navigate_to_cm_rewards_intro",
+                  "type": "custom",
+                  "action": [
+                    {
+                      "type": "navigation",
+                      "deeplink": "cm-rewards-intro"
+                    }
+                  ],
+                  "conditions": []
+                }
+              ]
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "cm-rewards-intro",
+      "title": "Introducing Rewards",
+      "events": [
+        {
+          "id": "navigate_to_checkin_commitment",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "checkin-commitment"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            },
+            {
+              "type": "animatedImage",
+              "state": {
+                "id": "rewards_animation",
+                "lottieName": "SBSanimation"
+              },
+              "style": {
+                "width": 200,
+                "height": 200
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "rewards_title",
+                "text": "Turn progress into rewards"
+              },
+              "style": {
+                "color": "primary",
+                "style": "heading3",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "mid_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 16,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "rewards_description",
+                "text": "Earn points for checking in and attending your appointments which you can redeem for gifts."
+              },
+              "style": {
+                "color": "secondary",
+                "style": "body2",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "bottom_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            },
+            {
+              "type": "button",
+              "state": {
+                "id": "continue_button",
+                "title": "Continue",
+                "isDisabled": false
+              },
+              "style": {
+                "size": "large",
+                "style": "primary"
+              },
+              "events": [
+                {
+                  "id": "navigate_to_checkin_commitment",
+                  "type": "onTap",
+                  "action": [
+                    {
+                      "type": "navigation",
+                      "deeplink": "checkin-commitment"
+                    }
+                  ],
+                  "conditions": []
+                }
+              ]
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "checkin-commitment",
+      "state": {
+        "selectedCommitment": null
+      },
+      "title": null,
+      "events": [
+        {
+          "id": "select_daily_commitment",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "screen",
+              "updates": {
+                "selectedCommitment": [
+                  "daily"
+                ]
+              }
+            },
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "checkinCommitment": "Every day"
+              }
+            }
+          ],
+          "conditions": []
+        },
+        {
+          "id": "select_few_times_commitment",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "screen",
+              "updates": {
+                "selectedCommitment": [
+                  "few_times"
+                ]
+              }
+            },
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "checkinCommitment": "A few times"
+              }
+            }
+          ],
+          "conditions": []
+        },
+        {
+          "id": "select_once_commitment",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "screen",
+              "updates": {
+                "selectedCommitment": [
+                  "once"
+                ]
+              }
+            },
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "checkinCommitment": "Once"
+              }
+            }
+          ],
+          "conditions": []
+        },
+        {
+          "id": "navigate_to_pq_notification_setup",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "pq-notification-setup"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 32,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "largeQuestion",
+              "state": {
+                "id": "checkin_commitment_question",
+                "type": "singleSelect",
+                "copyId": null,
+                "header": {
+                  "id": "checkin_header",
+                  "title": "How often would you like to check in this week?",
+                  "caption": null,
+                  "imageName": null,
+                  "description": null
+                },
+                "caption": null,
+                "options": [
+                  {
+                    "id": "daily",
+                    "title": "Every day",
+                    "description": "Check in daily to build a strong habit"
+                  },
+                  {
+                    "id": "few_times",
+                    "title": "A few times",
+                    "description": "Check in 3-4 times this week"
+                  },
+                  {
+                    "id": "once",
+                    "title": "Once",
+                    "description": "Check in once this week"
+                  }
+                ],
+                "category": "check-in",
+                "maxSelection": 1,
+                "allowsMultiSelection": false,
+                "currentlySelectedOptions": null
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "pq-notification-setup",
+      "state": {
+        "notificationsEnabled": true
+      },
+      "title": null,
+      "events": [
+        {
+          "id": "permissions_screen_event",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "screen",
+              "updates": {
+                "notificationsEnabled": true
+              }
+            }
+          ],
+          "conditions": []
+        },
+        {
+          "id": "navigate_to_plan_review",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "pq-plan-review"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            },
+            {
+              "type": "animatedImage",
+              "state": {
+                "id": "notification_animation",
+                "lottieName": "COLOR_Pelago_WalkWithPhone"
+              },
+              "style": {
+                "width": 280,
+                "height": 280
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "permissions_header",
+                "text": "Stay on track with notifications"
+              },
+              "style": {
+                "color": "primary",
+                "style": "heading1",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "permissions_description",
+                "text": "Get notified when there's a new chat waiting or when your call is coming up \n(e.g., \"Your call is in one hour\")."
+              },
+              "style": {
+                "color": "secondary",
+                "style": "body1",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "bottom_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            },
+            {
+              "type": "toggleCard",
+              "state": {
+                "id": "notifications-toggle",
+                "label": "Recommended",
+                "title": "Turn on notifications",
+                "isToggled": true,
+                "description": null
+              },
+              "style": {
+                "icon": "Notification",
+                "borderColor": "secondaryDefault",
+                "cornerRadius": 8,
+                "backgroundColor": "secondaryDisabled"
+              },
+              "events": [
+                {
+                  "id": "NotificationToggled",
+                  "type": "onToggle",
+                  "action": [],
+                  "conditions": []
+                }
+              ]
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "pq-plan-review",
+      "title": null,
+      "events": [
+        {
+          "id": "navigate_to_completion",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "pq-start-programme"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "title_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 24,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "review_title",
+                "text": "Your plan for this week"
+              },
+              "style": {
+                "color": "primary",
+                "style": "heading1",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "title_widgets_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 24,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": false
+        },
+        {
+          "id": "summary_cards_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "textCard",
+              "state": {
+                "id": "about_you_card",
+                "title": "About you",
+                "content": "{$moduleData.aboutYouSummary}"
+              },
+              "style": {
+                "textColor": "textGlobalPrimary",
+                "borderColor": "backgroundLightMintGreen",
+                "borderWidth": 1,
+                "captionColor": "textGlobalSecondary",
+                "cornerRadius": 16,
+                "backgroundColor": "backgroundLightMintGreen"
+              },
+              "conditions": [
+                {
+                  "rules": {
+                    "and": [
+                      {
+                        "!=": [
+                          {
+                            "var": "summary"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "!=": [
+                          {
+                            "var": "summary"
+                          },
+                          ""
+                        ]
+                      }
+                    ]
+                  },
+                  "state": {
+                    "summary": "{$moduleData.aboutYouSummary}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "textCard",
+              "state": {
+                "id": "your_why_card",
+                "title": "your why",
+                "content": "{$moduleData.yourWhySummary}"
+              },
+              "style": {
+                "textColor": "textGlobalPrimary",
+                "borderColor": "backgroundLightMintGreen",
+                "borderWidth": 1,
+                "captionColor": "textGlobalSecondary",
+                "cornerRadius": 16,
+                "backgroundColor": "backgroundLightMintGreen"
+              },
+              "conditions": [
+                {
+                  "rules": {
+                    "and": [
+                      {
+                        "!=": [
+                          {
+                            "var": "summary"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "!=": [
+                          {
+                            "var": "summary"
+                          },
+                          ""
+                        ]
+                      }
+                    ]
+                  },
+                  "state": {
+                    "summary": "{$moduleData.yourWhySummary}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "textCard",
+              "state": {
+                "id": "outcomes_card",
+                "title": "Outcomes",
+                "content": "{$moduleData.outcomesSummary}"
+              },
+              "style": {
+                "textColor": "textGlobalPrimary",
+                "borderColor": "backgroundLightMintGreen",
+                "borderWidth": 1,
+                "captionColor": "textGlobalSecondary",
+                "cornerRadius": 16,
+                "backgroundColor": "backgroundLightMintGreen"
+              },
+              "conditions": [
+                {
+                  "rules": {
+                    "and": [
+                      {
+                        "!=": [
+                          {
+                            "var": "summary"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "!=": [
+                          {
+                            "var": "summary"
+                          },
+                          ""
+                        ]
+                      }
+                    ]
+                  },
+                  "state": {
+                    "summary": "{$moduleData.outcomesSummary}"
+                  }
+                }
+              ]
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": false
+        },
+        {
+          "id": "widgets_spacer_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "widgets_top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 24,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": false
+        },
+        {
+          "id": "widgets_section",
+          "title": null,
+          "layout": "grid",
+          "elements": [
+            {
+              "type": "miniWidget",
+              "state": {
+                "id": "drinking_streak_widget",
+                "title": "{$moduleData.checkInStreak}",
+                "content": "Day streak"
+              },
+              "style": {
+                "cornerRadius": 8,
+                "backgroundColor": "backgroundCerulean"
+              }
+            },
+            {
+              "type": "miniWidget",
+              "state": {
+                "id": "intention_widget",
+                "title": "{$moduleData.weeklyIntention}",
+                "content": "Your focus"
+              },
+              "style": {
+                "cornerRadius": 8,
+                "backgroundColor": "backgroundLightMintGreen"
+              }
+            },
+            {
+              "type": "miniWidget",
+              "state": {
+                "id": "checkin_commitment_widget",
+                "title": "{$moduleData.checkinCommitment}",
+                "content": "Check-ins this week"
+              },
+              "style": {
+                "cornerRadius": 8,
+                "backgroundColor": "backgroundMistBlue"
+              }
+            },
+            {
+              "type": "miniWidget",
+              "state": {
+                "id": "cbt_session_widget",
+                "title": "Coming soon",
+                "content": "CBT session"
+              },
+              "style": {
+                "borderColor": "secondaryDefault",
+                "borderDashed": true,
+                "cornerRadius": 8,
+                "backgroundColor": "backgroundLight"
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": false
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "pq-start-programme",
+      "title": null,
+      "events": [
+        {
+          "id": "complete_intake_flow",
+          "type": "custom",
+          "action": [
+            {
+              "type": "closeModule",
+              "parameters": {
+                "reason": "intake_flow_completed"
+              },
+              "flowCompleted": true
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            },
+            {
+              "type": "animatedImage",
+              "state": {
+                "id": "completion_animation",
+                "lottieName": "COLOR_Pelago_Island"
+              },
+              "style": {
+                "width": 300,
+                "height": 300
+              }
+            },
+            {
+              "type": "animatedComponents",
+              "state": {
+                "id": "completion_animation_text",
+                "elements": [
+                  {
+                    "type": "textBlock",
+                    "state": {
+                      "id": "completion_text1",
+                      "text": "Loading your program"
+                    },
+                    "style": {
+                      "color": "primary",
+                      "style": "heading1",
+                      "alignment": "center"
+                    }
+                  },
+                  {
+                    "type": "textBlock",
+                    "state": {
+                      "id": "completion_text2",
+                      "text": "All set! Let's start your program"
+                    },
+                    "style": {
+                      "color": "primary",
+                      "style": "heading1",
+                      "alignment": "center"
+                    }
+                  }
+                ]
+              },
+              "style": {
+                "loop": false,
+                "curve": "easeInOut",
+                "duration": 2,
+                "autoStart": true,
+                "direction": "forward",
+                "pauseOnTap": false
+              },
+              "events": [
+                {
+                  "id": "completion_animation_complete",
+                  "type": "onAnimationComplete",
+                  "action": [
+                    {
+                      "type": "serviceCall",
+                      "onError": [
+                        {
+                          "type": "closeModule",
+                          "parameters": {
+                            "reason": "post_web_pq_disabled_for_testing"
+                          },
+                          "flowCompleted": true
+                        }
+                      ],
+                      "onSuccess": [
+                        {
+                          "type": "closeModule",
+                          "parameters": {
+                            "reason": "post_web_pq_completed_successfully"
+                          },
+                          "flowCompleted": true
+                        }
+                      ],
+                      "parameters": {
+                        "configurationId": "{$moduleData.postWebPQConfigurationId}",
+                        "postWebPQAnswers": "{$moduleData.postWebPQAnswers}"
+                      },
+                      "serviceName": "pqService",
+                      "functionName": "submitAnswers_DISABLED"
+                    }
+                  ],
+                  "conditions": []
+                }
+              ]
+            },
+            {
+              "type": "loadingView",
+              "state": {
+                "id": "completion_loading_indicator"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "bottom_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ],
+      "hidesBackButton": true
+    }
+  ],
+  "screenPrompts": {
+    "pq-intro": "Screen ID: pq-intro\nAvailable Events: navigate_to_pq_program_summary\n\nPurpose: Welcome and get started\n\nOpening:\n\"Hi {{memberName}}, welcome to Pelago. I'm Navi, and I'll help you set up your plan. Ready to get started?\"\n\nBehavior:\n- Say the greeting ONCE only\n- Accept ANY response as confirmation (yes, sure, ok, ready, let's go, etc.)\n- If response is unclear or ambiguous, say \"Great, let's begin\" and proceed\n- NEVER repeat the greeting\n- After ANY user response, say \"Great, let's begin\" and trigger navigation\n\nNavigation:\nAfter user responds, IMMEDIATELY trigger: trigger_event with arguments {\"eventId\": \"navigate_to_pq_program_summary\"}",
+    "pq-program-summary": "Screen ID: pq-program-summary\nAvailable Events: navigate_to_about_you\n\nPurpose: Brief program overview\n\nScript:\n\"Here's your personalized program based on your goals. You'll have daily check-ins, personalized tips, and support from our care team. Sound good?\"\n\nBehavior:\n- Keep it brief - don't over-explain\n- Accept any affirmative response\n- If unclear, say \"Let's dive in\" and proceed\n\nNavigation:\nAfter user responds, trigger: trigger_event with arguments {\"eventId\": \"navigate_to_about_you\"}",
+    "about-you": "Screen ID: about-you\nAvailable Events: navigate_to_outcomes\n\nPurpose: Understand what brings them here\n\nQuestion:\n\"Tell me a bit about what brings you to Pelago today.\"\n\nAfter response:\n1. Brief acknowledgment (\"Thanks for sharing\" or similar)\n2. Call: record_input with arguments {\"title\": \"About you\", \"summary\": \"[one-line summary]\", \"storeKey\": \"aboutYouSummary\", \"nextEventId\": \"navigate_to_outcomes\", \"delay\": 2}\n3. Continue: \"What outcomes are you hoping to achieve?\"",
+    "outcomes": "Screen ID: outcomes\nAvailable Events: navigate_to_motivation\n\nPurpose: Understand desired outcomes\n\nQuestion:\n\"What would you like to achieve with Pelago?\"\n\nAfter response:\n1. Brief acknowledgment\n2. Call: record_input with arguments {\"title\": \"Outcomes\", \"summary\": \"[one-line summary]\", \"storeKey\": \"outcomesSummary\", \"nextEventId\": \"navigate_to_motivation\", \"delay\": 2}\n3. Continue: \"What's motivating you to make this change?\"",
+    "motivation": "Screen ID: motivation\nAvailable Events: navigate_to_intention\n\nPurpose: Understand their motivation\n\nQuestion:\n\"What's motivating you to make this change?\"\n\nAfter response:\n1. Brief acknowledgment\n2. Call: record_input with arguments {\"title\": \"Your why\", \"summary\": \"[one-line summary]\", \"storeKey\": \"yourWhySummary\", \"nextEventId\": \"navigate_to_intention\", \"delay\": 2}\n3. Continue: \"Now let's set a focus for this week. What would you like to work on?\"",
+    "intention": "Screen ID: intention\nAvailable Events: navigate_to_cm_rewards_intro, navigate_to_checkin_commitment\n\nPurpose: Set weekly intention - THEN transition to rewards and check-in\n\n**CRITICAL: After the user answers, do ALL of these in ONE response (in this EXACT order):**\n\n1. Call: record_input with arguments {\"title\": \"Intention\", \"summary\": \"[one-line summary]\", \"storeKey\": \"weeklyIntention\", \"nextEventId\": \"navigate_to_cm_rewards_intro\", \"delay\": 0}\n2. Say: \"Great intention! Now, every time you check in, you'll earn points you can redeem for rewards. Members who check in daily are 5 times more likely to reach their goals.\"\n3. Call: trigger_event with arguments {\"eventId\": \"navigate_to_checkin_commitment\", \"delay\": 4}\n4. THEN say: \"How often would you like to check in this week - every day, a few times, or just once?\"\n\n**TIMING:**\n- record_input (delay: 0) → cm-rewards-intro appears immediately\n- You explain rewards for ~4 seconds while user sees rewards screen\n- trigger_event (delay: 4) → checkin-commitment appears after rewards explanation\n- You ask the check-in question while user sees the options",
+    "cm-rewards-intro": "Screen ID: cm-rewards-intro\nAvailable Events: navigate_to_checkin_commitment\n\nPurpose: Explain rewards and navigate to check-in commitment\n\nON SCREEN LOAD - DO THIS IMMEDIATELY (in this exact order):\n1. FIRST call: trigger_event with arguments {\"eventId\": \"navigate_to_checkin_commitment\"}\n2. THEN say: \"Every time you check in, you'll earn points you can redeem for rewards. Members who check in daily are 5 times more likely to reach their goals. How often would you like to check in this week - every day, a few times, or just once?\"\n3. Wait for their answer\n\nCRITICAL: You MUST call trigger_event FIRST before speaking. This navigates the UI to show the check-in options while you explain rewards.",
+    "checkin-commitment": "Screen ID: checkin-commitment\nAvailable Events: select_daily_commitment, select_few_times_commitment, select_once_commitment, navigate_to_notification_setup\n\n**CRITICAL: This screen requires TWO function calls - selection AND navigation. Both are MANDATORY.**\n\nBehavior:\n1. Listen for their choice and call the selection event:\n   - \"every day\"/\"daily\" → trigger_event {\"eventId\": \"select_daily_commitment\"}\n   - \"few times\"/\"couple times\" → trigger_event {\"eventId\": \"select_few_times_commitment\"}\n   - \"once\"/\"one time\" → trigger_event {\"eventId\": \"select_once_commitment\"}\n2. Say: \"Great choice.\"\n3. **MANDATORY - DO NOT SKIP:** Call trigger_event with arguments {\"eventId\": \"navigate_to_notification_setup\"}\n4. **ONLY AFTER calling navigate_to_notification_setup**, ask: \"What time would you like your daily reminder?\"\n\n**WARNING: You MUST call navigate_to_notification_setup BEFORE asking about reminder time. Without this call, the notification screen will never appear.**",
+    "pq-notification-setup": "Screen ID: pq-notification-setup\nAvailable Events: permissions_screen_event, navigate_to_plan_review\n\nPurpose: Set up notifications\n\nBehavior:\n1. Listen for their preferred time\n2. Say: \"Got it, we'll remind you at [time].\"\n3. Call: trigger_event with arguments {\"eventId\": \"permissions_screen_event\"}\n4. Say: \"Tap Allow when you see the prompt.\"\n5. Wait for acknowledgment (or 3 seconds)\n6. Call: trigger_event with arguments {\"eventId\": \"navigate_to_plan_review\"}\n7. Continue to plan review",
+    "pq-plan-review": "Screen ID: pq-plan-review\nAvailable Events: navigate_to_completion\n\nPurpose: Quick plan summary\n\nScript:\n\"Here's your plan: You're focusing on [intention], checking in [frequency]. Your motivation is [motivation]. Does this look good?\"\n\nBehavior:\n- Keep summary brief - hit the key points only\n- After confirmation, say: \"Perfect, let's get you started.\"\n- Call: trigger_event with arguments {\"eventId\": \"navigate_to_completion\"}",
+    "pq-start-programme": "Screen ID: pq-start-programme\nAvailable Events: complete_intake_flow\n\nPurpose: Completion\n\nScript:\n\"All set! Your program is ready. I'm here whenever you need support. Take care!\"\n\nBehavior:\n1. Say the closing message\n2. Call: trigger_event with arguments {\"eventId\": \"complete_intake_flow\"}\n3. Call: end_call with arguments {\"reason\": \"journey completed\"}"
+  }
+}

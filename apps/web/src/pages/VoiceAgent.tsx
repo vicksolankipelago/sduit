@@ -325,19 +325,6 @@ function VoiceAgentContent() {
     const handleEventTrigger = (eventId: string, agentName: string) => {
       addLog('event', `📢 Screen event triggered: ${eventId}`, { agentName });
       
-      // Handle direct screen navigation events (e.g., "navigate_to_feedback_screen")
-      if (eventId.startsWith('navigate_to_')) {
-        // Convert underscores to hyphens since screen IDs use hyphens (e.g., "about_you" -> "about-you")
-        const targetScreenId = eventId.replace('navigate_to_', '').replace(/_/g, '-');
-        addLog('info', `📱 Direct navigation event - navigating to screen: ${targetScreenId}`);
-        if (navigateToScreen) {
-          navigateToScreen(targetScreenId);
-        } else {
-          addLog('warning', '⚠️ navigateToScreen not available');
-        }
-        return;
-      }
-      
       // Special handling for feedback screen event (triggered by end_call tool)
       if (eventId === 'show_feedback_screen') {
         addLog('info', '📋 Feedback screen event triggered - navigating to feedback screen');
