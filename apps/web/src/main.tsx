@@ -34,7 +34,13 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Route path="/admin" element={<AdminLoginPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/preview/:journeyId" element={<MobilePreviewPage />} />
+
+            {/* Protected preview route (no layout - redirects to voice agent) */}
+            <Route path="/preview/:journeyId" element={
+              <ProtectedRoute>
+                <MobilePreviewPage />
+              </ProtectedRoute>
+            } />
 
             {/* Protected routes with layout */}
             <Route
