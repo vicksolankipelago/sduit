@@ -1183,8 +1183,8 @@ Important guidelines:
             showKeyboardInput={showKeyboardInput}
           />
         ) : undefined}
-        onOpenSettings={sessionStatus === 'CONNECTED' ? () => setSettingsOpen(true) : undefined}
-        onExit={sessionStatus === 'CONNECTED' && isPreviewMode ? handleEndCall : undefined}
+        onOpenSettings={sessionStatus === 'CONNECTED' && !isPreviewMode ? () => setSettingsOpen(true) : undefined}
+        onExit={undefined}
       />
       
       {/* Header - Show when disconnected and NOT in preview mode */}
