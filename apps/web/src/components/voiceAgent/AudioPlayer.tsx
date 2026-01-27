@@ -7,9 +7,18 @@ const audioLogger = logger.namespace('AudioPlayer');
 interface AudioPlayerProps {
   sessionId: string;
   onError?: (error: string) => void;
+  onTimeUpdate?: (currentTime: number, duration: number) => void;
+  onSeek?: (seekTo: (time: number) => void) => void;
+  onPlayStateChange?: (isPlaying: boolean) => void;
 }
 
-export const AudioPlayer: React.FC<AudioPlayerProps> = ({ sessionId, onError }) => {
+export const AudioPlayer: React.FC<AudioPlayerProps> = ({ 
+  sessionId, 
+  onError,
+  onTimeUpdate,
+  onSeek,
+  onPlayStateChange,
+}) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isBuffering, setIsBuffering] = useState(false);
@@ -18,6 +27,19 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ sessionId, onError }) 
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  const seekTo = (time: number) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+      setCurrentTime(time);
+    }
+  };
+
+  useEffect(() => {
+    if (onSeek) {
+      onSeek(seekTo);
+    }
+  }, [onSeek]);
 
   useEffect(() => {
     setHasRecording(false);
@@ -77,7 +99,11 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ sessionId, onError }) 
 
   const handleTimeUpdate = () => {
     if (audioRef.current) {
-      setCurrentTime(audioRef.current.currentTime);
+      const time = audioRef.current.currentTime;
+      setCurrentTime(time);
+      if (onTimeUpdate) {
+        onTimeUpdate(time, duration);
+      }
     }
   };
 
@@ -171,8 +197,14 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ sessionId, onError }) 
       <audio
         ref={audioRef}
         src={`/api/recordings/${sessionId}/audio`}
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
+        onPlay={() => {
+          setIsPlaying(true);
+          onPlayStateChange?.(true);
+        }}
+        onPause={() => {
+          setIsPlaying(false);
+          onPlayStateChange?.(false);
+        }}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={handleEnded}

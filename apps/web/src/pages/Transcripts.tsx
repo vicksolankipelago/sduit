@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import {
   listUserSessions,
@@ -17,6 +17,16 @@ type ViewMode = 'list' | 'detail';
 type DetailTab = 'transcript' | 'events' | 'info';
 
 const PAGE_SIZE = 10;
+
+interface MessageWithAudioOffset {
+  itemId: string;
+  type: string;
+  role?: 'user' | 'assistant';
+  title?: string;
+  timestamp: string;
+  createdAtMs: number;
+  audioOffsetSeconds: number;
+}
 
 export const TranscriptsPage: React.FC = () => {
   const { user } = useAuth();
@@ -39,6 +49,14 @@ export const TranscriptsPage: React.FC = () => {
   const [showNotes, setShowNotes] = useState(false);
   const [sessionNotes, setSessionNotes] = useState<TranscriptNote[]>([]);
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  // Audio sync state
+  const [currentAudioTime, setCurrentAudioTime] = useState(0);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [currentPlayingIndex, setCurrentPlayingIndex] = useState<number | null>(null);
+  const seekToRef = useRef<((time: number) => void) | null>(null);
+  const messageRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const conversationRef = useRef<HTMLDivElement>(null);
 
   const getNotesForMessage = (messageIndex: number) => {
     return sessionNotes.filter(n => n.messageIndex === messageIndex && !n.parentId);
@@ -233,6 +251,67 @@ export const TranscriptsPage: React.FC = () => {
     });
   };
 
+  const calculateMessagesWithAudioOffsets = useCallback((
+    messages: SessionExport['transcript'],
+    sessionStartMs: number | undefined
+  ): MessageWithAudioOffset[] => {
+    const validStartMs = sessionStartMs && !isNaN(sessionStartMs) ? sessionStartMs : 0;
+    
+    return messages
+      .filter((item) => item.type === 'MESSAGE' && item.title)
+      .map((item, index) => {
+        const createdAt = item.createdAtMs && !isNaN(item.createdAtMs) ? item.createdAtMs : 0;
+        const offsetMs = validStartMs > 0 && createdAt > 0 
+          ? createdAt - validStartMs 
+          : index * 5000;
+        
+        return {
+          itemId: item.itemId,
+          type: item.type,
+          role: item.role,
+          title: item.title,
+          timestamp: item.timestamp,
+          createdAtMs: createdAt,
+          audioOffsetSeconds: Math.max(0, offsetMs / 1000),
+        };
+      });
+  }, []);
+
+  const findCurrentPlayingIndex = useCallback((
+    messagesWithOffsets: MessageWithAudioOffset[],
+    audioTime: number
+  ): number | null => {
+    if (messagesWithOffsets.length === 0) return null;
+    
+    for (let i = messagesWithOffsets.length - 1; i >= 0; i--) {
+      if (audioTime >= messagesWithOffsets[i].audioOffsetSeconds) {
+        return i;
+      }
+    }
+    return 0;
+  }, []);
+
+  const handleAudioTimeUpdate = useCallback((time: number, _duration: number) => {
+    setCurrentAudioTime(time);
+  }, []);
+
+  const handleSeekCallback = useCallback((seekFn: (time: number) => void) => {
+    seekToRef.current = seekFn;
+  }, []);
+
+  const handlePlayStateChange = useCallback((playing: boolean) => {
+    setIsAudioPlaying(playing);
+    if (!playing) {
+      setCurrentPlayingIndex(null);
+    }
+  }, []);
+
+  const handleMessageClick = useCallback((audioOffsetSeconds: number) => {
+    if (seekToRef.current) {
+      seekToRef.current(audioOffsetSeconds);
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -265,6 +344,47 @@ export const TranscriptsPage: React.FC = () => {
       cancelled = true;
     };
   }, [sessions]);
+
+  // Reset audio sync state when session changes
+  useEffect(() => {
+    setCurrentAudioTime(0);
+    setIsAudioPlaying(false);
+    setCurrentPlayingIndex(null);
+    messageRefs.current = [];
+  }, [currentSession?.sessionId]);
+
+  // Effect for audio sync and auto-scroll
+  useEffect(() => {
+    if (!currentSession) return;
+    
+    if (!isAudioPlaying) {
+      setCurrentPlayingIndex(null);
+      return;
+    }
+
+    const mergedTranscript = mergeTranscriptMessages(currentSession.transcript);
+    if (mergedTranscript.length === 0) return;
+    
+    const messagesWithOffsets = calculateMessagesWithAudioOffsets(
+      mergedTranscript,
+      currentSession.duration.startMs
+    );
+    
+    if (messagesWithOffsets.length === 0) return;
+    
+    const newIndex = findCurrentPlayingIndex(messagesWithOffsets, currentAudioTime);
+    
+    if (newIndex !== currentPlayingIndex && newIndex !== null) {
+      setCurrentPlayingIndex(newIndex);
+      
+      if (messageRefs.current[newIndex]) {
+        messageRefs.current[newIndex]?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      }
+    }
+  }, [currentAudioTime, isAudioPlaying, currentSession, currentPlayingIndex, calculateMessagesWithAudioOffsets, findCurrentPlayingIndex]);
 
   // Not logged in state
   if (!user) {
@@ -303,6 +423,10 @@ export const TranscriptsPage: React.FC = () => {
   if (viewMode === 'detail' && currentSession) {
     const mergedTranscript = mergeTranscriptMessages(currentSession.transcript);
     const transcriptMessages = mergedTranscript.filter((item) => item.type === 'MESSAGE' && item.title);
+    const messagesWithOffsets = calculateMessagesWithAudioOffsets(
+      mergedTranscript,
+      currentSession.duration.startMs
+    );
     const filteredEvents = filterEvents(currentSession.events);
     const userMessages = transcriptMessages.filter((item) => item.role === 'user');
     const assistantMessages = transcriptMessages.filter((item) => item.role === 'assistant');
@@ -346,7 +470,12 @@ export const TranscriptsPage: React.FC = () => {
 
           {/* Audio Player */}
           <div className="transcripts-audio-section">
-            <AudioPlayer sessionId={currentSession.sessionId} />
+            <AudioPlayer 
+              sessionId={currentSession.sessionId}
+              onTimeUpdate={handleAudioTimeUpdate}
+              onSeek={handleSeekCallback}
+              onPlayStateChange={handlePlayStateChange}
+            />
           </div>
 
           {/* Tabs */}
@@ -375,36 +504,59 @@ export const TranscriptsPage: React.FC = () => {
           <div className="transcripts-tab-content">
             {detailTab === 'transcript' && (
               <div className="transcripts-conversation-wrapper">
-                <div className={`transcripts-conversation ${showNotes ? 'with-notes' : ''}`}>
-                  {transcriptMessages
-                    .map((item, index) => (
-                      <div
-                        key={item.itemId || index}
-                        className={`transcripts-message ${item.role === 'user' ? 'user' : 'assistant'} ${notesMessageIndex === index ? 'selected' : ''}`}
-                      >
-                        <div className="transcripts-message-role">
-                          {item.role === 'user' ? (user?.firstName || 'User') : 'Agent'}
+                <div 
+                  ref={conversationRef}
+                  className={`transcripts-conversation ${showNotes ? 'with-notes' : ''}`}
+                >
+                  {messagesWithOffsets
+                    .map((item, index) => {
+                      const isPlaying = currentPlayingIndex === index && isAudioPlaying;
+                      const formatAudioTime = (seconds: number) => {
+                        const mins = Math.floor(seconds / 60);
+                        const secs = Math.floor(seconds % 60);
+                        return `${mins}:${secs.toString().padStart(2, '0')}`;
+                      };
+                      
+                      return (
+                        <div
+                          key={item.itemId || index}
+                          ref={(el) => { messageRefs.current[index] = el; }}
+                          className={`transcripts-message ${item.role === 'user' ? 'user' : 'assistant'} ${notesMessageIndex === index ? 'selected' : ''} ${isPlaying ? 'playing' : ''}`}
+                          onClick={() => handleMessageClick(item.audioOffsetSeconds)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <div className="transcripts-message-role">
+                            {item.role === 'user' ? (user?.firstName || 'User') : 'Agent'}
+                          </div>
+                          <div className="transcripts-message-content">{item.title}</div>
+                          <div className="transcripts-message-footer">
+                            <div className="transcripts-message-time">
+                              <span 
+                                className="transcripts-audio-time"
+                                title="Click to jump to this point in the recording"
+                              >
+                                {formatAudioTime(item.audioOffsetSeconds)}
+                              </span>
+                            </div>
+                            <button
+                              className={`transcripts-add-note-btn ${getNotesForMessage(index).length > 0 ? 'has-notes' : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setNotesMessageIndex(index);
+                                setShowNotes(true);
+                              }}
+                              title={getNotesForMessage(index).length > 0 ? `${getNotesForMessage(index).length} note(s)` : 'Add note'}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                              </svg>
+                              {getNotesForMessage(index).length > 0 ? `${getNotesForMessage(index).length}` : 'Note'}
+                            </button>
+                          </div>
                         </div>
-                        <div className="transcripts-message-content">{item.title}</div>
-                        <div className="transcripts-message-footer">
-                          <div className="transcripts-message-time">{item.timestamp}</div>
-                          <button
-                            className={`transcripts-add-note-btn ${getNotesForMessage(index).length > 0 ? 'has-notes' : ''}`}
-                            onClick={() => {
-                              setNotesMessageIndex(index);
-                              setShowNotes(true);
-                            }}
-                            title={getNotesForMessage(index).length > 0 ? `${getNotesForMessage(index).length} note(s)` : 'Add note'}
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                            </svg>
-                            {getNotesForMessage(index).length > 0 ? `${getNotesForMessage(index).length}` : 'Note'}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  {transcriptMessages.length === 0 && (
+                      );
+                    })}
+                  {messagesWithOffsets.length === 0 && (
                     <div className="transcripts-empty-tab">No messages in this session</div>
                   )}
                 </div>
