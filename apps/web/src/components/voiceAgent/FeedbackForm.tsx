@@ -5,14 +5,16 @@ interface FeedbackFormProps {
   voiceSessionId: string;
   onSubmit: () => void;
   onSkip: () => void;
+  isPreviewMode?: boolean;
 }
 
-const FeedbackForm: React.FC<FeedbackFormProps> = ({ voiceSessionId, onSubmit, onSkip }) => {
+const FeedbackForm: React.FC<FeedbackFormProps> = ({ voiceSessionId, onSubmit, onSkip, isPreviewMode = false }) => {
   const [rating, setRating] = useState<number>(0);
   const [hoveredRating, setHoveredRating] = useState<number>(0);
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showThankYou, setShowThankYou] = useState(false);
 
   const handleSubmit = async () => {
     if (rating === 0) {
@@ -40,7 +42,13 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ voiceSessionId, onSubmit, o
         throw new Error(data.message || 'Failed to submit feedback');
       }
 
-      onSubmit();
+      if (isPreviewMode) {
+        localStorage.removeItem('voice-agent-preview-mode');
+        localStorage.removeItem('voice-agent-launch-journey');
+        setShowThankYou(true);
+      } else {
+        onSubmit();
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to submit feedback');
     } finally {
@@ -49,6 +57,23 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ voiceSessionId, onSubmit, o
   };
 
   const displayRating = hoveredRating || rating;
+
+  if (showThankYou) {
+    return (
+      <div className="feedback-form-overlay">
+        <div className="feedback-form thank-you">
+          <div className="thank-you-icon">✓</div>
+          <h2 className="feedback-form-title">Thank You!</h2>
+          <p className="feedback-form-subtitle">
+            Your feedback has been submitted successfully.
+          </p>
+          <p className="thank-you-message">
+            You can close this window now.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="feedback-form-overlay">
@@ -83,14 +108,16 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ voiceSessionId, onSubmit, o
         {error && <p className="feedback-error">{error}</p>}
 
         <div className="feedback-actions">
-          <button
-            type="button"
-            className="feedback-skip-btn"
-            onClick={onSkip}
-            disabled={isSubmitting}
-          >
-            Skip
-          </button>
+          {!isPreviewMode && (
+            <button
+              type="button"
+              className="feedback-skip-btn"
+              onClick={onSkip}
+              disabled={isSubmitting}
+            >
+              Skip
+            </button>
+          )}
           <button
             type="button"
             className="feedback-submit-btn"

@@ -145,6 +145,11 @@ function VoiceAgentContent() {
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [feedbackSessionId, setFeedbackSessionId] = useState<string | null>(null);
   
+  // Preview mode state (when accessed via shared link)
+  const [isPreviewMode] = useState(() => {
+    return localStorage.getItem('voice-agent-preview-mode') === 'true';
+  });
+  
   // Session tracking for transcript export
   const sessionIdRef = useRef<string>(`session_${Date.now()}`);
   // Track the combined prompt sent to the agent for export
@@ -1356,6 +1361,7 @@ Important guidelines:
       {showFeedbackForm && feedbackSessionId && (
         <FeedbackForm
           voiceSessionId={feedbackSessionId}
+          isPreviewMode={isPreviewMode}
           onSubmit={() => {
             setShowFeedbackForm(false);
             setFeedbackSessionId(null);
