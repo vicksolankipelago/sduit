@@ -571,3 +571,49 @@
     transform: scale(1);
   }
 }
+
+/* Screen error state */
+.agent-ui-screen-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 2rem;
+  text-align: center;
+  background: var(--background-light);
+  color: var(--text-global-primary);
+}
+
+.agent-ui-screen-error-icon {
+  color: #ef4444;
+  margin-bottom: 1rem;
+}
+
+.agent-ui-screen-error-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #ef4444;
+}
+
+.agent-ui-screen-error-message {
+  font-size: 0.875rem;
+  color: var(--text-global-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.agent-ui-screen-error-message code {
+  background: var(--ui-element-divider);
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.875rem;
+}
+
+.agent-ui-screen-error-available {
+  font-size: 0.75rem;
+  color: var(--text-global-tertiary);
+  max-width: 100%;
+  word-break: break-word;
+}
