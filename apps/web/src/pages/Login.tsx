@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './Login.css';
 
 export const LoginPage: React.FC = () => {
   const { user, loading, login, register } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,11 +15,13 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const from = (location.state as any)?.from?.pathname || '/';
+
   useEffect(() => {
     if (!loading && user) {
-      navigate('/');
+      navigate(from, { replace: true });
     }
-  }, [loading, user, navigate]);
+  }, [loading, user, navigate, from]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

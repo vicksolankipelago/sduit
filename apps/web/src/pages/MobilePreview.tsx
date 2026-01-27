@@ -9,6 +9,7 @@ export const MobilePreviewPage: React.FC = () => {
   useEffect(() => {
     if (journeyId) {
       localStorage.setItem('voice-agent-launch-journey', journeyId);
+      localStorage.setItem('voice-agent-preview-mode', 'true');
       navigate('/', { replace: true });
     } else {
       navigate('/', { replace: true });
