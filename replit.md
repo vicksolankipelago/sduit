@@ -160,6 +160,7 @@ The client detects environment using:
 
 ## Recent Changes
 
+- 2026-01-27: Added audio-synced transcript scrolling - messages now display audio timestamps, auto-scroll during playback, and highlight the currently playing message. Click any message to jump to that point in the recording.
 - 2026-01-23: Added dev/prod publishing system - users can now publish flows to production using Object Storage
 - 2026-01-23: Fixed audio recording and playback - recordings now properly save to Object Storage and play back in transcript view with correct duration display
 - 2026-01-23: Added audio playback in transcript detail view - users can now listen to session recordings with play/pause and seek controls
