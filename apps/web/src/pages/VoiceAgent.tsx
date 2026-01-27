@@ -149,6 +149,9 @@ function VoiceAgentContent() {
   const [isPreviewMode] = useState(() => {
     return localStorage.getItem('voice-agent-preview-mode') === 'true';
   });
+  const [previewLoading, setPreviewLoading] = useState(() => {
+    return localStorage.getItem('voice-agent-preview-mode') === 'true';
+  });
   
   // Session tracking for transcript export
   const sessionIdRef = useRef<string>(`session_${Date.now()}`);
@@ -214,13 +217,14 @@ function VoiceAgentContent() {
         console.log('📋 Available journeys on mount:', journeyList.map(j => `${j.name} (${j.id})`));
         setAvailableJourneys(journeyList);
 
-        // Check if there's a journey to auto-launch (from Journey Builder)
+        // Check if there's a journey to auto-launch (from Journey Builder or preview mode)
         const launchJourneyId = localStorage.getItem('voice-agent-launch-journey');
         if (launchJourneyId) {
           localStorage.removeItem('voice-agent-launch-journey'); // Clear flag
           const journeyToLaunch = await loadJourneyForRuntime(launchJourneyId);
           if (journeyToLaunch) {
             setCurrentJourney(journeyToLaunch);
+            setPreviewLoading(false); // Journey loaded, hide loading overlay
             addLog('info', `🚀 Launching journey: ${journeyToLaunch.name}`);
             // Auto-start after a brief delay
             setTimeout(() => {
@@ -229,6 +233,8 @@ function VoiceAgentContent() {
             return;
           }
         }
+        // If no journey to launch, clear preview loading anyway
+        setPreviewLoading(false);
 
         if (!currentJourney && journeyList.length > 0) {
           // Auto-load first journey but don't start it
@@ -1142,6 +1148,18 @@ Important guidelines:
       addLog('error', `Error starting journey: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }, [sessionStatus, addLog, setCurrentJourney, connectToRealtime]);
+
+  // Show loading overlay while preview mode is loading the journey
+  if (previewLoading) {
+    return (
+      <div className="voice-agent voice-agent-preview-loading">
+        <div className="preview-loading-content">
+          <div className="preview-loading-spinner"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="voice-agent">
