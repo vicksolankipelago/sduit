@@ -34,7 +34,12 @@ export const MobilePreviewPage: React.FC = () => {
           throw new Error('Journey not found');
         }
         
-        const data: PreviewJourney = await response.json();
+        const result = await response.json();
+        if (!result.success || !result.data) {
+          throw new Error('Invalid journey data');
+        }
+        
+        const data: PreviewJourney = result.data;
         setJourney(data);
 
         const startingAgent = data.agents.find(a => a.id === data.startingAgentId);
