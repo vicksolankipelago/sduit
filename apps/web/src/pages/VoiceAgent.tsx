@@ -1184,7 +1184,7 @@ Important guidelines:
           />
         ) : undefined}
         onOpenSettings={sessionStatus === 'CONNECTED' ? () => setSettingsOpen(true) : undefined}
-        onExit={sessionStatus === 'CONNECTED' ? handleEndCall : undefined}
+        onExit={sessionStatus === 'CONNECTED' && isPreviewMode ? handleEndCall : undefined}
       />
       
       {/* Header - Show when disconnected */}
