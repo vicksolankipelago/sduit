@@ -384,38 +384,20 @@ function VoiceAgentContent() {
 
           if (navAction) {
             const deeplink = (navAction as any).deeplink;
-            // Extract screen ID from deeplink (handles both full URLs and plain IDs)
-            let targetScreenId = deeplink;
-            try {
-              const url = new URL(deeplink);
-              const pathParts = url.pathname.split('/').filter(Boolean);
-              targetScreenId = pathParts[pathParts.length - 1] || deeplink;
-            } catch {
-              // Not a URL, use as-is
-            }
+            // Use the deeplink directly as the screen ID
+            const targetScreenId = deeplink;
             
-            // Handle "next-screen" placeholder - navigate to the next screen in sequence
-            if (targetScreenId === 'next-screen' && currentAgentConfig?.screens) {
-              const screens = currentAgentConfig.screens;
-              // Find the current screen's index by checking which screen matches the current screen ID
-              const currentScreenIdx = screens.findIndex(s => {
-                // Try to find the screen that triggered this event
-                const hasEvent = s.events?.some(e => e.id === eventId) || 
-                  s.sections.some(sec => sec.elements.some(el => el.events?.some((e: any) => e.id === eventId)));
-                return hasEvent;
-              });
-              
-              if (currentScreenIdx !== -1 && currentScreenIdx < screens.length - 1) {
-                targetScreenId = screens[currentScreenIdx + 1].id;
-                addLog('info', `🎯 Navigating to next screen: ${targetScreenId} (index ${currentScreenIdx + 1})`);
-              } else {
-                addLog('warning', `⚠️ No next screen available after index ${currentScreenIdx}`);
+            // Validate that the target screen exists
+            if (currentAgentConfig?.screens) {
+              const targetScreen = currentAgentConfig.screens.find(s => s.id === targetScreenId);
+              if (!targetScreen) {
+                addLog('error', `❌ Navigation error: Screen "${targetScreenId}" not found. Please check flow configuration.`);
+                console.error(`Navigation error: Screen "${targetScreenId}" not found in screens:`, currentAgentConfig.screens.map(s => s.id));
                 return;
               }
-            } else {
-              addLog('info', `🎯 Navigating to screen: ${targetScreenId}`);
             }
             
+            addLog('info', `🎯 Navigating to screen: ${targetScreenId}`);
             navigateToScreen?.(targetScreenId);
           }
 
