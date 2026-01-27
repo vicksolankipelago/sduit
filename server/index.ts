@@ -10,6 +10,7 @@ import voiceSessionsRouter from "./routes/voiceSessions";
 import feedbackRouter from "./routes/feedback";
 import screensRouter from "./routes/screens";
 import recordingsRouter from "./routes/recordings";
+import mobileRouter from "./routes/mobile";
 import fileUpload from "express-fileupload";
 import { serverLogger, sessionLogger, bedrockLogger } from "./utils/logger";
 import * as apiResponse from "./utils/response";
@@ -72,6 +73,9 @@ async function main() {
       res.status(500).json({ message: "Failed to get production flow" });
     }
   });
+
+  // Mobile API routes - public endpoints for iOS/Android apps
+  app.use("/api/mobile", mobileRouter);
 
   app.use("/api/journeys", isAuthenticated, journeysRouter);
   app.use("/api/voice-sessions", isAuthenticated, voiceSessionsRouter);

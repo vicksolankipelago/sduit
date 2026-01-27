@@ -537,13 +537,13 @@ function createPostWebPQScreens(): Screen[] {
               style: {},
               events: [
                 {
-                  id: 'navigate_to_rewards',
+                  id: 'navigate_to_cm_rewards_intro',
                   type: 'custom',
                   conditions: [],
                   action: [
                     {
                       type: 'navigation',
-                      deeplink: 'rewards',
+                      deeplink: 'cm-rewards-intro',
                     },
                   ],
                 },
@@ -554,22 +554,22 @@ function createPostWebPQScreens(): Screen[] {
       ],
       events: [
         {
-          id: 'navigate_to_rewards',
+          id: 'navigate_to_cm_rewards_intro',
           type: 'custom',
           conditions: [],
           action: [
             {
               type: 'navigation',
-              deeplink: 'rewards',
+              deeplink: 'cm-rewards-intro',
             },
           ],
         },
       ],
     },
 
-    // Screen 7: rewards
+    // Screen 7: cm-rewards-intro
     {
-      id: 'rewards',
+      id: 'cm-rewards-intro',
       title: '',
       hidesBackButton: true,
       sections: [
