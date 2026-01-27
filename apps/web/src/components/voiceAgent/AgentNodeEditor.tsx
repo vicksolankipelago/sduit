@@ -5,6 +5,7 @@ import { Agent, VOICE_OPTIONS, Screen } from '../../types/journey';
 import ToolEditor from './ToolEditor';
 import { SCREEN_TEMPLATES } from '../../lib/voiceAgent/screenTemplates';
 import { SettingsIcon, FileTextIcon, ToolIcon, EditIcon, TrashIcon, UploadIcon } from '../Icons';
+import { updateScreenDeeplinks } from '../../lib/voiceAgent/screenUtils';
 import './AgentNodeEditor.css';
 
 interface AgentNodeEditorProps {
@@ -75,9 +76,12 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
       };
     }
 
+    const newScreens = [...(agent.screens || []), newScreen];
+    const updatedScreens = updateScreenDeeplinks(newScreens);
+    
     const updatedAgent = {
       ...agent,
-      screens: [...(agent.screens || []), newScreen],
+      screens: updatedScreens,
       screenPrompts: { ...(agent.screenPrompts || {}), [newScreen.id]: '' },
     };
 
@@ -110,7 +114,8 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
     
     const screenToDelete = agent.screens[index];
     const { [screenToDelete.id]: _, ...remainingPrompts } = agent.screenPrompts || {};
-    const updatedScreens = agent.screens.filter((_, i) => i !== index);
+    const filteredScreens = agent.screens.filter((_, i) => i !== index);
+    const updatedScreens = updateScreenDeeplinks(filteredScreens);
     
     onChange({
       ...agent,
@@ -130,10 +135,12 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
         const imported = JSON.parse(content);
         
         if (Array.isArray(imported)) {
-          handleUpdate({ screens: imported });
+          const updatedScreens = updateScreenDeeplinks(imported);
+          handleUpdate({ screens: updatedScreens });
         } else if (imported.screens && Array.isArray(imported.screens)) {
+          const updatedScreens = updateScreenDeeplinks(imported.screens);
           handleUpdate({ 
-            screens: imported.screens,
+            screens: updatedScreens,
             screenPrompts: imported.screenPrompts ?? agent.screenPrompts,
           });
         }
