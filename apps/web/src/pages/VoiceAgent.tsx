@@ -383,7 +383,16 @@ function VoiceAgentContent() {
           const stateAction = foundEvent.action.find((a: any) => a.type === 'stateUpdate');
 
           if (navAction) {
-            const targetScreenId = (navAction as any).deeplink;
+            const deeplink = (navAction as any).deeplink;
+            // Extract screen ID from deeplink (handles both full URLs and plain IDs)
+            let targetScreenId = deeplink;
+            try {
+              const url = new URL(deeplink);
+              const pathParts = url.pathname.split('/').filter(Boolean);
+              targetScreenId = pathParts[pathParts.length - 1] || deeplink;
+            } catch {
+              // Not a URL, use as-is
+            }
             addLog('info', `🎯 Navigating to screen: ${targetScreenId}`);
             navigateToScreen?.(targetScreenId);
           }
