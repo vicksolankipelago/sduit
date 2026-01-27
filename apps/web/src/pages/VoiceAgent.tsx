@@ -145,6 +145,9 @@ function VoiceAgentContent() {
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [feedbackSessionId, setFeedbackSessionId] = useState<string | null>(null);
   
+  // Microphone permission error state
+  const [micPermissionError, setMicPermissionError] = useState(false);
+  
   // Preview mode state (when accessed via shared link)
   const [isPreviewMode] = useState(() => {
     return localStorage.getItem('voice-agent-preview-mode') === 'true';
@@ -255,6 +258,24 @@ function VoiceAgentContent() {
 
   const connectToRealtime = async (journeyOverride?: Journey) => {
     if (sessionStatus !== "DISCONNECTED") return;
+
+    // Check microphone permission before connecting
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        }
+      });
+      // Permission granted - stop the stream immediately (connection will request again)
+      stream.getTracks().forEach(track => track.stop());
+    } catch (error) {
+      console.error('Microphone permission denied:', error);
+      setMicPermissionError(true);
+      addLog('error', 'Microphone access is required to start the session');
+      return;
+    }
 
     // Generate new session ID for this session
     sessionIdRef.current = `session_${Date.now()}`;
@@ -1126,11 +1147,39 @@ Important guidelines:
     }
   };
 
+  // Check microphone permission before starting
+  const checkMicrophonePermission = useCallback(async (): Promise<boolean> => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        }
+      });
+      // Permission granted - stop the stream immediately (we just needed to check)
+      stream.getTracks().forEach(track => track.stop());
+      setMicPermissionError(false);
+      return true;
+    } catch (error) {
+      console.error('Microphone permission denied:', error);
+      setMicPermissionError(true);
+      return false;
+    }
+  }, []);
+
   const handleStartJourney = useCallback(async (journeyId: string) => {
     console.log('🚀 handleStartJourney called with journeyId:', journeyId);
     
     if (sessionStatus !== 'DISCONNECTED') {
       addLog('warning', 'Please disconnect current session first');
+      return;
+    }
+
+    // Check microphone permission first
+    const hasPermission = await checkMicrophonePermission();
+    if (!hasPermission) {
+      addLog('error', 'Microphone access is required to start the journey');
       return;
     }
 
@@ -1160,7 +1209,7 @@ Important guidelines:
       console.error('❌ Error starting journey:', error);
       addLog('error', `Error starting journey: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  }, [sessionStatus, addLog, setCurrentJourney, connectToRealtime]);
+  }, [sessionStatus, addLog, setCurrentJourney, connectToRealtime, checkMicrophonePermission]);
 
   // Show loading overlay while preview mode is loading the journey
   if (previewLoading) {
@@ -1388,6 +1437,40 @@ Important guidelines:
           ) : null}
         </div>
       </div>
+      )}
+      
+      {/* Microphone Permission Error Modal */}
+      {micPermissionError && (
+        <div className="voice-agent-settings-overlay" onClick={() => setMicPermissionError(false)}>
+          <div className="mic-permission-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="mic-permission-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+                <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
+                <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+            </div>
+            <h3>Microphone Access Required</h3>
+            <p>To start this flow, we need access to your microphone. Please enable microphone permissions in your browser settings and try again.</p>
+            <div className="mic-permission-instructions">
+              <strong>How to enable:</strong>
+              <ol>
+                <li>Click the lock or settings icon in your browser's address bar</li>
+                <li>Find "Microphone" in the permissions list</li>
+                <li>Change the setting to "Allow"</li>
+                <li>Refresh the page and try again</li>
+              </ol>
+            </div>
+            <button 
+              className="mic-permission-btn"
+              onClick={() => setMicPermissionError(false)}
+            >
+              Got it
+            </button>
+          </div>
+        </div>
       )}
       
       {/* Feedback Form Modal */}
