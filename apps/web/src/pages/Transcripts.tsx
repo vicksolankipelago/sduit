@@ -48,6 +48,9 @@ export const TranscriptsPage: React.FC = () => {
   const [notesMessageIndex, setNotesMessageIndex] = useState<number | null>(null);
   const [showNotes, setShowNotes] = useState(false);
   const [sessionNotes, setSessionNotes] = useState<TranscriptNote[]>([]);
+  
+  // Session owner name (the user who recorded the transcript)
+  const [sessionOwnerName, setSessionOwnerName] = useState<string | null>(null);
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   // Audio sync state
@@ -115,6 +118,7 @@ export const TranscriptsPage: React.FC = () => {
       const fullSession = await loadSessionById(session.id);
       if (fullSession) {
         setCurrentSession(fullSession);
+        setSessionOwnerName(session.userName || null);
         setViewMode('detail');
         setDetailTab('transcript');
         // Load notes for this session
@@ -171,6 +175,7 @@ export const TranscriptsPage: React.FC = () => {
   const handleBack = () => {
     setViewMode('list');
     setCurrentSession(null);
+    setSessionOwnerName(null);
   };
 
   const handleDownloadJSON = () => {
@@ -526,7 +531,7 @@ export const TranscriptsPage: React.FC = () => {
                           style={{ cursor: 'pointer' }}
                         >
                           <div className="transcripts-message-role">
-                            {item.role === 'user' ? (user?.firstName || 'User') : 'Agent'}
+                            {item.role === 'user' ? (sessionOwnerName || 'User') : 'Agent'}
                           </div>
                           <div className="transcripts-message-content">{item.title}</div>
                           <div className="transcripts-message-footer">
