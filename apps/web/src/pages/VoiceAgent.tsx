@@ -731,7 +731,7 @@ Important guidelines:
     addLog('success', '📥 Raw session JSON exported');
   };
 
-  const disconnectFromRealtime = async () => {
+  const disconnectFromRealtime = async (forceShowFeedback: boolean = false) => {
     addLog('info', 'Disconnecting from session...');
 
     // Flush any pending real-time saves first
@@ -799,8 +799,8 @@ Important guidelines:
     setSessionStatus("DISCONNECTED");
     addLog('success', 'Disconnected successfully');
     
-    // Show feedback form if session was saved successfully OR if in preview mode
-    if (sessionSaved || isPreviewMode) {
+    // Show feedback form if session was saved successfully, in preview mode, or force requested (end_call tool)
+    if (sessionSaved || isPreviewMode || forceShowFeedback) {
       // Ensure feedbackSessionId is set for the form to render
       if (!feedbackSessionId) {
         setFeedbackSessionId(sessionIdRef.current);
@@ -1109,8 +1109,9 @@ Important guidelines:
       if (toolName === 'end_call') {
         addLog('info', `📞 End call requested${args.reason ? `: ${args.reason}` : ''}`);
         // Use setTimeout to allow the tool response to be sent before disconnecting
+        // Pass true to force show feedback form (same behavior as user tapping end call)
         setTimeout(() => {
-          disconnectFromRealtime();
+          disconnectFromRealtime(true);
         }, 500);
       }
       
