@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './FeedbackForm.css';
 
 interface FeedbackFormProps {
@@ -8,6 +8,9 @@ interface FeedbackFormProps {
   isPreviewMode?: boolean;
 }
 
+const PROLIFIC_COMPLETION_CODE = 'CS9FLKNW';
+const PROLIFIC_COMPLETION_URL = `https://app.prolific.com/submissions/complete?cc=${PROLIFIC_COMPLETION_CODE}`;
+
 const FeedbackForm: React.FC<FeedbackFormProps> = ({ voiceSessionId, onSubmit, onSkip, isPreviewMode = false }) => {
   const [rating, setRating] = useState<number>(0);
   const [hoveredRating, setHoveredRating] = useState<number>(0);
@@ -15,6 +18,14 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ voiceSessionId, onSubmit, o
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showThankYou, setShowThankYou] = useState(false);
+  const [isProlificUser, setIsProlificUser] = useState(false);
+
+  useEffect(() => {
+    const prolificPid = localStorage.getItem('prolific-pid');
+    if (prolificPid) {
+      setIsProlificUser(true);
+    }
+  }, []);
 
   const handleSubmit = async () => {
     if (rating === 0) {
@@ -45,6 +56,9 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ voiceSessionId, onSubmit, o
       if (isPreviewMode) {
         localStorage.removeItem('voice-agent-preview-mode');
         localStorage.removeItem('voice-agent-launch-journey');
+        localStorage.removeItem('prolific-pid');
+        localStorage.removeItem('prolific-study-id');
+        localStorage.removeItem('prolific-session-id');
         setShowThankYou(true);
       } else {
         onSubmit();
@@ -58,7 +72,43 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ voiceSessionId, onSubmit, o
 
   const displayRating = hoveredRating || rating;
 
+  const handleProlificRedirect = () => {
+    window.location.href = PROLIFIC_COMPLETION_URL;
+  };
+
   if (showThankYou) {
+    if (isProlificUser) {
+      return (
+        <div className="feedback-form-overlay">
+          <div className="feedback-form thank-you prolific-completion">
+            <div className="thank-you-icon">✓</div>
+            <h2 className="feedback-form-title">Thank You!</h2>
+            <p className="feedback-form-subtitle">
+              Your feedback has been submitted successfully.
+            </p>
+            <div className="prolific-completion-section">
+              <p className="prolific-instruction">
+                To complete your submission, click the button below to return to Prolific:
+              </p>
+              <button
+                type="button"
+                className="prolific-redirect-btn"
+                onClick={handleProlificRedirect}
+              >
+                Return to Prolific
+              </button>
+              <p className="prolific-code-label">
+                Or copy this completion code:
+              </p>
+              <div className="prolific-code-box">
+                <code className="prolific-code">{PROLIFIC_COMPLETION_CODE}</code>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="feedback-form-overlay">
         <div className="feedback-form thank-you">

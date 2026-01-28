@@ -191,6 +191,13 @@ Voice sessions include:
 https://your-app-url/preview/journey-id?PROLIFIC_PID={{%PROLIFIC_PID%}}&STUDY_ID={{%STUDY_ID%}}&SESSION_ID={{%SESSION_ID%}}
 ```
 
+### Completion Flow
+After participants submit feedback, they are shown:
+1. A "Return to Prolific" button that redirects to `https://app.prolific.com/submissions/complete?cc=CS9FLKNW`
+2. The completion code (`CS9FLKNW`) displayed for manual copy if needed
+
+The completion code is configured in `apps/web/src/components/voiceAgent/FeedbackForm.tsx`.
+
 ## Recent Changes
 
 - 2026-01-28: Added Prolific study URL parameter tracking - preview links now capture PROLIFIC_PID, STUDY_ID, and SESSION_ID for participant matching
