@@ -26,6 +26,9 @@ export const voiceSessions = pgTable("voice_sessions", {
   statsToolCalls: integer("stats_tool_calls").default(0),
   statsBreadcrumbs: integer("stats_breadcrumbs").default(0),
   createdAt: timestamp("created_at").defaultNow(),
+  prolificPid: varchar("prolific_pid"),
+  prolificStudyId: varchar("prolific_study_id"),
+  prolificSessionId: varchar("prolific_session_id"),
 });
 
 export type VoiceSession = typeof voiceSessions.$inferSelect;

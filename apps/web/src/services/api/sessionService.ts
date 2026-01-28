@@ -30,6 +30,11 @@ export interface SaveMessageParams {
     prompt?: string;
     tools?: unknown[];
   };
+  prolific?: {
+    participantId?: string;
+    studyId?: string;
+    sessionId?: string;
+  };
 }
 
 export async function saveSession(sessionExport: SessionExport): Promise<void> {
@@ -78,6 +83,7 @@ export async function saveSessionMessage(params: SaveMessageParams): Promise<voi
     message: params.message,
     journey: params.journey,
     agent: params.agent,
+    prolific: params.prolific,
   });
 }
 
@@ -88,6 +94,7 @@ export class DebouncedSessionSaver {
   private sessionId: string | null = null;
   private journey: SaveMessageParams['journey'];
   private agent: SaveMessageParams['agent'];
+  private prolific: SaveMessageParams['prolific'];
   private isSaving = false;
   private onError?: (error: Error) => void;
 
@@ -99,11 +106,13 @@ export class DebouncedSessionSaver {
   configure(
     sessionId: string,
     journey?: SaveMessageParams['journey'],
-    agent?: SaveMessageParams['agent']
+    agent?: SaveMessageParams['agent'],
+    prolific?: SaveMessageParams['prolific']
   ): void {
     this.sessionId = sessionId;
     this.journey = journey;
     this.agent = agent;
+    this.prolific = prolific;
   }
 
   queueMessage(message: TranscriptItem): void {
@@ -140,6 +149,7 @@ export class DebouncedSessionSaver {
             message,
             journey: this.journey,
             agent: this.agent,
+            prolific: this.prolific,
           }).catch(err => {
             sessionLogger.error(`Failed to save message: ${message.itemId}`, err);
             this.onError?.(err);
@@ -163,6 +173,7 @@ export class DebouncedSessionSaver {
     this.sessionId = null;
     this.journey = undefined;
     this.agent = undefined;
+    this.prolific = undefined;
     this.isSaving = false;
   }
 }

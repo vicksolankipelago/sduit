@@ -607,6 +607,17 @@ Important guidelines:
       
       // Configure real-time saver with session info (only if user is authenticated)
       if (user) {
+        // Read Prolific params from localStorage (set by MobilePreview page)
+        const prolificPid = localStorage.getItem('prolific-pid');
+        const prolificStudyId = localStorage.getItem('prolific-study-id');
+        const prolificSessionId = localStorage.getItem('prolific-session-id');
+        
+        const prolificData = (prolificPid || prolificStudyId || prolificSessionId) ? {
+          participantId: prolificPid || undefined,
+          studyId: prolificStudyId || undefined,
+          sessionId: prolificSessionId || undefined,
+        } : undefined;
+        
         sessionSaverRef.current.configure(
           sessionIdRef.current,
           journeyToUse ? {
@@ -619,7 +630,8 @@ Important guidelines:
             name: startingAgentName,
             prompt: combinedInstructions,
             tools: azureTools,
-          }
+          },
+          prolificData
         );
       }
     } catch (err: any) {

@@ -55,6 +55,13 @@ export interface SessionExport {
     toolCalls: number;
     breadcrumbs: number;
   };
+
+  // Prolific study tracking
+  prolific?: {
+    participantId?: string;
+    studyId?: string;
+    sessionId?: string;
+  };
 }
 
 /**
@@ -66,8 +73,13 @@ export function createSessionExport(params: {
   events: LoggedEvent[];
   journey?: Journey;
   agentConfig?: AgentConfig;
+  prolific?: {
+    participantId?: string;
+    studyId?: string;
+    sessionId?: string;
+  };
 }): SessionExport {
-  const { sessionId, transcript, events, journey, agentConfig } = params;
+  const { sessionId, transcript, events, journey, agentConfig, prolific } = params;
 
   // Calculate duration from transcript timestamps
   const messageTimes = transcript
@@ -117,6 +129,7 @@ export function createSessionExport(params: {
       toolCalls: toolCalls.length,
       breadcrumbs: breadcrumbs.length,
     },
+    prolific,
   };
 }
 

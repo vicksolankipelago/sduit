@@ -155,6 +155,11 @@ router.get("/:sessionId", isAuthenticated, async (req: Request, res: Response) =
         toolCalls: session.statsToolCalls || 0,
         breadcrumbs: session.statsBreadcrumbs || 0,
       },
+      prolific: (session.prolificPid || session.prolificStudyId || session.prolificSessionId) ? {
+        participantId: session.prolificPid || undefined,
+        studyId: session.prolificStudyId || undefined,
+        sessionId: session.prolificSessionId || undefined,
+      } : undefined,
     });
   } catch (error) {
     sessionLogger.error("Error loading session:", error);
@@ -196,6 +201,9 @@ router.post("/", isAuthenticated, async (req: Request, res: Response) => {
       statsAssistantMessages: sessionData.stats?.assistantMessages || 0,
       statsToolCalls: sessionData.stats?.toolCalls || 0,
       statsBreadcrumbs: sessionData.stats?.breadcrumbs || 0,
+      prolificPid: sessionData.prolific?.participantId,
+      prolificStudyId: sessionData.prolific?.studyId,
+      prolificSessionId: sessionData.prolific?.sessionId,
     });
 
     return apiResponse.success(res, { id: session.id }, 201);
@@ -213,7 +221,7 @@ router.put("/:sessionId/message", isAuthenticated, async (req: Request, res: Res
     }
 
     const { sessionId } = req.params;
-    const { message, journey, agent } = req.body;
+    const { message, journey, agent, prolific } = req.body;
 
     if (!message || !message.itemId) {
       return apiResponse.validationError(res, "Message with itemId is required");
@@ -235,6 +243,9 @@ router.put("/:sessionId/message", isAuthenticated, async (req: Request, res: Res
       agentName: agent?.name,
       agentPrompt: agent?.prompt,
       agentTools: agent?.tools || [],
+      prolificPid: prolific?.participantId,
+      prolificStudyId: prolific?.studyId,
+      prolificSessionId: prolific?.sessionId,
     });
 
     return apiResponse.success(res, { id: session.id });

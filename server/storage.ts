@@ -34,6 +34,9 @@ export interface UpsertSessionMessageParams {
   agentName?: string;
   agentPrompt?: string;
   agentTools?: any[];
+  prolificPid?: string;
+  prolificStudyId?: string;
+  prolificSessionId?: string;
 }
 
 export interface IStorage {
@@ -355,7 +358,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertSessionMessage(params: UpsertSessionMessageParams): Promise<VoiceSession> {
-    const { userId, sessionId, message, journeyId, journeyName, journeyVoice, agentId, agentName, agentPrompt, agentTools } = params;
+    const { userId, sessionId, message, journeyId, journeyName, journeyVoice, agentId, agentName, agentPrompt, agentTools, prolificPid, prolificStudyId, prolificSessionId } = params;
     
     const existingSession = await this.getSession(sessionId);
     
@@ -424,6 +427,9 @@ export class DatabaseStorage implements IStorage {
           statsAssistantMessages: assistantMessages.length,
           statsToolCalls: 0,
           statsBreadcrumbs: message.type === 'BREADCRUMB' ? 1 : 0,
+          prolificPid,
+          prolificStudyId,
+          prolificSessionId,
         })
         .returning();
       return created;
