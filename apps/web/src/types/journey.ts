@@ -703,6 +703,7 @@ export interface Journey {
   description: string;
   systemPrompt: string; // Global prompt shared by all agents
   voice?: string; // Voice for all agents in journey (e.g., 'alloy', 'sage', 'echo')
+  voiceEnabled?: boolean; // Whether voice interaction is enabled (default true)
   agents: Agent[];
   startingAgentId: string; // ID of the first agent in the flow
   createdAt: string;
@@ -737,6 +738,7 @@ export interface PublishedJourney {
   description: string;
   systemPrompt: string;
   voice: string;
+  voiceEnabled?: boolean;
   agents: Agent[];
   startingAgentId: string;
   version: string;

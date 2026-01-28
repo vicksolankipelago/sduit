@@ -10,6 +10,7 @@ export interface PublishedFlowData {
   description: string;
   systemPrompt: string;
   voice: string | null;
+  voiceEnabled: boolean;
   agents: any[];
   startingAgentId: string;
   version: string;

@@ -69,6 +69,7 @@ router.get("/:id", isAuthenticated, async (req: Request, res: Response) => {
       description: journey.description || "",
       systemPrompt: journey.systemPrompt,
       voice: journey.voice,
+      voiceEnabled: journey.voiceEnabled ?? true,
       agents: journey.agents,
       startingAgentId: journey.startingAgentId,
       createdAt: journey.createdAt,
@@ -91,7 +92,7 @@ router.post("/", isAdmin, async (req: Request, res: Response) => {
       return apiResponse.unauthorized(res);
     }
 
-    const { name, description, systemPrompt, voice, agents, startingAgentId, version } = req.body;
+    const { name, description, systemPrompt, voice, voiceEnabled, agents, startingAgentId, version } = req.body;
 
     const journey = await storage.createJourney({
       id: uuidv4(),
@@ -100,6 +101,7 @@ router.post("/", isAdmin, async (req: Request, res: Response) => {
       description: description || "",
       systemPrompt: systemPrompt || "",
       voice: voice || null,
+      voiceEnabled: voiceEnabled ?? true,
       agents: agents || [],
       startingAgentId: startingAgentId || "",
       version: version || "1.0.0",
@@ -111,6 +113,7 @@ router.post("/", isAdmin, async (req: Request, res: Response) => {
       description: journey.description || "",
       systemPrompt: journey.systemPrompt,
       voice: journey.voice,
+      voiceEnabled: journey.voiceEnabled ?? true,
       agents: journey.agents,
       startingAgentId: journey.startingAgentId,
       createdAt: journey.createdAt,
@@ -137,7 +140,7 @@ router.put("/:id", isAdmin, async (req: Request, res: Response) => {
     }
 
     // Admins can edit any journey
-    const { name, description, systemPrompt, voice, agents, startingAgentId, version, changeNotes } = req.body;
+    const { name, description, systemPrompt, voice, voiceEnabled, agents, startingAgentId, version, changeNotes } = req.body;
 
     const updated = await storage.updateJourney(
       req.params.id,
@@ -146,6 +149,7 @@ router.put("/:id", isAdmin, async (req: Request, res: Response) => {
         description,
         systemPrompt,
         voice,
+        voiceEnabled,
         agents,
         startingAgentId,
         version,
@@ -164,6 +168,7 @@ router.put("/:id", isAdmin, async (req: Request, res: Response) => {
       description: updated.description || "",
       systemPrompt: updated.systemPrompt,
       voice: updated.voice,
+      voiceEnabled: updated.voiceEnabled ?? true,
       agents: updated.agents,
       startingAgentId: updated.startingAgentId,
       createdAt: updated.createdAt,
@@ -265,6 +270,7 @@ router.post("/:id/versions/:versionId/restore", isAdmin, async (req: Request, re
         description: version.description,
         systemPrompt: version.systemPrompt,
         voice: version.voice,
+        voiceEnabled: (version as any).voiceEnabled,
         agents: version.agents,
         startingAgentId: version.startingAgentId,
       },
@@ -283,6 +289,7 @@ router.post("/:id/versions/:versionId/restore", isAdmin, async (req: Request, re
       description: updated.description,
       systemPrompt: updated.systemPrompt,
       voice: updated.voice,
+      voiceEnabled: updated.voiceEnabled ?? true,
       agents: updated.agents,
       startingAgentId: updated.startingAgentId,
       createdAt: updated.createdAt,
@@ -342,6 +349,7 @@ router.post("/:id/publish", isAdmin, async (req: Request, res: Response) => {
         description: published.description || "",
         systemPrompt: published.systemPrompt,
         voice: published.voice,
+        voiceEnabled: (published as any).voiceEnabled ?? true,
         agents: published.agents as any[],
         startingAgentId: published.startingAgentId,
         version: published.version,
@@ -411,6 +419,7 @@ router.get("/:id/published", isAuthenticated, async (req: Request, res: Response
       description: published.description || "",
       systemPrompt: published.systemPrompt,
       voice: published.voice,
+      voiceEnabled: (published as any).voiceEnabled ?? true,
       agents: published.agents,
       startingAgentId: published.startingAgentId,
       version: published.version,
@@ -513,6 +522,7 @@ router.post("/:id/duplicate", isAdmin, async (req: Request, res: Response) => {
       description: original.description,
       systemPrompt: original.systemPrompt,
       voice: original.voice,
+      voiceEnabled: original.voiceEnabled,
       agents: duplicatedAgents,
       startingAgentId: newStartingAgentId,
       version: original.version,
@@ -524,6 +534,7 @@ router.post("/:id/duplicate", isAdmin, async (req: Request, res: Response) => {
       description: duplicate.description || "",
       systemPrompt: duplicate.systemPrompt,
       voice: duplicate.voice,
+      voiceEnabled: duplicate.voiceEnabled ?? true,
       agents: duplicate.agents,
       startingAgentId: duplicate.startingAgentId,
       createdAt: duplicate.createdAt,
@@ -565,6 +576,7 @@ router.get("/:id/export", isAuthenticated, async (req: any, res) => {
         description: journey.description || "",
         systemPrompt: journey.systemPrompt,
         voice: journey.voice,
+        voiceEnabled: journey.voiceEnabled ?? true,
         agents: journey.agents,
         startingAgentId: journey.startingAgentId,
         version: journey.version,
@@ -604,6 +616,7 @@ router.post("/:id/import", isAdmin, async (req: any, res) => {
       description: importedJourney.description ?? existingJourney.description,
       systemPrompt: importedJourney.systemPrompt ?? existingJourney.systemPrompt,
       voice: importedJourney.voice ?? existingJourney.voice,
+      voiceEnabled: importedJourney.voiceEnabled ?? existingJourney.voiceEnabled,
       agents: importedJourney.agents ?? existingJourney.agents,
       startingAgentId: importedJourney.startingAgentId ?? existingJourney.startingAgentId,
       version: importedJourney.version ?? existingJourney.version,
@@ -622,6 +635,7 @@ router.post("/:id/import", isAdmin, async (req: any, res) => {
         description: updatedJourney.description || "",
         systemPrompt: updatedJourney.systemPrompt,
         voice: updatedJourney.voice,
+        voiceEnabled: updatedJourney.voiceEnabled ?? true,
         agents: updatedJourney.agents,
         startingAgentId: updatedJourney.startingAgentId,
         updatedAt: updatedJourney.updatedAt,
