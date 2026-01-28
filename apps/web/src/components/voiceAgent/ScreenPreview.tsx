@@ -15,7 +15,7 @@ export interface ScreenPreviewProps {
 }
 
 export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
-  screen,
+  screen: screenProp,
   allScreens = [],
   showDeviceFrame = true,
   editable = false,
@@ -23,12 +23,16 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
   onElementSelect,
 }) => {
   const {
+    currentScreen,
     triggerEvent: contextTriggerEvent,
     interpolateString,
     evaluateConditions,
     goBack,
     navigationStack,
   } = useScreenContext();
+
+  // Use currentScreen from context if available (for navigation), otherwise use prop
+  const screen = currentScreen || screenProp;
 
   // Wrap triggerEvent to always include allScreens for navigation
   const triggerEvent = useCallback((eventId: string) => {

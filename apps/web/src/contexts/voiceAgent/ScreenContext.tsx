@@ -258,20 +258,29 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
    * Trigger an event by ID
    */
   const triggerEvent = useCallback((eventId: string, screens: Screen[] = []) => {
-    if (!currentScreen) return;
-
-    // Find event in current screen
-    const event = currentScreen.events?.find(e => e.id === eventId);
+    console.log('📢 triggerEvent called:', eventId, 'currentScreen:', currentScreen?.id, 'screens:', screens.length);
     
-    // Also check element events
+    if (!currentScreen) {
+      console.log('⚠️ No current screen, cannot trigger event');
+      return;
+    }
+
+    // Find event in current screen's top-level events
+    const event = currentScreen.events?.find(e => e.id === eventId);
+    console.log('📢 Screen-level event search:', event ? 'found' : 'not found');
+    
+    // Also check element events (within sections)
     const elementEvent = currentScreen.sections
       .flatMap(section => section.elements)
       .flatMap(element => element.events || [])
       .find(e => e.id === eventId);
+    console.log('📢 Element-level event search:', elementEvent ? 'found' : 'not found');
 
     const foundEvent = event || elementEvent;
 
     if (foundEvent) {
+      console.log('✅ Event found:', foundEvent.id, 'actions:', foundEvent.action?.length || 0);
+      
       // Check event-level conditions
       if (foundEvent.conditions && !evaluateConditions(foundEvent.conditions)) {
         console.log('Event conditions not met:', eventId);
@@ -280,7 +289,10 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
 
       // Execute actions
       if (foundEvent.action && foundEvent.action.length > 0) {
+        console.log('🚀 Executing actions:', foundEvent.action);
         executeActions(foundEvent.action, screens);
+      } else {
+        console.log('⚠️ No actions to execute for event:', eventId);
       }
 
       // Add to event queue for tracking
