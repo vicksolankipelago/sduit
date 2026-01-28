@@ -12,6 +12,7 @@ import screensRouter from "./routes/screens";
 import recordingsRouter from "./routes/recordings";
 import mobileRouter from "./routes/mobile";
 import previewCredentialsRouter from "./routes/previewCredentials";
+import quizRouter from "./routes/quiz";
 import fileUpload from "express-fileupload";
 import { serverLogger, sessionLogger, bedrockLogger } from "./utils/logger";
 import * as apiResponse from "./utils/response";
@@ -84,6 +85,7 @@ async function main() {
   app.use("/api/screens", isAuthenticated, screensRouter);
   app.use("/api/admin/preview-credentials", previewCredentialsRouter);
   app.use("/api/recordings", recordingsRouter);
+  app.use("/api/quiz", isAuthenticated, quizRouter);
   
   app.get("/api/debug/env", (req, res) => {
     res.json({

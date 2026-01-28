@@ -65,6 +65,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
           name: 'New Flow',
           description: 'Describe your flow',
           systemPrompt: DEFAULT_SYSTEM_PROMPT,
+          voiceEnabled: true,
           agents: [],
           startingAgentId: '',
           createdAt: new Date().toISOString(),
@@ -107,6 +108,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       name: 'New Flow',
       description: 'Describe your flow',
       systemPrompt: DEFAULT_SYSTEM_PROMPT,
+      voiceEnabled: true,
       agents: [],
       startingAgentId: '',
       createdAt: new Date().toISOString(),
@@ -587,6 +589,16 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
               <span className={`journey-status-badge ${isPublished ? (hasUnpublishedChanges ? 'has-changes' : 'published') : 'draft'}`}>
                 {isPublished ? (hasUnpublishedChanges ? 'Unpublished Changes' : 'Published') : 'Draft'}
               </span>
+              <label className="journey-voice-toggle" title={currentJourney.voiceEnabled !== false ? 'Voice enabled - users interact via voice' : 'Voice disabled - users interact via buttons'}>
+                <input
+                  type="checkbox"
+                  checked={currentJourney.voiceEnabled !== false}
+                  onChange={(e) => setCurrentJourney({ ...currentJourney, voiceEnabled: e.target.checked })}
+                  disabled={disabled || !isAdmin}
+                />
+                <span className="journey-voice-toggle-slider"></span>
+                <span className="journey-voice-toggle-label">{currentJourney.voiceEnabled !== false ? '🎙️ Voice' : '👆 Buttons'}</span>
+              </label>
             </div>
           )}
         </div>

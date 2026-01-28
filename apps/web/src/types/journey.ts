@@ -725,6 +725,7 @@ export interface JourneyListItem {
   status?: 'draft' | 'published';
   isPublished?: boolean;
   publishedAt?: string;
+  voiceEnabled?: boolean;
 }
 
 /**

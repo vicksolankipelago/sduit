@@ -5,3 +5,4 @@ export * from "./models/feedback";
 export * from "./models/globalScreens";
 export * from "./models/transcriptNotes";
 export * from "./models/previewCredentials";
+export * from "./models/quizSessions";

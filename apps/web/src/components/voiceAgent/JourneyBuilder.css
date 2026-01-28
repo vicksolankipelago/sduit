@@ -107,6 +107,64 @@
   color: #92400e;
 }
 
+.journey-voice-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.journey-voice-toggle input {
+  display: none;
+}
+
+.journey-voice-toggle-slider {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: var(--border-light);
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.journey-voice-toggle-slider::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.journey-voice-toggle input:checked + .journey-voice-toggle-slider {
+  background: var(--color-teal-500, #14b8a6);
+}
+
+.journey-voice-toggle input:checked + .journey-voice-toggle-slider::after {
+  transform: translateX(16px);
+}
+
+.journey-voice-toggle-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-global-secondary);
+  white-space: nowrap;
+}
+
+.journey-voice-toggle:hover .journey-voice-toggle-slider {
+  background: var(--text-global-tertiary);
+}
+
+.journey-voice-toggle input:checked:hover + .journey-voice-toggle-slider {
+  background: var(--color-teal-600, #0d9488);
+}
+
 .journey-header-actions {
   display: flex;
   gap: 0.5rem;

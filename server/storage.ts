@@ -2,6 +2,7 @@ import { journeys, journeyVersions, publishedJourneys, type Journey, type Insert
 import { voiceSessions, type VoiceSession, type InsertVoiceSession } from "../shared/models/voiceSessions";
 import { globalScreens, type GlobalScreen, type InsertGlobalScreen } from "../shared/models/globalScreens";
 import { transcriptNotes, type TranscriptNote, type InsertTranscriptNote } from "../shared/models/transcriptNotes";
+import { quizSessions, type QuizSession, type InsertQuizSession } from "../shared/models/quizSessions";
 import { users } from "../shared/models/auth";
 import { db } from "./db";
 import { eq, desc, count, and, isNull, asc } from "drizzle-orm";
@@ -82,6 +83,12 @@ export interface IStorage {
   updateNote(noteId: string, updates: Partial<InsertTranscriptNote>): Promise<TranscriptNote | undefined>;
   deleteNote(noteId: string): Promise<boolean>;
   deleteNoteWithReplies(noteId: string): Promise<boolean>;
+
+  // Quiz sessions
+  createQuizSession(session: InsertQuizSession): Promise<QuizSession>;
+  getQuizSession(sessionId: string): Promise<QuizSession | undefined>;
+  updateQuizSession(sessionId: string, updates: Partial<InsertQuizSession>): Promise<QuizSession | undefined>;
+  listQuizSessions(journeyId?: string, limit?: number): Promise<QuizSession[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -529,6 +536,46 @@ export class DatabaseStorage implements IStorage {
       }
     }
     return counts;
+  }
+
+  // Quiz sessions methods
+  async createQuizSession(session: InsertQuizSession): Promise<QuizSession> {
+    const [created] = await db.insert(quizSessions).values(session).returning();
+    return created;
+  }
+
+  async getQuizSession(sessionId: string): Promise<QuizSession | undefined> {
+    const [session] = await db
+      .select()
+      .from(quizSessions)
+      .where(eq(quizSessions.sessionId, sessionId))
+      .limit(1);
+    return session;
+  }
+
+  async updateQuizSession(sessionId: string, updates: Partial<InsertQuizSession>): Promise<QuizSession | undefined> {
+    const [updated] = await db
+      .update(quizSessions)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(quizSessions.sessionId, sessionId))
+      .returning();
+    return updated;
+  }
+
+  async listQuizSessions(journeyId?: string, limit: number = 50): Promise<QuizSession[]> {
+    if (journeyId) {
+      return db
+        .select()
+        .from(quizSessions)
+        .where(eq(quizSessions.journeyId, journeyId))
+        .orderBy(desc(quizSessions.createdAt))
+        .limit(limit);
+    }
+    return db
+      .select()
+      .from(quizSessions)
+      .orderBy(desc(quizSessions.createdAt))
+      .limit(limit);
   }
 }
 

@@ -24,6 +24,7 @@ router.get("/preview/:id", async (req: Request, res: Response) => {
       name: journey.name,
       agents: journey.agents,
       startingAgentId: journey.startingAgentId,
+      voiceEnabled: journey.voiceEnabled ?? true,
     });
   } catch (error) {
     journeyLogger.error("Error fetching journey preview:", error);
@@ -45,6 +46,7 @@ router.get("/", isAuthenticated, async (req: Request, res: Response) => {
       status: j.status || "draft",
       isPublished: j.isPublished || false,
       publishedAt: j.publishedAt,
+      voiceEnabled: j.voiceEnabled ?? true,
     }));
 
     return apiResponse.success(res, journeyList);
@@ -231,6 +233,7 @@ router.get("/:id/versions/:versionId", isAuthenticated, async (req: Request, res
       description: version.description,
       systemPrompt: version.systemPrompt,
       voice: version.voice,
+      voiceEnabled: version.voiceEnabled ?? true,
       agents: version.agents,
       startingAgentId: version.startingAgentId,
       changeNotes: version.changeNotes,
@@ -270,7 +273,7 @@ router.post("/:id/versions/:versionId/restore", isAdmin, async (req: Request, re
         description: version.description,
         systemPrompt: version.systemPrompt,
         voice: version.voice,
-        voiceEnabled: (version as any).voiceEnabled,
+        voiceEnabled: version.voiceEnabled ?? true,
         agents: version.agents,
         startingAgentId: version.startingAgentId,
       },
