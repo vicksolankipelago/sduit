@@ -20,6 +20,17 @@ interface CreateCredentialResponse {
   expiresAt: string | null;
 }
 
+interface BulkCredential {
+  username: string;
+  password: string;
+  label: string | null;
+}
+
+interface BulkCreateResponse {
+  count: number;
+  credentials: BulkCredential[];
+}
+
 async function fetchCredentials(): Promise<PreviewCredential[]> {
   const response = await fetch('/api/admin/preview-credentials', {
     credentials: 'include',
@@ -39,6 +50,19 @@ async function createCredential(data: { label?: string; expiresAt?: string }): P
   });
   if (!response.ok) {
     throw new Error('Failed to create credential');
+  }
+  return response.json();
+}
+
+async function bulkCreateCredentials(data: { count: number; labelPrefix?: string; expiresAt?: string }): Promise<BulkCreateResponse> {
+  const response = await fetch('/api/admin/preview-credentials/bulk', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to create credentials');
   }
   return response.json();
 }
@@ -91,10 +115,15 @@ export const PreviewAccessPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showCredentialModal, setShowCredentialModal] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
   const [newCredential, setNewCredential] = useState<CreateCredentialResponse | null>(null);
+  const [bulkCredentials, setBulkCredentials] = useState<BulkCredential[]>([]);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [formLabel, setFormLabel] = useState('');
   const [formExpiresAt, setFormExpiresAt] = useState('');
+  const [bulkCount, setBulkCount] = useState('10');
+  const [bulkLabelPrefix, setBulkLabelPrefix] = useState('');
+  const [isBulkMode, setIsBulkMode] = useState(false);
 
   const { data: credentials = [], isLoading, error } = useQuery({
     queryKey: ['preview-credentials'],
@@ -108,6 +137,19 @@ export const PreviewAccessPage: React.FC = () => {
       setShowCredentialModal(true);
       setShowCreateForm(false);
       setFormLabel('');
+      setFormExpiresAt('');
+      queryClient.invalidateQueries({ queryKey: ['preview-credentials'] });
+    },
+  });
+
+  const bulkCreateMutation = useMutation({
+    mutationFn: bulkCreateCredentials,
+    onSuccess: (data) => {
+      setBulkCredentials(data.credentials);
+      setShowBulkModal(true);
+      setShowCreateForm(false);
+      setBulkCount('10');
+      setBulkLabelPrefix('');
       setFormExpiresAt('');
       queryClient.invalidateQueries({ queryKey: ['preview-credentials'] });
     },
@@ -130,10 +172,36 @@ export const PreviewAccessPage: React.FC = () => {
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate({
-      label: formLabel || undefined,
-      expiresAt: formExpiresAt || undefined,
-    });
+    if (isBulkMode) {
+      bulkCreateMutation.mutate({
+        count: parseInt(bulkCount) || 10,
+        labelPrefix: bulkLabelPrefix || undefined,
+        expiresAt: formExpiresAt || undefined,
+      });
+    } else {
+      createMutation.mutate({
+        label: formLabel || undefined,
+        expiresAt: formExpiresAt || undefined,
+      });
+    }
+  };
+
+  const downloadCSV = (creds: BulkCredential[]) => {
+    const csvContent = creds.map(c => `${c.username},${c.password}`).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `preview-credentials-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const copyAllAsCSV = (creds: BulkCredential[]) => {
+    const csvContent = creds.map(c => `${c.username},${c.password}`).join('\n');
+    navigator.clipboard.writeText(csvContent);
   };
 
   const handleRevoke = (id: string) => {
@@ -167,37 +235,95 @@ export const PreviewAccessPage: React.FC = () => {
         {showCreateForm && (
           <div className="preview-access-section">
             <h2>Create New Access</h2>
+            <div className="mode-toggle">
+              <button
+                type="button"
+                className={`mode-btn ${!isBulkMode ? 'active' : ''}`}
+                onClick={() => setIsBulkMode(false)}
+              >
+                Single
+              </button>
+              <button
+                type="button"
+                className={`mode-btn ${isBulkMode ? 'active' : ''}`}
+                onClick={() => setIsBulkMode(true)}
+              >
+                Bulk Create
+              </button>
+            </div>
             <form onSubmit={handleCreateSubmit} className="create-form">
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="label">Label (optional)</label>
-                  <input
-                    type="text"
-                    id="label"
-                    value={formLabel}
-                    onChange={(e) => setFormLabel(e.target.value)}
-                    placeholder="e.g., Client Demo, Partner Preview"
-                  />
+              {isBulkMode ? (
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="bulkCount">Number of Credentials</label>
+                    <input
+                      type="number"
+                      id="bulkCount"
+                      min="1"
+                      max="500"
+                      value={bulkCount}
+                      onChange={(e) => setBulkCount(e.target.value)}
+                      placeholder="10"
+                    />
+                    <span className="form-hint">Max 500 at a time</span>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="labelPrefix">Label Prefix (optional)</label>
+                    <input
+                      type="text"
+                      id="labelPrefix"
+                      value={bulkLabelPrefix}
+                      onChange={(e) => setBulkLabelPrefix(e.target.value)}
+                      placeholder="e.g., Participant"
+                    />
+                    <span className="form-hint">Creates: Participant 1, Participant 2...</span>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="expiresAt">Expiry Date (optional)</label>
+                    <input
+                      type="datetime-local"
+                      id="expiresAt"
+                      value={formExpiresAt}
+                      onChange={(e) => setFormExpiresAt(e.target.value)}
+                    />
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label htmlFor="expiresAt">Expiry Date (optional)</label>
-                  <input
-                    type="datetime-local"
-                    id="expiresAt"
-                    value={formExpiresAt}
-                    onChange={(e) => setFormExpiresAt(e.target.value)}
-                  />
+              ) : (
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="label">Label (optional)</label>
+                    <input
+                      type="text"
+                      id="label"
+                      value={formLabel}
+                      onChange={(e) => setFormLabel(e.target.value)}
+                      placeholder="e.g., Client Demo, Partner Preview"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="expiresAt">Expiry Date (optional)</label>
+                    <input
+                      type="datetime-local"
+                      id="expiresAt"
+                      value={formExpiresAt}
+                      onChange={(e) => setFormExpiresAt(e.target.value)}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
               <button
                 type="submit"
                 className="submit-btn"
-                disabled={createMutation.isPending}
+                disabled={createMutation.isPending || bulkCreateMutation.isPending}
               >
-                {createMutation.isPending ? 'Creating...' : 'Create Credential'}
+                {(createMutation.isPending || bulkCreateMutation.isPending) 
+                  ? 'Creating...' 
+                  : isBulkMode 
+                    ? `Create ${bulkCount} Credentials` 
+                    : 'Create Credential'}
               </button>
-              {createMutation.isError && (
-                <p className="error-message">Failed to create credential. Please try again.</p>
+              {(createMutation.isError || bulkCreateMutation.isError) && (
+                <p className="error-message">Failed to create credential(s). Please try again.</p>
               )}
             </form>
           </div>
@@ -338,6 +464,44 @@ export const PreviewAccessPage: React.FC = () => {
             <button
               className="close-modal-btn"
               onClick={() => setShowCredentialModal(false)}
+            >
+              I've saved these credentials
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showBulkModal && bulkCredentials.length > 0 && (
+        <div className="modal-overlay" onClick={() => setShowBulkModal(false)}>
+          <div className="credential-modal bulk-modal" onClick={(e) => e.stopPropagation()}>
+            <h2>{bulkCredentials.length} Credentials Created</h2>
+            <p className="modal-warning">
+              Save these credentials now! The passwords will not be shown again.
+            </p>
+            <div className="bulk-actions">
+              <button
+                className="bulk-action-btn"
+                onClick={() => downloadCSV(bulkCredentials)}
+              >
+                Download CSV
+              </button>
+              <button
+                className="bulk-action-btn"
+                onClick={() => copyAllAsCSV(bulkCredentials)}
+              >
+                Copy All as CSV
+              </button>
+            </div>
+            <div className="bulk-preview">
+              <p className="bulk-preview-label">Preview (username,password format):</p>
+              <pre className="bulk-preview-content">
+                {bulkCredentials.slice(0, 5).map(c => `${c.username},${c.password}`).join('\n')}
+                {bulkCredentials.length > 5 && `\n... and ${bulkCredentials.length - 5} more`}
+              </pre>
+            </div>
+            <button
+              className="close-modal-btn"
+              onClick={() => setShowBulkModal(false)}
             >
               I've saved these credentials
             </button>

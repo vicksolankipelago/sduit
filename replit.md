@@ -137,6 +137,7 @@ Uses PostgreSQL with Drizzle ORM. Schema defined in `shared/schema.ts`:
 
 ### Preview Credentials (Admin Only)
 - `POST /api/admin/preview-credentials` - Generate temporary access credentials
+- `POST /api/admin/preview-credentials/bulk` - Bulk create credentials (count, labelPrefix, expiresAt)
 - `GET /api/admin/preview-credentials` - List all preview credentials
 - `PATCH /api/admin/preview-credentials/:id/revoke` - Revoke a credential
 - `DELETE /api/admin/preview-credentials/:id` - Delete a credential
@@ -228,6 +229,8 @@ Admins can generate temporary usernames and passwords for preview access without
 - Revocation without deletion (for audit trail)
 - Last used tracking
 - Admin-only management UI at /preview-access
+- **Bulk creation**: Create up to 500 credentials at once
+- **CSV export**: Download or copy credentials in username,password format for Prolific/research studies
 
 ### Key Files
 - `shared/models/previewCredentials.ts` - Database schema

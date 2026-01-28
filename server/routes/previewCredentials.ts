@@ -78,6 +78,41 @@ router.post("/", isAdmin, async (req, res) => {
   }
 });
 
+router.post("/bulk", isAdmin, async (req, res) => {
+  try {
+    const { count, labelPrefix, expiresAt } = req.body;
+    const userId = req.user?.id;
+
+    const numToCreate = Math.min(Math.max(1, parseInt(count) || 1), 500);
+    const results: Array<{ username: string; password: string; label: string | null }> = [];
+
+    for (let i = 0; i < numToCreate; i++) {
+      const username = generateFriendlyUsername();
+      const plainPassword = generateSecurePassword();
+      const passwordHash = await hashPassword(plainPassword);
+      const label = labelPrefix ? `${labelPrefix} ${i + 1}` : null;
+
+      await db.insert(previewCredentials).values({
+        username,
+        passwordHash,
+        label,
+        createdById: userId,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+      });
+
+      results.push({ username, password: plainPassword, label });
+    }
+
+    res.status(201).json({
+      count: results.length,
+      credentials: results,
+    });
+  } catch (error: any) {
+    console.error("Error bulk creating preview credentials:", error);
+    return apiResponse.serverError(res, "Failed to create preview credentials");
+  }
+});
+
 router.get("/", isAdmin, async (req, res) => {
   try {
     const credentials = await db.select().from(previewCredentials);
