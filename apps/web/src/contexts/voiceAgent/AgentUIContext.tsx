@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { AgentUIRegistry } from "../../lib/voiceAgent/agentUIRegistry";
 import { initializeAllAgentUI } from "../../lib/voiceAgent/initializeAgentUI";
 import { AgentUIContextValue, UIComponentConfig, UIRegistryEntry } from "../../types/voiceAgentUI";
-import { Screen } from "../../types/journey";
+import { Screen, Agent } from "../../types/journey";
 
 const AgentUIContext = createContext<AgentUIContextValue | undefined>(undefined);
 
@@ -15,6 +15,10 @@ export const AgentUIProvider: FC<PropsWithChildren> = ({ children }) => {
   const [screenRenderingMode, setScreenRenderingMode] = useState(false);
   const [currentAgentScreens, setCurrentAgentScreens] = useState<Screen[]>([]);
   const [currentScreenId, setCurrentScreenId] = useState<string | null>(null);
+  
+  // Agent management for non-voice mode
+  const [allAgents, setAllAgents] = useState<Agent[]>([]);
+  const [currentAgentId, setCurrentAgentId] = useState<string | null>(null);
   
   // Shared module state
   const [moduleState, setModuleState] = useState<Record<string, any>>({});
@@ -137,6 +141,34 @@ export const AgentUIProvider: FC<PropsWithChildren> = ({ children }) => {
     setModuleState(prev => ({ ...prev, ...updates }));
   }, []);
 
+  // Set all agents (used by non-voice mode to enable agent switching)
+  const setAgents = useCallback((agents: Agent[]) => {
+    setAllAgents(agents);
+  }, []);
+
+  // Switch to a different agent (for non-voice navigation between agents)
+  const switchToAgent = useCallback((agentId: string) => {
+    const agent = allAgents.find(a => a.id === agentId);
+    if (!agent) {
+      console.warn(`Agent not found: ${agentId}`);
+      return;
+    }
+
+    setCurrentAgentId(agentId);
+    
+    if (agent.screens && agent.screens.length > 0) {
+      setCurrentAgentScreens(agent.screens);
+      setCurrentScreenId(agent.screens[0].id);
+      // Enable screen rendering mode to ensure screens are visible
+      if (!screenRenderingMode) {
+        setScreenRenderingMode(true);
+      }
+      console.log(`🔄 Switched to agent: ${agent.name}, showing screen: ${agent.screens[0].id}`);
+    } else {
+      console.warn(`Agent ${agent.name} has no screens configured`);
+    }
+  }, [allAgents, screenRenderingMode]);
+
   return (
     <AgentUIContext.Provider
       value={{
@@ -159,6 +191,11 @@ export const AgentUIProvider: FC<PropsWithChildren> = ({ children }) => {
         navigateToScreen,
         moduleState,
         updateModuleState,
+        // Agent management for non-voice mode
+        allAgents,
+        currentAgentId,
+        setAgents,
+        switchToAgent,
       }}
     >
       {children}

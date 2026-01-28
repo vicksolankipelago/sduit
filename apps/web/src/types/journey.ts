@@ -170,6 +170,17 @@ export interface CloseModuleAction {
 }
 
 /**
+ * Tool Call Action
+ * Used for non-voice mode to trigger tools like navigate_to_agent, store_answer, complete_quiz
+ */
+export interface ToolCallAction {
+  type: 'toolCall';
+  tool: string;
+  params?: Record<string, AnyCodable>;
+  conditions?: EventConditions[];
+}
+
+/**
  * Event Action - Union of all action types
  */
 export type EventAction =
@@ -177,7 +188,8 @@ export type EventAction =
   | NavigationAction
   | CustomAction
   | ServiceCallAction
-  | CloseModuleAction;
+  | CloseModuleAction
+  | ToolCallAction;
 
 /**
  * Screen Event - Events that can be triggered

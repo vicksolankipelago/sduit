@@ -1,3 +1,5 @@
+import { Screen, Agent } from './journey';
+
 export interface UIComponentConfig {
   id: string;
   type: UIComponentType;
@@ -98,11 +100,17 @@ export interface AgentUIContextValue {
   
   // Screen rendering (SDUI)
   screenRenderingMode?: boolean;
-  currentAgentScreens?: any[]; // Screen[] type from journey.ts
+  currentAgentScreens?: Screen[];
   currentScreenId?: string | null;
-  enableScreenRendering?: (screens: any[], initialScreenId?: string) => void;
+  enableScreenRendering?: (screens: Screen[], initialScreenId?: string) => void;
   disableScreenRendering?: () => void;
   navigateToScreen?: (screenId: string) => void;
   moduleState?: Record<string, any>;
   updateModuleState?: (updates: Record<string, any>) => void;
+  
+  // Agent management for non-voice mode
+  allAgents?: Agent[];
+  currentAgentId?: string | null;
+  setAgents?: (agents: Agent[]) => void;
+  switchToAgent?: (agentId: string) => void;
 }

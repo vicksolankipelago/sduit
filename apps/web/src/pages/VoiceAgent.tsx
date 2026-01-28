@@ -56,7 +56,9 @@ function VoiceAgentContent() {
     enableScreenRendering,
     disableScreenRendering,
     navigateToScreen,
-    updateModuleState
+    updateModuleState,
+    setAgents,
+    switchToAgent
   } = useAgentUI();
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -140,6 +142,9 @@ function VoiceAgentContent() {
   const [_isAgentSpeaking, setIsAgentSpeaking] = useState(false);
   const [_hasScreensVisible, setHasScreensVisible] = useState(false);
   const [micStream, setMicStream] = useState<MediaStream | null>(null);
+  
+  // Non-voice mode state
+  const [isNonVoiceMode, setIsNonVoiceMode] = useState(false);
   
   // Feedback form state
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
@@ -259,10 +264,100 @@ function VoiceAgentContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run only once on mount
 
+  // Start a non-voice session (no microphone, no WebRTC)
+  const startNonVoiceSession = useCallback((journey: Journey) => {
+    console.log('🚀 Starting non-voice session for journey:', journey.name);
+    addLog('info', `🔇 Starting non-voice session: ${journey.name}`);
+
+    // Generate new session ID
+    sessionIdRef.current = `session_${Date.now()}`;
+    
+    // Reset session state
+    sessionSaverRef.current.reset();
+    queuedItemIdsRef.current.clear();
+    setSessionLogs([]);
+
+    // Store all agents for non-voice navigation
+    if (setAgents) {
+      setAgents(journey.agents);
+    }
+
+    // Find starting agent
+    const startingAgentConfig = journey.agents.find(a => a.id === journey.startingAgentId);
+    if (!startingAgentConfig) {
+      addLog('error', 'Starting agent not found in journey');
+      return;
+    }
+
+    const startingAgentName = startingAgentConfig.name.replace(/[^a-zA-Z0-9]+(.)/g, (_, char) => char.toUpperCase()).replace(/^(.)/, (char) => char.toLowerCase());
+    currentAgentRef.current = startingAgentName;
+
+    // Enable screen rendering with starting agent's screens
+    if (startingAgentConfig.screens && startingAgentConfig.screens.length > 0) {
+      addLog('info', `📱 Showing first screen: ${startingAgentConfig.screens[0].id}`);
+      enableScreenRendering?.(startingAgentConfig.screens, startingAgentConfig.screens[0].id);
+      setHasScreensVisible(true);
+    } else {
+      addLog('warning', '⚠️ Starting agent has no screens configured');
+    }
+
+    // Set session status to connected (non-voice active)
+    setSessionStatus('CONNECTED');
+    setIsNonVoiceMode(true);
+    addLog('success', `✅ Non-voice session started`);
+  }, [addLog, enableScreenRendering, setAgents]);
+
+  // Listen for toolCallAction events (from ScreenContext) for navigate_to_agent
+  useEffect(() => {
+    const handleToolCallAction = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { tool, params } = customEvent.detail;
+      
+      console.log('🔧 VoiceAgent received toolCallAction:', tool, params);
+      
+      if (tool === 'navigate_to_agent' && params.agentId) {
+        addLog('info', `🔄 Navigating to agent: ${params.agentId}`);
+        if (switchToAgent) {
+          switchToAgent(params.agentId);
+        }
+      }
+      
+      if (tool === 'end_session' || tool === 'complete_quiz') {
+        addLog('info', `📞 Session complete`);
+        // For non-voice mode, just disconnect (no feedback form needed)
+        setSessionStatus('DISCONNECTED');
+        setIsNonVoiceMode(false);
+        disableScreenRendering?.();
+        setHasScreensVisible(false);
+      }
+    };
+    
+    window.addEventListener('toolCallAction', handleToolCallAction as EventListener);
+    
+    return () => {
+      window.removeEventListener('toolCallAction', handleToolCallAction as EventListener);
+    };
+  }, [addLog, switchToAgent, disableScreenRendering]);
+
   const connectToRealtime = async (journeyOverride?: Journey) => {
     if (sessionStatus !== "DISCONNECTED") return;
 
-    // Check microphone permission before connecting
+    // Use provided journey or fall back to current journey state
+    const journeyToUse = journeyOverride || currentJourney;
+
+    // Check if we have a journey to run
+    if (!journeyToUse) {
+      addLog('error', 'No journey selected. Please load or create a journey first.');
+      return;
+    }
+
+    // Check if this is a non-voice journey
+    if (journeyToUse.voiceEnabled === false) {
+      startNonVoiceSession(journeyToUse);
+      return;
+    }
+
+    // Voice mode: Check microphone permission before connecting
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -290,15 +385,6 @@ function VoiceAgentContent() {
     // Clear message buffers
     userMessageBuffer.current = '';
     assistantResponseBuffer.current = '';
-
-    // Use provided journey or fall back to current journey state
-    const journeyToUse = journeyOverride || currentJourney;
-
-    // Check if we have a journey to run
-    if (!journeyToUse) {
-      addLog('error', 'No journey selected. Please load or create a journey first.');
-      return;
-    }
 
     console.log('🚀 connectToRealtime called with journey:', journeyToUse.name, 'ID:', journeyToUse.id);
 
@@ -1191,18 +1277,20 @@ Important guidelines:
       return;
     }
 
-    // Check microphone permission first
-    const hasPermission = await checkMicrophonePermission();
-    if (!hasPermission) {
-      addLog('error', 'Microphone access is required to start the journey');
-      return;
-    }
-
     try {
       const journey = await loadJourneyForRuntime(journeyId);
       if (journey) {
         addLog('info', `🎯 Starting journey: ${journey.name} (ID: ${journeyId})`);
-        console.log('📝 Journey details:', { name: journey.name, id: journey.id, agents: journey.agents.length });
+        console.log('📝 Journey details:', { name: journey.name, id: journey.id, agents: journey.agents.length, voiceEnabled: journey.voiceEnabled });
+        
+        // For voice journeys, check microphone permission first
+        if (journey.voiceEnabled !== false) {
+          const hasPermission = await checkMicrophonePermission();
+          if (!hasPermission) {
+            addLog('error', 'Microphone access is required to start the journey');
+            return;
+          }
+        }
         
         // Update state for UI
         setCurrentJourney(journey);
@@ -1241,7 +1329,7 @@ Important guidelines:
   return (
     <div className="voice-agent">
       <AgentUIRenderer
-        bottomBar={sessionStatus === 'CONNECTED' ? (
+        bottomBar={sessionStatus === 'CONNECTED' && !isNonVoiceMode ? (
           <VoiceControlBar
             isListening={true}
             isMuted={isMicMuted}
@@ -1251,8 +1339,14 @@ Important guidelines:
             showKeyboardInput={showKeyboardInput}
           />
         ) : undefined}
-        onOpenSettings={sessionStatus === 'CONNECTED' && !isPreviewMode ? () => setSettingsOpen(true) : undefined}
-        onExit={undefined}
+        onOpenSettings={sessionStatus === 'CONNECTED' && !isPreviewMode && !isNonVoiceMode ? () => setSettingsOpen(true) : undefined}
+        onExit={sessionStatus === 'CONNECTED' && isNonVoiceMode ? () => {
+          setSessionStatus('DISCONNECTED');
+          setIsNonVoiceMode(false);
+          disableScreenRendering?.();
+          setHasScreensVisible(false);
+          addLog('info', 'Non-voice session ended');
+        } : undefined}
         showNotificationPopup={showNotificationPopup}
         onNotificationAllow={() => {
           setShowNotificationPopup(false);

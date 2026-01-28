@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { Screen, AnyCodable, ScreenEvent, EventAction, NavigationAction, StateUpdateAction } from '../../types/journey';
+import { Screen, AnyCodable, ScreenEvent, EventAction, NavigationAction, StateUpdateAction, ToolCallAction } from '../../types/journey';
 import jsonLogic from 'json-logic-js';
 
 /**
@@ -23,7 +23,7 @@ export interface ScreenContextState {
   setCurrentScreen: (screen: Screen | null) => void;
   updateScreenState: (updates: Record<string, AnyCodable>) => void;
   updateModuleState: (updates: Record<string, AnyCodable>) => void;
-  triggerEvent: (eventId: string) => void;
+  triggerEvent: (eventId: string, screens?: Screen[]) => void;
   navigateToScreen: (screenId: string, screens: Screen[]) => void;
   goBack: (screens: Screen[]) => void;
   interpolateString: (template: string) => string;
@@ -212,6 +212,36 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
           } else {
             updateModuleState(stateAction.updates);
           }
+          break;
+        }
+
+        case 'toolCall': {
+          const toolAction = action as ToolCallAction;
+          console.log(`🔧 Tool call action: ${toolAction.tool}`, toolAction.params);
+          
+          // Dispatch a custom event that VoiceAgent or other components can listen to
+          const event = new CustomEvent('toolCallAction', {
+            detail: {
+              tool: toolAction.tool,
+              params: toolAction.params || {},
+            },
+          });
+          window.dispatchEvent(event);
+          
+          // Handle built-in tool actions
+          if (toolAction.tool === 'store_answer' && toolAction.params) {
+            const { questionId, answer } = toolAction.params as { questionId?: string; answer?: string };
+            if (questionId && answer) {
+              updateModuleState({ [`answer_${questionId}`]: answer });
+              console.log(`📝 Stored answer: ${questionId} = ${answer}`);
+            }
+          }
+          
+          if (toolAction.tool === 'complete_quiz') {
+            updateModuleState({ quizCompleted: true });
+            console.log('✅ Quiz completed');
+          }
+          
           break;
         }
 

@@ -23,12 +23,17 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
   onElementSelect,
 }) => {
   const {
-    triggerEvent,
+    triggerEvent: contextTriggerEvent,
     interpolateString,
     evaluateConditions,
     goBack,
     navigationStack,
   } = useScreenContext();
+
+  // Wrap triggerEvent to always include allScreens for navigation
+  const triggerEvent = useCallback((eventId: string) => {
+    contextTriggerEvent(eventId, allScreens);
+  }, [contextTriggerEvent, allScreens]);
   const resolveInterpolations = useCallback((value: AnyCodable): AnyCodable => {
     if (typeof value === 'string') {
       return interpolateString(value);
