@@ -351,8 +351,14 @@ function VoiceAgentContent() {
       return;
     }
 
-    // Check if this is a non-voice journey
-    if (journeyToUse.voiceEnabled === false) {
+    // Check if this is a non-voice journey (voiceEnabled is explicitly false)
+    // Handle all falsy values including undefined, null, or false
+    const isVoiceEnabled = journeyToUse.voiceEnabled !== false;
+    console.log('🔊 Journey voiceEnabled:', journeyToUse.voiceEnabled, 'isVoiceEnabled:', isVoiceEnabled);
+    
+    if (!isVoiceEnabled) {
+      console.log('🔇 Starting non-voice session');
+      addLog('info', '🔇 Non-voice journey detected');
       startNonVoiceSession(journeyToUse);
       return;
     }
