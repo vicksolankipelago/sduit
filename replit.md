@@ -165,8 +165,35 @@ The client detects environment using:
 1. API call to `/api/journeys/environment` (uses server's NODE_ENV)
 2. URL-based fallback: `.replit.dev` domains are development, all others default to production
 
+## Prolific Study Integration
+
+The application supports URL parameter tracking for Prolific research studies. This allows researchers to match session data with Prolific participant records.
+
+### How It Works
+1. Add URL parameters to your study link: `?PROLIFIC_PID=xxx&STUDY_ID=yyy&SESSION_ID=zzz`
+2. When participants access the preview link, parameters are automatically captured
+3. Parameters are stored with each voice session in the database
+4. Export sessions to match with Prolific demographic data
+
+### Supported Parameters
+- `PROLIFIC_PID` - The Prolific participant ID
+- `STUDY_ID` - The Prolific study ID
+- `SESSION_ID` - The Prolific session ID
+
+### Database Fields
+Voice sessions include:
+- `prolific_pid` - Participant ID from URL
+- `prolific_study_id` - Study ID from URL
+- `prolific_session_id` - Session ID from URL
+
+### Example Study Link
+```
+https://your-app-url/preview/journey-id?PROLIFIC_PID={{%PROLIFIC_PID%}}&STUDY_ID={{%STUDY_ID%}}&SESSION_ID={{%SESSION_ID%}}
+```
+
 ## Recent Changes
 
+- 2026-01-28: Added Prolific study URL parameter tracking - preview links now capture PROLIFIC_PID, STUDY_ID, and SESSION_ID for participant matching
 - 2026-01-27: Added terms & conditions modal - members must accept terms covering voice recording consent and AI model training before using the app
 - 2026-01-27: Added audio-synced transcript scrolling - messages now display audio timestamps, auto-scroll during playback, and highlight the currently playing message. Click any message to jump to that point in the recording.
 - 2026-01-23: Added dev/prod publishing system - users can now publish flows to production using Object Storage
