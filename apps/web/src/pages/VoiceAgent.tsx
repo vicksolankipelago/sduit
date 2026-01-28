@@ -22,7 +22,6 @@ import SessionLogViewer, { LogEntry } from '../components/voiceAgent/SessionLogV
 import MemberPersonaEditor from '../components/voiceAgent/MemberPersonaEditor';
 import FeedbackForm from '../components/voiceAgent/FeedbackForm';
 import VoiceControlBar from '../components/voiceAgent/VoiceControlBar';
-import NotificationPermissionPopup from '../components/voiceAgent/NotificationPermissionPopup';
 import { ErrorBoundary } from '../components/voiceAgent/ErrorBoundary';
 import { useAudioLevel } from '../hooks/voiceAgent/useAudioLevel';
 import { EditIcon, SettingsIcon } from '../components/Icons';
@@ -1241,6 +1240,17 @@ Important guidelines:
         ) : undefined}
         onOpenSettings={sessionStatus === 'CONNECTED' && !isPreviewMode ? () => setSettingsOpen(true) : undefined}
         onExit={undefined}
+        showNotificationPopup={showNotificationPopup}
+        onNotificationAllow={() => {
+          setShowNotificationPopup(false);
+          updateModuleState?.({ notificationsEnabled: true });
+          console.log('🔔 Notifications enabled');
+        }}
+        onNotificationDeny={() => {
+          setShowNotificationPopup(false);
+          updateModuleState?.({ notificationsEnabled: false });
+          console.log('🔔 Notifications denied');
+        }}
       />
       
       {/* Header - Show when disconnected and NOT in preview mode */}
@@ -1492,21 +1502,6 @@ Important guidelines:
         />
       )}
       
-      {/* Notification Permission Popup */}
-      {showNotificationPopup && (
-        <NotificationPermissionPopup
-          onAllow={() => {
-            setShowNotificationPopup(false);
-            updateModuleState?.({ notificationsEnabled: true });
-            console.log('🔔 Notifications enabled');
-          }}
-          onDeny={() => {
-            setShowNotificationPopup(false);
-            updateModuleState?.({ notificationsEnabled: false });
-            console.log('🔔 Notifications denied');
-          }}
-        />
-      )}
     </div>
   );
 }

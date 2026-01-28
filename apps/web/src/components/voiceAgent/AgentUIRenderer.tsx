@@ -3,6 +3,7 @@ import { useAgentUI } from '../../contexts/voiceAgent/AgentUIContext';
 import { ScreenProvider } from '../../contexts/voiceAgent/ScreenContext';
 import { logger } from '../../utils/logger';
 import ScreenPreview from './ScreenPreview';
+import NotificationPermissionPopup from './NotificationPermissionPopup';
 import './AgentUIRenderer.css';
 
 const uiLogger = logger.namespace('AgentUIRenderer');
@@ -11,9 +12,12 @@ interface AgentUIRendererProps {
   bottomBar?: React.ReactNode;
   onOpenSettings?: () => void;
   onExit?: () => void;
+  showNotificationPopup?: boolean;
+  onNotificationAllow?: () => void;
+  onNotificationDeny?: () => void;
 }
 
-export default function AgentUIRenderer({ bottomBar, onOpenSettings, onExit }: AgentUIRendererProps) {
+export default function AgentUIRenderer({ bottomBar, onOpenSettings, onExit, showNotificationPopup, onNotificationAllow, onNotificationDeny }: AgentUIRendererProps) {
   const {
     screenRenderingMode,
     currentAgentScreens,
@@ -111,6 +115,14 @@ export default function AgentUIRenderer({ bottomBar, onOpenSettings, onExit }: A
               </div>
             )}
           </div>
+          
+          {/* Notification Permission Popup - rendered inside device frame */}
+          {showNotificationPopup && onNotificationAllow && onNotificationDeny && (
+            <NotificationPermissionPopup
+              onAllow={onNotificationAllow}
+              onDeny={onNotificationDeny}
+            />
+          )}
         </div>
       </div>
     );
