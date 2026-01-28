@@ -61,7 +61,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       // Check if we should auto-create a new flow
       if (searchParams.get('new') === 'true') {
         const newJourney: Journey = {
-          id: uuidv4(),
+          id: `new-${uuidv4()}`,
           name: 'New Flow',
           description: 'Describe your flow',
           systemPrompt: DEFAULT_SYSTEM_PROMPT,
@@ -103,7 +103,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
 
   const handleCreateNewJourney = () => {
     const newJourney: Journey = {
-      id: uuidv4(),
+      id: `new-${uuidv4()}`,
       name: 'New Flow',
       description: 'Describe your flow',
       systemPrompt: DEFAULT_SYSTEM_PROMPT,
