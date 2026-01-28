@@ -17,10 +17,14 @@ export const ButtonElement: React.FC<ButtonElementProps> = ({
   const handleClick = () => {
     if (data.isDisabled) return;
     
-    // Trigger onSelected event
-    const selectEvent = events?.find(e => e.type === 'onSelected');
-    if (selectEvent && onEventTrigger) {
-      onEventTrigger(selectEvent.id);
+    // Trigger button tap/click events (support onSelected, onTap, and custom event types)
+    const clickEvent = events?.find(e => 
+      e.type === 'onSelected' || 
+      e.type === 'onTap' || 
+      e.type === 'custom'
+    );
+    if (clickEvent && onEventTrigger) {
+      onEventTrigger(clickEvent.id);
     }
   };
 

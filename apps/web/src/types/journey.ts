@@ -73,6 +73,7 @@ export type EventType =
   | 'onAppear'
   | 'onDisappear'
   | 'onSelected'
+  | 'onTap'
   | 'onToggle'
   | 'onToggleOn'
   | 'onToggleOff'
