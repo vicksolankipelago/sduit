@@ -66,6 +66,7 @@ Uses PostgreSQL with Drizzle ORM. Schema defined in `shared/schema.ts`:
 - `journey_versions` - Version history for journeys (automatically created on every save)
 - `voice_sessions` - Saved voice session transcripts
 - `feedback` - User feedback linked to voice sessions (rating + comments)
+- `preview_credentials` - Temporary access credentials for preview users (admin-generated)
 
 ## Environment Variables
 
@@ -134,6 +135,12 @@ Uses PostgreSQL with Drizzle ORM. Schema defined in `shared/schema.ts`:
 - `GET /api/recordings/:sessionId/chunks/:chunkIndex` - Download a specific chunk
 - `DELETE /api/recordings/:sessionId` - Delete a recording session
 
+### Preview Credentials (Admin Only)
+- `POST /api/admin/preview-credentials` - Generate temporary access credentials
+- `GET /api/admin/preview-credentials` - List all preview credentials
+- `PATCH /api/admin/preview-credentials/:id/revoke` - Revoke a credential
+- `DELETE /api/admin/preview-credentials/:id` - Delete a credential
+
 ## System Tool Calls
 
 The following system tools are automatically available to all agents in all flows:
@@ -198,8 +205,38 @@ After participants submit feedback, they are shown:
 
 The completion code is configured in `apps/web/src/components/voiceAgent/FeedbackForm.tsx`.
 
+## Temporary Preview Access
+
+Admins can generate temporary usernames and passwords for preview access without requiring full registration.
+
+### How It Works
+1. Navigate to "Preview Access" in the admin navigation menu
+2. Click "Create New Access" to generate temporary credentials
+3. Optionally add a label and expiry date
+4. Share the generated username and password with the participant
+5. The password is shown only once - copy it before closing the modal
+
+### Login with Preview Credentials
+- Users log in with the generated username (e.g., "preview_abc123") and password
+- Preview users have 'member' role and can test journeys
+- Credentials can be revoked or deleted at any time by admins
+
+### Features
+- Auto-generated friendly usernames (preview_xxxxxx)
+- Secure 16-character passwords
+- Optional expiration dates
+- Revocation without deletion (for audit trail)
+- Last used tracking
+- Admin-only management UI at /preview-access
+
+### Key Files
+- `shared/models/previewCredentials.ts` - Database schema
+- `server/routes/previewCredentials.ts` - API endpoints
+- `apps/web/src/pages/PreviewAccess.tsx` - Admin UI
+
 ## Recent Changes
 
+- 2026-01-28: Added temporary preview access system - admins can generate temporary usernames and passwords for preview access that can be revoked later
 - 2026-01-28: Added Prolific study URL parameter tracking - preview links now capture PROLIFIC_PID, STUDY_ID, and SESSION_ID for participant matching
 - 2026-01-27: Added terms & conditions modal - members must accept terms covering voice recording consent and AI model training before using the app
 - 2026-01-27: Added audio-synced transcript scrolling - messages now display audio timestamps, auto-scroll during playback, and highlight the currently playing message. Click any message to jump to that point in the recording.
