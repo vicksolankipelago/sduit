@@ -15,6 +15,7 @@ import { JourneyBuilderPage } from './pages/JourneyBuilder';
 import { TranscriptsPage } from './pages/Transcripts';
 import UIShowcase from './pages/UIShowcase';
 import { SettingsPage } from './pages/Settings';
+import { PreviewAccessPage } from './pages/PreviewAccess';
 import { AgentEditorPage } from './pages/AgentEditor';
 import { MobilePreviewPage } from './pages/MobilePreview';
 import './styles/pelago-design-system.css';
@@ -56,6 +57,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               <Route path="transcripts" element={<TranscriptsPage />} />
               <Route path="screens" element={<UIShowcase />} />
               <Route path="settings" element={<SettingsPage />} />
+              <Route path="preview-access" element={<PreviewAccessPage />} />
             </Route>
             </Routes>
           </AuthProvider>

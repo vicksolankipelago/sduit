@@ -5,7 +5,7 @@ import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { scrypt, randomBytes, timingSafeEqual, createHash } from "crypto";
 import { promisify } from "util";
-import { users, type SelectUser } from "../shared/schema";
+import { users, previewCredentials, type SelectUser } from "../shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { pool } from "./db";
@@ -75,16 +75,94 @@ export function setupAuth(app: Express) {
       { usernameField: "email" },
       async (email, password, done) => {
         const [user] = await getUserByEmail(email);
-        if (!user || !(await comparePasswords(password, user.password))) {
+        
+        if (user) {
+          if (await comparePasswords(password, user.password)) {
+            return done(null, user);
+          }
           return done(null, false, { message: "Invalid email or password" });
         }
-        return done(null, user);
+        
+        if (email.startsWith("preview_")) {
+          const [previewCred] = await db
+            .select()
+            .from(previewCredentials)
+            .where(eq(previewCredentials.username, email))
+            .limit(1);
+          
+          if (previewCred) {
+            const isRevoked = previewCred.revokedAt !== null;
+            const isExpired = previewCred.expiresAt !== null && new Date() > previewCred.expiresAt;
+            
+            if (!isRevoked && !isExpired) {
+              if (await comparePasswords(password, previewCred.passwordHash)) {
+                await db
+                  .update(previewCredentials)
+                  .set({ lastUsedAt: new Date() })
+                  .where(eq(previewCredentials.id, previewCred.id));
+                
+                const syntheticUser: SelectUser = {
+                  id: `preview_${previewCred.id}`,
+                  email: previewCred.username,
+                  password: previewCred.passwordHash,
+                  firstName: previewCred.label || "Preview",
+                  lastName: "User",
+                  role: "member",
+                  termsAcceptedAt: new Date(),
+                  passwordResetToken: null,
+                  passwordResetExpires: null,
+                  createdAt: previewCred.createdAt,
+                  updatedAt: previewCred.createdAt,
+                  isPreviewUser: true,
+                } as SelectUser & { isPreviewUser: boolean };
+                
+                return done(null, syntheticUser);
+              }
+            }
+          }
+        }
+        
+        return done(null, false, { message: "Invalid email or password" });
       }
     )
   );
 
   passport.serializeUser((user, done) => done(null, user.id));
   passport.deserializeUser(async (id: string, done) => {
+    if (id.startsWith("preview_")) {
+      const previewCredId = id.replace("preview_", "");
+      const [previewCred] = await db
+        .select()
+        .from(previewCredentials)
+        .where(eq(previewCredentials.id, previewCredId))
+        .limit(1);
+      
+      if (previewCred) {
+        const isRevoked = previewCred.revokedAt !== null;
+        const isExpired = previewCred.expiresAt !== null && new Date() > previewCred.expiresAt;
+        
+        if (!isRevoked && !isExpired) {
+          const syntheticUser = {
+            id: `preview_${previewCred.id}`,
+            email: previewCred.username,
+            password: previewCred.passwordHash,
+            firstName: previewCred.label || "Preview",
+            lastName: "User",
+            role: "member",
+            termsAcceptedAt: new Date(),
+            passwordResetToken: null,
+            passwordResetExpires: null,
+            createdAt: previewCred.createdAt,
+            updatedAt: previewCred.createdAt,
+            isPreviewUser: true,
+          } as SelectUser & { isPreviewUser: boolean };
+          
+          return done(null, syntheticUser);
+        }
+      }
+      return done(null, null);
+    }
+    
     const [user] = await db
       .select()
       .from(users)

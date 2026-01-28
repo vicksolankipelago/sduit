@@ -1,0 +1,401 @@
+.preview-access-page {
+  min-height: 100vh;
+  padding: 32px;
+  background: #f5f5f5;
+}
+
+.preview-access-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.preview-access-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.preview-access-page h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-global-primary, #212633);
+  margin: 0 0 8px 0;
+}
+
+.preview-access-subtitle {
+  color: var(--text-global-secondary, #6b6b6b);
+  font-size: 14px;
+  margin: 0;
+}
+
+.create-btn {
+  padding: 12px 20px;
+  background: #1a1a2e;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.create-btn:hover {
+  background: #2a2a4e;
+}
+
+.preview-access-section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.preview-access-section h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-global-primary, #212633);
+  margin: 0 0 16px 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-group input {
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #1a1a2e;
+}
+
+.submit-btn {
+  padding: 12px 24px;
+  background: #1a1a2e;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  align-self: flex-start;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: #2a2a4e;
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.credentials-table-wrapper {
+  overflow-x: auto;
+}
+
+.credentials-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.credentials-table th,
+.credentials-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.credentials-table th {
+  font-weight: 600;
+  color: var(--text-global-secondary, #6b6b6b);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.credentials-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.username-cell code {
+  background: #f5f5f5;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status-active {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-expired {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.status-revoked {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.action-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.revoke-btn {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.revoke-btn:hover:not(:disabled) {
+  background: #ffe0b2;
+}
+
+.delete-btn {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.delete-btn:hover {
+  background: #ffcdd2;
+}
+
+.delete-confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #c62828;
+}
+
+.confirm-btn {
+  background: #c62828;
+  color: #fff;
+}
+
+.confirm-btn:hover:not(:disabled) {
+  background: #b71c1c;
+}
+
+.cancel-btn {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.cancel-btn:hover {
+  background: #bdbdbd;
+}
+
+.loading-state,
+.error-state,
+.empty-state {
+  padding: 32px;
+  text-align: center;
+  color: var(--text-global-secondary, #6b6b6b);
+}
+
+.error-state {
+  color: #c62828;
+}
+
+.empty-state p {
+  margin: 0 0 8px 0;
+}
+
+.error-message {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: #ffebee;
+  color: #c62828;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.credential-modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.credential-modal h2 {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  color: var(--text-global-primary, #212633);
+}
+
+.modal-warning {
+  background: #fff3e0;
+  color: #e65100;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.credential-field {
+  margin-bottom: 16px;
+}
+
+.credential-field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-global-secondary, #6b6b6b);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.credential-value {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f5f5f5;
+  padding: 12px 16px;
+  border-radius: 8px;
+}
+
+.credential-value code {
+  flex: 1;
+  font-family: monospace;
+  font-size: 14px;
+  word-break: break-all;
+}
+
+.credential-value span {
+  flex: 1;
+  font-size: 14px;
+}
+
+.copy-btn {
+  padding: 6px 12px;
+  background: #1a1a2e;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.copy-btn:hover {
+  background: #2a2a4e;
+}
+
+.close-modal-btn {
+  width: 100%;
+  padding: 14px 24px;
+  background: #1a1a2e;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  margin-top: 24px;
+}
+
+.close-modal-btn:hover {
+  background: #2a2a4e;
+}
+
+@media (max-width: 768px) {
+  .preview-access-page {
+    padding: 16px;
+  }
+
+  .preview-access-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .form-row {
+    flex-direction: column;
+  }
+
+  .credentials-table th,
+  .credentials-table td {
+    padding: 8px 12px;
+  }
+
+  .actions-cell {
+    flex-direction: column;
+  }
+}
