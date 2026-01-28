@@ -22,6 +22,7 @@ import SessionLogViewer, { LogEntry } from '../components/voiceAgent/SessionLogV
 import MemberPersonaEditor from '../components/voiceAgent/MemberPersonaEditor';
 import FeedbackForm from '../components/voiceAgent/FeedbackForm';
 import VoiceControlBar from '../components/voiceAgent/VoiceControlBar';
+import NotificationPermissionPopup from '../components/voiceAgent/NotificationPermissionPopup';
 import { ErrorBoundary } from '../components/voiceAgent/ErrorBoundary';
 import { useAudioLevel } from '../hooks/voiceAgent/useAudioLevel';
 import { EditIcon, SettingsIcon } from '../components/Icons';
@@ -147,6 +148,9 @@ function VoiceAgentContent() {
   
   // Microphone permission error state
   const [micPermissionError, setMicPermissionError] = useState(false);
+  
+  // Notification permission popup state
+  const [showNotificationPopup, setShowNotificationPopup] = useState(false);
   
   // Preview mode state (when accessed via shared link)
   const [isPreviewMode] = useState(() => {
@@ -347,6 +351,13 @@ function VoiceAgentContent() {
         } else {
           addLog('warning', '⚠️ No feedback screen found in journey - feedback modal will be shown after disconnect');
         }
+        return;
+      }
+      
+      // Special handling for permissions_screen_event - show notification permission popup
+      if (eventId === 'permissions_screen_event') {
+        addLog('info', '🔔 Notification permission request triggered - showing popup');
+        setShowNotificationPopup(true);
         return;
       }
       
@@ -1477,6 +1488,22 @@ Important guidelines:
           onSkip={() => {
             setShowFeedbackForm(false);
             setFeedbackSessionId(null);
+          }}
+        />
+      )}
+      
+      {/* Notification Permission Popup */}
+      {showNotificationPopup && (
+        <NotificationPermissionPopup
+          onAllow={() => {
+            setShowNotificationPopup(false);
+            updateModuleState?.({ notificationsEnabled: true });
+            console.log('🔔 Notifications enabled');
+          }}
+          onDeny={() => {
+            setShowNotificationPopup(false);
+            updateModuleState?.({ notificationsEnabled: false });
+            console.log('🔔 Notifications denied');
           }}
         />
       )}
