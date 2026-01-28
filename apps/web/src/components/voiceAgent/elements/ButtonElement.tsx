@@ -14,8 +14,19 @@ export const ButtonElement: React.FC<ButtonElementProps> = ({
   events,
   onEventTrigger,
 }) => {
+  // Log when button is mounted/updated
+  React.useEffect(() => {
+    console.log('🔘 ButtonElement mounted/updated:', {
+      id: data.id,
+      title: data.title,
+      events: events?.length || 0,
+      hasOnEventTrigger: !!onEventTrigger,
+    });
+  }, [data.id, data.title, events, onEventTrigger]);
+
   const handleClick = () => {
     console.log('🔘 Button clicked:', data.id, 'disabled:', data.isDisabled, 'events:', events?.length || 0);
+    alert(`Button "${data.title}" clicked!`); // Add alert for visual feedback
     
     if (data.isDisabled) return;
     
