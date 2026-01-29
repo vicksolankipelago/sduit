@@ -371,17 +371,23 @@ function VoiceAgentContent() {
         const loadAndStartJourney = async () => {
           try {
             console.log('🔗 Fetching journey from API...');
-            const response = await fetch(`/api/journeys/${params.journeyId}`);
+            // Try authenticated endpoint first, fall back to public preview endpoint
+            let response = await fetch(`/api/journeys/${params.journeyId}`, {
+              credentials: 'include', // Include cookies for authentication
+            });
+            
+            // If auth fails, try the public preview endpoint
+            if (response.status === 401) {
+              console.log('🔗 Auth failed, trying preview endpoint...');
+              response = await fetch(`/api/journeys/preview/${params.journeyId}`);
+            }
+            
             if (!response.ok) {
-              throw new Error(`Failed to load journey: ${response.statusText}`);
+              throw new Error(`Failed to load journey: ${response.status} ${response.statusText}`);
             }
             const targetJourney = await response.json();
             console.log('🔗 Loaded journey:', targetJourney.name, 'voiceEnabled:', targetJourney.voiceEnabled);
             addLog('success', `📥 Loaded journey: ${targetJourney.name}`);
-            
-            // For seamless transition: DON'T disable screen rendering
-            // Keep screens visible during the transition
-            // The new journey will update the screens when it starts
             
             // Exit non-voice mode since we're starting a voice journey
             setIsNonVoiceMode(false);
@@ -394,23 +400,27 @@ function VoiceAgentContent() {
               setAgents(targetJourney.agents);
             }
             
-            // Don't call enableScreenRendering here - let connectToRealtime handle it
-            // This prevents race conditions with double-calling
+            // IMMEDIATELY update screens to show the new journey's first screen
+            // This provides visual feedback during the voice connection setup
+            const startingAgentConfig = targetJourney.agents?.find(
+              (a: any) => a.id === targetJourney.startingAgentId
+            );
+            
+            if (startingAgentConfig?.screens && startingAgentConfig.screens.length > 0) {
+              console.log('🔗 Immediately showing new journey screens:', startingAgentConfig.screens[0].id);
+              enableScreenRendering?.(startingAgentConfig.screens, startingAgentConfig.screens[0].id);
+              setHasScreensVisible(true);
+            }
             
             // Force session to disconnected state first
             setSessionStatus('DISCONNECTED');
             
-            // Wait for React to process the state updates, then connect
-            // The connectToRealtime function will set up screens and voice session together
+            // Connect to voice session with the new journey
             console.log('🔗 About to schedule connectToRealtime call...');
             requestAnimationFrame(() => {
-              console.log('🔗 In requestAnimationFrame, scheduling setTimeout...');
               setTimeout(() => {
-                console.log('🔗 In setTimeout, about to call connectToRealtime');
-                console.log('🔗 targetJourney:', targetJourney.name);
-                console.log('🔗 connectToRealtimeRef.current exists:', !!connectToRealtimeRef.current);
+                console.log('🔗 Calling connectToRealtimeRef.current');
                 if (connectToRealtimeRef.current) {
-                  console.log('🔗 Calling connectToRealtimeRef.current NOW');
                   connectToRealtimeRef.current(targetJourney, mergedFlowContext);
                 } else {
                   console.error('🔗 connectToRealtimeRef.current is null!');
