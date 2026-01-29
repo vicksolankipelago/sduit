@@ -691,11 +691,21 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
         };
         voiceAgentLogger.info('Request headers:', JSON.stringify(headers));
         
-        const sdpResponse = await fetch(sdpUrl, {
-          method: 'POST',
-          body: offer.sdp,
-          headers
-        });
+        let sdpResponse: Response;
+        try {
+          sdpResponse = await fetch(sdpUrl, {
+            method: 'POST',
+            body: offer.sdp,
+            headers,
+            mode: 'cors'
+          });
+        } catch (fetchError: any) {
+          voiceAgentLogger.error('=== Fetch Error (CORS/Network) ===');
+          voiceAgentLogger.error('Error name:', fetchError?.name);
+          voiceAgentLogger.error('Error message:', fetchError?.message);
+          voiceAgentLogger.error('Full error:', fetchError);
+          throw new Error(`Network error during SDP exchange: ${fetchError?.message || 'Unknown fetch error'}`);
+        }
 
         voiceAgentLogger.info('SDP response status:', sdpResponse.status, sdpResponse.statusText);
 
