@@ -154,9 +154,28 @@ export function substitutePromptVariables(
   pqData: Partial<PQData>, 
   flowContext?: Record<string, any>
 ): string {
+  const context = flowContext || {};
+  
+  // Map quiz answer keys to BOTH new and legacy variable names
+  // This ensures prompts work whether they use {{goal_alcohol}} OR {{primaryGoal}}
+  const quizToLegacyMapping: Record<string, string> = {
+    goal_alcohol: 'primaryGoal',
+    learning_topics: 'learningTopics',
+    selectedSubstances: 'mainSubstance',
+  };
+  
+  // Create a unified context that maps quiz answers to BOTH new and legacy keys
+  const unifiedContext: Record<string, any> = { ...context };
+  for (const [quizKey, legacyKey] of Object.entries(quizToLegacyMapping)) {
+    if (context[quizKey]) {
+      // If quiz answer exists, also set it as the legacy key
+      unifiedContext[legacyKey] = context[quizKey];
+    }
+  }
+  
   // Merge all data sources with flowContext having highest priority
-  // Order: Legacy PQ defaults < Quiz defaults < manual pqData < flowContext (quiz answers)
-  const data = { ...DEFAULT_PQ_DATA, ...DEFAULT_QUIZ_DATA, ...pqData, ...(flowContext || {}) };
+  // Order: Legacy PQ defaults < Quiz defaults < manual pqData < unified flowContext (quiz answers mapped to both keys)
+  const data = { ...DEFAULT_PQ_DATA, ...DEFAULT_QUIZ_DATA, ...pqData, ...unifiedContext };
 
   let result = prompt;
 
