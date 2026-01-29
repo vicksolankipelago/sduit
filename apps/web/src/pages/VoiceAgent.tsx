@@ -1218,8 +1218,8 @@ Important guidelines:
       }
     }
 
-    // Cleanup on disconnect
-    if (sessionStatus === "DISCONNECTED") {
+    // Cleanup on disconnect (but NOT during journey transitions - we're about to start a new session)
+    if (sessionStatus === "DISCONNECTED" && !isTransitioningJourney) {
       // If we ever add mic visualization, ensure those tracks are stopped
       if (micStream) {
         console.log('🧹 Cleaning up microphone stream');
@@ -1236,7 +1236,7 @@ Important guidelines:
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionStatus]);
+  }, [sessionStatus, isTransitioningJourney]);
 
   // Suppress unused customPrompts setter (kept for future prompt customization feature)
   void setCustomPrompts;
