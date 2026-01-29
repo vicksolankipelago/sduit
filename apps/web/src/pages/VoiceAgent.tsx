@@ -443,8 +443,30 @@ function VoiceAgentContent() {
       
       // Handle enable_voice tool - activate voice mode mid-flow while keeping current screens
       if (tool === 'enable_voice') {
-        console.log('🎤 ENABLE_VOICE TRIGGERED - activating voice mid-flow');
+        console.log('🎤🎤🎤 ENABLE_VOICE TRIGGERED 🎤🎤🎤');
         addLog('info', '🎤 Enabling voice mode mid-flow');
+        
+        // Log current state for debugging
+        console.log('🎤 Current state:', {
+          sessionStatus,
+          isNonVoiceMode,
+          currentJourneyRef: currentJourneyRef.current?.name,
+          connectToRealtimeRef: !!connectToRealtimeRef.current,
+        });
+        
+        // Get journey from ref SYNCHRONOUSLY (avoid closure issues)
+        const journey = currentJourneyRef.current;
+        if (!journey) {
+          console.error('🎤 ERROR: No journey in currentJourneyRef!');
+          addLog('error', 'No journey found - cannot enable voice');
+          return;
+        }
+        
+        if (!connectToRealtimeRef.current) {
+          console.error('🎤 ERROR: connectToRealtimeRef.current is null!');
+          addLog('error', 'Voice connection function not available');
+          return;
+        }
         
         // Set transitioning flag to prevent flows list from flashing
         setIsTransitioningJourney(true);
@@ -455,7 +477,7 @@ function VoiceAgentContent() {
         // Force session to disconnected state to allow reconnection
         setSessionStatus('DISCONNECTED');
         
-        // Merge flow context for data passing (same pattern as start_journey)
+        // Merge flow context for data passing
         const mergedContext = {
           ...(flowContext || {}),
           ...(moduleState || {}),
@@ -468,46 +490,26 @@ function VoiceAgentContent() {
         
         addLog('info', `🎤 Flow context keys: ${Object.keys(mergedContext).join(', ')}`);
         
-        // Connect to voice session with current journey
-        // IMPORTANT: Use currentJourneyRef to avoid closure issues
-        // Override voiceEnabled to true since we're explicitly enabling voice
-        const journeyFromRef = currentJourneyRef.current;
-        console.log('🎤 Scheduling connectToRealtime call...');
-        console.log('🎤 currentJourneyRef.current:', journeyFromRef?.name, journeyFromRef?.id);
-        console.log('🎤 connectToRealtimeRef.current:', !!connectToRealtimeRef.current);
+        // Create a modified journey with voiceEnabled=true to force voice mode
+        const voiceEnabledJourney = {
+          ...journey,
+          voiceEnabled: true, // Override to force voice mode
+        };
         
-        if (!journeyFromRef) {
-          console.error('🎤 No journey found in ref! Cannot enable voice.');
-          addLog('error', 'No journey found - cannot enable voice');
+        console.log('🎤 Calling connectToRealtime SYNCHRONOUSLY (preserves user gesture for mic permission)');
+        console.log('🎤 Journey:', voiceEnabledJourney.name, 'voiceEnabled:', voiceEnabledJourney.voiceEnabled);
+        
+        // CRITICAL: Call connectToRealtime SYNCHRONOUSLY to preserve user gesture context
+        // Mic permission requires direct user gesture - setTimeout loses this context!
+        try {
+          connectToRealtimeRef.current(voiceEnabledJourney, mergedContext, { skipScreenReset: true });
+          console.log('🎤 connectToRealtime call initiated');
+        } catch (err) {
+          console.error('🎤 ERROR calling connectToRealtime:', err);
+          addLog('error', `Failed to enable voice: ${err}`);
           setIsTransitioningJourney(false);
-          return;
         }
         
-        requestAnimationFrame(() => {
-          setTimeout(() => {
-            console.log('🎤 Inside setTimeout - calling connectToRealtimeRef.current');
-            console.log('🎤 connectToRealtimeRef.current:', !!connectToRealtimeRef.current);
-            // Get journey from ref again in case it changed
-            const journey = currentJourneyRef.current;
-            console.log('🎤 journey from ref:', journey?.name);
-            if (connectToRealtimeRef.current && journey) {
-              // Create a modified journey with voiceEnabled=true to force voice mode
-              const voiceEnabledJourney = {
-                ...journey,
-                voiceEnabled: true, // Override to force voice mode
-              };
-              console.log('🎤 Created voiceEnabledJourney, calling connectToRealtimeRef.current...');
-              // Pass skipScreenReset=true to keep current screen (don't reset to first screen)
-              connectToRealtimeRef.current(voiceEnabledJourney, mergedContext, { skipScreenReset: true });
-              console.log('🎤 connectToRealtimeRef.current call returned');
-            } else {
-              console.error('🎤 connectToRealtimeRef.current or journey is null!');
-              console.error('🎤 connectToRealtimeRef.current:', connectToRealtimeRef.current);
-              console.error('🎤 journey:', journey);
-              setIsTransitioningJourney(false);
-            }
-          }, 100);
-        });
         return;
       }
     };
@@ -520,23 +522,33 @@ function VoiceAgentContent() {
   }, [addLog, switchToAgent, disableScreenRendering, enableScreenRendering, setAgents, flowContext, moduleState, updateFlowContext, currentJourney]);
 
   const connectToRealtime = async (journeyOverride?: Journey, flowContextOverride?: Record<string, any>, options?: { skipScreenReset?: boolean }) => {
-    console.log('🎙️ connectToRealtime called');
-    console.log('🎙️ sessionStatus in closure:', sessionStatus);
-    console.log('🎙️ journeyOverride provided:', !!journeyOverride);
-    console.log('🎙️ skipScreenReset:', options?.skipScreenReset);
+    console.log('🎙️🎙️🎙️ connectToRealtime CALLED 🎙️🎙️🎙️');
+    console.log('🎙️ Arguments:', {
+      journeyOverride: journeyOverride?.name,
+      flowContextOverrideKeys: flowContextOverride ? Object.keys(flowContextOverride) : null,
+      options,
+    });
+    console.log('🎙️ Current state:', {
+      sessionStatus,
+      isNonVoiceMode,
+      currentJourney: currentJourney?.name,
+    });
     
-    // When called with journeyOverride (from start_journey), skip the session status check
+    // When called with journeyOverride (from start_journey or enable_voice), skip the session status check
     // because we just set it to DISCONNECTED but the closure has the old value
     if (!journeyOverride && sessionStatus !== "DISCONNECTED") {
-      console.log('🎙️ Exiting early: sessionStatus is not DISCONNECTED and no override');
+      console.log('🎙️ EARLY EXIT: sessionStatus is not DISCONNECTED and no journeyOverride');
+      addLog('warning', 'Session not disconnected - cannot connect');
       return;
     }
 
     // Use provided journey or fall back to current journey state
     const journeyToUse = journeyOverride || currentJourney;
+    console.log('🎙️ Using journey:', journeyToUse?.name, 'voiceEnabled:', journeyToUse?.voiceEnabled);
 
     // Check if we have a journey to run
     if (!journeyToUse) {
+      console.log('🎙️ EARLY EXIT: No journey to use');
       addLog('error', 'No journey selected. Please load or create a journey first.');
       return;
     }
@@ -544,16 +556,22 @@ function VoiceAgentContent() {
     // Check if this is a non-voice journey (voiceEnabled is explicitly false)
     // Handle all falsy values including undefined, null, or false
     const isVoiceEnabled = journeyToUse.voiceEnabled !== false;
-    console.log('🔊 Journey voiceEnabled:', journeyToUse.voiceEnabled, 'isVoiceEnabled:', isVoiceEnabled);
+    console.log('🔊 Journey voiceEnabled check:', {
+      voiceEnabled: journeyToUse.voiceEnabled,
+      isVoiceEnabled,
+      typeofVoiceEnabled: typeof journeyToUse.voiceEnabled,
+    });
     
     if (!isVoiceEnabled) {
-      console.log('🔇 Starting non-voice session');
+      console.log('🔇 EARLY EXIT: Starting non-voice session instead');
       addLog('info', '🔇 Non-voice journey detected');
       startNonVoiceSession(journeyToUse);
       return;
     }
 
     // Voice mode: Check microphone permission before connecting
+    console.log('🎤 Requesting microphone permission...');
+    addLog('info', '🎤 Requesting microphone permission...');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -562,12 +580,15 @@ function VoiceAgentContent() {
           autoGainControl: true,
         }
       });
+      console.log('🎤 Microphone permission GRANTED');
+      addLog('success', '🎤 Microphone permission granted');
       // Permission granted - stop the stream immediately (connection will request again)
       stream.getTracks().forEach(track => track.stop());
     } catch (error) {
-      console.error('Microphone permission denied:', error);
+      console.error('🎤 MICROPHONE PERMISSION DENIED:', error);
       setMicPermissionError(true);
-      addLog('error', 'Microphone access is required to start the session');
+      addLog('error', `Microphone access denied: ${error}`);
+      setIsTransitioningJourney(false);
       return;
     }
 
