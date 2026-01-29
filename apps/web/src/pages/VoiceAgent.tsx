@@ -468,18 +468,27 @@ function VoiceAgentContent() {
         // Connect to voice session with current journey
         // IMPORTANT: Override voiceEnabled to true since we're explicitly enabling voice
         // (the journey may have voiceEnabled=false for the initial quiz portion)
+        console.log('🎤 Scheduling connectToRealtime call...');
+        console.log('🎤 currentJourney:', currentJourney?.name, currentJourney?.id);
+        console.log('🎤 connectToRealtimeRef.current:', !!connectToRealtimeRef.current);
         requestAnimationFrame(() => {
           setTimeout(() => {
-            console.log('🎤 Calling connectToRealtimeRef.current for enable_voice');
+            console.log('🎤 Inside setTimeout - calling connectToRealtimeRef.current');
+            console.log('🎤 connectToRealtimeRef.current:', !!connectToRealtimeRef.current);
+            console.log('🎤 currentJourney:', currentJourney?.name);
             if (connectToRealtimeRef.current && currentJourney) {
               // Create a modified journey with voiceEnabled=true to force voice mode
               const voiceEnabledJourney = {
                 ...currentJourney,
                 voiceEnabled: true, // Override to force voice mode
               };
+              console.log('🎤 Created voiceEnabledJourney, calling connectToRealtimeRef.current...');
               connectToRealtimeRef.current(voiceEnabledJourney, mergedContext);
+              console.log('🎤 connectToRealtimeRef.current call returned');
             } else {
               console.error('🎤 connectToRealtimeRef.current or currentJourney is null!');
+              console.error('🎤 connectToRealtimeRef.current:', connectToRealtimeRef.current);
+              console.error('🎤 currentJourney:', currentJourney);
             }
           }, 100);
         });
@@ -863,6 +872,9 @@ Important guidelines:
         }
       } else {
         // Normal mode: Connect agent with regular microphone and journey agent config
+        console.log('🎙️ About to call connect() with agentConfig:', journeyAgentConfig.name);
+        console.log('🎙️ sdkAudioElement:', !!sdkAudioElement);
+        addLog('info', '🎙️ Initiating WebRTC connection...');
         await connect({
           audioElement: sdkAudioElement,
           agentConfig: journeyAgentConfig,
@@ -870,6 +882,7 @@ Important guidelines:
           onEventTrigger: handleEventTrigger,
           onEndCall: handleEndCall,
         });
+        console.log('🎙️ connect() completed');
         addLog('success', 'Successfully initiated voice agent connection');
       }
       
