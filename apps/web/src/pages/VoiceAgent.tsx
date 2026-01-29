@@ -449,17 +449,28 @@ function VoiceAgentContent() {
         // Force session to disconnected state to allow reconnection
         setSessionStatus('DISCONNECTED');
         
+        // Merge flow context for data passing (same pattern as start_journey)
+        const mergedContext = {
+          ...(flowContext || {}),
+          ...(moduleState || {}),
+        };
+        
+        // Update flowContext state for consistency
+        if (updateFlowContext && moduleState) {
+          updateFlowContext(moduleState);
+        }
+        
+        addLog('info', `🎤 Flow context keys: ${Object.keys(mergedContext).join(', ')}`);
+        
         // Connect to voice session with current journey
+        // IMPORTANT: Pass currentJourney as journeyOverride to bypass sessionStatus closure issue
+        // (same pattern as start_journey to avoid stale closure race condition)
         requestAnimationFrame(() => {
           setTimeout(() => {
             console.log('🎤 Calling connectToRealtimeRef.current for enable_voice');
             if (connectToRealtimeRef.current && currentJourney) {
-              // Pass current module state as flow context
-              const currentContext = {
-                ...(flowContext || {}),
-                ...(moduleState || {}),
-              };
-              connectToRealtimeRef.current(currentJourney, currentContext);
+              // Pass currentJourney as override to bypass sessionStatus guard
+              connectToRealtimeRef.current(currentJourney, mergedContext);
             } else {
               console.error('🎤 connectToRealtimeRef.current or currentJourney is null!');
             }
