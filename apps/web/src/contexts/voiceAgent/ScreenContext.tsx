@@ -219,6 +219,11 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
           const toolAction = action as ToolCallAction;
           console.log(`🔧 ScreenContext: Tool call action triggered: ${toolAction.tool}`, toolAction.params);
           
+          // Debug: Show alert for start_journey to confirm execution
+          if (toolAction.tool === 'start_journey') {
+            console.log('🔗 START_JOURNEY TOOL DETECTED IN SCREENCONTEXT');
+          }
+          
           // Dispatch a custom event that VoiceAgent or other components can listen to
           const event = new CustomEvent('toolCallAction', {
             detail: {

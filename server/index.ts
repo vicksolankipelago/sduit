@@ -16,6 +16,7 @@ import quizRouter from "./routes/quiz";
 import fileUpload from "express-fileupload";
 import { serverLogger, sessionLogger, bedrockLogger } from "./utils/logger";
 import * as apiResponse from "./utils/response";
+import { storage } from "./storage";
 
 dotenv.config();
 
@@ -73,6 +74,32 @@ async function main() {
     } catch (error) {
       console.error("Error getting production flow:", error);
       res.status(500).json({ message: "Failed to get production flow" });
+    }
+  });
+  
+  // Public preview endpoint - registered BEFORE authenticated routes
+  // This allows the start_journey flow to fetch journey data without auth
+  app.get("/api/journeys/preview/:id", async (req, res) => {
+    try {
+      const journey = await storage.getJourney(req.params.id as string);
+      
+      if (!journey) {
+        return res.status(404).json({ success: false, error: { message: "Journey not found", code: "NOT_FOUND" } });
+      }
+
+      // Return only the data needed for preview rendering
+      return res.json({
+        id: journey.id,
+        name: journey.name,
+        agents: journey.agents,
+        startingAgentId: journey.startingAgentId,
+        voiceEnabled: journey.voiceEnabled ?? true,
+        systemPrompt: journey.systemPrompt,
+        voice: journey.voice,
+      });
+    } catch (error) {
+      console.error("Error fetching journey preview:", error);
+      return res.status(500).json({ success: false, error: { message: "Failed to load journey preview", code: "SERVER_ERROR" } });
     }
   });
 

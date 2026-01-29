@@ -25,14 +25,17 @@ export default function AgentUIRenderer({ bottomBar, onOpenSettings, onExit, sho
     moduleState
   } = useAgentUI();
 
-  // Debug logging
+  // Debug logging - also log to console for debugging
   React.useEffect(() => {
-    uiLogger.debug('State:', {
+    const debugInfo = {
       screenRenderingMode,
       screenCount: currentAgentScreens?.length || 0,
       currentScreenId,
       hasCurrentScreen: currentAgentScreens && currentAgentScreens.find(s => s.id === currentScreenId) ? 'yes' : 'no',
-    });
+      firstScreenId: currentAgentScreens?.[0]?.id || 'none',
+    };
+    uiLogger.debug('State:', debugInfo);
+    console.log('🖥️ AgentUIRenderer state:', JSON.stringify(debugInfo));
   }, [screenRenderingMode, currentAgentScreens, currentScreenId]);
 
   // If in screen rendering mode, render the screen inside a device frame
