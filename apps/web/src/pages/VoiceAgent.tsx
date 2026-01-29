@@ -437,6 +437,36 @@ function VoiceAgentContent() {
         loadAndStartJourney();
         return; // Prevent other handlers from running
       }
+      
+      // Handle enable_voice tool - activate voice mode mid-flow while keeping current screens
+      if (tool === 'enable_voice') {
+        console.log('🎤 ENABLE_VOICE TRIGGERED - activating voice mid-flow');
+        addLog('info', '🎤 Enabling voice mode mid-flow');
+        
+        // Exit non-voice mode
+        setIsNonVoiceMode(false);
+        
+        // Force session to disconnected state to allow reconnection
+        setSessionStatus('DISCONNECTED');
+        
+        // Connect to voice session with current journey
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            console.log('🎤 Calling connectToRealtimeRef.current for enable_voice');
+            if (connectToRealtimeRef.current && currentJourney) {
+              // Pass current module state as flow context
+              const currentContext = {
+                ...(flowContext || {}),
+                ...(moduleState || {}),
+              };
+              connectToRealtimeRef.current(currentJourney, currentContext);
+            } else {
+              console.error('🎤 connectToRealtimeRef.current or currentJourney is null!');
+            }
+          }, 100);
+        });
+        return;
+      }
     };
     
     window.addEventListener('toolCallAction', handleToolCallAction as EventListener);
@@ -444,7 +474,7 @@ function VoiceAgentContent() {
     return () => {
       window.removeEventListener('toolCallAction', handleToolCallAction as EventListener);
     };
-  }, [addLog, switchToAgent, disableScreenRendering, enableScreenRendering, setAgents, flowContext, moduleState, updateFlowContext]);
+  }, [addLog, switchToAgent, disableScreenRendering, enableScreenRendering, setAgents, flowContext, moduleState, updateFlowContext, currentJourney]);
 
   const connectToRealtime = async (journeyOverride?: Journey, flowContextOverride?: Record<string, any>) => {
     console.log('🎙️ connectToRealtime called');
