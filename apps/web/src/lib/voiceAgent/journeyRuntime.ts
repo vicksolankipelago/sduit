@@ -120,7 +120,7 @@ export class JourneyRuntime {
       const agent = this.agentInstanceMap.get(agentConfig.id);
       if (!agent) return;
 
-      const handoffTargets = agentConfig.handoffs
+      const handoffTargets = (agentConfig.handoffs || [])
         .map(targetId => this.agentInstanceMap.get(targetId))
         .filter(Boolean) as RealtimeAgent[];
 
