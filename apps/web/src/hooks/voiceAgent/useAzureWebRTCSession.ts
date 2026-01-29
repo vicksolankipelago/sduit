@@ -57,30 +57,50 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
         return;
       }
 
+      voiceAgentLogger.info('=== Starting WebRTC Connection ===');
       voiceAgentLogger.info('Starting WebRTC connection to Azure OpenAI...');
       updateStatus('CONNECTING');
 
       try {
         // Step 1: Get ephemeral key from our server
-        voiceAgentLogger.debug('Fetching ephemeral key...');
+        voiceAgentLogger.info('Step 1: Fetching ephemeral key from /api/session...');
         const sessionResponse = await fetch('/api/session');
         
+        voiceAgentLogger.info('Session response status:', sessionResponse.status, sessionResponse.statusText);
+        
         if (!sessionResponse.ok) {
-          throw new Error(`Failed to get session: ${sessionResponse.statusText}`);
+          const errorBody = await sessionResponse.text();
+          voiceAgentLogger.error('=== Session Fetch Failed ===');
+          voiceAgentLogger.error('Status:', sessionResponse.status);
+          voiceAgentLogger.error('Response body:', errorBody);
+          throw new Error(`Failed to get session: ${sessionResponse.statusText}. Details: ${errorBody}`);
         }
         
         const sessionData = await sessionResponse.json();
+        voiceAgentLogger.info('Session data received:', {
+          hasClientSecret: !!sessionData.client_secret,
+          hasWebrtcUrl: !!sessionData.webrtcUrl,
+          deployment: sessionData.deployment,
+          region: sessionData.region,
+          sessionId: sessionData.id,
+          expiresAt: sessionData.expires_at,
+        });
+        
         const ephemeralKey = sessionData.client_secret?.value;
         const webrtcUrl = sessionData.webrtcUrl;
         const deployment = sessionData.deployment;
         
         if (!ephemeralKey || !webrtcUrl) {
+          voiceAgentLogger.error('=== Invalid Session Data ===');
+          voiceAgentLogger.error('ephemeralKey present:', !!ephemeralKey);
+          voiceAgentLogger.error('webrtcUrl present:', !!webrtcUrl);
+          voiceAgentLogger.error('Full sessionData:', JSON.stringify(sessionData));
           throw new Error('Invalid session data from server');
         }
         
-        voiceAgentLogger.debug('Ephemeral key received');
-        voiceAgentLogger.debug('WebRTC URL:', webrtcUrl);
-        voiceAgentLogger.debug('Deployment:', deployment);
+        voiceAgentLogger.info('Ephemeral key received (length:', ephemeralKey.length, ')');
+        voiceAgentLogger.info('WebRTC URL:', webrtcUrl);
+        voiceAgentLogger.info('Deployment:', deployment);
 
         // Step 2: Create RTCPeerConnection
         voiceAgentLogger.debug('Creating RTCPeerConnection...');

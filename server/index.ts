@@ -131,8 +131,19 @@ async function main() {
       const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME || "test-gpt-realtime";
       const apiVersion = process.env.OPENAI_API_VERSION || "2025-04-01-preview";
 
+      // Comprehensive logging for Azure configuration
+      sessionLogger.info("=== Azure OpenAI Session Request ===");
+      sessionLogger.info("Configuration:", {
+        endpoint: endpoint ? `${endpoint.substring(0, 30)}...` : "NOT SET",
+        apiKeySet: !!apiKey,
+        apiKeyLength: apiKey ? apiKey.length : 0,
+        deploymentName,
+        apiVersion,
+      });
+
       if (endpoint && endpoint.endsWith("/")) {
         endpoint = endpoint.slice(0, -1);
+        sessionLogger.info("Normalized endpoint (removed trailing slash)");
       }
 
       if (!apiKey) {
@@ -148,6 +159,13 @@ async function main() {
       sessionLogger.info("Creating ephemeral key for WebRTC connection...");
 
       const sessionsUrl = `${endpoint}/openai/realtimeapi/sessions?api-version=${apiVersion}`;
+      sessionLogger.info("Sessions URL:", sessionsUrl);
+
+      const requestBody = {
+        model: deploymentName,
+        voice: "sage",
+      };
+      sessionLogger.info("Request body:", JSON.stringify(requestBody));
 
       const response = await fetch(sessionsUrl, {
         method: "POST",
@@ -155,32 +173,65 @@ async function main() {
           "api-key": apiKey,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          model: deploymentName,
-          voice: "sage",
-        }),
+        body: JSON.stringify(requestBody),
       });
+
+      sessionLogger.info("Response status:", response.status, response.statusText);
+      sessionLogger.info("Response headers:", JSON.stringify(Object.fromEntries(response.headers.entries())));
 
       if (!response.ok) {
         const errorText = await response.text();
-        sessionLogger.error("Failed to create session:", response.status, errorText);
+        sessionLogger.error("=== Azure OpenAI Error Details ===");
+        sessionLogger.error("Status:", response.status);
+        sessionLogger.error("Status Text:", response.statusText);
+        sessionLogger.error("Error Body:", errorText);
+        
+        // Parse error for more details
+        try {
+          const errorJson = JSON.parse(errorText);
+          sessionLogger.error("Error Code:", errorJson.error?.code);
+          sessionLogger.error("Error Message:", errorJson.error?.message);
+          sessionLogger.error("Inner Error:", JSON.stringify(errorJson.error?.innererror));
+          
+          // Provide actionable guidance
+          if (errorJson.error?.code === "DeploymentNotFound") {
+            sessionLogger.error("=== DEPLOYMENT NOT FOUND ===");
+            sessionLogger.error(`The deployment '${deploymentName}' does not exist in your Azure OpenAI resource.`);
+            sessionLogger.error("Please check:");
+            sessionLogger.error("1. The deployment name in AZURE_OPENAI_DEPLOYMENT_NAME matches your Azure portal");
+            sessionLogger.error("2. The deployment is a 'gpt-4o-realtime-preview' model");
+            sessionLogger.error("3. The endpoint region matches where the deployment was created");
+          }
+        } catch (e) {
+          sessionLogger.error("Could not parse error as JSON");
+        }
+        
         return apiResponse.error(res, "Failed to create ephemeral session", response.status, "SESSION_CREATE_FAILED", errorText);
       }
 
       const sessionData = await response.json();
-      sessionLogger.info("Ephemeral key created:", sessionData.id);
+      sessionLogger.info("=== Session Created Successfully ===");
+      sessionLogger.info("Session ID:", sessionData.id);
+      sessionLogger.info("Session expires:", sessionData.expires_at);
+      sessionLogger.info("Has client_secret:", !!sessionData.client_secret);
 
       const regionMatch = endpoint.match(/-(swedencentral|eastus2)\.openai\.azure\.com/);
       const region = regionMatch ? regionMatch[1] : "swedencentral";
+      sessionLogger.info("Detected region:", region);
 
-      res.json({
+      const responseData = {
         ...sessionData,
         webrtcUrl: `https://${region}.realtimeapi-preview.ai.azure.com/v1/realtimertc`,
         deployment: deploymentName,
         region: region,
-      });
+      };
+      sessionLogger.info("WebRTC URL:", responseData.webrtcUrl);
+
+      res.json(responseData);
     } catch (err: any) {
+      sessionLogger.error("=== Unexpected Error ===");
       sessionLogger.error("Error creating ephemeral key:", err.message);
+      sessionLogger.error("Stack:", err.stack);
       return apiResponse.serverError(res, "Failed to create ephemeral key", err.message);
     }
   });
