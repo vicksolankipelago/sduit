@@ -1,3 +1,4 @@
+import React, { useEffect } from 'react';
 import { ButtonElementState, ButtonElementStyle, ScreenEvent } from '../../../types/journey';
 import './ButtonElement.css';
 
@@ -15,7 +16,7 @@ export const ButtonElement: React.FC<ButtonElementProps> = ({
   onEventTrigger,
 }) => {
   // Log when button is mounted/updated
-  React.useEffect(() => {
+  useEffect(() => {
     console.log('🔘 ButtonElement mounted/updated:', {
       id: data.id,
       title: data.title,
