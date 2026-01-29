@@ -1,0 +1,35 @@
+
+╔══════════════════════════════════════════════════════════╗
+║  VOICE AGENT CONVERSATION TRANSCRIPT                     ║
+╚══════════════════════════════════════════════════════════╝
+
+Session ID: session_1769722700836
+Date: 29/01/2026, 21:38:59
+Duration: 0m 18s
+Journey: Personalisation Quiz
+Agent: voiceIntakeAgent
+
+────────────────────────────────────────────────────────────
+
+[21:38:24.877] COACH:
+  "Hi Vick, welcome to Pelago. It's great to have you onboard. I'm Navi, I'm here to help navigate your journey with us. First, we'll go through some quick questions to get to know each other and then work together to set up a plan. Are you ready to start?"
+
+
+[21:38:42.968] MEMBER:
+  "Yeah, sounds good."
+
+
+[21:38:43.278] COACH:
+  "Great. Let's get started.
+
+So you're here because you want to drink less and maintain a healthy lifestyle, and you're motivated by wanting to be more present for your family and improve your overall health.
+
+And you'd like to learn more about understanding triggers, building healthier habits, and stress management. Does that sound right?"
+
+────────────────────────────────────────────────────────────
+
+CONVERSATION SUMMARY
+  Total exchanges: 3
+  Member messages: 1
+  Coach responses: 2
+  Actions taken: 1

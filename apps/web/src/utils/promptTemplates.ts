@@ -24,38 +24,29 @@ export interface PQData {
 }
 
 /**
- * Default PQ data values for testing
+ * Default PQ data values - these are fallbacks when actual quiz values aren't found
+ * These should be descriptive placeholders that make it obvious substitution didn't work
  */
 export const DEFAULT_PQ_DATA: PQData = {
   memberName: 'there',
-  mainSubstance: 'alcohol',
-  acuityLevel: 'moderate',
-  primaryGoal: 'drink less and maintain a healthy lifestyle',
-  motivation: 'wanting to be more present for family and improve overall health',
-  learningTopics: 'understanding triggers, building healthier habits, stress management',
-  personalizedApproach: 'supportive and non-judgmental',
-  carePreferences: 'empathetic and understanding',
-  drinkingLogs: '[3, 2, 4, 1, 3, 2, 0]',
-  allQuestionsAndAnswers: `Q: How ready are you to make a change?
-A: I'm curious about changing but haven't taken steps yet.
-
-Q: What's been your biggest challenge?
-A: I've found it hard to reduce drinking on my own.
-
-Q: What's your specific focus?
-A: Moderation - fewer drinks per typical drinking day.
-
-Q: How do you prefer to receive support?
-A: I prefer supportive and non-judgmental guidance.`,
+  mainSubstance: '[substance from quiz]',
+  acuityLevel: '[acuity level]',
+  primaryGoal: '[goal from personalization quiz]',
+  motivation: '[motivation from personalization quiz]',
+  learningTopics: '[learning topics from personalization quiz]',
+  personalizedApproach: '[preferred support approach]',
+  carePreferences: '[care preferences]',
+  drinkingLogs: '[drinking logs data]',
+  allQuestionsAndAnswers: '[personalization quiz Q&A]',
 };
 
 export const DEFAULT_QUIZ_DATA: Record<string, string> = {
-  selectedSubstances: 'alcohol',
-  feelings_alcohol: 'your current feelings about drinking',
-  goal_alcohol: 'your goals for alcohol',
-  areas_to_improve: 'areas you want to improve',
-  learning_topics: 'topics you want to learn about',
-  motivation: 'what motivates you to change',
+  selectedSubstances: '[selected substances from quiz]',
+  feelings_alcohol: '[feelings about drinking from quiz]',
+  goal_alcohol: '[goal from quiz]',
+  areas_to_improve: '[areas to improve from quiz]',
+  learning_topics: '[learning topics from quiz]',
+  motivation: '[motivation from quiz]',
 };
 
 /**
@@ -156,6 +147,10 @@ export function substitutePromptVariables(
 ): string {
   const context = flowContext || {};
   
+  console.log('🔄 substitutePromptVariables called');
+  console.log('📊 flowContext keys:', Object.keys(context));
+  console.log('📊 flowContext values:', context);
+  
   // Map quiz answer keys to BOTH new and legacy variable names
   // This ensures prompts work whether they use {{goal_alcohol}} OR {{primaryGoal}}
   const quizToLegacyMapping: Record<string, string> = {
@@ -170,12 +165,23 @@ export function substitutePromptVariables(
     if (context[quizKey]) {
       // If quiz answer exists, also set it as the legacy key
       unifiedContext[legacyKey] = context[quizKey];
+      console.log(`🔗 Mapped ${quizKey} → ${legacyKey}: ${context[quizKey]}`);
     }
   }
   
   // Merge all data sources with flowContext having highest priority
   // Order: Legacy PQ defaults < Quiz defaults < manual pqData < unified flowContext (quiz answers mapped to both keys)
   const data = { ...DEFAULT_PQ_DATA, ...DEFAULT_QUIZ_DATA, ...pqData, ...unifiedContext };
+  
+  // Log which values are being used for key quiz variables
+  console.log('📝 Final substitution values:', {
+    feelings_alcohol: data.feelings_alcohol,
+    goal_alcohol: data.goal_alcohol,
+    motivation: data.motivation,
+    learning_topics: data.learning_topics,
+    primaryGoal: data.primaryGoal,
+    learningTopics: data.learningTopics,
+  });
 
   let result = prompt;
 
