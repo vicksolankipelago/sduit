@@ -249,9 +249,26 @@ function VoiceAgentContent() {
             setCurrentJourney(journeyToLaunch);
             setPreviewLoading(false); // Journey loaded, hide loading overlay
             addLog('info', `🚀 Launching journey: ${journeyToLaunch.name}`);
+            
+            // Check if this is a voice-enabled journey or non-voice
+            const isVoiceJourney = journeyToLaunch.voiceEnabled !== false;
+            console.log('🚀 Auto-launch journey check:', {
+              name: journeyToLaunch.name,
+              voiceEnabled: journeyToLaunch.voiceEnabled,
+              isVoiceJourney,
+            });
+            
             // Auto-start after a brief delay
             setTimeout(() => {
-              connectToRealtime(journeyToLaunch);
+              if (isVoiceJourney) {
+                // Voice journey - connect to realtime immediately
+                connectToRealtime(journeyToLaunch);
+              } else {
+                // Non-voice journey - start in button-based mode
+                // Voice will be enabled later via enable_voice tool
+                console.log('🔇 Starting non-voice session for:', journeyToLaunch.name);
+                startNonVoiceSession(journeyToLaunch);
+              }
             }, 500);
             return;
           }
@@ -449,7 +466,6 @@ function VoiceAgentContent() {
       // Handle enable_voice tool - activate voice mode mid-flow while keeping current screens
       if (tool === 'enable_voice') {
         console.log('🎤🎤🎤 ENABLE_VOICE TRIGGERED IN VOICEAGENT 🎤🎤🎤');
-        alert('VoiceAgent received enable_voice!'); // Debug alert
         addLog('info', '🎤 Enabling voice mode mid-flow');
         
         // Log current state for debugging
@@ -464,14 +480,12 @@ function VoiceAgentContent() {
         const journey = currentJourneyRef.current;
         if (!journey) {
           console.error('🎤 ERROR: No journey in currentJourneyRef!');
-          alert('ERROR: No journey found!'); // Debug alert
           addLog('error', 'No journey found - cannot enable voice');
           return;
         }
         
         if (!connectToRealtimeRef.current) {
           console.error('🎤 ERROR: connectToRealtimeRef.current is null!');
-          alert('ERROR: connectToRealtimeRef is null!'); // Debug alert
           addLog('error', 'Voice connection function not available');
           return;
         }
@@ -531,7 +545,6 @@ function VoiceAgentContent() {
 
   const connectToRealtime = async (journeyOverride?: Journey, flowContextOverride?: Record<string, any>, options?: { skipScreenReset?: boolean }) => {
     console.log('🎙️🎙️🎙️ connectToRealtime CALLED 🎙️🎙️🎙️');
-    alert('connectToRealtime called!'); // Debug alert
     console.log('🎙️ Arguments:', {
       journeyOverride: journeyOverride?.name,
       flowContextOverrideKeys: flowContextOverride ? Object.keys(flowContextOverride) : null,

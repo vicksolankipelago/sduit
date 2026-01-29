@@ -225,7 +225,6 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
           }
           if (toolAction.tool === 'enable_voice') {
             console.log('🎤🎤🎤 ENABLE_VOICE TOOL DETECTED IN SCREENCONTEXT 🎤🎤🎤');
-            alert('ENABLE_VOICE tool triggered!'); // Debug alert
           }
           
           // Dispatch a custom event that VoiceAgent or other components can listen to
