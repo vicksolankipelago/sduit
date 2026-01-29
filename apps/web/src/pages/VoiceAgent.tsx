@@ -642,17 +642,34 @@ function VoiceAgentContent() {
     console.log('🚀 voiceEnabled:', journeyToUse.voiceEnabled);
     console.log('🚀 options:', options);
 
-    // Apply PQ data substitution to agent prompts
+    // Apply prompt variable substitution using flowContext from quiz answers
+    // Priority: flowContextOverride (quiz answers) > pqData (manual settings) > DEFAULT_PQ_DATA
+    const contextToUse = flowContextOverride || flowContext || {};
     const pqDataToUse = { ...DEFAULT_PQ_DATA, ...pqData };
+    
+    console.log('📝 Prompt substitution context:', {
+      flowContextKeys: Object.keys(contextToUse),
+      sampleValues: {
+        feelings_alcohol: contextToUse.feelings_alcohol,
+        goal_alcohol: contextToUse.goal_alcohol,
+        motivation: contextToUse.motivation,
+        memberName: contextToUse.memberName || pqDataToUse.memberName,
+      }
+    });
+    
     const journeyWithPQData = {
       ...journeyToUse,
-      systemPrompt: journeyToUse.systemPrompt ? substitutePromptVariables(journeyToUse.systemPrompt, pqDataToUse) : journeyToUse.systemPrompt,
+      systemPrompt: journeyToUse.systemPrompt ? substitutePromptVariables(journeyToUse.systemPrompt, pqDataToUse, contextToUse) : journeyToUse.systemPrompt,
       agents: journeyToUse.agents.map(agent => ({
         ...agent,
-        prompt: substitutePromptVariables(agent.prompt, pqDataToUse),
+        prompt: substitutePromptVariables(agent.prompt, pqDataToUse, contextToUse),
       })),
     };
-    addLog('info', '📝 Applied PQ data to prompts', { memberName: pqDataToUse.memberName, primaryGoal: pqDataToUse.primaryGoal });
+    addLog('info', '📝 Applied quiz answers to prompts', { 
+      memberName: contextToUse.memberName || pqDataToUse.memberName, 
+      feelings_alcohol: contextToUse.feelings_alcohol,
+      goal_alcohol: contextToUse.goal_alcohol,
+    });
 
     // Create event trigger handler for screen navigation (needed before runtime.convert)
     const handleEventTrigger = (eventId: string, agentName: string) => {

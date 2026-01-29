@@ -14,6 +14,7 @@ export type VariableCategory =
   | 'goals'       // Goals and motivations
   | 'preferences' // Care and support preferences
   | 'context'     // Conversation context data
+  | 'quiz'        // Quiz answer variables (populated from Personalization Quiz)
   | 'custom';     // User-defined variables
 
 /**
@@ -67,5 +68,6 @@ export const VARIABLE_CATEGORIES: Record<VariableCategory, { label: string; icon
   goals: { label: 'Goals', icon: '🎯' },
   preferences: { label: 'Preferences', icon: '⚙️' },
   context: { label: 'Context', icon: '📋' },
+  quiz: { label: 'Quiz Answers', icon: '📝' },
   custom: { label: 'Custom', icon: '✨' },
 };

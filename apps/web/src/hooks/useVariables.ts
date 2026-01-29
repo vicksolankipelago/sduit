@@ -39,6 +39,7 @@ export function useVariables(journey?: Journey | null): UseVariablesResult {
       goals: [],
       preferences: [],
       context: [],
+      quiz: [],
       custom: [],
     };
 
@@ -85,5 +86,5 @@ export function getCategoryInfo(category: VariableCategory) {
  * Get all categories in display order
  */
 export function getOrderedCategories(): VariableCategory[] {
-  return ['member', 'goals', 'preferences', 'context', 'custom'];
+  return ['member', 'goals', 'preferences', 'context', 'quiz', 'custom'];
 }

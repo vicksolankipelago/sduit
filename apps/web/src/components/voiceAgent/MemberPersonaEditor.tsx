@@ -52,7 +52,7 @@ const MemberPersonaEditor: React.FC<MemberPersonaEditorProps> = ({
   const [personaEnabled, setPersonaEnabled] = useState(initialEnabled);
   const [selectedPreset, setSelectedPreset] = useState('Custom');
   const [personaDescription, setPersonaDescription] = useState(initialDescription);
-  const [pqData, setPQData] = useState<Partial<PQData>>({ ...DEFAULT_PQ_DATA, ...initialPQData });
+  const [pqData] = useState<Partial<PQData>>({ ...DEFAULT_PQ_DATA, ...initialPQData });
   const [selectedVoice, setSelectedVoice] = useState(initialVoice);
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -75,12 +75,6 @@ const MemberPersonaEditor: React.FC<MemberPersonaEditorProps> = ({
   const handleDescriptionChange = (description: string) => {
     if (disabled) return;
     setPersonaDescription(description);
-    setHasChanges(true);
-  };
-
-  const handlePQFieldChange = (field: keyof PQData, value: string) => {
-    if (disabled) return;
-    setPQData(prev => ({ ...prev, [field]: value }));
     setHasChanges(true);
   };
 
@@ -134,104 +128,10 @@ const MemberPersonaEditor: React.FC<MemberPersonaEditorProps> = ({
                   ))}
                 </select>
               </div>
-
-              <div className="pq-field">
-                <label className="pq-field-label">Member Name</label>
-                <input
-                  type="text"
-                  className="pq-field-input"
-                  value={pqData.memberName || ''}
-                  onChange={(e) => handlePQFieldChange('memberName', e.target.value)}
-                  placeholder="e.g., Jack"
-                  disabled={disabled}
-                />
-              </div>
-
-              <div className="pq-field">
-                <label className="pq-field-label">Main Substance</label>
-                <input
-                  type="text"
-                  className="pq-field-input"
-                  value={pqData.mainSubstance || ''}
-                  onChange={(e) => handlePQFieldChange('mainSubstance', e.target.value)}
-                  placeholder="e.g., alcohol"
-                  disabled={disabled}
-                />
-              </div>
-
-              <div className="pq-field">
-                <label className="pq-field-label">Acuity Level</label>
-                <select
-                  className="pq-field-select"
-                  value={pqData.acuityLevel || 'moderate'}
-                  onChange={(e) => handlePQFieldChange('acuityLevel', e.target.value)}
-                  disabled={disabled}
-                >
-                  <option value="low">Low</option>
-                  <option value="moderate">Moderate</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
-
-              <div className="pq-field">
-                <label className="pq-field-label">Drinking Logs (7 days)</label>
-                <input
-                  type="text"
-                  className="pq-field-input"
-                  value={pqData.drinkingLogs || ''}
-                  onChange={(e) => handlePQFieldChange('drinkingLogs', e.target.value)}
-                  placeholder="e.g., [3, 2, 4, 1, 3, 2, 0]"
-                  disabled={disabled}
-                />
-              </div>
             </div>
 
-            <div className="pq-field">
-              <label className="pq-field-label">Primary Goal</label>
-              <input
-                type="text"
-                className="pq-field-input"
-                value={pqData.primaryGoal || ''}
-                onChange={(e) => handlePQFieldChange('primaryGoal', e.target.value)}
-                placeholder="e.g., drink less and maintain a healthy lifestyle"
-                disabled={disabled}
-              />
-            </div>
-
-            <div className="pq-field">
-              <label className="pq-field-label">Motivation</label>
-              <textarea
-                className="pq-field-textarea"
-                value={pqData.motivation || ''}
-                onChange={(e) => handlePQFieldChange('motivation', e.target.value)}
-                placeholder="e.g., wanting to be more present for family"
-                rows={2}
-                disabled={disabled}
-              />
-            </div>
-
-            <div className="pq-field">
-              <label className="pq-field-label">Learning Topics</label>
-              <input
-                type="text"
-                className="pq-field-input"
-                value={pqData.learningTopics || ''}
-                onChange={(e) => handlePQFieldChange('learningTopics', e.target.value)}
-                placeholder="e.g., understanding triggers, building healthier habits"
-                disabled={disabled}
-              />
-            </div>
-
-            <div className="pq-field">
-              <label className="pq-field-label">Care Preferences</label>
-              <input
-                type="text"
-                className="pq-field-input"
-                value={pqData.carePreferences || ''}
-                onChange={(e) => handlePQFieldChange('carePreferences', e.target.value)}
-                placeholder="e.g., empathetic and understanding"
-                disabled={disabled}
-              />
+            <div className="pq-info-note">
+              <p>Member context data (goals, motivation, learning topics, etc.) is automatically populated from the Personalization Quiz answers when voice mode is activated.</p>
             </div>
           </div>
 

@@ -50,7 +50,7 @@ A: I prefer supportive and non-judgmental guidance.`,
 };
 
 /**
- * Default variables derived from PQData
+ * Default variables derived from PQData and Quiz answers
  * These are the built-in variables available in all prompts
  */
 export const DEFAULT_VARIABLES: Variable[] = [
@@ -58,22 +58,29 @@ export const DEFAULT_VARIABLES: Variable[] = [
   { name: 'memberName', description: "Member's first name", category: 'member', isCustom: false },
   { name: 'mainSubstance', description: 'Primary substance of focus', category: 'member', isCustom: false },
   { name: 'acuityLevel', description: 'Member acuity level (low/moderate/high)', category: 'member', isCustom: false },
-  // Goals
+  // Legacy Goals (kept for backward compatibility)
   { name: 'primaryGoal', description: "Member's stated primary goal", category: 'goals', isCustom: false },
   { name: 'motivation', description: 'What motivates the member', category: 'goals', isCustom: false },
   { name: 'learningTopics', description: 'Topics member wants to learn about', category: 'goals', isCustom: false },
-  // Preferences
+  // Legacy Preferences
   { name: 'personalizedApproach', description: 'Preferred support approach', category: 'preferences', isCustom: false },
   { name: 'carePreferences', description: 'Care style preferences', category: 'preferences', isCustom: false },
-  // Context
+  // Legacy Context
   { name: 'drinkingLogs', description: 'Recent drinking log data', category: 'context', isCustom: false },
   { name: 'allQuestionsAndAnswers', description: 'Full Q&A history', category: 'context', isCustom: false },
+  // Quiz Answer Variables (populated automatically from Personalization Quiz)
+  { name: 'selectedSubstances', description: 'Substances selected in quiz (e.g., alcohol)', category: 'quiz', isCustom: false },
+  { name: 'feelings_alcohol', description: 'How member feels about drinking', category: 'quiz', isCustom: false },
+  { name: 'goal_alcohol', description: 'Member goal for alcohol (drink less, quit, etc.)', category: 'quiz', isCustom: false },
+  { name: 'areas_to_improve', description: 'Specific areas member wants to improve', category: 'quiz', isCustom: false },
+  { name: 'learning_topics', description: 'Topics member wants to learn about (from quiz)', category: 'quiz', isCustom: false },
 ];
 
 /**
  * Regex pattern for matching {{variableName}} syntax
+ * Supports camelCase, snake_case, and mixed naming conventions
  */
-const VARIABLE_PATTERN = /\{\{([a-zA-Z][a-zA-Z0-9]*)\}\}/g;
+const VARIABLE_PATTERN = /\{\{([a-zA-Z][a-zA-Z0-9_]*)\}\}/g;
 
 /**
  * Extract all variable occurrences from text
@@ -126,10 +133,20 @@ export function validatePromptVariables(
 
 /**
  * Substitute template variables in a prompt string
- * Replaces {{variableName}} with corresponding values from PQ data
+ * Replaces {{variableName}} with corresponding values from context data
+ * 
+ * Priority order (later values override earlier):
+ * 1. DEFAULT_PQ_DATA - base defaults
+ * 2. pqData - manual settings (deprecated, kept for backward compatibility)
+ * 3. flowContext - quiz answers and runtime context (highest priority)
  */
-export function substitutePromptVariables(prompt: string, pqData: Partial<PQData>): string {
-  const data = { ...DEFAULT_PQ_DATA, ...pqData };
+export function substitutePromptVariables(
+  prompt: string, 
+  pqData: Partial<PQData>, 
+  flowContext?: Record<string, any>
+): string {
+  // Merge all data sources with flowContext having highest priority
+  const data = { ...DEFAULT_PQ_DATA, ...pqData, ...(flowContext || {}) };
 
   let result = prompt;
 

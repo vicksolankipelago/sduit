@@ -554,3 +554,18 @@
   gap: 1rem;
   padding-top: 1rem;
 }
+
+.pq-info-note {
+  background: #f5f5f5;
+  border-left: 3px solid #9c27b0;
+  padding: 12px 16px;
+  margin-top: 12px;
+  border-radius: 4px;
+}
+
+.pq-info-note p {
+  margin: 0;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+}
