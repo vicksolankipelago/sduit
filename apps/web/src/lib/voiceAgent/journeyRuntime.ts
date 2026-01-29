@@ -356,8 +356,8 @@ export class JourneyRuntime {
 
         // Enforce delay for navigation events if not provided
         if (delay === 0 && isNavigationEvent(eventId)) {
-          delay = 2; // Default delay
-          toolLogger.debug(`Enforcing default 2s delay for navigation event '${eventId}'`);
+          delay = 4; // Default delay increased to 4s to give users time to read screens
+          toolLogger.debug(`Enforcing default 4s delay for navigation event '${eventId}'`);
         }
 
         toolLogger.debug(`Event triggered: ${eventId} by agent ${agentName} (delay: ${delay}s)`);

@@ -287,6 +287,9 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                 if (name === 'trigger_event' && args.eventId) {
                   const { eventId, delay: rawDelay } = args;
                   
+                  // DEBUG: Log raw delay value from AI
+                  console.log(`🎯 trigger_event called: eventId=${eventId}, rawDelay=${rawDelay} (type: ${typeof rawDelay})`);
+                  
                   // Parse delay robustly
                   let delay = 0;
                   if (typeof rawDelay === 'number') {
@@ -299,10 +302,12 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                   // Enforce default delay for specific events if not provided
                   // Dynamically enforce delay for navigation events (any event starting with 'navigate_to_')
                   if (delay === 0 && eventId.startsWith('navigate_to_')) {
-                    delay = 2;
-                    voiceAgentLogger.warn(`Enforcing default 2s delay for navigation event '${eventId}'`);
+                    delay = 4; // Increased from 2s to 4s to give users time to read screens
+                    console.log(`🎯 Enforcing default ${delay}s delay for navigation event '${eventId}'`);
+                    voiceAgentLogger.warn(`Enforcing default ${delay}s delay for navigation event '${eventId}'`);
                   }
 
+                  console.log(`🎯 Final delay for ${eventId}: ${delay}s`);
                   voiceAgentLogger.debug(`Triggering event: ${eventId} (delay: ${delay}s)`);
                   
                   const trigger = () => {
