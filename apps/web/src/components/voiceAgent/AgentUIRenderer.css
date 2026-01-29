@@ -187,6 +187,13 @@
   gap: 0.5rem !important;
 }
 
+/* Fixed bottom section should have 24px total horizontal margin from screen edge */
+/* Account for wrapper padding (12px) so section adds 12px more = 24px total */
+.agent-ui-device-screen .screen-preview-fixed-bottom,
+.agent-ui-device-screen .screen-preview-section-fixed-bottom {
+  padding: 0.5rem 12px !important;
+}
+
 .agent-ui-device-screen .screen-section-title,
 .agent-ui-device-screen .section-title,
 .agent-ui-device-screen [class*="section-title"],
