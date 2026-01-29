@@ -531,6 +531,7 @@ function VoiceAgentContent() {
 
   const connectToRealtime = async (journeyOverride?: Journey, flowContextOverride?: Record<string, any>, options?: { skipScreenReset?: boolean }) => {
     console.log('🎙️🎙️🎙️ connectToRealtime CALLED 🎙️🎙️🎙️');
+    alert('connectToRealtime called!'); // Debug alert
     console.log('🎙️ Arguments:', {
       journeyOverride: journeyOverride?.name,
       flowContextOverrideKeys: flowContextOverride ? Object.keys(flowContextOverride) : null,
