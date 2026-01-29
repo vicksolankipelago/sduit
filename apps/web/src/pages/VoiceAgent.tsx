@@ -443,6 +443,9 @@ function VoiceAgentContent() {
         console.log('🎤 ENABLE_VOICE TRIGGERED - activating voice mid-flow');
         addLog('info', '🎤 Enabling voice mode mid-flow');
         
+        // Set transitioning flag to prevent flows list from flashing
+        setIsTransitioningJourney(true);
+        
         // Exit non-voice mode
         setIsNonVoiceMode(false);
         
@@ -463,14 +466,18 @@ function VoiceAgentContent() {
         addLog('info', `🎤 Flow context keys: ${Object.keys(mergedContext).join(', ')}`);
         
         // Connect to voice session with current journey
-        // IMPORTANT: Pass currentJourney as journeyOverride to bypass sessionStatus closure issue
-        // (same pattern as start_journey to avoid stale closure race condition)
+        // IMPORTANT: Override voiceEnabled to true since we're explicitly enabling voice
+        // (the journey may have voiceEnabled=false for the initial quiz portion)
         requestAnimationFrame(() => {
           setTimeout(() => {
             console.log('🎤 Calling connectToRealtimeRef.current for enable_voice');
             if (connectToRealtimeRef.current && currentJourney) {
-              // Pass currentJourney as override to bypass sessionStatus guard
-              connectToRealtimeRef.current(currentJourney, mergedContext);
+              // Create a modified journey with voiceEnabled=true to force voice mode
+              const voiceEnabledJourney = {
+                ...currentJourney,
+                voiceEnabled: true, // Override to force voice mode
+              };
+              connectToRealtimeRef.current(voiceEnabledJourney, mergedContext);
             } else {
               console.error('🎤 connectToRealtimeRef.current or currentJourney is null!');
             }
