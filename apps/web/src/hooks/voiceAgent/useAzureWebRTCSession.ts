@@ -681,14 +681,20 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
 
         voiceAgentLogger.info('SDP URL:', sdpUrl);
         voiceAgentLogger.info('Ephemeral key length:', ephemeralKey.length);
+        voiceAgentLogger.info('Ephemeral key prefix:', ephemeralKey.substring(0, 10) + '...');
+        voiceAgentLogger.info('SDP offer length:', offer.sdp?.length);
+        voiceAgentLogger.info('SDP offer first 100 chars:', offer.sdp?.substring(0, 100));
+        
+        const headers: Record<string, string> = {
+          'Authorization': `Bearer ${ephemeralKey}`,
+          'Content-Type': 'application/sdp'
+        };
+        voiceAgentLogger.info('Request headers:', JSON.stringify(headers));
         
         const sdpResponse = await fetch(sdpUrl, {
           method: 'POST',
           body: offer.sdp,
-          headers: {
-            'Authorization': `Bearer ${ephemeralKey}`,
-            'Content-Type': 'application/sdp'
-          }
+          headers
         });
 
         voiceAgentLogger.info('SDP response status:', sdpResponse.status, sdpResponse.statusText);
