@@ -277,6 +277,57 @@ async function main() {
     return (app as any)._router.handle(req, res);
   });
 
+  // SDP Exchange Proxy - handles CORS issues by proxying through server
+  app.post("/api/voice/sdp-exchange", async (req, res) => {
+    try {
+      const { webrtcUrl, ephemeralKey, sdpOffer, deployment } = req.body;
+      
+      if (!webrtcUrl || !ephemeralKey || !sdpOffer) {
+        serverLogger.error("[SDP-Exchange] Missing required fields:", { webrtcUrl: !!webrtcUrl, ephemeralKey: !!ephemeralKey, sdpOffer: !!sdpOffer });
+        return apiResponse.validationError(res, "Missing required fields: webrtcUrl, ephemeralKey, sdpOffer");
+      }
+      
+      // Build the full URL with model parameter
+      const url = new URL(webrtcUrl);
+      if (deployment) {
+        url.searchParams.set('model', deployment);
+      }
+      const fullUrl = url.toString();
+      
+      serverLogger.info("[SDP-Exchange] Proxying SDP exchange to:", fullUrl);
+      serverLogger.info("[SDP-Exchange] Ephemeral key length:", ephemeralKey.length);
+      serverLogger.info("[SDP-Exchange] SDP offer length:", sdpOffer.length);
+      
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${ephemeralKey}`,
+          'Content-Type': 'application/sdp'
+        },
+        body: sdpOffer
+      });
+      
+      serverLogger.info("[SDP-Exchange] Azure response status:", response.status, response.statusText);
+      
+      const responseText = await response.text();
+      
+      if (!response.ok) {
+        serverLogger.error("[SDP-Exchange] SDP exchange failed:", response.status, responseText);
+        return apiResponse.error(res, "SDP exchange failed", response.status, "SDP_EXCHANGE_FAILED", responseText);
+      }
+      
+      serverLogger.info("[SDP-Exchange] SDP exchange successful, answer length:", responseText.length);
+      
+      // Return the SDP answer
+      res.setHeader('Content-Type', 'application/sdp');
+      res.send(responseText);
+      
+    } catch (err: any) {
+      serverLogger.error("[SDP-Exchange] SDP exchange error:", err.message);
+      return apiResponse.serverError(res, "SDP exchange failed", err.message);
+    }
+  });
+
   function parseBedrockToken(bearerToken: string) {
     let accessKeyId = "";
     let secretAccessKey = "";

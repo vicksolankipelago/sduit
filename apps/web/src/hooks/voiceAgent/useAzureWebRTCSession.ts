@@ -685,22 +685,28 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
         voiceAgentLogger.info('SDP offer length:', offer.sdp?.length);
         voiceAgentLogger.info('SDP offer first 100 chars:', offer.sdp?.substring(0, 100));
         
-        const headers: Record<string, string> = {
-          'Authorization': `Bearer ${ephemeralKey}`,
-          'Content-Type': 'application/sdp'
-        };
-        voiceAgentLogger.info('Request headers:', JSON.stringify(headers));
+        // Use server-side proxy to avoid CORS issues
+        voiceAgentLogger.info('Using server proxy for SDP exchange');
+        voiceAgentLogger.info('WebRTC URL:', webrtcUrl);
+        voiceAgentLogger.info('Deployment:', deployment);
+        voiceAgentLogger.info('SDP offer length:', offer.sdp?.length);
         
         let sdpResponse: Response;
         try {
-          sdpResponse = await fetch(sdpUrl, {
+          sdpResponse = await fetch('/api/voice/sdp-exchange', {
             method: 'POST',
-            body: offer.sdp,
-            headers,
-            mode: 'cors'
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              webrtcUrl,
+              ephemeralKey,
+              sdpOffer: offer.sdp,
+              deployment
+            })
           });
         } catch (fetchError: any) {
-          voiceAgentLogger.error('=== Fetch Error (CORS/Network) ===');
+          voiceAgentLogger.error('=== Fetch Error (Network) ===');
           voiceAgentLogger.error('Error name:', fetchError?.name);
           voiceAgentLogger.error('Error message:', fetchError?.message);
           voiceAgentLogger.error('Full error:', fetchError);
