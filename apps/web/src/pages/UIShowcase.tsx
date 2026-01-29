@@ -45,6 +45,7 @@ const UIShowcase: React.FC = () => {
   const [builderScreen, setBuilderScreen] = useState<StandaloneScreen>(() => createStandaloneScreen(uuidv4(), 'New Screen'));
 
   const [selectedElementIndex, setSelectedElementIndex] = useState<number | null>(null);
+  const [selectedSectionPosition, setSelectedSectionPosition] = useState<'fixed-top' | 'body' | 'fixed-bottom'>('body');
   const [draggedElementIndex, setDraggedElementIndex] = useState<number | null>(null);
   const [_dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [showCodeView, setShowCodeView] = useState(false);
@@ -315,7 +316,8 @@ const UIShowcase: React.FC = () => {
 
   const handleRemoveElement = (index: number) => {
     const updatedSections = builderScreen.sections.map(section => {
-      if (section.position === 'body') {
+      // Remove element from the currently selected section
+      if (section.position === selectedSectionPosition) {
         return {
           ...section,
           elements: section.elements.filter((_, i) => i !== index),
@@ -338,7 +340,8 @@ const UIShowcase: React.FC = () => {
 
   const handleUpdateElement = (index: number, updates: Partial<ElementConfig>) => {
     const updatedSections = builderScreen.sections.map(section => {
-      if (section.position === 'body') {
+      // Update element in the currently selected section
+      if (section.position === selectedSectionPosition) {
         return {
           ...section,
           elements: section.elements.map((el, i) =>
@@ -358,19 +361,19 @@ const UIShowcase: React.FC = () => {
   const currentElements = builderScreen.sections.find(s => s.position === 'body')?.elements || [];
   
   // Find the selected element across all sections
-  const findSelectedElement = (): { element: ElementConfig | null; sectionPosition: string | null } => {
-    if (selectedElementIndex === null) return { element: null, sectionPosition: null };
+  const findSelectedElement = (): { element: ElementConfig | null } => {
+    if (selectedElementIndex === null) return { element: null };
     
-    // First check body section (primary section for editing)
-    const bodySection = builderScreen.sections.find(s => s.position === 'body');
-    if (bodySection && selectedElementIndex < bodySection.elements.length) {
-      return { element: bodySection.elements[selectedElementIndex], sectionPosition: 'body' };
+    // Find the section matching selectedSectionPosition
+    const section = builderScreen.sections.find(s => s.position === selectedSectionPosition);
+    if (section && selectedElementIndex < section.elements.length) {
+      return { element: section.elements[selectedElementIndex] };
     }
     
-    return { element: null, sectionPosition: null };
+    return { element: null };
   };
   
-  const { element: selectedElement, sectionPosition: selectedSectionPosition } = findSelectedElement();
+  const { element: selectedElement } = findSelectedElement();
   const selectedElementId = selectedElement?.state.id as string | undefined;
 
   const handleElementSelectFromPreview = (elementId: string, _sectionIndex: number, _elementIndex: number) => {
@@ -378,39 +381,26 @@ const UIShowcase: React.FC = () => {
     for (const section of builderScreen.sections) {
       const index = section.elements.findIndex(el => el.state.id === elementId);
       if (index !== -1) {
-        // For now, we support editing body section elements primarily
-        // Store the element ID so we can find it later
-        if (section.position === 'body') {
-          setSelectedElementIndex(index);
-        } else {
-          // For non-body sections, find the equivalent position in body
-          // or add support for tracking section position
-          const bodySection = builderScreen.sections.find(s => s.position === 'body');
-          if (bodySection) {
-            const bodyIndex = bodySection.elements.findIndex(el => el.state.id === elementId);
-            if (bodyIndex !== -1) {
-              setSelectedElementIndex(bodyIndex);
-            }
-          }
-        }
+        // Support editing elements from any section
+        setSelectedElementIndex(index);
+        setSelectedSectionPosition(section.position as 'fixed-top' | 'body' | 'fixed-bottom');
         return;
       }
     }
   };
-  
-  // Suppress unused variable warnings
-  void selectedSectionPosition;
 
   void draggedElementIndex; void _dragOverIndex; void setDraggedElementIndex; void setDragOverIndex;
 
   const handleMoveElementUp = (index: number) => {
     if (index === 0) return;
 
-    const updatedElements = [...currentElements];
+    // Get elements from the currently selected section
+    const sectionElements = builderScreen.sections.find(s => s.position === selectedSectionPosition)?.elements || [];
+    const updatedElements = [...sectionElements];
     [updatedElements[index - 1], updatedElements[index]] = [updatedElements[index], updatedElements[index - 1]];
 
     const updatedSections = builderScreen.sections.map(section => {
-      if (section.position === 'body') {
+      if (section.position === selectedSectionPosition) {
         return {
           ...section,
           elements: updatedElements,
@@ -432,13 +422,15 @@ const UIShowcase: React.FC = () => {
   };
 
   const handleMoveElementDown = (index: number) => {
-    if (index === currentElements.length - 1) return;
+    // Get elements from the currently selected section
+    const sectionElements = builderScreen.sections.find(s => s.position === selectedSectionPosition)?.elements || [];
+    if (index === sectionElements.length - 1) return;
 
-    const updatedElements = [...currentElements];
+    const updatedElements = [...sectionElements];
     [updatedElements[index], updatedElements[index + 1]] = [updatedElements[index + 1], updatedElements[index]];
 
     const updatedSections = builderScreen.sections.map(section => {
-      if (section.position === 'body') {
+      if (section.position === selectedSectionPosition) {
         return {
           ...section,
           elements: updatedElements,
@@ -852,6 +844,9 @@ const UIShowcase: React.FC = () => {
                 <div className="ui-showcase-builder-element-type">
                   {ElementMetadataRegistry[selectedElement.type]?.displayName}
                 </div>
+                <div className="ui-showcase-builder-element-section" style={{ fontSize: '12px', color: '#666', marginBottom: '12px' }}>
+                  Section: {selectedSectionPosition.replace('-', ' ')}
+                </div>
 
                 <ElementPropertyEditor
                   element={selectedElement}
@@ -860,7 +855,7 @@ const UIShowcase: React.FC = () => {
                   onMoveUp={() => handleMoveElementUp(selectedElementIndex!)}
                   onMoveDown={() => handleMoveElementDown(selectedElementIndex!)}
                   canMoveUp={selectedElementIndex !== 0}
-                  canMoveDown={selectedElementIndex !== currentElements.length - 1}
+                  canMoveDown={selectedElementIndex !== (builderScreen.sections.find(s => s.position === selectedSectionPosition)?.elements.length ?? 1) - 1}
                 />
               </div>
             ) : (
