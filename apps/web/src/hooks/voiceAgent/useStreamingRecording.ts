@@ -209,6 +209,8 @@ export function useStreamingRecording(options: UseStreamingRecordingOptions = {}
    */
   const stopRecording = useCallback(async () => {
     const sessionId = sessionIdRef.current;
+    console.log(`🛑 stopRecording called for session: ${sessionId}`);
+    console.trace('stopRecording stack trace');
 
     // Stop MediaRecorder
     if (mediaRecorderRef.current) {

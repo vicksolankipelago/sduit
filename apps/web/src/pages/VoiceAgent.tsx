@@ -1219,7 +1219,9 @@ Important guidelines:
     }
 
     // Cleanup on disconnect (but NOT during journey transitions - we're about to start a new session)
+    console.log('🔍 Cleanup effect check:', { sessionStatus, isTransitioningJourney });
     if (sessionStatus === "DISCONNECTED" && !isTransitioningJourney) {
+      console.log('🧹 Running cleanup - stopping recording');
       // If we ever add mic visualization, ensure those tracks are stopped
       if (micStream) {
         console.log('🧹 Cleaning up microphone stream');

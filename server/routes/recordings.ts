@@ -151,6 +151,7 @@ router.post('/end', async (req: Request, res: Response) => {
     }
 
     console.log(`🎙️ Ending recording session: ${sessionId}`);
+    console.log(`🎙️ End called at: ${new Date().toISOString()}`);
 
     const manifest = await getManifest(sessionId);
     if (!manifest) {
