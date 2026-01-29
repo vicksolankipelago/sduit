@@ -385,27 +385,23 @@ function VoiceAgentContent() {
               setAgents(targetJourney.agents);
             }
             
-            // Immediately show the first screen of the new journey for seamless transition
-            const startingAgentConfig = targetJourney.agents.find((a: any) => a.id === targetJourney.startingAgentId);
-            if (startingAgentConfig?.screens?.length > 0) {
-              console.log('🔗 Showing first screen of new journey:', startingAgentConfig.screens[0].id);
-              enableScreenRendering?.(startingAgentConfig.screens, startingAgentConfig.screens[0].id);
-              setHasScreensVisible(true);
-            }
+            // Don't call enableScreenRendering here - let connectToRealtime handle it
+            // This prevents race conditions with double-calling
             
-            // Force session to disconnected state
+            // Force session to disconnected state first
             setSessionStatus('DISCONNECTED');
             
-            // Use requestAnimationFrame + setTimeout to ensure state is updated before connecting
+            // Wait for React to process the state updates, then connect
+            // The connectToRealtime function will set up screens and voice session together
             requestAnimationFrame(() => {
               setTimeout(() => {
-                console.log('🔗 Attempting to connect to new journey...');
+                console.log('🔗 Calling connectToRealtime with journey:', targetJourney.name);
                 if (connectToRealtimeRef.current) {
                   connectToRealtimeRef.current(targetJourney, mergedFlowContext);
                 } else {
                   console.error('🔗 connectToRealtimeRef.current is null!');
                 }
-              }, 50);
+              }, 100);
             });
           } catch (error) {
             console.error('🔗 Failed to start journey:', error);
