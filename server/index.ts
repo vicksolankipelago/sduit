@@ -220,15 +220,16 @@ async function main() {
       sessionLogger.info("Azure x-ms-region header:", azureRegionHeader);
       
       // Map Azure region names to WebRTC endpoint regions
+      // IMPORTANT: The WebRTC region must match where the Azure resource is deployed
       const regionMapping: Record<string, string> = {
-        "central us": "eastus2",
-        "east us": "eastus2",
+        "central us": "centralus",
+        "east us": "eastus",
         "east us 2": "eastus2",
-        "west us": "westus2",
+        "west us": "westus",
         "west us 2": "westus2",
         "sweden central": "swedencentral",
-        "west europe": "swedencentral",
-        "north europe": "swedencentral",
+        "west europe": "westeurope",
+        "north europe": "northeurope",
       };
       
       let region = "eastus2"; // default
