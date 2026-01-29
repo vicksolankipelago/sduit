@@ -545,6 +545,9 @@ function VoiceAgentContent() {
       addLog('success', '🎤 Microphone permission granted');
       // Permission granted - stop the stream immediately (connection will request again)
       stream.getTracks().forEach(track => track.stop());
+      
+      // DEBUG: Track execution
+      console.log('🚀🚀🚀 AFTER MIC PERMISSION - ABOUT TO CONTINUE 🚀🚀🚀');
     } catch (error) {
       console.error('🎤 MICROPHONE PERMISSION DENIED:', error);
       setMicPermissionError(true);
