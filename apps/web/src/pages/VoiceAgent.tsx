@@ -370,15 +370,30 @@ function VoiceAgentContent() {
             console.log('🔗 Loaded journey:', targetJourney.name, 'voiceEnabled:', targetJourney.voiceEnabled);
             addLog('success', `📥 Loaded journey: ${targetJourney.name}`);
             
-            // Clean up current session BEFORE starting new one
-            disableScreenRendering?.();
-            setHasScreensVisible(false);
+            // For seamless transition: DON'T disable screen rendering
+            // Keep screens visible during the transition
+            // The new journey will update the screens when it starts
+            
+            // Exit non-voice mode since we're starting a voice journey
             setIsNonVoiceMode(false);
             
-            // Set the journey
+            // Set the new journey
             setCurrentJourney(targetJourney);
             
-            // Force session to disconnected and then immediately start new session
+            // Set all agents for the new journey (for multi-agent navigation)
+            if (setAgents) {
+              setAgents(targetJourney.agents);
+            }
+            
+            // Immediately show the first screen of the new journey for seamless transition
+            const startingAgentConfig = targetJourney.agents.find((a: any) => a.id === targetJourney.startingAgentId);
+            if (startingAgentConfig?.screens?.length > 0) {
+              console.log('🔗 Showing first screen of new journey:', startingAgentConfig.screens[0].id);
+              enableScreenRendering?.(startingAgentConfig.screens, startingAgentConfig.screens[0].id);
+              setHasScreensVisible(true);
+            }
+            
+            // Force session to disconnected state
             setSessionStatus('DISCONNECTED');
             
             // Use requestAnimationFrame + setTimeout to ensure state is updated before connecting
@@ -408,7 +423,7 @@ function VoiceAgentContent() {
     return () => {
       window.removeEventListener('toolCallAction', handleToolCallAction as EventListener);
     };
-  }, [addLog, switchToAgent, disableScreenRendering, flowContext, moduleState, updateFlowContext]);
+  }, [addLog, switchToAgent, disableScreenRendering, enableScreenRendering, setAgents, flowContext, moduleState, updateFlowContext]);
 
   const connectToRealtime = async (journeyOverride?: Journey, flowContextOverride?: Record<string, any>) => {
     if (sessionStatus !== "DISCONNECTED") return;
