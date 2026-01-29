@@ -217,7 +217,7 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
 
         case 'toolCall': {
           const toolAction = action as ToolCallAction;
-          console.log(`🔧 Tool call action: ${toolAction.tool}`, toolAction.params);
+          console.log(`🔧 ScreenContext: Tool call action triggered: ${toolAction.tool}`, toolAction.params);
           
           // Dispatch a custom event that VoiceAgent or other components can listen to
           const event = new CustomEvent('toolCallAction', {
@@ -225,8 +225,11 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
               tool: toolAction.tool,
               params: toolAction.params || {},
             },
+            bubbles: true,
           });
+          console.log(`🔧 ScreenContext: Dispatching toolCallAction event to window...`);
           window.dispatchEvent(event);
+          console.log(`🔧 ScreenContext: toolCallAction event dispatched`);
           
           // Handle built-in tool actions
           if (toolAction.tool === 'store_answer' && toolAction.params) {

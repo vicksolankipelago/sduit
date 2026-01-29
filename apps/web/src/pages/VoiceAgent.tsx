@@ -172,6 +172,8 @@ function VoiceAgentContent() {
   const sessionIdRef = useRef<string>(`session_${Date.now()}`);
   // Track the combined prompt sent to the agent for export
   const combinedPromptRef = useRef<string>('');
+  // Ref to hold the latest connectToRealtime function (avoids stale closure in event handlers)
+  const connectToRealtimeRef = useRef<((journeyOverride?: Journey, flowContextOverride?: Record<string, any>) => Promise<void>) | null>(null);
   // Real-time session saver with debouncing
   const sessionSaverRef = useRef<DebouncedSessionSaver>(
     new DebouncedSessionSaver(500, (error) => {
@@ -337,6 +339,7 @@ function VoiceAgentContent() {
       
       // Handle start_journey tool - load and start a new journey with flow context
       if (tool === 'start_journey' && params.journeyId) {
+        console.log('🔗 start_journey tool triggered with journeyId:', params.journeyId);
         addLog('info', `🔗 Starting linked journey: ${params.journeyId}`);
         
         // Synchronously merge current moduleState with flowContext for data passing
@@ -346,6 +349,8 @@ function VoiceAgentContent() {
           ...(moduleState || {}),
         };
         
+        console.log('🔗 Merged flow context:', mergedFlowContext);
+        
         // Also update the flowContext state for future use
         if (updateFlowContext && moduleState) {
           updateFlowContext(moduleState);
@@ -353,35 +358,48 @@ function VoiceAgentContent() {
         
         addLog('info', `🔗 Merged flow context keys: ${Object.keys(mergedFlowContext).join(', ')}`);
         
-        // Clean up current session
-        setSessionStatus('DISCONNECTED');
-        setIsNonVoiceMode(false);
-        disableScreenRendering?.();
-        setHasScreensVisible(false);
-        
         // Load and start the target journey with merged context
         const loadAndStartJourney = async () => {
           try {
+            console.log('🔗 Fetching journey from API...');
             const response = await fetch(`/api/journeys/${params.journeyId}`);
             if (!response.ok) {
               throw new Error(`Failed to load journey: ${response.statusText}`);
             }
             const targetJourney = await response.json();
+            console.log('🔗 Loaded journey:', targetJourney.name, 'voiceEnabled:', targetJourney.voiceEnabled);
             addLog('success', `📥 Loaded journey: ${targetJourney.name}`);
             
-            // Set the journey and connect with explicit flow context
+            // Clean up current session BEFORE starting new one
+            disableScreenRendering?.();
+            setHasScreensVisible(false);
+            setIsNonVoiceMode(false);
+            
+            // Set the journey
             setCurrentJourney(targetJourney);
             
-            // Short delay to allow state update, then connect with merged context
-            setTimeout(() => {
-              connectToRealtime(targetJourney, mergedFlowContext);
-            }, 100);
+            // Force session to disconnected and then immediately start new session
+            setSessionStatus('DISCONNECTED');
+            
+            // Use requestAnimationFrame + setTimeout to ensure state is updated before connecting
+            requestAnimationFrame(() => {
+              setTimeout(() => {
+                console.log('🔗 Attempting to connect to new journey...');
+                if (connectToRealtimeRef.current) {
+                  connectToRealtimeRef.current(targetJourney, mergedFlowContext);
+                } else {
+                  console.error('🔗 connectToRealtimeRef.current is null!');
+                }
+              }, 50);
+            });
           } catch (error) {
+            console.error('🔗 Failed to start journey:', error);
             addLog('error', `Failed to start journey: ${error}`);
           }
         };
         
         loadAndStartJourney();
+        return; // Prevent other handlers from running
       }
     };
     
@@ -798,6 +816,11 @@ Important guidelines:
       setSessionStatus("DISCONNECTED");
     }
   };
+
+  // Keep connectToRealtimeRef updated with latest function
+  useEffect(() => {
+    connectToRealtimeRef.current = connectToRealtime;
+  });
 
   // Export transcript when session ends
   const exportSessionTranscript = () => {
