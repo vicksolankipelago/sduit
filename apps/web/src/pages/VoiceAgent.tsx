@@ -157,6 +157,9 @@ function VoiceAgentContent() {
   // Microphone permission error state
   const [micPermissionError, setMicPermissionError] = useState(false);
   
+  // Journey transition state - prevents journeys list from showing during flow transitions
+  const [isTransitioningJourney, setIsTransitioningJourney] = useState(false);
+  
   // Notification permission popup state
   const [showNotificationPopup, setShowNotificationPopup] = useState(false);
   
@@ -342,6 +345,9 @@ function VoiceAgentContent() {
         console.log('🔗 start_journey tool triggered with journeyId:', params.journeyId);
         addLog('info', `🔗 Starting linked journey: ${params.journeyId}`);
         
+        // Set transitioning flag to prevent journeys list from showing
+        setIsTransitioningJourney(true);
+        
         // Synchronously merge current moduleState with flowContext for data passing
         // This ensures all quiz answers are available to the next journey
         const mergedFlowContext = {
@@ -406,6 +412,7 @@ function VoiceAgentContent() {
           } catch (error) {
             console.error('🔗 Failed to start journey:', error);
             addLog('error', `Failed to start journey: ${error}`);
+            setIsTransitioningJourney(false); // Clear flag on error
           }
         };
         
@@ -628,32 +635,16 @@ function VoiceAgentContent() {
     // so we don't need to set a separate callback here
 
     // Check if starting agent has screens
-    console.log('🎨 connectToRealtime - journeyWithPQData:', journeyWithPQData.name, journeyWithPQData.id);
-    console.log('🎨 connectToRealtime - startingAgentId:', journeyWithPQData.startingAgentId);
-    console.log('🎨 connectToRealtime - agents:', journeyWithPQData.agents.map((a: any) => ({ id: a.id, name: a.name, screensCount: a.screens?.length })));
-    
     const startingAgentConfig = journeyWithPQData.agents.find(a => a.id === journeyWithPQData.startingAgentId);
-    console.log('🎨 connectToRealtime - startingAgentConfig:', startingAgentConfig?.name, 'screens:', startingAgentConfig?.screens?.length);
     
     if (startingAgentConfig?.screens && startingAgentConfig.screens.length > 0) {
       addLog('info', `🎨 Screen system ready with ${startingAgentConfig.screens.length} screens`);
       addLog('info', `📱 Showing first screen: ${startingAgentConfig.screens[0].id}`);
       
-      console.log('🎨 About to call enableScreenRendering with:', startingAgentConfig.screens[0].id);
-      console.log('🎨 enableScreenRendering exists:', !!enableScreenRendering);
-      
       // Show the first screen immediately when session starts
-      if (enableScreenRendering) {
-        enableScreenRendering(startingAgentConfig.screens, startingAgentConfig.screens[0].id);
-        console.log('🎨 enableScreenRendering called successfully!');
-      } else {
-        console.error('🎨 enableScreenRendering is undefined!');
-      }
+      enableScreenRendering?.(startingAgentConfig.screens, startingAgentConfig.screens[0].id);
       setHasScreensVisible(true);
-      
-      console.log('🎨 First screen displayed:', startingAgentConfig.screens[0].id);
     } else {
-      console.error('🎨 No screens found! startingAgentConfig:', startingAgentConfig);
       addLog('warning', '⚠️ Starting agent has no screens configured');
     }
 
@@ -1138,8 +1129,12 @@ Important guidelines:
         addLog('info', 'Connecting to Azure OpenAI...');
       } else if (s === 'CONNECTED') {
         addLog('success', 'Connected to Azure OpenAI WebRTC');
+        // Clear transitioning flag when connection succeeds
+        setIsTransitioningJourney(false);
       } else if (s === 'DISCONNECTED') {
         addLog('info', 'Disconnected from Azure OpenAI');
+        // Also clear transitioning flag on disconnect
+        setIsTransitioningJourney(false);
       }
     },
     onTranscript: (role: string, text: string, isDone?: boolean) => {
@@ -1481,8 +1476,8 @@ Important guidelines:
         }}
       />
       
-      {/* Header - Show when disconnected and NOT in preview mode */}
-      {sessionStatus === 'DISCONNECTED' && !isPreviewMode && (
+      {/* Header - Show when disconnected and NOT in preview mode or transitioning */}
+      {sessionStatus === 'DISCONNECTED' && !isPreviewMode && !isTransitioningJourney && (
         <div className="voice-agent-header">
           <h2 className="voice-agent-title">Flows</h2>
           {isAdmin && (
@@ -1583,8 +1578,8 @@ Important guidelines:
         </div>
       )}
 
-      {/* Journeys Content - Hide in preview mode */}
-      {!isPreviewMode && (
+      {/* Journeys Content - Hide in preview mode and during journey transitions */}
+      {!isPreviewMode && !isTransitioningJourney && (
       <div className="voice-agent-content">
         <div className="voice-agent-session-view">
           {sessionStatus === 'DISCONNECTED' ? (
