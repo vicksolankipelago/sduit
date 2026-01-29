@@ -25,6 +25,11 @@ The application is built as a monorepo with a React 19 frontend (Vite) and an Ex
 *   **Feedback System:** Allows users to submit ratings and comments linked to voice sessions, providing valuable insights into journey performance.
 *   **Preview Access System:** Administrators can generate temporary, revocable credentials for preview users, facilitating testing and research studies without full registration. Bulk creation and CSV export of credentials are supported.
 *   **System Tooling:** Integrates a core `end_call` tool for AI agents to gracefully conclude conversations.
+*   **Flow Composition System:** Enables linking multiple journeys together where data flows between them. Key components:
+    - `flowContext`: Persistent key-value store in AgentUIContext that survives journey transitions
+    - `start_journey` tool: Allows a button/CTA to trigger loading and starting a different journey, automatically passing collected data
+    - `{{key}}` prompt interpolation: Prompts can reference values from flowContext (e.g., `{{answer_feelings}}`, `{{profile.goal}}`), which are replaced at runtime
+    - Supports both flat keys and nested dotted paths for flexible data referencing
 *   **UI/UX:** The frontend is built with React 19 and Vite, focusing on an intuitive flow builder experience. Navigation is role-specific, and all emojis have been replaced with professional SVG icons. Agent editor functionality is directly embedded within the journey page for streamlined workflow.
 
 ## External Dependencies
