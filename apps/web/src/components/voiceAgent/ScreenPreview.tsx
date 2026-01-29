@@ -35,8 +35,9 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
   const screen = currentScreen || screenProp;
 
   // Wrap triggerEvent to always include allScreens for navigation
-  const triggerEvent = useCallback((eventId: string) => {
-    contextTriggerEvent(eventId, allScreens);
+  // Extended to support event data (e.g., selected value and storeKey from LargeQuestionElement)
+  const triggerEvent = useCallback((eventId: string, eventData?: Record<string, any>) => {
+    contextTriggerEvent(eventId, allScreens, eventData);
   }, [contextTriggerEvent, allScreens]);
   const resolveInterpolations = useCallback((value: AnyCodable): AnyCodable => {
     if (typeof value === 'string') {

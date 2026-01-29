@@ -23,7 +23,7 @@ export interface ScreenContextState {
   setCurrentScreen: (screen: Screen | null) => void;
   updateScreenState: (updates: Record<string, AnyCodable>) => void;
   updateModuleState: (updates: Record<string, AnyCodable>) => void;
-  triggerEvent: (eventId: string, screens?: Screen[]) => void;
+  triggerEvent: (eventId: string, screens?: Screen[], eventData?: Record<string, any>) => void;
   navigateToScreen: (screenId: string, screens: Screen[]) => void;
   goBack: (screens: Screen[]) => void;
   interpolateString: (template: string) => string;
@@ -284,9 +284,19 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
 
   /**
    * Trigger an event by ID
+   * @param eventId - The event ID to trigger
+   * @param screens - Available screens for navigation
+   * @param eventData - Optional data from the element (e.g., { storeKey: 'feelings_alcohol', selectedValue: 'want_to_cut_down' })
    */
-  const triggerEvent = useCallback((eventId: string, screens: Screen[] = []) => {
-    console.log('📢 triggerEvent called:', eventId, 'currentScreen:', currentScreen?.id, 'screens:', screens.length);
+  const triggerEvent = useCallback((eventId: string, screens: Screen[] = [], eventData?: Record<string, any>) => {
+    console.log('📢 triggerEvent called:', eventId, 'currentScreen:', currentScreen?.id, 'screens:', screens.length, 'eventData:', eventData);
+    
+    // If eventData includes storeKey and selectedValue, store in moduleState
+    // This allows quiz elements to store their selections automatically
+    if (eventData?.storeKey && eventData?.selectedValue !== undefined) {
+      console.log(`📝 Storing quiz answer: ${eventData.storeKey} = ${eventData.selectedValue}`);
+      updateModuleState({ [eventData.storeKey]: eventData.selectedValue });
+    }
     
     if (!currentScreen) {
       console.log('⚠️ No current screen, cannot trigger event');
@@ -328,7 +338,7 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
     } else {
       console.warn('Event not found:', eventId);
     }
-  }, [currentScreen, evaluateConditions, executeActions]);
+  }, [currentScreen, evaluateConditions, executeActions, updateModuleState]);
 
   /**
    * Navigate to a screen by ID

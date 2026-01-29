@@ -120,7 +120,6 @@ function VoiceAgentContent() {
     switchToAgent,
     flowContext,
     updateFlowContext,
-    mergeModuleStateToFlowContext,
   } = useAgentUI();
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();

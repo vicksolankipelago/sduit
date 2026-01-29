@@ -56,7 +56,7 @@ const OptionPill: React.FC<{ pill: LargeQuestionOptionPill }> = ({ pill }) => {
 export interface LargeQuestionElementProps {
   data: LargeQuestionElementState;
   events?: ScreenEvent[];
-  onEventTrigger?: (eventId: string) => void;
+  onEventTrigger?: (eventId: string, eventData?: Record<string, any>) => void;
 }
 
 export const LargeQuestionElement: React.FC<LargeQuestionElementProps> = ({
@@ -71,7 +71,20 @@ export const LargeQuestionElement: React.FC<LargeQuestionElementProps> = ({
     
     const event = events?.find(e => e.type === 'onSelected');
     if (event && onEventTrigger) {
-      onEventTrigger(event.id);
+      // Pass storeKey and selected value with the event so it can be stored in moduleState
+      // Use explicit storeKey if provided, otherwise derive from element ID (removes common suffixes)
+      const derivedStoreKey = data.storeKey || 
+        data.id?.replace(/_question$/, '').replace(/_element$/, '') || 
+        undefined;
+      
+      const eventData: Record<string, any> = {
+        selectedValue: optionId,
+      };
+      if (derivedStoreKey) {
+        eventData.storeKey = derivedStoreKey;
+        console.log(`📝 LargeQuestion: Storing ${derivedStoreKey} = ${optionId}`);
+      }
+      onEventTrigger(event.id, eventData);
     }
   };
 

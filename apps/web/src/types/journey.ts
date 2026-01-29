@@ -414,6 +414,7 @@ export interface LargeQuestionData {
   title: string;
   options: LargeQuestionOption[];
   selectedOptionId?: string;
+  storeKey?: string; // Module state key to store the selected option ID
 }
 
 /**
