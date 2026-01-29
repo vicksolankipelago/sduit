@@ -22,6 +22,9 @@ export const AgentUIProvider: FC<PropsWithChildren> = ({ children }) => {
   
   // Shared module state
   const [moduleState, setModuleState] = useState<Record<string, any>>({});
+  
+  // Flow context - persistent key-value store across journey transitions
+  const [flowContext, setFlowContext] = useState<Record<string, any>>({});
 
   // Initialise the registry on mount
   useEffect(() => {
@@ -141,6 +144,19 @@ export const AgentUIProvider: FC<PropsWithChildren> = ({ children }) => {
     setModuleState(prev => ({ ...prev, ...updates }));
   }, []);
 
+  // Flow context methods for cross-journey state persistence
+  const updateFlowContext = useCallback((updates: Record<string, any>) => {
+    setFlowContext(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  const clearFlowContext = useCallback(() => {
+    setFlowContext({});
+  }, []);
+
+  const mergeModuleStateToFlowContext = useCallback(() => {
+    setFlowContext(prev => ({ ...prev, ...moduleState }));
+  }, [moduleState]);
+
   // Set all agents (used by non-voice mode to enable agent switching)
   const setAgents = useCallback((agents: Agent[]) => {
     setAllAgents(agents);
@@ -196,6 +212,11 @@ export const AgentUIProvider: FC<PropsWithChildren> = ({ children }) => {
         currentAgentId,
         setAgents,
         switchToAgent,
+        // Flow context for cross-journey state
+        flowContext,
+        updateFlowContext,
+        clearFlowContext,
+        mergeModuleStateToFlowContext,
       }}
     >
       {children}

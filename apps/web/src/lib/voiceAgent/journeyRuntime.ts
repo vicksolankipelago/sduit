@@ -22,6 +22,11 @@ export interface JourneyRuntimeCallbacks {
   onEndCall?: EndCallCallback;
 }
 
+export interface JourneyRuntimeOptions {
+  callbacks?: JourneyRuntimeCallbacks;
+  flowContext?: Record<string, any>;
+}
+
 export interface JourneyRuntimeResult {
   agents: RealtimeAgent[];
   startingAgent: RealtimeAgent | null;
@@ -41,8 +46,13 @@ export class JourneyRuntime {
   private eventTriggerCallback: EventTriggerCallback | null = null;
   private recordInputCallback: RecordInputCallback | null = null;
   private endCallCallback: EndCallCallback | null = null;
+  private flowContext: Record<string, any> = {};
 
-  constructor(callbacks?: JourneyRuntimeCallbacks) {
+  constructor(options?: JourneyRuntimeCallbacks | JourneyRuntimeOptions) {
+    // Support both old JourneyRuntimeCallbacks and new JourneyRuntimeOptions format
+    const callbacks = (options && 'callbacks' in options) ? options.callbacks : options as JourneyRuntimeCallbacks | undefined;
+    const flowCtx = (options && 'flowContext' in options) ? options.flowContext : undefined;
+    
     if (callbacks?.onEventTrigger) {
       this.eventTriggerCallback = callbacks.onEventTrigger;
     }
@@ -52,6 +62,16 @@ export class JourneyRuntime {
     if (callbacks?.onEndCall) {
       this.endCallCallback = callbacks.onEndCall;
     }
+    if (flowCtx) {
+      this.flowContext = flowCtx;
+    }
+  }
+
+  /**
+   * Set the flow context for prompt interpolation
+   */
+  setFlowContext(context: Record<string, any>): void {
+    this.flowContext = context;
   }
 
   /**
@@ -156,7 +176,12 @@ export class JourneyRuntime {
       }
     }
 
-    const combinedInstructions = promptParts.filter(Boolean).join('\n\n');
+    let combinedInstructions = promptParts.filter(Boolean).join('\n\n');
+    
+    // Interpolate {{key}} placeholders with flow context values
+    if (Object.keys(this.flowContext).length > 0) {
+      combinedInstructions = interpolatePrompt(combinedInstructions, this.flowContext);
+    }
 
     // Convert journey tools to RealtimeAgent tools
     const realtimeTools = agentConfig.tools.map(toolConfig =>
@@ -520,4 +545,44 @@ function toCamelCase(str: string): string {
   return str
     .replace(/[^a-zA-Z0-9]+(.)/g, (_, char) => char.toUpperCase())
     .replace(/^(.)/, char => char.toLowerCase());
+}
+
+/**
+ * Helper: Interpolate {{key}} placeholders in a string with values from context
+ * Supports simple keys and dotted/nested paths:
+ * - {{name}} -> context.name
+ * - {{profile.goal}} -> context['profile.goal'] or context.profile.goal
+ * - {{answer_feelings}} -> context.answer_feelings
+ * 
+ * Example: "Hello {{name}}, your goal is {{goal}}" with context {name: "John", goal: "wellness"}
+ * becomes "Hello John, your goal is wellness"
+ */
+function interpolatePrompt(template: string, context: Record<string, any>): string {
+  // Match {{key}}, {{key.subkey}}, {{key_with_underscores}}, {{key-with-dashes}}
+  return template.replace(/\{\{([\w.-]+)\}\}/g, (match, key) => {
+    // First try direct key lookup (handles "answer_feelings" and "profile.goal" as flat keys)
+    if (context[key] !== undefined && context[key] !== null) {
+      return String(context[key]);
+    }
+    
+    // Try nested path lookup for dotted keys (e.g., "profile.goal" -> context.profile.goal)
+    if (key.includes('.')) {
+      const parts = key.split('.');
+      let value: any = context;
+      for (const part of parts) {
+        if (value && typeof value === 'object' && part in value) {
+          value = value[part];
+        } else {
+          value = undefined;
+          break;
+        }
+      }
+      if (value !== undefined && value !== null) {
+        return String(value);
+      }
+    }
+    
+    // Keep the placeholder if no value found
+    return match;
+  });
 }

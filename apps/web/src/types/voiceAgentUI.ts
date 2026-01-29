@@ -113,4 +113,10 @@ export interface AgentUIContextValue {
   currentAgentId?: string | null;
   setAgents?: (agents: Agent[]) => void;
   switchToAgent?: (agentId: string) => void;
+  
+  // Flow context for cross-journey key-value storage
+  flowContext?: Record<string, any>;
+  updateFlowContext?: (updates: Record<string, any>) => void;
+  clearFlowContext?: () => void;
+  mergeModuleStateToFlowContext?: () => void;
 }

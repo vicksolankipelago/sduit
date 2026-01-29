@@ -35,7 +35,7 @@ import {
   downloadFormattedTranscript,
   downloadPromptAndTranscript
 } from '../utils/transcriptExport';
-import { journeyToRealtimeAgents, getStartingAgentName, setEventTriggerCallback } from '../lib/voiceAgent/journeyRuntime';
+import { JourneyRuntime, getStartingAgentName, setEventTriggerCallback } from '../lib/voiceAgent/journeyRuntime';
 import { listJourneysForRuntime, loadJourneyForRuntime } from '../services/journeyStorage';
 import { PQData, substitutePromptVariables, DEFAULT_PQ_DATA } from '../utils/promptTemplates';
 import { useAuth } from '../contexts/AuthContext';
@@ -56,9 +56,13 @@ function VoiceAgentContent() {
     enableScreenRendering,
     disableScreenRendering,
     navigateToScreen,
+    moduleState,
     updateModuleState,
     setAgents,
-    switchToAgent
+    switchToAgent,
+    flowContext,
+    updateFlowContext,
+    mergeModuleStateToFlowContext,
   } = useAgentUI();
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -330,6 +334,55 @@ function VoiceAgentContent() {
         disableScreenRendering?.();
         setHasScreensVisible(false);
       }
+      
+      // Handle start_journey tool - load and start a new journey with flow context
+      if (tool === 'start_journey' && params.journeyId) {
+        addLog('info', `🔗 Starting linked journey: ${params.journeyId}`);
+        
+        // Synchronously merge current moduleState with flowContext for data passing
+        // This ensures all quiz answers are available to the next journey
+        const mergedFlowContext = {
+          ...(flowContext || {}),
+          ...(moduleState || {}),
+        };
+        
+        // Also update the flowContext state for future use
+        if (updateFlowContext && moduleState) {
+          updateFlowContext(moduleState);
+        }
+        
+        addLog('info', `🔗 Merged flow context keys: ${Object.keys(mergedFlowContext).join(', ')}`);
+        
+        // Clean up current session
+        setSessionStatus('DISCONNECTED');
+        setIsNonVoiceMode(false);
+        disableScreenRendering?.();
+        setHasScreensVisible(false);
+        
+        // Load and start the target journey with merged context
+        const loadAndStartJourney = async () => {
+          try {
+            const response = await fetch(`/api/journeys/${params.journeyId}`);
+            if (!response.ok) {
+              throw new Error(`Failed to load journey: ${response.statusText}`);
+            }
+            const targetJourney = await response.json();
+            addLog('success', `📥 Loaded journey: ${targetJourney.name}`);
+            
+            // Set the journey and connect with explicit flow context
+            setCurrentJourney(targetJourney);
+            
+            // Short delay to allow state update, then connect with merged context
+            setTimeout(() => {
+              connectToRealtime(targetJourney, mergedFlowContext);
+            }, 100);
+          } catch (error) {
+            addLog('error', `Failed to start journey: ${error}`);
+          }
+        };
+        
+        loadAndStartJourney();
+      }
     };
     
     window.addEventListener('toolCallAction', handleToolCallAction as EventListener);
@@ -337,9 +390,9 @@ function VoiceAgentContent() {
     return () => {
       window.removeEventListener('toolCallAction', handleToolCallAction as EventListener);
     };
-  }, [addLog, switchToAgent, disableScreenRendering]);
+  }, [addLog, switchToAgent, disableScreenRendering, flowContext, moduleState, updateFlowContext]);
 
-  const connectToRealtime = async (journeyOverride?: Journey) => {
+  const connectToRealtime = async (journeyOverride?: Journey, flowContextOverride?: Record<string, any>) => {
     if (sessionStatus !== "DISCONNECTED") return;
 
     // Use provided journey or fall back to current journey state
@@ -406,17 +459,7 @@ function VoiceAgentContent() {
     };
     addLog('info', '📝 Applied PQ data to prompts', { memberName: pqDataToUse.memberName, primaryGoal: pqDataToUse.primaryGoal });
 
-    // Convert journey to runtime agents
-    const { startingAgent } = journeyToRealtimeAgents(journeyWithPQData);
-    if (!startingAgent) {
-      addLog('error', 'Journey has no starting agent configured');
-      return;
-    }
-
-    const startingAgentName = getStartingAgentName(journeyWithPQData);
-    currentAgentRef.current = startingAgentName;
-
-    // Create event trigger handler for screen navigation
+    // Create event trigger handler for screen navigation (needed before runtime.convert)
     const handleEventTrigger = (eventId: string, agentName: string) => {
       addLog('event', `📢 Screen event triggered: ${eventId}`, { agentName });
       
@@ -526,7 +569,30 @@ function VoiceAgentContent() {
       }
     };
     
-    // Set the legacy callback for journeyRuntime tools
+    // Convert journey to runtime agents with flow context for {{key}} prompt interpolation
+    // Use override if provided (from start_journey), otherwise use current context state
+    const effectiveFlowContext = flowContextOverride || flowContext || {};
+    const runtime = new JourneyRuntime({
+      callbacks: {
+        onEventTrigger: handleEventTrigger,
+      },
+      flowContext: effectiveFlowContext,
+    });
+    const { startingAgent } = runtime.convert(journeyWithPQData);
+    if (!startingAgent) {
+      addLog('error', 'Journey has no starting agent configured');
+      return;
+    }
+    
+    // Log flow context if present
+    if (Object.keys(effectiveFlowContext).length > 0) {
+      addLog('info', '🔗 Flow context applied to prompts', { keys: Object.keys(effectiveFlowContext) });
+    }
+
+    const startingAgentName = getStartingAgentName(journeyWithPQData);
+    currentAgentRef.current = startingAgentName;
+    
+    // Also set the legacy callback for backwards compatibility
     setEventTriggerCallback(handleEventTrigger);
     
     // Note: record_input is now handled through onToolCall in useAzureWebRTCSession,
