@@ -163,6 +163,9 @@ function VoiceAgentContent() {
   // Ref to store current journey for event handlers (avoids closure issues)
   const currentJourneyRef = useRef<Journey | null>(null);
   
+  // Ref to store the voice intake navigator journey (for quiz-to-voice transitions)
+  const intakeNavigatorJourneyRef = useRef<Journey | null>(null);
+  
   // Notification permission popup state
   const [showNotificationPopup, setShowNotificationPopup] = useState(false);
   
@@ -239,6 +242,16 @@ function VoiceAgentContent() {
         const journeyList = await listJourneysForRuntime();
         console.log('📋 Available journeys on mount:', journeyList.map(j => `${j.name} (${j.id})`));
         setAvailableJourneys(journeyList);
+        
+        // Preload the Intake Navigator journey for quiz-to-voice transitions
+        const intakeNavigator = journeyList.find(j => j.name === 'Intake Flow - Navigator');
+        if (intakeNavigator) {
+          const intakeJourney = await loadJourneyForRuntime(intakeNavigator.id);
+          if (intakeJourney) {
+            intakeNavigatorJourneyRef.current = intakeJourney;
+            console.log('📋 Preloaded Intake Navigator for voice transitions:', intakeJourney.name);
+          }
+        }
 
         // Check if there's a journey to auto-launch (from Journey Builder or preview mode)
         const launchJourneyId = localStorage.getItem('voice-agent-launch-journey');
@@ -991,19 +1004,33 @@ Important guidelines:
     
     addLog('info', `🎤 Flow context keys: ${Object.keys(mergedContext).join(', ')}`);
     
-    // Create a modified journey with voiceEnabled=true to force voice mode
-    const voiceEnabledJourney = {
-      ...journey,
-      voiceEnabled: true, // Override to force voice mode
-    };
+    // Use the preloaded Intake Navigator journey for voice transitions (has voice-specific prompts)
+    // Fall back to current journey with voiceEnabled=true if Intake Navigator not available
+    let voiceJourney: Journey;
+    if (intakeNavigatorJourneyRef.current) {
+      voiceJourney = {
+        ...intakeNavigatorJourneyRef.current,
+        voiceEnabled: true,
+      };
+      console.log('🎤 Using Intake Navigator journey for voice mode');
+    } else {
+      voiceJourney = {
+        ...journey,
+        voiceEnabled: true, // Override to force voice mode
+      };
+      console.log('🎤 Intake Navigator not preloaded, using current journey with voice enabled');
+    }
     
     console.log('🎤 Calling connectToRealtime SYNCHRONOUSLY');
-    console.log('🎤 Journey:', voiceEnabledJourney.name, 'voiceEnabled:', voiceEnabledJourney.voiceEnabled);
+    console.log('🎤 Journey:', voiceJourney.name, 'voiceEnabled:', voiceJourney.voiceEnabled);
     
     // CRITICAL: Call connectToRealtime SYNCHRONOUSLY to preserve user gesture context
+    // When using Intake Navigator, DON'T skip screen reset - start from pq-intro
+    // When using quiz journey (fallback), skip screen reset to preserve current screen
+    const shouldSkipScreenReset = !intakeNavigatorJourneyRef.current;
     try {
-      connectToRealtimeRef.current(voiceEnabledJourney, mergedContext, { skipScreenReset: true });
-      console.log('🎤 connectToRealtime call initiated');
+      connectToRealtimeRef.current(voiceJourney, mergedContext, { skipScreenReset: shouldSkipScreenReset });
+      console.log('🎤 connectToRealtime call initiated, skipScreenReset:', shouldSkipScreenReset);
     } catch (err) {
       console.error('🎤 ERROR calling connectToRealtime:', err);
       addLog('error', `Failed to enable voice: ${err}`);
