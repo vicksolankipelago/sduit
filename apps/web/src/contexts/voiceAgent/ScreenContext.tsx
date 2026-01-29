@@ -280,7 +280,7 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
           break;
       }
     }
-  }, [evaluateConditions, updateScreenState, updateModuleState]);
+  }, [evaluateConditions, updateScreenState, updateModuleState, onEnableVoice]);
 
   /**
    * Trigger an event by ID
