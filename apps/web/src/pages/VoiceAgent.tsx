@@ -198,7 +198,6 @@ function VoiceAgentContent() {
   const [journeysLoading, setJourneysLoading] = useState(true);
   
   // Voice control state
-  const [showKeyboardInput, setShowKeyboardInput] = useState(false);
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [_isAgentSpeaking, setIsAgentSpeaking] = useState(false);
   const [_hasScreensVisible, setHasScreensVisible] = useState(false);
@@ -1634,11 +1633,6 @@ Important guidelines:
   });
 
 
-  const handleToggleKeyboard = () => {
-    setShowKeyboardInput(!showKeyboardInput);
-    addLog('info', `Keyboard input ${!showKeyboardInput ? 'enabled' : 'disabled'}`);
-  };
-
   const handleToggleMute = () => {
     const newMutedState = !isMicMuted;
     setIsMicMuted(newMutedState);
@@ -1737,10 +1731,7 @@ Important guidelines:
           <VoiceControlBar
             isListening={true}
             isMuted={isMicMuted}
-            onToggleKeyboard={handleToggleKeyboard}
             onToggleMute={handleToggleMute}
-            onEndCall={handleEndCall}
-            showKeyboardInput={showKeyboardInput}
           />
         ) : undefined}
         onOpenSettings={sessionStatus === 'CONNECTED' && !isPreviewMode && !isNonVoiceMode ? () => setSettingsOpen(true) : undefined}
