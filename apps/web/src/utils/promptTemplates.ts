@@ -27,7 +27,7 @@ export interface PQData {
  * Default PQ data values for testing
  */
 export const DEFAULT_PQ_DATA: PQData = {
-  memberName: 'Jack',
+  memberName: 'there',
   mainSubstance: 'alcohol',
   acuityLevel: 'moderate',
   primaryGoal: 'drink less and maintain a healthy lifestyle',
@@ -47,6 +47,15 @@ A: Moderation - fewer drinks per typical drinking day.
 
 Q: How do you prefer to receive support?
 A: I prefer supportive and non-judgmental guidance.`,
+};
+
+export const DEFAULT_QUIZ_DATA: Record<string, string> = {
+  selectedSubstances: 'alcohol',
+  feelings_alcohol: 'your current feelings about drinking',
+  goal_alcohol: 'your goals for alcohol',
+  areas_to_improve: 'areas you want to improve',
+  learning_topics: 'topics you want to learn about',
+  motivation: 'what motivates you to change',
 };
 
 /**
@@ -146,7 +155,8 @@ export function substitutePromptVariables(
   flowContext?: Record<string, any>
 ): string {
   // Merge all data sources with flowContext having highest priority
-  const data = { ...DEFAULT_PQ_DATA, ...pqData, ...(flowContext || {}) };
+  // Order: Legacy PQ defaults < Quiz defaults < manual pqData < flowContext (quiz answers)
+  const data = { ...DEFAULT_PQ_DATA, ...DEFAULT_QUIZ_DATA, ...pqData, ...(flowContext || {}) };
 
   let result = prompt;
 
