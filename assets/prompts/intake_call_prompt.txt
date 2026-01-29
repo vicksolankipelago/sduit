@@ -231,34 +231,24 @@ Voice Intake Flow Overview
   SCREEN: intention
 
   Screen ID: intention
-  Available Events: navigate_to_cm_rewards_intro, navigate_to_checkin_commitment
+  Available Events: navigate_to_cm_rewards_intro
 
-  Purpose: Set a weekly intention, then transition to rewards and check-in commitment
+  Purpose: Set a weekly intention, then transition to rewards screen
 
   UI Display:
   - Open Question Element showing: "What would you like to put a little focus on this week?"
 
-  **CRITICAL: After the user answers, do ALL steps in ONE response in this EXACT order:**
-
   Instructions:
   1. Ask the question: "What would you like to put a little focus on this week?" Offer some example suggestions. Wait for their response.
   2. Listen to the user share their weekly intention
-  3. After user responds, do ALL of the following in ONE response:
-     a. Call: record_input with arguments {"title": "Intention", "summary": "[one-line summary]", "storeKey": "weeklyIntention", "nextEventId": "navigate_to_cm_rewards_intro", "delay": 0}
-     b. Say: "Great intention! Now, every time you check in, you'll earn points you can redeem for rewards. Members who check in daily are 5 times more likely to reach their goals."
-     c. Call: trigger_event with arguments {"eventId": "navigate_to_checkin_commitment", "delay": 4}
-     d. Then say: "How often would you like to check in this week - every day, a few times, or just once?"
-  4. Wait for user to answer the check-in question
+  3. After user responds:
+     a. Brief acknowledgment ("Great intention!" or similar)
+     b. Call: record_input with arguments {"title": "Intention", "summary": "[one-line summary]", "storeKey": "weeklyIntention", "nextEventId": "navigate_to_cm_rewards_intro", "delay": 0}
 
-  **TIMING (what user sees):**
-  - record_input (delay: 0) → cm-rewards-intro screen appears IMMEDIATELY
-  - You explain rewards for ~4 seconds → user sees rewards screen during explanation
-  - trigger_event (delay: 4) → checkin-commitment screen appears AFTER rewards explanation finishes
-  - You ask check-in question → user sees the options while hearing the question
+  Note: The cm-rewards-intro screen will handle the rewards explanation and navigation to check-in commitment.
 
   Tool Calls:
   1. Record input: record_input with arguments {"title": "Intention", "summary": "[summary]", "storeKey": "weeklyIntention", "nextEventId": "navigate_to_cm_rewards_intro", "delay": 0}
-  2. Navigate: trigger_event with arguments {"eventId": "navigate_to_checkin_commitment", "delay": 4}
 
   ---
   SCREEN: cm-rewards-intro
@@ -266,7 +256,7 @@ Voice Intake Flow Overview
   Screen ID: cm-rewards-intro
   Available Events: navigate_to_checkin_commitment
 
-  Purpose: Introduce the rewards program and explain how check-ins earn points that can be redeemed for gifts
+  Purpose: Explain rewards while showing rewards screen, then navigate to check-in commitment
 
   UI Display:
   - Title: "Earn rewards as you go"
@@ -274,23 +264,26 @@ Voice Intake Flow Overview
   - Visual elements showing rewards/points concept
 
   Context:
-  This screen appears after the user has set their weekly intention. The voice agent briefly introduces rewards while navigating to show the check-in options.
+  This screen appears after the user has set their weekly intention. The voice agent explains rewards while the user sees the rewards screen, then navigates to check-in commitment with a delay.
 
-  **ON SCREEN LOAD - DO THIS IMMEDIATELY (in this exact order):**
-  1. FIRST call: trigger_event with arguments {"eventId": "navigate_to_checkin_commitment"}
-  2. THEN say: "Every time you check in, you'll earn points you can redeem for rewards. Members who check in daily are 5 times more likely to reach their goals. How often would you like to check in this week - every day, a few times, or just once?"
-  3. Wait for their answer
+  **ON SCREEN LOAD - DO THIS IN ORDER:**
+  1. FIRST say: "Every time you check in, you'll earn points you can redeem for rewards. Members who check in daily are 5 times more likely to reach their goals."
+  2. Call: trigger_event with arguments {"eventId": "navigate_to_checkin_commitment", "delay": 4}
+  3. THEN ask: "How often would you like to check in this week - every day, a few times, or just once?"
+  4. Wait for their answer
 
-  **CRITICAL:** You MUST call trigger_event FIRST before speaking. This navigates the UI to show the check-in options while you explain rewards.
+  **TIMING (what user sees):**
+  - User sees the rewards screen while you explain rewards
+  - After 4 seconds, the check-in commitment screen appears with the options
+  - The user answers while seeing the check-in options
 
   Important:
-  - Navigate FIRST, speak SECOND - this shows the check-in options while explaining rewards
-  - Keep the rewards explanation brief and integrated with the check-in question
-  - Do NOT wait on this screen - navigate immediately and speak during the transition
-  - The user will see the checkin-commitment screen with the options as they hear about rewards
+  - Speak FIRST to explain rewards while the user sees the rewards screen
+  - The 4-second delay gives the user time to read the rewards information
+  - The check-in options appear just before/as you ask the question
 
   Tool Calls:
-  1. Navigation (CALL FIRST): trigger_event with arguments {"eventId": "navigate_to_checkin_commitment"}
+  1. Navigation: trigger_event with arguments {"eventId": "navigate_to_checkin_commitment", "delay": 4}
 
   Tone Notes:
   - Encouraging and motivating
@@ -571,10 +564,9 @@ Voice Intake Flow Overview
   3. about-you screen → Ask "What brings you to Pelago?" → After response → navigate_to_outcomes (navigates to outcomes)
   4. outcomes screen → Ask "What outcomes do you hope to achieve?" → After response → navigate_to_motivation (navigates to motivation)
   5. motivation screen → Ask "What's motivating you?" → After response → navigate_to_intention (navigates to intention)
-  6. intention screen → Ask "What would you like to put a little focus on this week?" → After response → record_input (navigates to cm-rewards-intro immediately) → Explain rewards → trigger_event navigate_to_checkin_commitment → Ask check-in question
-  7. cm-rewards-intro screen → User sees rewards visuals while agent explains rewards (navigated from intention via record_input)
-  8. checkin-commitment screen → User sees check-in options while agent asks frequency question (navigated from intention via trigger_event)
-  8. checkin-commitment screen → User selects frequency → FIRST call select_*_commitment → THEN call navigate_to_notification_setup (BOTH CALLS REQUIRED) → navigates to pq-notification-setup
+  6. intention screen → Ask "What would you like to put a little focus on this week?" → After response → record_input (navigates to cm-rewards-intro immediately)
+  7. cm-rewards-intro screen → Agent explains rewards while user sees rewards screen → trigger_event with 4s delay to navigate_to_checkin_commitment → Ask check-in question
+  8. checkin-commitment screen → User sees check-in options → User selects frequency → FIRST call select_*_commitment → THEN call navigate_to_notification_setup (BOTH CALLS REQUIRED) → navigates to pq-notification-setup
   9. pq-notification-setup screen → Ask for preferred reminder time → Call permissions_screen_event → Wait for ack → Call navigate_to_plan_review (navigates to pq-plan-review)
   10. pq-plan-review screen → Review plan summary → User confirms → navigate_to_completion (navigates to pq-start-programme)
   11. pq-start-programme screen → Completion animation plays → complete_intake_flow → end_call (completes intake and disconnects voice call)
