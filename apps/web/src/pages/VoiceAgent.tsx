@@ -466,6 +466,7 @@ function VoiceAgentContent() {
       // Handle enable_voice tool - activate voice mode mid-flow while keeping current screens
       if (tool === 'enable_voice') {
         console.log('🎤🎤🎤 ENABLE_VOICE TRIGGERED IN VOICEAGENT 🎤🎤🎤');
+        alert(`enable_voice received! connectToRealtimeRef exists: ${!!connectToRealtimeRef.current}`);
         addLog('info', '🎤 Enabling voice mode mid-flow');
         
         // Log current state for debugging
