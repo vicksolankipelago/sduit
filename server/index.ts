@@ -118,7 +118,7 @@ async function main() {
     res.json({
       AZURE_OPENAI_ENDPOINT: !!process.env.AZURE_OPENAI_ENDPOINT,
       AZURE_OPENAI_API_KEY: !!process.env.AZURE_OPENAI_API_KEY,
-      AZURE_OPENAI_DEPLOYMENT_NAME: process.env.AZURE_OPENAI_DEPLOYMENT_NAME || "(default: test-gpt-realtime)",
+      AZURE_OPENAI_DEPLOYMENT_NAME: process.env.AZURE_OPENAI_DEPLOYMENT_NAME || "(default: gpt-realtime)",
       OPENAI_API_VERSION: process.env.OPENAI_API_VERSION || "(default: 2025-04-01-preview)",
       endpoint_value: process.env.AZURE_OPENAI_ENDPOINT ? process.env.AZURE_OPENAI_ENDPOINT.replace(/\/+$/, "") : "NOT SET",
     });
@@ -128,7 +128,7 @@ async function main() {
     try {
       let endpoint = process.env.AZURE_OPENAI_ENDPOINT;
       const apiKey = process.env.AZURE_OPENAI_API_KEY;
-      const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME || "test-gpt-realtime";
+      const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME || "gpt-realtime";
       const apiVersion = process.env.OPENAI_API_VERSION || "2025-04-01-preview";
 
       // Comprehensive logging for Azure configuration
