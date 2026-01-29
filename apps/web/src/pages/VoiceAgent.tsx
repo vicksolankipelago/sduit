@@ -1735,12 +1735,16 @@ Important guidelines:
           />
         ) : undefined}
         onOpenSettings={sessionStatus === 'CONNECTED' && !isPreviewMode && !isNonVoiceMode ? () => setSettingsOpen(true) : undefined}
-        onExit={sessionStatus === 'CONNECTED' && isNonVoiceMode ? () => {
-          setSessionStatus('DISCONNECTED');
-          setIsNonVoiceMode(false);
-          disableScreenRendering?.();
-          setHasScreensVisible(false);
-          addLog('info', 'Non-voice session ended');
+        onExit={sessionStatus === 'CONNECTED' ? () => {
+          if (isNonVoiceMode) {
+            setSessionStatus('DISCONNECTED');
+            setIsNonVoiceMode(false);
+            disableScreenRendering?.();
+            setHasScreensVisible(false);
+            addLog('info', 'Non-voice session ended');
+          } else {
+            handleEndCall();
+          }
         } : undefined}
         showNotificationPopup={showNotificationPopup}
         onNotificationAllow={() => {
