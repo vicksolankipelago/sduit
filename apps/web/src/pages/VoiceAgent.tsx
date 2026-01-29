@@ -160,6 +160,9 @@ function VoiceAgentContent() {
   // Journey transition state - prevents journeys list from showing during flow transitions
   const [isTransitioningJourney, setIsTransitioningJourney] = useState(false);
   
+  // Ref to store current journey for event handlers (avoids closure issues)
+  const currentJourneyRef = useRef<Journey | null>(null);
+  
   // Notification permission popup state
   const [showNotificationPopup, setShowNotificationPopup] = useState(false);
   
@@ -176,7 +179,7 @@ function VoiceAgentContent() {
   // Track the combined prompt sent to the agent for export
   const combinedPromptRef = useRef<string>('');
   // Ref to hold the latest connectToRealtime function (avoids stale closure in event handlers)
-  const connectToRealtimeRef = useRef<((journeyOverride?: Journey, flowContextOverride?: Record<string, any>) => Promise<void>) | null>(null);
+  const connectToRealtimeRef = useRef<((journeyOverride?: Journey, flowContextOverride?: Record<string, any>, options?: { skipScreenReset?: boolean }) => Promise<void>) | null>(null);
   // Real-time session saver with debouncing
   const sessionSaverRef = useRef<DebouncedSessionSaver>(
     new DebouncedSessionSaver(500, (error) => {
@@ -466,29 +469,42 @@ function VoiceAgentContent() {
         addLog('info', `🎤 Flow context keys: ${Object.keys(mergedContext).join(', ')}`);
         
         // Connect to voice session with current journey
-        // IMPORTANT: Override voiceEnabled to true since we're explicitly enabling voice
-        // (the journey may have voiceEnabled=false for the initial quiz portion)
+        // IMPORTANT: Use currentJourneyRef to avoid closure issues
+        // Override voiceEnabled to true since we're explicitly enabling voice
+        const journeyFromRef = currentJourneyRef.current;
         console.log('🎤 Scheduling connectToRealtime call...');
-        console.log('🎤 currentJourney:', currentJourney?.name, currentJourney?.id);
+        console.log('🎤 currentJourneyRef.current:', journeyFromRef?.name, journeyFromRef?.id);
         console.log('🎤 connectToRealtimeRef.current:', !!connectToRealtimeRef.current);
+        
+        if (!journeyFromRef) {
+          console.error('🎤 No journey found in ref! Cannot enable voice.');
+          addLog('error', 'No journey found - cannot enable voice');
+          setIsTransitioningJourney(false);
+          return;
+        }
+        
         requestAnimationFrame(() => {
           setTimeout(() => {
             console.log('🎤 Inside setTimeout - calling connectToRealtimeRef.current');
             console.log('🎤 connectToRealtimeRef.current:', !!connectToRealtimeRef.current);
-            console.log('🎤 currentJourney:', currentJourney?.name);
-            if (connectToRealtimeRef.current && currentJourney) {
+            // Get journey from ref again in case it changed
+            const journey = currentJourneyRef.current;
+            console.log('🎤 journey from ref:', journey?.name);
+            if (connectToRealtimeRef.current && journey) {
               // Create a modified journey with voiceEnabled=true to force voice mode
               const voiceEnabledJourney = {
-                ...currentJourney,
+                ...journey,
                 voiceEnabled: true, // Override to force voice mode
               };
               console.log('🎤 Created voiceEnabledJourney, calling connectToRealtimeRef.current...');
-              connectToRealtimeRef.current(voiceEnabledJourney, mergedContext);
+              // Pass skipScreenReset=true to keep current screen (don't reset to first screen)
+              connectToRealtimeRef.current(voiceEnabledJourney, mergedContext, { skipScreenReset: true });
               console.log('🎤 connectToRealtimeRef.current call returned');
             } else {
-              console.error('🎤 connectToRealtimeRef.current or currentJourney is null!');
+              console.error('🎤 connectToRealtimeRef.current or journey is null!');
               console.error('🎤 connectToRealtimeRef.current:', connectToRealtimeRef.current);
-              console.error('🎤 currentJourney:', currentJourney);
+              console.error('🎤 journey:', journey);
+              setIsTransitioningJourney(false);
             }
           }, 100);
         });
@@ -503,10 +519,11 @@ function VoiceAgentContent() {
     };
   }, [addLog, switchToAgent, disableScreenRendering, enableScreenRendering, setAgents, flowContext, moduleState, updateFlowContext, currentJourney]);
 
-  const connectToRealtime = async (journeyOverride?: Journey, flowContextOverride?: Record<string, any>) => {
+  const connectToRealtime = async (journeyOverride?: Journey, flowContextOverride?: Record<string, any>, options?: { skipScreenReset?: boolean }) => {
     console.log('🎙️ connectToRealtime called');
     console.log('🎙️ sessionStatus in closure:', sessionStatus);
     console.log('🎙️ journeyOverride provided:', !!journeyOverride);
+    console.log('🎙️ skipScreenReset:', options?.skipScreenReset);
     
     // When called with journeyOverride (from start_journey), skip the session status check
     // because we just set it to DISCONNECTED but the closure has the old value
@@ -723,11 +740,16 @@ function VoiceAgentContent() {
     
     if (startingAgentConfig?.screens && startingAgentConfig.screens.length > 0) {
       addLog('info', `🎨 Screen system ready with ${startingAgentConfig.screens.length} screens`);
-      addLog('info', `📱 Showing first screen: ${startingAgentConfig.screens[0].id}`);
       
-      // Show the first screen immediately when session starts
-      enableScreenRendering?.(startingAgentConfig.screens, startingAgentConfig.screens[0].id);
-      setHasScreensVisible(true);
+      // Skip screen reset when enabling voice mid-flow (screens are already showing)
+      if (!options?.skipScreenReset) {
+        addLog('info', `📱 Showing first screen: ${startingAgentConfig.screens[0].id}`);
+        // Show the first screen immediately when session starts
+        enableScreenRendering?.(startingAgentConfig.screens, startingAgentConfig.screens[0].id);
+        setHasScreensVisible(true);
+      } else {
+        addLog('info', `📱 Keeping current screen (skipScreenReset=true)`);
+      }
     } else {
       addLog('warning', '⚠️ Starting agent has no screens configured');
     }
@@ -926,6 +948,11 @@ Important guidelines:
   useEffect(() => {
     connectToRealtimeRef.current = connectToRealtime;
   });
+  
+  // Keep currentJourneyRef updated with latest journey
+  useEffect(() => {
+    currentJourneyRef.current = currentJourney;
+  }, [currentJourney]);
 
   // Export transcript when session ends
   const exportSessionTranscript = () => {
