@@ -41,6 +41,64 @@ import { PQData, substitutePromptVariables, DEFAULT_PQ_DATA } from '../utils/pro
 import { useAuth } from '../contexts/AuthContext';
 import { saveSession, DebouncedSessionSaver } from '../services/api/sessionService';
 
+// Mapping of quiz option IDs to readable labels for prompt interpolation
+const QUIZ_OPTION_LABELS: Record<string, string> = {
+  // Feelings about drinking
+  'i_recently_cut_down_or_quit': 'recently cut down or quit drinking',
+  'i_plan_to_take_steps_very_soon': 'planning to take steps to change very soon',
+  'i_am_curious_about_changing': 'curious about changing but haven\'t taken steps yet',
+  'i_am_not_interested_in_changing': 'not interested in changing',
+  // Goals
+  'drink_less': 'drink less',
+  'quit_eventually': 'quit drinking eventually',
+  'maintain_sobriety': 'maintain sobriety',
+  'learn_explore': 'learn more and explore options',
+  'explore': 'explore options',
+  // Areas to improve
+  'frequency': 'limiting drinking to specific days or times',
+  'moderation': 'having fewer drinks per typical drinking day',
+  'intensity': 'avoiding or eliminating heavy drinking',
+  // Motivations (multi-select)
+  'physical_health': 'physical health',
+  'emotional_stability': 'emotional stability',
+  'relationships': 'relationships',
+  'sleep_quality': 'sleep quality',
+  'saving_money': 'saving money',
+  'decision_making': 'decision-making',
+  'self_confidence': 'self-confidence',
+  'personal_growth': 'personal growth',
+  'financial_stability': 'financial stability',
+  'wellbeing': 'overall wellbeing',
+  // Learning topics (multi-select)
+  'habits': 'building healthier habits',
+  'cravings_support': 'managing cravings',
+  'mindfulness': 'mindfulness techniques',
+  'meditation': 'meditation practices',
+  'diet_nutrition': 'diet and nutrition',
+  'track_consumption': 'tracking consumption patterns',
+};
+
+// Transform quiz module state option IDs to readable labels
+function transformQuizAnswersToLabels(moduleState: Record<string, any>): Record<string, any> {
+  const transformed: Record<string, any> = {};
+  
+  for (const [key, value] of Object.entries(moduleState)) {
+    if (Array.isArray(value)) {
+      // Multi-select: transform array of IDs to readable list
+      const labels = value.map(id => QUIZ_OPTION_LABELS[id] || id);
+      transformed[key] = labels.join(', ');
+    } else if (typeof value === 'string' && QUIZ_OPTION_LABELS[value]) {
+      // Single select: transform ID to label
+      transformed[key] = QUIZ_OPTION_LABELS[value];
+    } else {
+      // Keep as-is (already readable or unknown)
+      transformed[key] = value;
+    }
+  }
+  
+  return transformed;
+}
+
 // Main Voice Agent Component
 function VoiceAgentContent() {
   const {
@@ -991,18 +1049,27 @@ Important guidelines:
     // Force session to disconnected state to allow reconnection
     setSessionStatus('DISCONNECTED');
     
-    // Merge flow context for data passing
+    // Transform quiz answers from option IDs to readable labels
+    const transformedModuleState = moduleState ? transformQuizAnswersToLabels(moduleState) : {};
+    
+    // Add memberName from user context if available
+    if (user?.email) {
+      transformedModuleState.memberName = user.email.split('@')[0]; // Use email prefix as name
+    }
+    
+    // Merge flow context for data passing (use transformed labels for readable prompts)
     const mergedContext = {
       ...(flowContext || {}),
-      ...(moduleState || {}),
+      ...transformedModuleState,
     };
     
     // Update flowContext state for consistency
     if (updateFlowContext && moduleState) {
-      updateFlowContext(moduleState);
+      updateFlowContext(transformedModuleState);
     }
     
     addLog('info', `🎤 Flow context keys: ${Object.keys(mergedContext).join(', ')}`);
+    console.log('🎤 Transformed quiz answers:', transformedModuleState);
     
     // Use the preloaded Intake Navigator journey for voice transitions (has voice-specific prompts)
     // Fall back to current journey with voiceEnabled=true if Intake Navigator not available
@@ -1036,7 +1103,7 @@ Important guidelines:
       addLog('error', `Failed to enable voice: ${err}`);
       setIsTransitioningJourney(false);
     }
-  }, [addLog, flowContext, moduleState, updateFlowContext]);
+  }, [addLog, flowContext, moduleState, updateFlowContext, user]);
 
   // Export transcript when session ends
   const exportSessionTranscript = () => {
