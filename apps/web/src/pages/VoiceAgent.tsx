@@ -1069,9 +1069,13 @@ Important guidelines:
     // Transform quiz answers from option IDs to readable labels
     const transformedModuleState = moduleState ? transformQuizAnswersToLabels(moduleState) : {};
     
-    // Add memberName from user context if available
+    // Add memberName from user context if available (extract first name only)
     if (user?.email) {
-      transformedModuleState.memberName = user.email.split('@')[0]; // Use email prefix as name
+      const emailPrefix = user.email.split('@')[0];
+      // Extract first name from email prefix (handles john.doe, john_doe, johndoe formats)
+      const firstName = emailPrefix.split(/[._-]/)[0];
+      // Capitalize first letter
+      transformedModuleState.memberName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
     }
     
     // Merge flow context for data passing (use transformed labels for readable prompts)
