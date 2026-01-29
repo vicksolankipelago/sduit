@@ -70,17 +70,6 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
   const renderElement = (element: ElementConfig, index: number, sectionIndex: number, totalIndex: number) => {
     const Component = getElementComponent(element.type);
     
-    // Debug logging for button elements
-    if (element.type === 'button') {
-      console.log('🎨 Rendering button:', {
-        id: element.state?.id,
-        title: element.state?.title,
-        hasEvents: !!element.events?.length,
-        events: element.events?.map(e => ({ id: e.id, type: e.type })),
-        hasTrigger: !!triggerEvent,
-      });
-    }
-    
     if (!Component) {
       return (
         <div key={index} className="screen-preview-unknown-element">

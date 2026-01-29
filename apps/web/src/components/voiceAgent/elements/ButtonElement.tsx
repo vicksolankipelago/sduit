@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { ButtonElementState, ButtonElementStyle, ScreenEvent } from '../../../types/journey';
 import './ButtonElement.css';
 
@@ -15,20 +15,7 @@ export const ButtonElement: React.FC<ButtonElementProps> = ({
   events,
   onEventTrigger,
 }) => {
-  // Log when button is mounted/updated
-  useEffect(() => {
-    console.log('🔘 ButtonElement mounted/updated:', {
-      id: data.id,
-      title: data.title,
-      events: events?.length || 0,
-      hasOnEventTrigger: !!onEventTrigger,
-    });
-  }, [data.id, data.title, events, onEventTrigger]);
-
   const handleClick = () => {
-    console.log('🔘 Button clicked:', data.id, 'disabled:', data.isDisabled, 'events:', events?.length || 0);
-    alert(`Button "${data.title}" clicked!`); // Add alert for visual feedback
-    
     if (data.isDisabled) return;
     
     // Trigger button tap/click events (support onSelected, onTap, and custom event types)
