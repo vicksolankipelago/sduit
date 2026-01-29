@@ -679,6 +679,9 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
           throw new Error(`Invalid WebRTC URL: ${webrtcUrl}. ${error?.message || ''}`.trim());
         }
 
+        voiceAgentLogger.info('SDP URL:', sdpUrl);
+        voiceAgentLogger.info('Ephemeral key length:', ephemeralKey.length);
+        
         const sdpResponse = await fetch(sdpUrl, {
           method: 'POST',
           body: offer.sdp,
@@ -688,8 +691,15 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
           }
         });
 
+        voiceAgentLogger.info('SDP response status:', sdpResponse.status, sdpResponse.statusText);
+
         if (!sdpResponse.ok) {
-          throw new Error(`SDP exchange failed: ${sdpResponse.statusText}`);
+          const errorBody = await sdpResponse.text();
+          voiceAgentLogger.error('=== SDP Exchange Failed ===');
+          voiceAgentLogger.error('Status:', sdpResponse.status);
+          voiceAgentLogger.error('Status Text:', sdpResponse.statusText);
+          voiceAgentLogger.error('Response body:', errorBody);
+          throw new Error(`SDP exchange failed: ${sdpResponse.status} ${sdpResponse.statusText}. ${errorBody}`);
         }
 
         const answerSdp = await sdpResponse.text();
