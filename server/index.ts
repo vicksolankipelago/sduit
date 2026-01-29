@@ -215,23 +215,45 @@ async function main() {
       sessionLogger.info("Session expires:", sessionData.expires_at);
       sessionLogger.info("Has client_secret:", !!sessionData.client_secret);
 
-      // Detect region from endpoint URL - supports both .openai.azure.com and .cognitiveservices.azure.com formats
-      let region = "swedencentral"; // default
-      const openaiRegionMatch = endpoint.match(/-(swedencentral|eastus2|eastus|westus|westus2|westeurope|northeurope)\.openai\.azure\.com/i);
-      const cogServicesMatch = endpoint.match(/-(us|eu|uk|au)/i) || endpoint.match(/(eastus|westus|swedencentral|westeurope)/i);
+      // Get region from Azure response headers (most reliable) or fall back to endpoint pattern
+      const azureRegionHeader = response.headers.get("x-ms-region");
+      sessionLogger.info("Azure x-ms-region header:", azureRegionHeader);
       
-      if (openaiRegionMatch) {
-        region = openaiRegionMatch[1].toLowerCase();
-      } else if (cogServicesMatch) {
-        // Map common patterns to Azure realtime regions
-        const matched = cogServicesMatch[1].toLowerCase();
-        if (matched.includes('us') || matched === 'eastus' || matched === 'westus') {
-          region = "eastus2"; // US resources use eastus2 for realtime
-        } else if (matched.includes('eu') || matched === 'swedencentral' || matched === 'westeurope') {
-          region = "swedencentral"; // EU resources use swedencentral
+      // Map Azure region names to WebRTC endpoint regions
+      const regionMapping: Record<string, string> = {
+        "central us": "eastus2",
+        "east us": "eastus2",
+        "east us 2": "eastus2",
+        "west us": "westus2",
+        "west us 2": "westus2",
+        "sweden central": "swedencentral",
+        "west europe": "swedencentral",
+        "north europe": "swedencentral",
+      };
+      
+      let region = "eastus2"; // default
+      if (azureRegionHeader) {
+        const normalizedRegion = azureRegionHeader.toLowerCase();
+        region = regionMapping[normalizedRegion] || normalizedRegion.replace(/\s+/g, '');
+        sessionLogger.info("Region from Azure header:", region);
+      } else {
+        // Fallback: detect from endpoint URL
+        const openaiRegionMatch = endpoint.match(/-(swedencentral|eastus2|eastus|westus|westus2|westeurope|northeurope)\.openai\.azure\.com/i);
+        const cogServicesMatch = endpoint.match(/-(us|eu|uk|au)/i) || endpoint.match(/(eastus|westus|swedencentral|westeurope)/i);
+        
+        if (openaiRegionMatch) {
+          region = openaiRegionMatch[1].toLowerCase();
+        } else if (cogServicesMatch) {
+          const matched = cogServicesMatch[1].toLowerCase();
+          if (matched.includes('us') || matched === 'eastus' || matched === 'westus') {
+            region = "eastus2";
+          } else if (matched.includes('eu') || matched === 'swedencentral' || matched === 'westeurope') {
+            region = "swedencentral";
+          }
         }
+        sessionLogger.info("Region from endpoint pattern:", region);
       }
-      sessionLogger.info("Detected region:", region, "(from endpoint pattern)");
+      sessionLogger.info("Final WebRTC region:", region);
 
       const responseData = {
         ...sessionData,
