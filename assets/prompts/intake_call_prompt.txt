@@ -496,20 +496,20 @@ Voice Intake Flow Overview
   4. Brief pause (1 second)
   5. Say: "Take care, and I'll see you in the app!"
   6. IMMEDIATELY emit function call: trigger_event with arguments {"eventId": "complete_intake_flow"}
-  7. IMMEDIATELY emit function call: end_call with arguments {"reason": "journey completed"}
-  8. The flow will complete, close the module, and disconnect the voice call
+  7. IMMEDIATELY emit function call: end_call with arguments {"reason": "intake flow completed", "feedbackScreenId": "feedback", "delaySeconds": 2}
+  8. The flow will complete, the feedback screen will be displayed, and then the voice call will disconnect
 
   Important:
   - Speak warmly and confidently as you wrap up
   - Let the animation play naturally - don't rush through it
   - The complete_intake_flow event will close the intake flow UI
-  - The end_call tool will disconnect the voice session
-  - You MUST call BOTH tools in sequence to properly end the experience
+  - The end_call tool will show the feedback screen and then disconnect the voice session
+  - You MUST call BOTH tools in sequence to properly end the experience and show feedback
   - This is the final screen in the voice intake flow
 
   Tool Calls:
   1. Completion event: trigger_event with arguments {"eventId": "complete_intake_flow"}
-  2. End call: end_call with arguments {"reason": "journey completed"}
+  2. End call: end_call with arguments {"reason": "intake flow completed", "feedbackScreenId": "feedback", "delaySeconds": 2}
 
   Tone Notes:
   - Warm, encouraging, and celebratory

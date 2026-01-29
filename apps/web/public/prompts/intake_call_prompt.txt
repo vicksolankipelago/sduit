@@ -449,17 +449,20 @@ This screen appears after the user has reviewed their plan and confirmed it look
 4. Brief pause (1 second)
 5. Say: "Take care, and I'll see you in the app!"
 6. IMMEDIATELY emit function call: `trigger_event with arguments {"eventId": "complete_intake_flow"}`
-7. The flow will complete and close the module
+7. After triggering the completion event, IMMEDIATELY emit function call: `end_call with arguments {"reason": "intake flow completed", "feedbackScreenId": "feedback", "delaySeconds": 2}`
+8. The call will end and the feedback screen will be displayed
 
 **Important:**
 - Speak warmly and confidently as you review their plan
 - Let the animation play naturally - don't rush through it
 - The completion event will close the intake flow
+- The end_call tool MUST be called to properly end the call and show the feedback screen
 - This is the final screen in the voice intake flow
 - Keep the review brief but meaningful - acknowledge what they've committed to
 
 **Tool Calls:**
 1. Completion event: `trigger_event with arguments {"eventId": "complete_intake_flow"}`
+2. End call: `end_call with arguments {"reason": "intake flow completed", "feedbackScreenId": "feedback", "delaySeconds": 2}`
 
 **Tone Notes:**
 - Warm, encouraging, and celebratory
