@@ -628,17 +628,32 @@ function VoiceAgentContent() {
     // so we don't need to set a separate callback here
 
     // Check if starting agent has screens
+    console.log('🎨 connectToRealtime - journeyWithPQData:', journeyWithPQData.name, journeyWithPQData.id);
+    console.log('🎨 connectToRealtime - startingAgentId:', journeyWithPQData.startingAgentId);
+    console.log('🎨 connectToRealtime - agents:', journeyWithPQData.agents.map((a: any) => ({ id: a.id, name: a.name, screensCount: a.screens?.length })));
+    
     const startingAgentConfig = journeyWithPQData.agents.find(a => a.id === journeyWithPQData.startingAgentId);
+    console.log('🎨 connectToRealtime - startingAgentConfig:', startingAgentConfig?.name, 'screens:', startingAgentConfig?.screens?.length);
+    
     if (startingAgentConfig?.screens && startingAgentConfig.screens.length > 0) {
       addLog('info', `🎨 Screen system ready with ${startingAgentConfig.screens.length} screens`);
       addLog('info', `📱 Showing first screen: ${startingAgentConfig.screens[0].id}`);
       
+      console.log('🎨 About to call enableScreenRendering with:', startingAgentConfig.screens[0].id);
+      console.log('🎨 enableScreenRendering exists:', !!enableScreenRendering);
+      
       // Show the first screen immediately when session starts
-      enableScreenRendering?.(startingAgentConfig.screens, startingAgentConfig.screens[0].id);
+      if (enableScreenRendering) {
+        enableScreenRendering(startingAgentConfig.screens, startingAgentConfig.screens[0].id);
+        console.log('🎨 enableScreenRendering called successfully!');
+      } else {
+        console.error('🎨 enableScreenRendering is undefined!');
+      }
       setHasScreensVisible(true);
       
       console.log('🎨 First screen displayed:', startingAgentConfig.screens[0].id);
     } else {
+      console.error('🎨 No screens found! startingAgentConfig:', startingAgentConfig);
       addLog('warning', '⚠️ Starting agent has no screens configured');
     }
 

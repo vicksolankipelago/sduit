@@ -81,7 +81,11 @@ export default function AgentUIRenderer({ bottomBar, onOpenSettings, onExit, sho
           <div className="agent-ui-device-screen-wrapper">
             <div className="agent-ui-device-screen">
               {currentScreen && currentScreen.id ? (
-                <ScreenProvider initialScreen={currentScreen} initialModuleState={moduleState}>
+                <ScreenProvider 
+                  key={`screen-provider-${currentScreen.id}-${currentAgentScreens.length}`}
+                  initialScreen={currentScreen} 
+                  initialModuleState={moduleState}
+                >
                   <ScreenPreview
                     key={currentScreen.id}
                     screen={currentScreen}
