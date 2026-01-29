@@ -25,13 +25,8 @@ export const ButtonElement: React.FC<ButtonElementProps> = ({
       e.type === 'custom'
     );
     
-    console.log('🔘 Click event found:', clickEvent ? `${clickEvent.id} (${clickEvent.type})` : 'none');
-    
     if (clickEvent && onEventTrigger) {
-      console.log('🔘 Triggering event:', clickEvent.id);
       onEventTrigger(clickEvent.id);
-    } else {
-      console.log('⚠️ No event trigger or no matching event');
     }
   };
 
