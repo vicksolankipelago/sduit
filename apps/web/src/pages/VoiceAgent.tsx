@@ -342,11 +342,14 @@ function VoiceAgentContent() {
       
       // Handle start_journey tool - load and start a new journey with flow context
       if (tool === 'start_journey' && params.journeyId) {
-        console.log('🔗 start_journey tool triggered with journeyId:', params.journeyId);
+        console.log('🔗🔗🔗 START_JOURNEY TRIGGERED 🔗🔗🔗');
+        console.log('🔗 journeyId:', params.journeyId);
+        console.log('🔗 current sessionStatus:', sessionStatus);
         addLog('info', `🔗 Starting linked journey: ${params.journeyId}`);
         
         // Set transitioning flag to prevent journeys list from showing
         setIsTransitioningJourney(true);
+        console.log('🔗 Set isTransitioningJourney to true');
         
         // Synchronously merge current moduleState with flowContext for data passing
         // This ensures all quiz answers are available to the next journey
@@ -399,10 +402,15 @@ function VoiceAgentContent() {
             
             // Wait for React to process the state updates, then connect
             // The connectToRealtime function will set up screens and voice session together
+            console.log('🔗 About to schedule connectToRealtime call...');
             requestAnimationFrame(() => {
+              console.log('🔗 In requestAnimationFrame, scheduling setTimeout...');
               setTimeout(() => {
-                console.log('🔗 Calling connectToRealtime with journey:', targetJourney.name);
+                console.log('🔗 In setTimeout, about to call connectToRealtime');
+                console.log('🔗 targetJourney:', targetJourney.name);
+                console.log('🔗 connectToRealtimeRef.current exists:', !!connectToRealtimeRef.current);
                 if (connectToRealtimeRef.current) {
+                  console.log('🔗 Calling connectToRealtimeRef.current NOW');
                   connectToRealtimeRef.current(targetJourney, mergedFlowContext);
                 } else {
                   console.error('🔗 connectToRealtimeRef.current is null!');
@@ -429,7 +437,16 @@ function VoiceAgentContent() {
   }, [addLog, switchToAgent, disableScreenRendering, enableScreenRendering, setAgents, flowContext, moduleState, updateFlowContext]);
 
   const connectToRealtime = async (journeyOverride?: Journey, flowContextOverride?: Record<string, any>) => {
-    if (sessionStatus !== "DISCONNECTED") return;
+    console.log('🎙️ connectToRealtime called');
+    console.log('🎙️ sessionStatus in closure:', sessionStatus);
+    console.log('🎙️ journeyOverride provided:', !!journeyOverride);
+    
+    // When called with journeyOverride (from start_journey), skip the session status check
+    // because we just set it to DISCONNECTED but the closure has the old value
+    if (!journeyOverride && sessionStatus !== "DISCONNECTED") {
+      console.log('🎙️ Exiting early: sessionStatus is not DISCONNECTED and no override');
+      return;
+    }
 
     // Use provided journey or fall back to current journey state
     const journeyToUse = journeyOverride || currentJourney;
