@@ -565,6 +565,8 @@ function VoiceAgentContent() {
     assistantResponseBuffer.current = '';
 
     console.log('🚀 connectToRealtime called with journey:', journeyToUse.name, 'ID:', journeyToUse.id);
+    console.log('🚀 voiceEnabled:', journeyToUse.voiceEnabled);
+    console.log('🚀 options:', options);
 
     // Apply PQ data substitution to agent prompts
     const pqDataToUse = { ...DEFAULT_PQ_DATA, ...pqData };
@@ -697,8 +699,11 @@ function VoiceAgentContent() {
       },
       flowContext: effectiveFlowContext,
     });
+    console.log('🚀 About to call runtime.convert');
     const { startingAgent } = runtime.convert(journeyWithPQData);
+    console.log('🚀 runtime.convert returned startingAgent:', startingAgent?.name);
     if (!startingAgent) {
+      console.log('🚀 EARLY EXIT: No starting agent');
       addLog('error', 'Journey has no starting agent configured');
       return;
     }
