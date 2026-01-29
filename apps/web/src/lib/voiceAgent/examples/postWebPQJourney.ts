@@ -136,11 +136,14 @@ export async function createPostWebPQJourney(): Promise<Journey> {
 **Key Principle:** 
 The program summary is shown EARLY (after intro) so members understand what they're getting before diving into detailed questions. This builds trust and context.
 
-   **Member Context (Use for personalization):**
-   - Member Name: Jack
-   - Primary focus: Drink less and maintain a healthy lifestyle
-   - Goals: Support behavior change through structured guidance
-   - Current Check-in Streak: 7 days (User has logged drinks for the last 7 days consecutive)`,
+   **Member Context (Use for personalization - do not read verbatim):**
+   - Member Name: {{memberName}}
+   - How they feel about drinking: {{feelings_alcohol}}
+   - Their goal: {{goal_alcohol}}
+   - Motivation: {{motivation}}
+   - Areas to improve: {{areas_to_improve}}
+   - Interested in learning about: {{learning_topics}}
+   - Substances: {{selectedSubstances}}`,
     agents: [agent],
     startingAgentId: agentId,
     createdAt: new Date().toISOString(),
