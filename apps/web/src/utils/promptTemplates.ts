@@ -171,7 +171,7 @@ export function substitutePromptVariables(
   
   // Merge all data sources with flowContext having highest priority
   // Order: Legacy PQ defaults < Quiz defaults < manual pqData < unified flowContext (quiz answers mapped to both keys)
-  const data = { ...DEFAULT_PQ_DATA, ...DEFAULT_QUIZ_DATA, ...pqData, ...unifiedContext };
+  const data: Record<string, any> = { ...DEFAULT_PQ_DATA, ...DEFAULT_QUIZ_DATA, ...pqData, ...unifiedContext };
   
   // Log which values are being used for key quiz variables
   console.log('📝 Final substitution values:', {
