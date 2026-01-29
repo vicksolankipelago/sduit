@@ -36,12 +36,14 @@ export interface ScreenProviderProps {
   children: ReactNode;
   initialScreen?: Screen;
   initialModuleState?: Record<string, AnyCodable>;
+  onEnableVoice?: () => void; // Direct callback for enable_voice tool - preserves user gesture context
 }
 
 export const ScreenProvider: React.FC<ScreenProviderProps> = ({
   children,
   initialScreen,
   initialModuleState = {},
+  onEnableVoice,
 }) => {
   const [currentScreen, setCurrentScreenState] = useState<Screen | null>(initialScreen || null);
   const [screenState, setScreenState] = useState<Record<string, AnyCodable>>(
@@ -223,8 +225,23 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
           if (toolAction.tool === 'start_journey') {
             console.log('🔗 START_JOURNEY TOOL DETECTED IN SCREENCONTEXT');
           }
+          // CRITICAL: For enable_voice, call direct callback to preserve user gesture context
+          // The window.dispatchEvent pattern loses gesture context, blocking mic permission prompts
           if (toolAction.tool === 'enable_voice') {
             console.log('🎤🎤🎤 ENABLE_VOICE TOOL DETECTED IN SCREENCONTEXT 🎤🎤🎤');
+            if (onEnableVoice) {
+              console.log('🎤 Calling onEnableVoice callback DIRECTLY (preserves user gesture)');
+              onEnableVoice();
+            } else {
+              console.warn('🎤 onEnableVoice callback not provided - falling back to event dispatch');
+              // Fallback to event dispatch (will lose gesture context)
+              const event = new CustomEvent('toolCallAction', {
+                detail: { tool: toolAction.tool, params: toolAction.params || {} },
+                bubbles: true,
+              });
+              window.dispatchEvent(event);
+            }
+            break; // Don't dispatch event again for enable_voice
           }
           
           // Dispatch a custom event that VoiceAgent or other components can listen to

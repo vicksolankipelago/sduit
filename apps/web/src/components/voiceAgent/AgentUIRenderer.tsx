@@ -15,9 +15,10 @@ interface AgentUIRendererProps {
   showNotificationPopup?: boolean;
   onNotificationAllow?: () => void;
   onNotificationDeny?: () => void;
+  onEnableVoice?: () => void; // Callback for enable_voice tool - must be called synchronously to preserve user gesture
 }
 
-export default function AgentUIRenderer({ bottomBar, onOpenSettings, onExit, showNotificationPopup, onNotificationAllow, onNotificationDeny }: AgentUIRendererProps) {
+export default function AgentUIRenderer({ bottomBar, onOpenSettings, onExit, showNotificationPopup, onNotificationAllow, onNotificationDeny, onEnableVoice }: AgentUIRendererProps) {
   const {
     screenRenderingMode,
     currentAgentScreens,
@@ -88,6 +89,7 @@ export default function AgentUIRenderer({ bottomBar, onOpenSettings, onExit, sho
                   key={`screen-provider-${currentAgentScreens.length}-${currentAgentScreens[0]?.id || 'none'}`}
                   initialScreen={currentScreen} 
                   initialModuleState={moduleState}
+                  onEnableVoice={onEnableVoice}
                 >
                   <ScreenPreview
                     key={currentScreen.id}

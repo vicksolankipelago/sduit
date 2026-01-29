@@ -463,76 +463,14 @@ function VoiceAgentContent() {
         return; // Prevent other handlers from running
       }
       
-      // Handle enable_voice tool - activate voice mode mid-flow while keeping current screens
+      // NOTE: enable_voice is now handled via direct callback (handleEnableVoice) passed through
+      // AgentUIRenderer -> ScreenProvider to preserve user gesture context for mic permission.
+      // The window event approach loses gesture context, preventing mic permission prompts.
       if (tool === 'enable_voice') {
-        console.log('🎤🎤🎤 ENABLE_VOICE TRIGGERED IN VOICEAGENT 🎤🎤🎤');
-        alert(`enable_voice received! connectToRealtimeRef exists: ${!!connectToRealtimeRef.current}`);
-        addLog('info', '🎤 Enabling voice mode mid-flow');
-        
-        // Log current state for debugging
-        console.log('🎤 Current state:', {
-          sessionStatus,
-          isNonVoiceMode,
-          currentJourneyRef: currentJourneyRef.current?.name,
-          connectToRealtimeRef: !!connectToRealtimeRef.current,
-        });
-        
-        // Get journey from ref SYNCHRONOUSLY (avoid closure issues)
-        const journey = currentJourneyRef.current;
-        if (!journey) {
-          console.error('🎤 ERROR: No journey in currentJourneyRef!');
-          addLog('error', 'No journey found - cannot enable voice');
-          return;
-        }
-        
-        if (!connectToRealtimeRef.current) {
-          console.error('🎤 ERROR: connectToRealtimeRef.current is null!');
-          addLog('error', 'Voice connection function not available');
-          return;
-        }
-        
-        // Set transitioning flag to prevent flows list from flashing
-        setIsTransitioningJourney(true);
-        
-        // Exit non-voice mode
-        setIsNonVoiceMode(false);
-        
-        // Force session to disconnected state to allow reconnection
-        setSessionStatus('DISCONNECTED');
-        
-        // Merge flow context for data passing
-        const mergedContext = {
-          ...(flowContext || {}),
-          ...(moduleState || {}),
-        };
-        
-        // Update flowContext state for consistency
-        if (updateFlowContext && moduleState) {
-          updateFlowContext(moduleState);
-        }
-        
-        addLog('info', `🎤 Flow context keys: ${Object.keys(mergedContext).join(', ')}`);
-        
-        // Create a modified journey with voiceEnabled=true to force voice mode
-        const voiceEnabledJourney = {
-          ...journey,
-          voiceEnabled: true, // Override to force voice mode
-        };
-        
-        console.log('🎤 Calling connectToRealtime SYNCHRONOUSLY (preserves user gesture for mic permission)');
-        console.log('🎤 Journey:', voiceEnabledJourney.name, 'voiceEnabled:', voiceEnabledJourney.voiceEnabled);
-        
-        // CRITICAL: Call connectToRealtime SYNCHRONOUSLY to preserve user gesture context
-        // Mic permission requires direct user gesture - setTimeout loses this context!
-        try {
-          connectToRealtimeRef.current(voiceEnabledJourney, mergedContext, { skipScreenReset: true });
-          console.log('🎤 connectToRealtime call initiated');
-        } catch (err) {
-          console.error('🎤 ERROR calling connectToRealtime:', err);
-          addLog('error', `Failed to enable voice: ${err}`);
-          setIsTransitioningJourney(false);
-        }
-        
+        console.log('🎤 enable_voice event received via window (fallback path)');
+        // This should not be called anymore with the direct callback in place
+        // If we get here, the callback wasn't wired up properly
+        console.warn('🎤 Warning: enable_voice received via event - this loses user gesture context!');
         return;
       }
     };
@@ -997,6 +935,68 @@ Important guidelines:
   useEffect(() => {
     currentJourneyRef.current = currentJourney;
   }, [currentJourney]);
+
+  // Handle enable_voice tool - called directly from ScreenContext to preserve user gesture context
+  // This MUST be called synchronously during button click for mic permission to work
+  const handleEnableVoice = useCallback(() => {
+    console.log('🎤🎤🎤 handleEnableVoice CALLED DIRECTLY (preserves user gesture) 🎤🎤🎤');
+    addLog('info', '🎤 Enabling voice mode mid-flow');
+    
+    // Get journey from ref SYNCHRONOUSLY (avoid closure issues)
+    const journey = currentJourneyRef.current;
+    if (!journey) {
+      console.error('🎤 ERROR: No journey in currentJourneyRef!');
+      addLog('error', 'No journey found - cannot enable voice');
+      return;
+    }
+    
+    if (!connectToRealtimeRef.current) {
+      console.error('🎤 ERROR: connectToRealtimeRef.current is null!');
+      addLog('error', 'Voice connection function not available');
+      return;
+    }
+    
+    // Set transitioning flag to prevent flows list from flashing
+    setIsTransitioningJourney(true);
+    
+    // Exit non-voice mode
+    setIsNonVoiceMode(false);
+    
+    // Force session to disconnected state to allow reconnection
+    setSessionStatus('DISCONNECTED');
+    
+    // Merge flow context for data passing
+    const mergedContext = {
+      ...(flowContext || {}),
+      ...(moduleState || {}),
+    };
+    
+    // Update flowContext state for consistency
+    if (updateFlowContext && moduleState) {
+      updateFlowContext(moduleState);
+    }
+    
+    addLog('info', `🎤 Flow context keys: ${Object.keys(mergedContext).join(', ')}`);
+    
+    // Create a modified journey with voiceEnabled=true to force voice mode
+    const voiceEnabledJourney = {
+      ...journey,
+      voiceEnabled: true, // Override to force voice mode
+    };
+    
+    console.log('🎤 Calling connectToRealtime SYNCHRONOUSLY');
+    console.log('🎤 Journey:', voiceEnabledJourney.name, 'voiceEnabled:', voiceEnabledJourney.voiceEnabled);
+    
+    // CRITICAL: Call connectToRealtime SYNCHRONOUSLY to preserve user gesture context
+    try {
+      connectToRealtimeRef.current(voiceEnabledJourney, mergedContext, { skipScreenReset: true });
+      console.log('🎤 connectToRealtime call initiated');
+    } catch (err) {
+      console.error('🎤 ERROR calling connectToRealtime:', err);
+      addLog('error', `Failed to enable voice: ${err}`);
+      setIsTransitioningJourney(false);
+    }
+  }, [addLog, flowContext, moduleState, updateFlowContext]);
 
   // Export transcript when session ends
   const exportSessionTranscript = () => {
@@ -1633,6 +1633,7 @@ Important guidelines:
           updateModuleState?.({ notificationsEnabled: false });
           console.log('🔔 Notifications denied');
         }}
+        onEnableVoice={handleEnableVoice}
       />
       
       {/* Header - Show when disconnected and NOT in preview mode or transitioning */}
