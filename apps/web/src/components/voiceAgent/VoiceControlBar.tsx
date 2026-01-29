@@ -38,13 +38,6 @@ export const VoiceControlBar: React.FC<VoiceControlBarProps> = ({
               <line x1="12" y1="19" x2="12" y2="22"/>
             </svg>
           )}
-          {isListening && !isMuted && (
-            <>
-              <div className="mic-pulse-ring mic-pulse-ring-1"></div>
-              <div className="mic-pulse-ring mic-pulse-ring-2"></div>
-              <div className="mic-pulse-ring mic-pulse-ring-3"></div>
-            </>
-          )}
         </button>
 
         {/* Settings Button */}
