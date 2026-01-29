@@ -217,11 +217,14 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
 
         case 'toolCall': {
           const toolAction = action as ToolCallAction;
-          console.log(`🔧 ScreenContext: Tool call action triggered: ${toolAction.tool}`, toolAction.params);
+          console.log(`🔧🔧🔧 ScreenContext: Tool call action: ${toolAction.tool} 🔧🔧🔧`, toolAction.params);
           
-          // Debug: Show alert for start_journey to confirm execution
+          // Debug logs for specific tools
           if (toolAction.tool === 'start_journey') {
             console.log('🔗 START_JOURNEY TOOL DETECTED IN SCREENCONTEXT');
+          }
+          if (toolAction.tool === 'enable_voice') {
+            console.log('🎤🎤🎤 ENABLE_VOICE TOOL DETECTED IN SCREENCONTEXT 🎤🎤🎤');
           }
           
           // Dispatch a custom event that VoiceAgent or other components can listen to
@@ -232,9 +235,9 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
             },
             bubbles: true,
           });
-          console.log(`🔧 ScreenContext: Dispatching toolCallAction event to window...`);
+          console.log(`🔧 ScreenContext: Dispatching toolCallAction event to window for tool: ${toolAction.tool}`);
           window.dispatchEvent(event);
-          console.log(`🔧 ScreenContext: toolCallAction event dispatched`);
+          console.log(`🔧 ScreenContext: toolCallAction event DISPATCHED for: ${toolAction.tool}`);
           
           // Handle built-in tool actions
           if (toolAction.tool === 'store_answer' && toolAction.params) {

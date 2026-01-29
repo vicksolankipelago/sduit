@@ -321,11 +321,16 @@ function VoiceAgentContent() {
 
   // Listen for toolCallAction events (from ScreenContext) for navigate_to_agent
   useEffect(() => {
+    console.log('🔌🔌🔌 VoiceAgent: Setting up toolCallAction listener 🔌🔌🔌');
+    console.log('🔌 currentJourney:', currentJourney?.name);
+    console.log('🔌 currentJourneyRef.current:', currentJourneyRef.current?.name);
+    
     const handleToolCallAction = (event: Event) => {
+      console.log('🔧🔧🔧 VoiceAgent received toolCallAction event! 🔧🔧🔧');
       const customEvent = event as CustomEvent;
       const { tool, params } = customEvent.detail;
       
-      console.log('🔧 VoiceAgent received toolCallAction:', tool, params);
+      console.log('🔧 Tool:', tool, 'Params:', params);
       
       if (tool === 'navigate_to_agent' && params.agentId) {
         addLog('info', `🔄 Navigating to agent: ${params.agentId}`);
