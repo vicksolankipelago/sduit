@@ -923,6 +923,11 @@ Important guidelines:
       console.error("Error connecting to Azure OpenAI:", err);
       addLog('error', 'Failed to connect to Azure OpenAI', { error: err.message });
       setSessionStatus("DISCONNECTED");
+      
+      // Go back to flows screen on connection error
+      setCurrentJourney(null);
+      setIsTransitioningJourney(false);
+      setPreviewLoading(false);
     }
   };
 
