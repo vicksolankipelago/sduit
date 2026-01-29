@@ -389,13 +389,12 @@ export class JourneyRuntime {
 
     interface EndCallParams {
       reason?: string;
-      feedbackScreenId?: string;
       delaySeconds?: number;
     }
 
     return (tool as any)({
       name: 'end_call',
-      description: 'End the current call/conversation. Use this when the conversation is complete, the user wants to end the call, or the journey has reached its natural conclusion. This will trigger the feedback screen (if specified) and then disconnect the call after the delay.',
+      description: 'End the current call/conversation and redirect to the feedback page. Use this when the conversation is complete, the user wants to end the call, or the journey has reached its natural conclusion. This will disconnect the call and navigate to a dedicated feedback page.',
       parameters: {
         type: 'object' as const,
         properties: {
@@ -403,13 +402,9 @@ export class JourneyRuntime {
             type: 'string',
             description: 'Optional reason for ending the call (e.g., "conversation complete", "user requested", "journey finished")',
           },
-          feedbackScreenId: {
-            type: 'string',
-            description: 'Optional screen ID to navigate to before ending (e.g., "feedback_screen", "goodbye_screen"). If not provided, will attempt to find a feedback/goodbye screen automatically.',
-          },
           delaySeconds: {
             type: 'number',
-            description: 'Optional delay in seconds before disconnecting after showing the feedback screen. Defaults to 5 seconds if a feedback screen is shown.',
+            description: 'Optional delay in seconds before disconnecting and redirecting to feedback page. Defaults to 2 seconds.',
           },
         },
         required: [] as const,
@@ -417,33 +412,39 @@ export class JourneyRuntime {
       },
       strict: false,
       execute: async (input: EndCallParams) => {
-        const { reason, feedbackScreenId, delaySeconds } = input;
+        const { reason, delaySeconds } = input;
 
         toolLogger.debug(`End call triggered by agent ${agentName}${reason ? `: ${reason}` : ''}`);
 
-        // Trigger feedback screen event if a screen ID is provided or by default
-        const showFeedback = feedbackScreenId !== undefined || true; // Always try to show feedback
-        if (showFeedback && runtime.eventTriggerCallback) {
-          toolLogger.debug(`Triggering feedback screen before ending call: ${feedbackScreenId || 'auto-detect'}`);
-          // Pass the screen ID in the event ID, or use the generic event
-          const eventId = feedbackScreenId ? `navigate_to_${feedbackScreenId}` : 'show_feedback_screen';
-          runtime.eventTriggerCallback(eventId, agentName);
-        }
-
-        // Calculate delay - default to 5 seconds if showing feedback, 0 otherwise
-        const delay = delaySeconds !== undefined ? delaySeconds * 1000 : (showFeedback ? 5000 : 0);
+        // Calculate delay - default to 2 seconds to allow final speech to complete
+        const delay = delaySeconds !== undefined ? delaySeconds * 1000 : 2000;
         
-        toolLogger.debug(`Scheduling disconnect in ${delay}ms`);
+        toolLogger.debug(`Scheduling disconnect and feedback page navigation in ${delay}ms`);
         
         setTimeout(() => {
           if (runtime.endCallCallback) {
+            // Store session info for feedback page before ending call
+            const sessionId = (window as any).__voiceSessionId || '';
+            const journeyName = (window as any).__voiceJourneyName || '';
+            if (sessionId) {
+              localStorage.setItem('voice-session-id', sessionId);
+            }
+            if (journeyName) {
+              localStorage.setItem('voice-journey-name', journeyName);
+            }
+            
             runtime.endCallCallback(reason);
+            
+            // Navigate to dedicated feedback page after call ends
+            const feedbackUrl = `/feedback${sessionId ? `?sessionId=${sessionId}` : ''}`;
+            toolLogger.debug(`Navigating to feedback page: ${feedbackUrl}`);
+            window.location.href = feedbackUrl;
           } else {
             toolLogger.warn('End call callback not set. Call will not be ended.');
           }
         }, delay);
 
-        return `Call ending${reason ? `: ${reason}` : ''}${feedbackScreenId ? `. Navigating to ${feedbackScreenId} first.` : '. Feedback screen triggered.'} Disconnecting in ${delay / 1000} seconds.`;
+        return `Call ending${reason ? `: ${reason}` : ''}. Navigating to feedback page in ${delay / 1000} seconds.`;
       },
     });
   }

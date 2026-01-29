@@ -18,6 +18,7 @@ import { SettingsPage } from './pages/Settings';
 import { PreviewAccessPage } from './pages/PreviewAccess';
 import { AgentEditorPage } from './pages/AgentEditor';
 import { MobilePreviewPage } from './pages/MobilePreview';
+import { FeedbackPage } from './pages/Feedback';
 import './styles/pelago-design-system.css';
 import './pages/Login.css';
 
@@ -35,6 +36,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Route path="/admin" element={<AdminLoginPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/feedback" element={<FeedbackPage />} />
 
             {/* Protected preview route (no layout - redirects to voice agent) */}
             <Route path="/preview/:journeyId" element={

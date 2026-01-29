@@ -214,3 +214,13 @@
   letter-spacing: 2px;
   font-family: 'Monaco', 'Menlo', monospace;
 }
+
+/* Dedicated feedback page styles */
+.feedback-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}

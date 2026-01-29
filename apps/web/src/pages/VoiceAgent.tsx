@@ -628,6 +628,10 @@ function VoiceAgentContent() {
     // Generate new session ID for this session
     sessionIdRef.current = `session_${Date.now()}`;
     
+    // Store session info on window for end_call tool access
+    (window as any).__voiceSessionId = sessionIdRef.current;
+    (window as any).__voiceJourneyName = journeyToUse.name;
+    
     // Reset the real-time saver for the new session
     sessionSaverRef.current.reset();
     // Clear the queued item IDs set for the new session
