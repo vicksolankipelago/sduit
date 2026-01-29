@@ -143,8 +143,21 @@ async function testAzureConnection(): Promise<void> {
       console.log('  Secret Length:', sessionData.client_secret.value.length, 'chars');
     }
 
-    const regionMatch = endpoint.match(/-(swedencentral|eastus2)\.openai\.azure\.com/);
-    const region = regionMatch ? regionMatch[1] : 'swedencentral';
+    // Detect region from endpoint URL - supports both .openai.azure.com and .cognitiveservices.azure.com formats
+    let region = 'swedencentral'; // default
+    const openaiRegionMatch = endpoint.match(/-(swedencentral|eastus2|eastus|westus|westus2|westeurope|northeurope)\.openai\.azure\.com/i);
+    const cogServicesMatch = endpoint.match(/-(us|eu|uk|au)/i) || endpoint.match(/(eastus|westus|swedencentral|westeurope)/i);
+    
+    if (openaiRegionMatch) {
+      region = openaiRegionMatch[1].toLowerCase();
+    } else if (cogServicesMatch) {
+      const matched = cogServicesMatch[1].toLowerCase();
+      if (matched.includes('us') || matched === 'eastus' || matched === 'westus') {
+        region = 'eastus2';
+      } else if (matched.includes('eu') || matched === 'swedencentral' || matched === 'westeurope') {
+        region = 'swedencentral';
+      }
+    }
     const webrtcUrl = `https://${region}.realtimeapi-preview.ai.azure.com/v1/realtimertc`;
 
     console.log('  Region:', region);
