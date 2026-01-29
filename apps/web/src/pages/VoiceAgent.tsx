@@ -448,7 +448,8 @@ function VoiceAgentContent() {
       
       // Handle enable_voice tool - activate voice mode mid-flow while keeping current screens
       if (tool === 'enable_voice') {
-        console.log('🎤🎤🎤 ENABLE_VOICE TRIGGERED 🎤🎤🎤');
+        console.log('🎤🎤🎤 ENABLE_VOICE TRIGGERED IN VOICEAGENT 🎤🎤🎤');
+        alert('VoiceAgent received enable_voice!'); // Debug alert
         addLog('info', '🎤 Enabling voice mode mid-flow');
         
         // Log current state for debugging
@@ -463,12 +464,14 @@ function VoiceAgentContent() {
         const journey = currentJourneyRef.current;
         if (!journey) {
           console.error('🎤 ERROR: No journey in currentJourneyRef!');
+          alert('ERROR: No journey found!'); // Debug alert
           addLog('error', 'No journey found - cannot enable voice');
           return;
         }
         
         if (!connectToRealtimeRef.current) {
           console.error('🎤 ERROR: connectToRealtimeRef.current is null!');
+          alert('ERROR: connectToRealtimeRef is null!'); // Debug alert
           addLog('error', 'Voice connection function not available');
           return;
         }
