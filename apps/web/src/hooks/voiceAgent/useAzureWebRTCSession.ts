@@ -28,6 +28,11 @@ export interface AzureWebRTCConnectOptions {
   customMicStream?: MediaStream; // Custom microphone stream (for routing agent audio to persona)
   agentConfig?: { name: string; instructions: string; voice: string; tools?: any[]; handoffs?: string[] }; // Journey agent configuration
   allJourneyAgents?: Map<string, { name: string; instructions: string; voice: string; handoffs?: string[] }>; // All agents in journey for handoffs
+  screens?: Array<{ 
+    id: string; 
+    events?: Array<{ id: string; delay?: number }>; 
+    sections?: Array<{ elements?: Array<{ events?: Array<{ id: string; delay?: number }> }> }>;
+  }>; // Screens for looking up event delays
   onEventTrigger?: (eventId: string, agentName: string) => void; // Callback for trigger_event tool
   onEndCall?: (reason?: string) => void; // Callback for end_call system tool
 }
@@ -51,7 +56,7 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
   );
 
   const connect = useCallback(
-    async ({ audioElement, customInstructions, skipInitialGreeting, voice, customMicStream, agentConfig, allJourneyAgents, onEventTrigger, onEndCall }: AzureWebRTCConnectOptions) => {
+    async ({ audioElement, customInstructions, skipInitialGreeting, voice, customMicStream, agentConfig, allJourneyAgents, screens, onEventTrigger, onEndCall }: AzureWebRTCConnectOptions) => {
       if (peerConnectionRef.current) {
         voiceAgentLogger.warn('Already connected, skipping');
         return;
@@ -299,10 +304,37 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                     if (isNaN(delay)) delay = 0;
                   }
                   
-                  // Enforce default delay for specific events if not provided
-                  // Dynamically enforce delay for navigation events (any event starting with 'navigate_to_')
+                  // Look up event's configured delay from screens if available
+                  // Check both screen-level events and element-level events
+                  if (delay === 0 && screens) {
+                    screenLoop: for (const screen of screens) {
+                      // Check screen-level events
+                      const screenEvent = screen.events?.find((e: any) => e.id === eventId);
+                      if (screenEvent?.delay) {
+                        delay = screenEvent.delay;
+                        console.log(`🎯 Using screen-configured delay ${delay}s for event '${eventId}'`);
+                        break screenLoop;
+                      }
+                      // Check element-level events (in sections)
+                      const sections = (screen as any).sections;
+                      if (sections) {
+                        for (const section of sections) {
+                          for (const element of section.elements || []) {
+                            const elementEvent = element.events?.find((e: any) => e.id === eventId);
+                            if (elementEvent?.delay) {
+                              delay = elementEvent.delay;
+                              console.log(`🎯 Using element-configured delay ${delay}s for event '${eventId}'`);
+                              break screenLoop;
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                  
+                  // Enforce default delay for navigation events if still not set
                   if (delay === 0 && eventId.startsWith('navigate_to_')) {
-                    delay = 4; // Increased from 2s to 4s to give users time to read screens
+                    delay = 8; // Default 8s delay to give users time to read screens
                     console.log(`🎯 Enforcing default ${delay}s delay for navigation event '${eventId}'`);
                     voiceAgentLogger.warn(`Enforcing default ${delay}s delay for navigation event '${eventId}'`);
                   }

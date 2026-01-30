@@ -1082,6 +1082,7 @@ function VoiceAgentContent() {
           customMicStream: agentMicStream,
           agentConfig: journeyAgentConfig,
           allJourneyAgents: allJourneyAgentsMap,
+          screens: startingAgentConfigForConnect.screens,
           onEventTrigger: handleEventTrigger,
           onEndCall: handleEndCall,
         });
@@ -1129,6 +1130,7 @@ Important guidelines:
           audioElement: sdkAudioElement,
           agentConfig: journeyAgentConfig,
           allJourneyAgents: allJourneyAgentsMap,
+          screens: startingAgentConfigForConnect.screens,
           onEventTrigger: handleEventTrigger,
           onEndCall: handleEndCall,
         });

@@ -823,6 +823,7 @@ function createPostWebPQScreens(): Screen[] {
         {
           id: 'navigate_to_checkin_commitment',
           type: 'custom',
+          delay: 8,
           conditions: [],
           action: [
             {

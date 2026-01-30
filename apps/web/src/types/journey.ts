@@ -201,6 +201,8 @@ export interface ScreenEvent {
   conditions?: EventConditions[];
   action: EventAction[];
   analyticsName?: string;
+  /** Display duration in seconds before auto-triggering navigation. Used by trigger_event tool. */
+  delay?: number;
 }
 
 /**
