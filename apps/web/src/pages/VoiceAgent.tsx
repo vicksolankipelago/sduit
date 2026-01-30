@@ -1253,30 +1253,21 @@ Important guidelines:
     addLog('info', `🎤 Flow context keys: ${Object.keys(mergedContext).join(', ')}`);
     console.log('🎤 Transformed quiz answers:', transformedModuleState);
     
-    // Use the preloaded Intake Navigator journey for voice transitions (has voice-specific prompts)
-    // Fall back to current journey with voiceEnabled=true if Intake Navigator not available
-    let voiceJourney: Journey;
-    if (intakeNavigatorJourneyRef.current) {
-      voiceJourney = {
-        ...intakeNavigatorJourneyRef.current,
-        voiceEnabled: true,
-      };
-      console.log('🎤 Using Intake Navigator journey for voice mode');
-    } else {
-      voiceJourney = {
-        ...journey,
-        voiceEnabled: true, // Override to force voice mode
-      };
-      console.log('🎤 Intake Navigator not preloaded, using current journey with voice enabled');
-    }
+    // Continue with the current journey and just enable voice mode
+    // Previously this switched to Intake Navigator, but that caused screen reset issues
+    // Now we preserve the current journey and screen position
+    const voiceJourney: Journey = {
+      ...journey,
+      voiceEnabled: true, // Enable voice mode on current journey
+    };
+    console.log('🎤 Enabling voice mode on current journey:', voiceJourney.name);
     
     console.log('🎤 Calling connectToRealtime SYNCHRONOUSLY');
     console.log('🎤 Journey:', voiceJourney.name, 'voiceEnabled:', voiceJourney.voiceEnabled);
     
     // CRITICAL: Call connectToRealtime SYNCHRONOUSLY to preserve user gesture context
-    // When using Intake Navigator, DON'T skip screen reset - start from pq-intro
-    // When using quiz journey (fallback), skip screen reset to preserve current screen
-    const shouldSkipScreenReset = !intakeNavigatorJourneyRef.current;
+    // Always skip screen reset to preserve current screen position during voice transitions
+    const shouldSkipScreenReset = true;
     try {
       connectToRealtimeRef.current(voiceJourney, mergedContext, { skipScreenReset: shouldSkipScreenReset });
       console.log('🎤 connectToRealtime call initiated, skipScreenReset:', shouldSkipScreenReset);
