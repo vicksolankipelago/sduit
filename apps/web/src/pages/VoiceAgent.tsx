@@ -1841,7 +1841,7 @@ Important guidelines:
             onToggleMute={handleToggleMute}
           />
         ) : undefined}
-        onOpenSettings={sessionStatus === 'CONNECTED' && !isPreviewMode && !isNonVoiceMode ? () => setSettingsOpen(true) : undefined}
+        onOpenSettings={sessionStatus === 'CONNECTED' && !isPreviewMode ? () => setSettingsOpen(true) : undefined}
         onExit={sessionStatus === 'CONNECTED' ? () => {
           if (isNonVoiceMode) {
             setSessionStatus('DISCONNECTED');
