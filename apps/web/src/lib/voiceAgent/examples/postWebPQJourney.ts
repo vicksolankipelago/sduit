@@ -257,10 +257,157 @@ function createPostWebPQScreens(): Screen[] {
             },
           ],
         },
+        {
+          id: 'footer_section',
+          title: '',
+          position: 'fixed-bottom',
+          layout: 'stack',
+          direction: 'vertical',
+          scrollable: false,
+          elements: [
+            {
+              type: 'button',
+              state: {
+                id: 'get_started_btn',
+                title: 'Get Started',
+                isDisabled: false,
+              },
+              style: {
+                style: 'primary',
+                size: 'large',
+              },
+              events: [
+                {
+                  id: 'start_program_flow',
+                  type: 'onSelected',
+                  action: [
+                    {
+                      type: 'toolCall',
+                      tool: 'enable_voice',
+                      params: {},
+                    },
+                    {
+                      type: 'navigation',
+                      deeplink: 'pq-completion',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
       ],
       events: [
         {
-          id: 'navigate_to_about_you',
+          id: 'start_program_flow',
+          type: 'custom',
+          conditions: [],
+          action: [
+            {
+              type: 'toolCall',
+              tool: 'enable_voice',
+              params: {},
+            },
+            {
+              type: 'navigation',
+              deeplink: 'pq-completion',
+            },
+          ],
+        },
+      ],
+    },
+
+    // Screen 2: pq-completion (Ready to chat? - Voice agent welcome screen)
+    {
+      id: 'pq-completion',
+      title: 'Ready to chat?',
+      hidesBackButton: true,
+      sections: [
+        {
+          id: 'content_section',
+          title: '',
+          position: 'body',
+          layout: 'stack',
+          direction: 'vertical',
+          scrollable: true,
+          elements: [
+            {
+              type: 'spacer',
+              state: {
+                id: 'top_spacer',
+              },
+              style: {
+                height: null,
+                width: null,
+                isFlexible: true,
+                direction: 'vertical',
+              },
+            },
+            {
+              type: 'animatedImage',
+              state: {
+                id: 'ready_animation',
+                lottieName: 'COLOR_Pelago_Island',
+              },
+              style: {
+                width: 300,
+                height: 300,
+              },
+            },
+            {
+              type: 'textBlock',
+              state: {
+                id: 'ready_title',
+                text: 'Ready to chat?',
+              },
+              style: {
+                style: 'heading1',
+                alignment: 'center',
+                color: 'primary',
+              },
+            },
+            {
+              type: 'spacer',
+              state: {
+                id: 'mid_spacer',
+              },
+              style: {
+                height: 16,
+                width: null,
+                isFlexible: false,
+                direction: 'vertical',
+              },
+            },
+            {
+              type: 'textBlock',
+              state: {
+                id: 'ready_description',
+                text: "You'll be asked to enable your microphone to talk to your assistant",
+              },
+              style: {
+                style: 'body1',
+                alignment: 'center',
+                color: 'secondary',
+              },
+            },
+            {
+              type: 'spacer',
+              state: {
+                id: 'bottom_spacer',
+              },
+              style: {
+                height: null,
+                width: null,
+                isFlexible: true,
+                direction: 'vertical',
+              },
+            },
+          ],
+        },
+      ],
+      events: [
+        {
+          id: 'navigate_to_program_summary',
           type: 'custom',
           conditions: [],
           action: [
@@ -273,7 +420,7 @@ function createPostWebPQScreens(): Screen[] {
       ],
     },
 
-    // Screen 2: pq-program-summary
+    // Screen 3: pq-program-summary
     {
       id: 'pq-program-summary',
       title: 'Your program, based on what you shared',
