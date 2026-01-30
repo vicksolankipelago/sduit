@@ -387,9 +387,26 @@ function VoiceAgentContent() {
   }, [sessionStatus, currentJourney?.id]);
 
   // Start a non-voice session (no microphone, no WebRTC)
-  const startNonVoiceSession = useCallback((journey: Journey) => {
+  const startNonVoiceSession = useCallback(async (journey: Journey) => {
     console.log('🚀 Starting non-voice session for journey:', journey.name);
     addLog('info', `🔇 Starting non-voice session: ${journey.name}`);
+
+    // ALWAYS fetch fresh journey data from database to get latest screen edits
+    let journeyToUse = journey;
+    if (journey.id) {
+      console.log('🔄 Fetching fresh journey data for non-voice session...');
+      try {
+        const freshJourney = await loadJourneyForRuntime(journey.id);
+        if (freshJourney) {
+          journeyToUse = freshJourney;
+          console.log('✅ Fresh journey loaded:', freshJourney.name);
+          setCurrentJourney(freshJourney);
+          currentJourneyRef.current = freshJourney;
+        }
+      } catch (err) {
+        console.warn('⚠️ Failed to fetch fresh journey, using cached version:', err);
+      }
+    }
 
     // Generate new session ID
     sessionIdRef.current = `session_${Date.now()}`;
@@ -401,11 +418,11 @@ function VoiceAgentContent() {
 
     // Store all agents for non-voice navigation
     if (setAgents) {
-      setAgents(journey.agents);
+      setAgents(journeyToUse.agents);
     }
 
     // Find starting agent
-    const startingAgentConfig = journey.agents.find(a => a.id === journey.startingAgentId);
+    const startingAgentConfig = journeyToUse.agents.find(a => a.id === journeyToUse.startingAgentId);
     if (!startingAgentConfig) {
       addLog('error', 'Starting agent not found in journey');
       return;
@@ -596,8 +613,24 @@ function VoiceAgentContent() {
       return;
     }
 
-    // Use provided journey or fall back to current journey state
-    const journeyToUse = journeyOverride || currentJourney;
+    // ALWAYS fetch fresh journey data from database to get latest screen edits
+    // This ensures changes made in the screen builder are immediately reflected
+    let journeyToUse = journeyOverride || currentJourney;
+    if (journeyToUse?.id) {
+      console.log('🔄 Fetching fresh journey data from database...');
+      try {
+        const freshJourney = await loadJourneyForRuntime(journeyToUse.id);
+        if (freshJourney) {
+          journeyToUse = { ...freshJourney, voiceEnabled: journeyToUse.voiceEnabled };
+          console.log('✅ Fresh journey loaded:', freshJourney.name);
+          // Update state and ref with fresh data
+          setCurrentJourney(freshJourney);
+          currentJourneyRef.current = freshJourney;
+        }
+      } catch (err) {
+        console.warn('⚠️ Failed to fetch fresh journey, using cached version:', err);
+      }
+    }
     console.log('🎙️ Using journey:', journeyToUse?.name, 'voiceEnabled:', journeyToUse?.voiceEnabled);
 
     // Check if we have a journey to run
