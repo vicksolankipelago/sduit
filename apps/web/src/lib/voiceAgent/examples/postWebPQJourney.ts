@@ -283,8 +283,8 @@ function createPostWebPQScreens(): Screen[] {
                   action: [
                     {
                       type: 'toolCall',
-                      tool: 'enable_voice',
-                      params: {},
+                      tool: 'setVoiceEnabled',
+                      params: { enabled: true },
                     },
                     {
                       type: 'navigation',
@@ -305,8 +305,8 @@ function createPostWebPQScreens(): Screen[] {
           action: [
             {
               type: 'toolCall',
-              tool: 'enable_voice',
-              params: {},
+              tool: 'setVoiceEnabled',
+              params: { enabled: true },
             },
             {
               type: 'navigation',

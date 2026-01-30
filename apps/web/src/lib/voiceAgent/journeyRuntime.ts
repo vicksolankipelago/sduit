@@ -15,11 +15,13 @@ import { toolLogger } from '../../utils/logger';
 export type EventTriggerCallback = (eventId: string, agentName: string) => void;
 export type RecordInputCallback = (title: string, summary: string, description?: string, storeKey?: string) => void;
 export type EndCallCallback = (reason?: string) => void;
+export type SetVoiceEnabledCallback = (enabled: boolean) => void;
 
 export interface JourneyRuntimeCallbacks {
   onEventTrigger?: EventTriggerCallback;
   onRecordInput?: RecordInputCallback;
   onEndCall?: EndCallCallback;
+  onSetVoiceEnabled?: SetVoiceEnabledCallback;
 }
 
 export interface JourneyRuntimeOptions {
@@ -46,6 +48,7 @@ export class JourneyRuntime {
   private eventTriggerCallback: EventTriggerCallback | null = null;
   private recordInputCallback: RecordInputCallback | null = null;
   private endCallCallback: EndCallCallback | null = null;
+  private setVoiceEnabledCallback: SetVoiceEnabledCallback | null = null;
   private flowContext: Record<string, any> = {};
 
   constructor(options?: JourneyRuntimeCallbacks | JourneyRuntimeOptions) {
@@ -61,6 +64,9 @@ export class JourneyRuntime {
     }
     if (callbacks?.onEndCall) {
       this.endCallCallback = callbacks.onEndCall;
+    }
+    if (callbacks?.onSetVoiceEnabled) {
+      this.setVoiceEnabledCallback = callbacks.onSetVoiceEnabled;
     }
     if (flowCtx) {
       this.flowContext = flowCtx;
@@ -93,6 +99,13 @@ export class JourneyRuntime {
    */
   setEndCallCallback(callback: EndCallCallback): void {
     this.endCallCallback = callback;
+  }
+
+  /**
+   * Set the setVoiceEnabled callback for handling setVoiceEnabled tool calls
+   */
+  setSetVoiceEnabledCallback(callback: SetVoiceEnabledCallback): void {
+    this.setVoiceEnabledCallback = callback;
   }
 
   /**
@@ -197,6 +210,9 @@ export class JourneyRuntime {
 
     // Add end_call tool to all agents
     realtimeTools.push(this.createEndCallTool(agentName) as any);
+
+    // Add setVoiceEnabled tool to all agents - enables/disables voice mode
+    realtimeTools.push(this.createSetVoiceEnabledTool(agentName) as any);
 
     return new RealtimeAgent({
       name: agentName,
@@ -514,6 +530,47 @@ export class JourneyRuntime {
       },
     });
   }
+
+  /**
+   * Create the setVoiceEnabled tool for enabling/disabling voice mode
+   */
+  private createSetVoiceEnabledTool(agentName: string) {
+    const runtime = this;
+
+    interface SetVoiceEnabledParams {
+      enabled: boolean;
+    }
+
+    return (tool as any)({
+      name: 'setVoiceEnabled',
+      description: 'Enable or disable voice mode for the current session. Use enabled=true to start the voice agent and microphone, or enabled=false to stop voice mode and switch to button-based navigation.',
+      parameters: {
+        type: 'object' as const,
+        properties: {
+          enabled: {
+            type: 'boolean',
+            description: 'Set to true to enable voice mode (start microphone and voice agent), or false to disable voice mode',
+          },
+        },
+        required: ['enabled'] as const,
+        additionalProperties: false as const,
+      },
+      strict: true,
+      execute: async (input: SetVoiceEnabledParams) => {
+        const { enabled } = input;
+
+        toolLogger.debug(`setVoiceEnabled called by agent ${agentName}: enabled=${enabled}`);
+
+        if (runtime.setVoiceEnabledCallback) {
+          runtime.setVoiceEnabledCallback(enabled);
+          return `Voice mode ${enabled ? 'enabled' : 'disabled'} successfully`;
+        } else {
+          toolLogger.warn('setVoiceEnabled callback not set. Voice state will not change.');
+          return 'Voice state change requested but callback not available';
+        }
+      },
+    });
+  }
 }
 
 // ============================================================================
@@ -553,6 +610,14 @@ export function setRecordInputCallback(callback: RecordInputCallback): void {
  */
 export function setEndCallCallback(callback: EndCallCallback): void {
   getDefaultRuntime().setEndCallCallback(callback);
+}
+
+/**
+ * Set the setVoiceEnabled callback for handling setVoiceEnabled tool calls
+ * @deprecated Use JourneyRuntime class instead
+ */
+export function setSetVoiceEnabledCallback(callback: SetVoiceEnabledCallback): void {
+  getDefaultRuntime().setSetVoiceEnabledCallback(callback);
 }
 
 /**

@@ -36,7 +36,7 @@ export interface ScreenProviderProps {
   children: ReactNode;
   initialScreen?: Screen;
   initialModuleState?: Record<string, AnyCodable>;
-  onEnableVoice?: () => void; // Direct callback for enable_voice tool - preserves user gesture context
+  onSetVoiceEnabled?: (enabled: boolean) => void; // Direct callback for setVoiceEnabled tool - preserves user gesture context
   onModuleStateChange?: (updates: Record<string, AnyCodable>) => void; // Callback to propagate module state changes to parent
 }
 
@@ -44,7 +44,7 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
   children,
   initialScreen,
   initialModuleState = {},
-  onEnableVoice,
+  onSetVoiceEnabled,
   onModuleStateChange,
 }) => {
   const [currentScreen, setCurrentScreenState] = useState<Screen | null>(initialScreen || null);
@@ -248,18 +248,35 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
           if (toolAction.tool === 'start_journey') {
             console.log('🔗 START_JOURNEY TOOL DETECTED IN SCREENCONTEXT');
           }
-          // CRITICAL: For enable_voice, call direct callback to preserve user gesture context
+          // CRITICAL: For setVoiceEnabled, call direct callback to preserve user gesture context
           // The window.dispatchEvent pattern loses gesture context, blocking mic permission prompts
-          if (toolAction.tool === 'enable_voice') {
-            console.log('🎤🎤🎤 ENABLE_VOICE TOOL DETECTED IN SCREENCONTEXT 🎤🎤🎤');
-            if (onEnableVoice) {
-              console.log('🎤 Calling onEnableVoice callback DIRECTLY (preserves user gesture)');
-              onEnableVoice();
+          if (toolAction.tool === 'setVoiceEnabled') {
+            const enabled = (toolAction.params as { enabled?: boolean })?.enabled ?? true;
+            console.log(`🎤🎤🎤 setVoiceEnabled TOOL DETECTED IN SCREENCONTEXT: enabled=${enabled} 🎤🎤🎤`);
+            if (onSetVoiceEnabled) {
+              console.log(`🎤 Calling onSetVoiceEnabled callback DIRECTLY (preserves user gesture): enabled=${enabled}`);
+              onSetVoiceEnabled(enabled);
             } else {
-              console.warn('🎤 onEnableVoice callback not provided - falling back to event dispatch');
+              console.warn('🎤 onSetVoiceEnabled callback not provided - falling back to event dispatch');
               // Fallback to event dispatch (will lose gesture context)
               const event = new CustomEvent('toolCallAction', {
                 detail: { tool: toolAction.tool, params: toolAction.params || {} },
+                bubbles: true,
+              });
+              window.dispatchEvent(event);
+            }
+            break; // Don't dispatch event again for setVoiceEnabled
+          }
+          // Legacy support for enable_voice (deprecated - use setVoiceEnabled instead)
+          if (toolAction.tool === 'enable_voice') {
+            console.log('🎤🎤🎤 LEGACY enable_voice TOOL DETECTED - converting to setVoiceEnabled(true) 🎤🎤🎤');
+            if (onSetVoiceEnabled) {
+              console.log('🎤 Calling onSetVoiceEnabled(true) callback DIRECTLY (preserves user gesture)');
+              onSetVoiceEnabled(true);
+            } else {
+              console.warn('🎤 onSetVoiceEnabled callback not provided - falling back to event dispatch');
+              const event = new CustomEvent('toolCallAction', {
+                detail: { tool: 'setVoiceEnabled', params: { enabled: true } },
                 bubbles: true,
               });
               window.dispatchEvent(event);
@@ -303,7 +320,7 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
           break;
       }
     }
-  }, [evaluateConditions, updateScreenState, updateModuleState, onEnableVoice]);
+  }, [evaluateConditions, updateScreenState, updateModuleState, onSetVoiceEnabled]);
 
   /**
    * Trigger an event by ID

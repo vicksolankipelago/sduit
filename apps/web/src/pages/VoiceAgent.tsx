@@ -1187,10 +1187,19 @@ Important guidelines:
     currentJourneyRef.current = currentJourney;
   }, [currentJourney]);
 
-  // Handle enable_voice tool - called directly from ScreenContext to preserve user gesture context
+  // Handle setVoiceEnabled tool - called directly from ScreenContext to preserve user gesture context
   // This MUST be called synchronously during button click for mic permission to work
-  const handleEnableVoice = useCallback(() => {
-    console.log('🎤🎤🎤 handleEnableVoice CALLED DIRECTLY (preserves user gesture) 🎤🎤🎤');
+  const handleSetVoiceEnabled = useCallback((enabled: boolean) => {
+    console.log(`🎤🎤🎤 handleSetVoiceEnabled CALLED DIRECTLY (preserves user gesture): enabled=${enabled} 🎤🎤🎤`);
+    
+    if (!enabled) {
+      // Disable voice mode - disconnect and switch to button-based navigation
+      addLog('info', '🎤 Disabling voice mode');
+      disconnectFromRealtime();
+      setIsNonVoiceMode(true);
+      return;
+    }
+    
     addLog('info', '🎤 Enabling voice mode mid-flow');
     
     // Get journey from ref SYNCHRONOUSLY (avoid closure issues)
@@ -1909,7 +1918,7 @@ Important guidelines:
           updateModuleState?.({ notificationsEnabled: false });
           console.log('🔔 Notifications denied');
         }}
-        onEnableVoice={handleEnableVoice}
+        onSetVoiceEnabled={handleSetVoiceEnabled}
       />
       
       {/* Header - Show when disconnected and NOT in preview mode or transitioning */}
