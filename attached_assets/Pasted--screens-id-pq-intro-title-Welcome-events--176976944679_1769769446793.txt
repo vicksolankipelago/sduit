@@ -1,0 +1,2074 @@
+{
+  "screens": [
+    {
+      "id": "pq-intro",
+      "title": "Welcome",
+      "events": [
+        {
+          "id": "navigate_to_feelings",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "pq-feelings-alcohol"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            },
+            {
+              "type": "animatedImage",
+              "state": {
+                "id": "welcome_animation",
+                "lottieName": "COLOR_Pelago_Boat"
+              },
+              "style": {
+                "width": 300,
+                "height": 300
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "welcome_title",
+                "text": "Welcome to Pelago"
+              },
+              "style": {
+                "color": "primary",
+                "style": "heading1",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "mid_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 16,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "setup_body",
+                "text": "Let's get you set up with a personalized plan"
+              },
+              "style": {
+                "color": "secondary",
+                "style": "body1",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "bottom_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        },
+        {
+          "id": "button_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "button",
+              "state": {
+                "id": "start_btn",
+                "title": "Get Started",
+                "isDisabled": false
+              },
+              "style": {
+                "size": "large",
+                "style": "primary"
+              },
+              "events": [
+                {
+                  "id": "navigate_to_feelings",
+                  "type": "onTap",
+                  "action": [
+                    {
+                      "type": "navigation",
+                      "deeplink": "pq-feelings-alcohol"
+                    }
+                  ],
+                  "conditions": []
+                }
+              ]
+            }
+          ],
+          "position": "fixed-bottom",
+          "direction": "vertical",
+          "scrollable": false
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "pq-feelings-alcohol",
+      "state": {
+        "selectedOption": null
+      },
+      "title": "Personalization",
+      "events": [
+        {
+          "id": "navigate_to_goal",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "feelings_alcohol": "{$screenState.selectedOption}"
+              }
+            },
+            {
+              "type": "navigation",
+              "deeplink": "pq-goal-alcohol"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 24,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "largeQuestion",
+              "state": {
+                "id": "feelings_question",
+                "type": "singleSelect",
+                "header": {
+                  "id": "feelings_header",
+                  "title": "What best describes the way you feel about your drinking?",
+                  "caption": null,
+                  "imageName": null,
+                  "description": null
+                },
+                "options": [
+                  {
+                    "id": "i_recently_cut_down_or_quit",
+                    "title": "I recently cut down or quit drinking"
+                  },
+                  {
+                    "id": "i_plan_to_take_steps_very_soon",
+                    "title": "I plan to take steps to change my drinking very soon"
+                  },
+                  {
+                    "id": "i_am_curious_about_changing",
+                    "title": "I am curious about changing, but have not taken any steps yet"
+                  },
+                  {
+                    "id": "i_am_not_interested_in_changing",
+                    "title": "I am not interested in changing my drinking"
+                  }
+                ],
+                "category": "Personalization",
+                "maxSelection": 1,
+                "allowsMultiSelection": false,
+                "currentlySelectedOptions": null
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        },
+        {
+          "id": "button_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "button",
+              "state": {
+                "id": "continue_btn",
+                "title": "Continue",
+                "isDisabled": false
+              },
+              "style": {
+                "size": "large",
+                "style": "primary"
+              },
+              "events": [
+                {
+                  "id": "navigate_to_goal",
+                  "type": "onTap",
+                  "action": [
+                    {
+                      "type": "stateUpdate",
+                      "scope": "module",
+                      "updates": {
+                        "feelings_alcohol": "{$screenState.selectedOption}"
+                      }
+                    },
+                    {
+                      "type": "navigation",
+                      "deeplink": "pq-goal-alcohol"
+                    }
+                  ],
+                  "conditions": []
+                }
+              ]
+            }
+          ],
+          "position": "fixed-bottom",
+          "direction": "vertical",
+          "scrollable": false
+        }
+      ],
+      "hidesBackButton": false
+    },
+    {
+      "id": "pq-goal-alcohol",
+      "state": {
+        "selectedOption": null
+      },
+      "title": "Goals",
+      "events": [
+        {
+          "id": "navigate_to_areas",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "goal_alcohol": "{$screenState.selectedOption}"
+              }
+            },
+            {
+              "type": "navigation",
+              "deeplink": "pq-areas-to-improve"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 24,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "largeQuestion",
+              "state": {
+                "id": "goal_question",
+                "type": "singleSelect",
+                "header": {
+                  "id": "goal_header",
+                  "title": "What is your ideal outcome?",
+                  "caption": "Select the option that fits you best",
+                  "imageName": null,
+                  "description": null
+                },
+                "options": [
+                  {
+                    "id": "drink_less",
+                    "title": "Drink less"
+                  },
+                  {
+                    "id": "quit_eventually",
+                    "title": "Quit drinking eventually"
+                  },
+                  {
+                    "id": "track_consumption",
+                    "title": "Keep tabs on my consumption and discover patterns"
+                  },
+                  {
+                    "id": "learn_explore",
+                    "title": "Not sure yet - I'd like to learn more and explore"
+                  },
+                  {
+                    "id": "maintain_sobriety",
+                    "title": "Maintain my sobriety (already quit)"
+                  }
+                ],
+                "category": "Goals",
+                "maxSelection": 1,
+                "allowsMultiSelection": false,
+                "currentlySelectedOptions": null
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        },
+        {
+          "id": "button_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "button",
+              "state": {
+                "id": "continue_btn",
+                "title": "Continue",
+                "isDisabled": false
+              },
+              "style": {
+                "size": "large",
+                "style": "primary"
+              },
+              "events": [
+                {
+                  "id": "navigate_to_areas",
+                  "type": "onTap",
+                  "action": [
+                    {
+                      "type": "stateUpdate",
+                      "scope": "module",
+                      "updates": {
+                        "goal_alcohol": "{$screenState.selectedOption}"
+                      }
+                    },
+                    {
+                      "type": "navigation",
+                      "deeplink": "pq-areas-to-improve"
+                    }
+                  ],
+                  "conditions": []
+                }
+              ]
+            }
+          ],
+          "position": "fixed-bottom",
+          "direction": "vertical",
+          "scrollable": false
+        }
+      ],
+      "hidesBackButton": false
+    },
+    {
+      "id": "pq-areas-to-improve",
+      "state": {
+        "selectedOption": null
+      },
+      "title": "Goals",
+      "events": [
+        {
+          "id": "navigate_to_motivation",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "areas_to_improve": "{$screenState.selectedOption}"
+              }
+            },
+            {
+              "type": "navigation",
+              "deeplink": "pq-motivation"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 24,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "largeQuestion",
+              "state": {
+                "id": "areas_question",
+                "type": "singleSelect",
+                "header": {
+                  "id": "areas_header",
+                  "title": "What areas of your drinking can we help you improve?",
+                  "caption": null,
+                  "imageName": null,
+                  "description": null
+                },
+                "options": [
+                  {
+                    "id": "frequency",
+                    "title": "Frequency - limit my drinking to only specific days or times"
+                  },
+                  {
+                    "id": "moderation",
+                    "title": "Moderation - have fewer drinks per typical drinking day"
+                  },
+                  {
+                    "id": "intensity",
+                    "title": "Intensity - avoid or eliminate instances of heavy drinking"
+                  },
+                  {
+                    "id": "explore",
+                    "title": "I'm not sure yet - I'd like to learn more and explore the options"
+                  }
+                ],
+                "category": "Goals",
+                "maxSelection": 1,
+                "allowsMultiSelection": false,
+                "currentlySelectedOptions": null
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        },
+        {
+          "id": "button_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "button",
+              "state": {
+                "id": "continue_btn",
+                "title": "Continue",
+                "isDisabled": false
+              },
+              "style": {
+                "size": "large",
+                "style": "primary"
+              },
+              "events": [
+                {
+                  "id": "navigate_to_motivation",
+                  "type": "onTap",
+                  "action": [
+                    {
+                      "type": "stateUpdate",
+                      "scope": "module",
+                      "updates": {
+                        "areas_to_improve": "{$screenState.selectedOption}"
+                      }
+                    },
+                    {
+                      "type": "navigation",
+                      "deeplink": "pq-motivation"
+                    }
+                  ],
+                  "conditions": []
+                }
+              ]
+            }
+          ],
+          "position": "fixed-bottom",
+          "direction": "vertical",
+          "scrollable": false
+        }
+      ],
+      "hidesBackButton": false
+    },
+    {
+      "id": "pq-motivation",
+      "state": {
+        "selectedOptions": []
+      },
+      "title": "Motivation",
+      "events": [
+        {
+          "id": "navigate_to_learning",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "motivation": "{$screenState.selectedOptions}"
+              }
+            },
+            {
+              "type": "navigation",
+              "deeplink": "pq-learning-topics"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 24,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "largeQuestion",
+              "state": {
+                "id": "motivation_question",
+                "type": "multiSelect",
+                "header": {
+                  "id": "motivation_header",
+                  "title": "What motivates you to explore or make changes?",
+                  "caption": "Select all that apply",
+                  "imageName": null,
+                  "description": null
+                },
+                "options": [
+                  {
+                    "id": "physical_health",
+                    "title": "Physical health"
+                  },
+                  {
+                    "id": "wellbeing",
+                    "title": "Wellbeing"
+                  },
+                  {
+                    "id": "personal_growth",
+                    "title": "Personal growth"
+                  },
+                  {
+                    "id": "relationships",
+                    "title": "Relationships"
+                  },
+                  {
+                    "id": "saving_money",
+                    "title": "Saving money"
+                  },
+                  {
+                    "id": "incentive",
+                    "title": "An incentive/gift card"
+                  }
+                ],
+                "category": "Motivation",
+                "maxSelection": 6,
+                "allowsMultiSelection": true,
+                "currentlySelectedOptions": null
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        },
+        {
+          "id": "button_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "button",
+              "state": {
+                "id": "continue_btn",
+                "title": "Continue",
+                "isDisabled": false
+              },
+              "style": {
+                "size": "large",
+                "style": "primary"
+              },
+              "events": [
+                {
+                  "id": "navigate_to_learning",
+                  "type": "onTap",
+                  "action": [
+                    {
+                      "type": "stateUpdate",
+                      "scope": "module",
+                      "updates": {
+                        "motivation": "{$screenState.selectedOptions}"
+                      }
+                    },
+                    {
+                      "type": "navigation",
+                      "deeplink": "pq-learning-topics"
+                    }
+                  ],
+                  "conditions": []
+                }
+              ]
+            }
+          ],
+          "position": "fixed-bottom",
+          "direction": "vertical",
+          "scrollable": false
+        }
+      ],
+      "hidesBackButton": false
+    },
+    {
+      "id": "pq-learning-topics",
+      "state": {
+        "selectedOptions": []
+      },
+      "title": "Learning",
+      "events": [
+        {
+          "id": "navigate_to_setting_up",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "learning_topics": "{$screenState.selectedOptions}"
+              }
+            },
+            {
+              "type": "navigation",
+              "deeplink": "pq-setting-up-goals"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 24,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "largeQuestion",
+              "state": {
+                "id": "learning_question",
+                "type": "multiSelect",
+                "header": {
+                  "id": "learning_header",
+                  "title": "What would you like to learn more about?",
+                  "caption": "Select up to 5",
+                  "imageName": null,
+                  "description": null
+                },
+                "options": [
+                  {
+                    "id": "mindfulness",
+                    "title": "Mindfulness"
+                  },
+                  {
+                    "id": "cravings_support",
+                    "title": "Cravings support"
+                  },
+                  {
+                    "id": "self_confidence",
+                    "title": "Self-confidence"
+                  },
+                  {
+                    "id": "habits",
+                    "title": "Habits"
+                  },
+                  {
+                    "id": "emotional_stability",
+                    "title": "Emotional stability"
+                  },
+                  {
+                    "id": "sleep_quality",
+                    "title": "Sleep quality"
+                  },
+                  {
+                    "id": "decision_making",
+                    "title": "Decision-making"
+                  },
+                  {
+                    "id": "relationships",
+                    "title": "Relationships"
+                  },
+                  {
+                    "id": "financial_stability",
+                    "title": "Financial stability"
+                  },
+                  {
+                    "id": "diet_nutrition",
+                    "title": "Diet and nutrition"
+                  },
+                  {
+                    "id": "meditation",
+                    "title": "Meditation"
+                  }
+                ],
+                "category": "Learning",
+                "maxSelection": 5,
+                "allowsMultiSelection": true,
+                "currentlySelectedOptions": null
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        },
+        {
+          "id": "button_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "button",
+              "state": {
+                "id": "continue_btn",
+                "title": "Continue",
+                "isDisabled": false
+              },
+              "style": {
+                "size": "large",
+                "style": "primary"
+              },
+              "events": [
+                {
+                  "id": "navigate_to_setting_up",
+                  "type": "onTap",
+                  "action": [
+                    {
+                      "type": "stateUpdate",
+                      "scope": "module",
+                      "updates": {
+                        "learning_topics": "{$screenState.selectedOptions}"
+                      }
+                    },
+                    {
+                      "type": "navigation",
+                      "deeplink": "pq-setting-up-goals"
+                    }
+                  ],
+                  "conditions": []
+                }
+              ]
+            }
+          ],
+          "position": "fixed-bottom",
+          "direction": "vertical",
+          "scrollable": false
+        }
+      ],
+      "hidesBackButton": false
+    },
+    {
+      "id": "pq-setting-up-goals",
+      "title": "Setting Up",
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "orb",
+              "state": {
+                "id": "orb_fb8c6ef0-e27f-4f39-9ceb-9302d0a130ca",
+                "colors": [
+                  "#A2CC6E",
+                  "#DDF1C4"
+                ],
+                "agentState": null,
+                "volumeMode": "auto"
+              },
+              "style": {
+                "size": "medium"
+              },
+              "events": []
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "setting_up_title",
+                "text": "Meet Navi"
+              },
+              "style": {
+                "color": "primary",
+                "style": "heading1",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "did_you_know_label",
+                "text": "Your personalised AI assistant "
+              },
+              "style": {
+                "color": "secondary",
+                "style": "caption1",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "mid_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 24,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "did_you_know_text",
+                "text": "Navi is here to help you explore what matters most to you, track your progress, and celebrate every step"
+              },
+              "style": {
+                "color": "primary",
+                "style": "body1",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "bottom_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        },
+        {
+          "id": "button_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "button",
+              "state": {
+                "id": "continue_btn",
+                "title": "Continue",
+                "isDisabled": false
+              },
+              "style": {
+                "size": "large",
+                "style": "primary"
+              },
+              "events": [
+                {
+                  "id": "navigate_to_completion",
+                  "type": "onTap",
+                  "action": [
+                    {
+                      "type": "navigation",
+                      "deeplink": "pq-intro"
+                    }
+                  ],
+                  "conditions": []
+                }
+              ]
+            }
+          ],
+          "position": "fixed-bottom",
+          "direction": "vertical",
+          "scrollable": false
+        }
+      ]
+    },
+    {
+      "id": "pq-program-summary",
+      "title": "Your program, based on what you shared",
+      "events": [
+        {
+          "id": "next_step_event",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "about-you"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "spacer_cc2faa35-0de2-4558-808f-897f02787244"
+              },
+              "style": {
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              },
+              "events": []
+            },
+            {
+              "type": "orb",
+              "state": {
+                "id": "orb_6f57f27c-07ca-44d6-9649-519847031fb3",
+                "colors": [
+                  "#A2CC6E",
+                  "#DDF1C4"
+                ],
+                "agentState": null,
+                "volumeMode": "auto"
+              },
+              "style": {
+                "size": "medium"
+              },
+              "events": []
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "spacer_5db0c1be-96fb-4f03-a8db-b31759b34c70"
+              },
+              "style": {
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              },
+              "events": []
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ],
+      "screenPrompt": "Summarize their answers back to them using the EXACT values from their quiz: You want to {{goal_alcohol}}. Your motivation is {{motivation}}. You want to learn about {{learning_topics}}. Ask if this sounds right before proceeding."
+    },
+    {
+      "id": "about-you",
+      "title": null,
+      "events": [
+        {
+          "id": "navigate_to_outcomes",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "outcomes"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "openQuestion",
+              "state": {
+                "id": "about_you_question",
+                "question": "What brings you to Pelago?"
+              },
+              "style": {},
+              "events": [
+                {
+                  "id": "navigate_to_outcomes",
+                  "type": "custom",
+                  "action": [
+                    {
+                      "type": "navigation",
+                      "deeplink": "outcomes"
+                    }
+                  ],
+                  "conditions": []
+                }
+              ]
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "outcomes",
+      "title": null,
+      "events": [
+        {
+          "id": "navigate_to_motivation",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "motivation"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            },
+            {
+              "type": "openQuestion",
+              "state": {
+                "id": "outcomes_question",
+                "question": "What would you like to achieve with Pelago?"
+              },
+              "style": {},
+              "events": [
+                {
+                  "id": "navigate_to_motivation",
+                  "type": "custom",
+                  "action": [
+                    {
+                      "type": "navigation",
+                      "deeplink": "motivation"
+                    }
+                  ],
+                  "conditions": []
+                }
+              ]
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "motivation",
+      "title": null,
+      "events": [
+        {
+          "id": "navigate_to_intention",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "intention"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "openQuestion",
+              "state": {
+                "id": "motivation_question",
+                "question": "And what's motivating you to make that change?"
+              },
+              "style": {},
+              "events": [
+                {
+                  "id": "navigate_to_intention",
+                  "type": "custom",
+                  "action": [
+                    {
+                      "type": "navigation",
+                      "deeplink": "intention"
+                    }
+                  ],
+                  "conditions": []
+                }
+              ]
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "intention",
+      "title": null,
+      "events": [
+        {
+          "id": "navigate_to_cm_rewards_intro",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "cm-rewards-intro"
+            }
+          ],
+          "conditions": []
+        },
+        {
+          "id": "navigate_to_checkin_commitment",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "checkin-commitment"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "openQuestion",
+              "state": {
+                "id": "intention_question",
+                "question": "What would you like to put a little focus on this week?"
+              },
+              "style": {},
+              "events": [
+                {
+                  "id": "navigate_to_cm_rewards_intro",
+                  "type": "custom",
+                  "action": [
+                    {
+                      "type": "navigation",
+                      "deeplink": "cm-rewards-intro"
+                    }
+                  ],
+                  "conditions": []
+                }
+              ]
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "cm-rewards-intro",
+      "title": "Introducing Rewards",
+      "events": [
+        {
+          "id": "navigate_to_checkin_commitment",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "checkin-commitment"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            },
+            {
+              "type": "animatedImage",
+              "state": {
+                "id": "rewards_animation",
+                "lottieName": "SBSanimation"
+              },
+              "style": {
+                "width": 200,
+                "height": 200
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "rewards_title",
+                "text": "Turn progress into rewards"
+              },
+              "style": {
+                "color": "primary",
+                "style": "heading3",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "mid_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 16,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "rewards_description",
+                "text": "Earn points for checking in and attending your appointments which you can redeem for gifts."
+              },
+              "style": {
+                "color": "secondary",
+                "style": "body2",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "bottom_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ]
+    },
+    {
+      "id": "checkin-commitment",
+      "state": {
+        "selectedCommitment": null
+      },
+      "title": null,
+      "events": [
+        {
+          "id": "select_daily_commitment",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "screen",
+              "updates": {
+                "selectedCommitment": [
+                  "daily"
+                ]
+              }
+            },
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "checkinCommitment": "Every day"
+              }
+            }
+          ],
+          "conditions": []
+        },
+        {
+          "id": "select_few_times_commitment",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "screen",
+              "updates": {
+                "selectedCommitment": [
+                  "few_times"
+                ]
+              }
+            },
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "checkinCommitment": "A few times"
+              }
+            }
+          ],
+          "conditions": []
+        },
+        {
+          "id": "select_once_commitment",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "screen",
+              "updates": {
+                "selectedCommitment": [
+                  "once"
+                ]
+              }
+            },
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "checkinCommitment": "Once"
+              }
+            }
+          ],
+          "conditions": []
+        },
+        {
+          "id": "navigate_to_notification_setup",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "pq-notification-setup"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 32,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "largeQuestion",
+              "state": {
+                "id": "checkin_commitment_question",
+                "type": "singleSelect",
+                "copyId": null,
+                "header": {
+                  "id": "checkin_header",
+                  "title": "How often would you like to check in this week?",
+                  "caption": null,
+                  "imageName": null,
+                  "description": null
+                },
+                "caption": null,
+                "options": [
+                  {
+                    "id": "daily",
+                    "title": "Every day",
+                    "description": "Check in daily to build a strong habit"
+                  },
+                  {
+                    "id": "few_times",
+                    "title": "A few times",
+                    "description": "Check in 3-4 times this week"
+                  },
+                  {
+                    "id": "once",
+                    "title": "Once",
+                    "description": "Check in once this week"
+                  }
+                ],
+                "category": "check-in",
+                "maxSelection": 1,
+                "allowsMultiSelection": false,
+                "currentlySelectedOptions": null
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "pq-notification-setup",
+      "title": null,
+      "events": [
+        {
+          "id": "permissions_screen_event",
+          "type": "custom",
+          "action": [],
+          "conditions": []
+        },
+        {
+          "id": "navigate_to_plan_review",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "pq-plan-review"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            },
+            {
+              "type": "animatedImage",
+              "state": {
+                "id": "notification_animation",
+                "lottieName": "COLOR_Pelago_WalkWithPhone"
+              },
+              "style": {
+                "width": 280,
+                "height": 280
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "permissions_header",
+                "text": "Stay on track with notifications"
+              },
+              "style": {
+                "color": "primary",
+                "style": "heading1",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "bottom_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            },
+            {
+              "type": "toggleCard",
+              "state": {
+                "id": "notifications-toggle",
+                "label": "Recommended",
+                "title": "Turn on notifications",
+                "isToggled": true,
+                "description": null
+              },
+              "style": {
+                "icon": "Notification",
+                "borderColor": "secondaryDefault",
+                "cornerRadius": 8,
+                "backgroundColor": "secondaryDisabled"
+              },
+              "events": [
+                {
+                  "id": "NotificationToggled",
+                  "type": "onToggle",
+                  "action": [],
+                  "conditions": []
+                }
+              ]
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ]
+    },
+    {
+      "id": "pq-plan-review",
+      "title": null,
+      "events": [
+        {
+          "id": "navigate_to_completion",
+          "type": "custom",
+          "action": [
+            {
+              "type": "navigation",
+              "deeplink": "pq-start-programme"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "title_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 24,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "review_title",
+                "text": "Your plan for this week"
+              },
+              "style": {
+                "color": "primary",
+                "style": "heading1",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "title_widgets_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 24,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": false
+        },
+        {
+          "id": "summary_cards_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "textCard",
+              "state": {
+                "id": "about_you_card",
+                "title": "About you",
+                "content": "{$moduleData.aboutYouSummary}"
+              },
+              "style": {
+                "textColor": "textGlobalPrimary",
+                "borderColor": "backgroundLightMintGreen",
+                "borderWidth": 1,
+                "captionColor": "textGlobalSecondary",
+                "cornerRadius": 16,
+                "backgroundColor": "backgroundLightMintGreen"
+              },
+              "conditions": [
+                {
+                  "rules": {
+                    "and": [
+                      {
+                        "!=": [
+                          {
+                            "var": "summary"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "!=": [
+                          {
+                            "var": "summary"
+                          },
+                          ""
+                        ]
+                      }
+                    ]
+                  },
+                  "state": {
+                    "summary": "{$moduleData.aboutYouSummary}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "textCard",
+              "state": {
+                "id": "your_why_card",
+                "title": "your why",
+                "content": "{$moduleData.yourWhySummary}"
+              },
+              "style": {
+                "textColor": "textGlobalPrimary",
+                "borderColor": "backgroundLightMintGreen",
+                "borderWidth": 1,
+                "captionColor": "textGlobalSecondary",
+                "cornerRadius": 16,
+                "backgroundColor": "backgroundLightMintGreen"
+              },
+              "conditions": [
+                {
+                  "rules": {
+                    "and": [
+                      {
+                        "!=": [
+                          {
+                            "var": "summary"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "!=": [
+                          {
+                            "var": "summary"
+                          },
+                          ""
+                        ]
+                      }
+                    ]
+                  },
+                  "state": {
+                    "summary": "{$moduleData.yourWhySummary}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "textCard",
+              "state": {
+                "id": "outcomes_card",
+                "title": "Outcomes",
+                "content": "{$moduleData.outcomesSummary}"
+              },
+              "style": {
+                "textColor": "textGlobalPrimary",
+                "borderColor": "backgroundLightMintGreen",
+                "borderWidth": 1,
+                "captionColor": "textGlobalSecondary",
+                "cornerRadius": 16,
+                "backgroundColor": "backgroundLightMintGreen"
+              },
+              "conditions": [
+                {
+                  "rules": {
+                    "and": [
+                      {
+                        "!=": [
+                          {
+                            "var": "summary"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "!=": [
+                          {
+                            "var": "summary"
+                          },
+                          ""
+                        ]
+                      }
+                    ]
+                  },
+                  "state": {
+                    "summary": "{$moduleData.outcomesSummary}"
+                  }
+                }
+              ]
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": false
+        },
+        {
+          "id": "widgets_spacer_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "widgets_top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 24,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": false
+        },
+        {
+          "id": "widgets_section",
+          "title": null,
+          "layout": "grid",
+          "elements": [
+            {
+              "type": "miniWidget",
+              "state": {
+                "id": "drinking_streak_widget",
+                "title": "{$moduleData.checkInStreak}",
+                "content": "Day streak"
+              },
+              "style": {
+                "cornerRadius": 8,
+                "backgroundColor": "backgroundCerulean"
+              }
+            },
+            {
+              "type": "miniWidget",
+              "state": {
+                "id": "intention_widget",
+                "title": "{$moduleData.weeklyIntention}",
+                "content": "Your focus"
+              },
+              "style": {
+                "cornerRadius": 8,
+                "backgroundColor": "backgroundLightMintGreen"
+              }
+            },
+            {
+              "type": "miniWidget",
+              "state": {
+                "id": "checkin_commitment_widget",
+                "title": "{$moduleData.checkinCommitment}",
+                "content": "Check-ins this week"
+              },
+              "style": {
+                "cornerRadius": 8,
+                "backgroundColor": "backgroundMistBlue"
+              }
+            },
+            {
+              "type": "miniWidget",
+              "state": {
+                "id": "cbt_session_widget",
+                "title": "Coming soon",
+                "content": "CBT session"
+              },
+              "style": {
+                "borderColor": "secondaryDefault",
+                "borderDashed": true,
+                "cornerRadius": 8,
+                "backgroundColor": "backgroundLight"
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": false
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "pq-start-programme",
+      "title": null,
+      "events": [
+        {
+          "id": "complete_intake_flow",
+          "type": "custom",
+          "action": [
+            {
+              "type": "closeModule",
+              "parameters": {
+                "reason": "intake_flow_completed"
+              },
+              "flowCompleted": true
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            },
+            {
+              "type": "animatedImage",
+              "state": {
+                "id": "completion_animation",
+                "lottieName": "COLOR_Pelago_Island"
+              },
+              "style": {
+                "width": 300,
+                "height": 300
+              }
+            },
+            {
+              "type": "animatedComponents",
+              "state": {
+                "id": "completion_animation_text",
+                "elements": [
+                  {
+                    "type": "textBlock",
+                    "state": {
+                      "id": "completion_text1",
+                      "text": "Loading your program"
+                    },
+                    "style": {
+                      "color": "primary",
+                      "style": "heading1",
+                      "alignment": "center"
+                    }
+                  },
+                  {
+                    "type": "textBlock",
+                    "state": {
+                      "id": "completion_text2",
+                      "text": "All set! Let's start your program"
+                    },
+                    "style": {
+                      "color": "primary",
+                      "style": "heading1",
+                      "alignment": "center"
+                    }
+                  }
+                ]
+              },
+              "style": {
+                "loop": false,
+                "curve": "easeInOut",
+                "duration": 2,
+                "autoStart": true,
+                "direction": "forward",
+                "pauseOnTap": false
+              },
+              "events": [
+                {
+                  "id": "completion_animation_complete",
+                  "type": "onAnimationComplete",
+                  "action": [
+                    {
+                      "type": "serviceCall",
+                      "onError": [
+                        {
+                          "type": "closeModule",
+                          "parameters": {
+                            "reason": "post_web_pq_disabled_for_testing"
+                          },
+                          "flowCompleted": true
+                        }
+                      ],
+                      "onSuccess": [
+                        {
+                          "type": "closeModule",
+                          "parameters": {
+                            "reason": "post_web_pq_completed_successfully"
+                          },
+                          "flowCompleted": true
+                        }
+                      ],
+                      "parameters": {
+                        "configurationId": "{$moduleData.postWebPQConfigurationId}",
+                        "postWebPQAnswers": "{$moduleData.postWebPQAnswers}"
+                      },
+                      "serviceName": "pqService",
+                      "functionName": "submitAnswers_DISABLED"
+                    }
+                  ],
+                  "conditions": []
+                }
+              ]
+            },
+            {
+              "type": "loadingView",
+              "state": {
+                "id": "completion_loading_indicator"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "bottom_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ],
+      "hidesBackButton": true
+    }
+  ],
+  "screenPrompts": {
+    "outcomes": "Screen ID: outcomes\nAvailable Events: navigate_to_motivation\n\nPurpose: Understand desired outcomes\n\nQuestion:\n\"What would you like to achieve with Pelago?\"\n\nAfter response:\n1. Brief acknowledgment\n2. Call: record_input with arguments {\"title\": \"Outcomes\", \"summary\": \"[one-line summary]\", \"storeKey\": \"outcomesSummary\", \"nextEventId\": \"navigate_to_motivation\", \"delay\": 2}\n3. Continue: \"What's motivating you to make this change?\"",
+    "pq-intro": "Screen ID: pq-intro\nAvailable Events: navigate_to_program_summary (button tap)\n\nPurpose: Welcome screen where user taps \"Start\" to enable microphone and begin voice session\n\nUI Display:\n- Title: \"Welcome to Pelago\"\n- Description: \"Let's get you set up with a personalized plan\"\n- Pelago Boat animation\n- \"Start\" button at bottom\n\nBehavior:\n- This is a CTA-only screen (no voice interaction)\n- When user taps \"Start\", the button automatically:\n  1. Enables voice/microphone\n  2. Navigates directly to pq-program-summary\n- Voice agent only activates AFTER user taps Start\n\nNo voice interaction needed on this screen.",
+    "about-you": "Screen ID: about-you\nAvailable Events: navigate_to_outcomes\n\nPurpose: Understand what brings them here\n\nQuestion:\n\"Tell me a bit about what brings you to Pelago today.\"\n\nAfter response:\n1. Brief acknowledgment (\"Thanks for sharing\" or similar)\n2. Call: record_input with arguments {\"title\": \"About you\", \"summary\": \"[one-line summary]\", \"storeKey\": \"aboutYouSummary\", \"nextEventId\": \"navigate_to_outcomes\", \"delay\": 2}\n3. Continue: \"What outcomes are you hoping to achieve?\"",
+    "intention": "Screen ID: intention\nAvailable Events: navigate_to_cm_rewards_intro, navigate_to_checkin_commitment\n\nPurpose: Set weekly intention - THEN transition to rewards and check-in\n\n**CRITICAL: After the user answers, do ALL of these in ONE response (in this EXACT order):**\n\n1. Call: record_input with arguments {\"title\": \"Intention\", \"summary\": \"[one-line summary]\", \"storeKey\": \"weeklyIntention\", \"nextEventId\": \"navigate_to_cm_rewards_intro\", \"delay\": 0}\n2. Say: \"Great intention! Now, every time you check in, you'll earn points you can redeem for rewards. Members who check in daily are 5 times more likely to reach their goals.\"\n3. Call: trigger_event with arguments {\"eventId\": \"navigate_to_checkin_commitment\", \"delay\": 4}\n4. THEN say: \"How often would you like to check in this week - every day, a few times, or just once?\"\n\n**TIMING:**\n- record_input (delay: 0) → cm-rewards-intro appears immediately\n- You explain rewards for ~4 seconds while user sees rewards screen\n- trigger_event (delay: 4) → checkin-commitment appears after rewards explanation\n- You ask the check-in question while user sees the options",
+    "motivation": "Screen ID: motivation\nAvailable Events: navigate_to_intention\n\nPurpose: Understand their motivation\n\nQuestion:\n\"What's motivating you to make this change?\"\n\nAfter response:\n1. Brief acknowledgment\n2. Call: record_input with arguments {\"title\": \"Your why\", \"summary\": \"[one-line summary]\", \"storeKey\": \"yourWhySummary\", \"nextEventId\": \"navigate_to_intention\", \"delay\": 2}\n3. Continue: \"Now let's set a focus for this week. What would you like to work on?\"",
+    "pq-completion": "Screen ID: pq-completion\nAvailable Events: navigate_to_program_summary\n\nPurpose: Voice agent welcome screen where the intake conversation begins\n\nUI Display:\n- Title: \"Ready to chat?\"\n- Description: \"You'll be asked to enable your microphone to talk to your assistant\"\n- Pelago Island animation\n\nOpening Statement:\n\"Hi {{memberName}}, welcome to Pelago. It's great to have you onboard. I'm Navi, I'm here to help navigate your journey with us. First, we'll go through some quick questions to get to know each other and then work together to setup a plan. Are you ready to start?\"\n\nWait for user confirmation.\n\nThen continue: \"Great. Let's get started. First let's review where you are.\"\n\nThen IMMEDIATELY trigger navigation to program summary.\n\nInstructions:\n1. Deliver the opening statement\n2. Wait for user confirmation to \"Are you ready to start?\"\n3. After confirmation, say: \"Great. Let's get started. First let's review where you are.\"\n4. IMMEDIATELY trigger: trigger_event with arguments {\"eventId\": \"navigate_to_program_summary\"}\n5. This navigates to pq-program-summary\n\nNavigation:\nAfter saying \"First let's review where you are\", IMMEDIATELY trigger:\n- Event ID: navigate_to_program_summary\n- Tool call: trigger_event with arguments {\"eventId\": \"navigate_to_program_summary\"}",
+    "pq-plan-review": "Screen ID: pq-plan-review\nAvailable Events: navigate_to_completion\n\nPurpose: Quick plan summary\n\nScript:\n\"Here's your plan: You're focusing on [intention], checking in [frequency]. Your motivation is [motivation]. Does this look good?\"\n\nBehavior:\n- Keep summary brief - hit the key points only\n- After confirmation, say: \"Perfect, let's get you started.\"\n- Call: trigger_event with arguments {\"eventId\": \"navigate_to_completion\"}",
+    "cm-rewards-intro": "Screen ID: cm-rewards-intro\nAvailable Events: navigate_to_checkin_commitment\n\nPurpose: Explain the rewards system before moving to check-in commitment\n\nBehavior (in this exact order):\n1. FIRST explain rewards while staying on THIS screen:\n   \"Every time you check in, you'll earn points you can redeem for rewards. Members who check in daily are 5 times more likely to reach their goals.\"\n\n2. Pause briefly (let the user absorb the information)\n\n3. THEN transition with:\n   \"Let's set up your check-in schedule.\"\n\n4. Call: trigger_event with arguments {\"eventId\": \"navigate_to_checkin_commitment\"}\n\n5. Once on the next screen, ask:\n   \"How often would you like to check in this week - every day, a few times, or just once?\"\n\nIMPORTANT:\n- Stay on the rewards screen while explaining rewards (do NOT navigate immediately)\n- Give the user 2-3 seconds to read the screen before navigating\n- Only navigate AFTER you've finished explaining rewards",
+    "checkin-commitment": "Screen ID: checkin-commitment\nAvailable Events: select_daily_commitment, select_few_times_commitment, select_once_commitment, navigate_to_notification_setup\n\n**CRITICAL: This screen requires TWO function calls - selection AND navigation. Both are MANDATORY.**\n\nBehavior:\n1. Listen for their choice and call the selection event:\n   - \"every day\"/\"daily\" → trigger_event {\"eventId\": \"select_daily_commitment\"}\n   - \"few times\"/\"couple times\" → trigger_event {\"eventId\": \"select_few_times_commitment\"}\n   - \"once\"/\"one time\" → trigger_event {\"eventId\": \"select_once_commitment\"}\n2. Say: \"Great choice.\"\n3. **MANDATORY - DO NOT SKIP:** Call trigger_event with arguments {\"eventId\": \"navigate_to_notification_setup\"}\n4. **ONLY AFTER calling navigate_to_notification_setup**, ask: \"What time would you like your daily reminder?\"\n\n**WARNING: You MUST call navigate_to_notification_setup BEFORE asking about reminder time. Without this call, the notification screen will never appear.**",
+    "pq-program-summary": "Screen ID: pq-program-summary\nAvailable Events: next_step_event\n\nPurpose: Summarize quiz answers and confirm before starting detailed questions\n\nContext Variables:\n- {{feelings_alcohol}} - How they feel about their drinking\n- {{goal_alcohol}} - Their stated goal\n- {{motivation}} - What motivates them\n- {{learning_topics}} - Topics they want to learn about\n- {{areas_to_improve}} - Areas they want to improve\n\nON SCREEN LOAD - SAY THIS (personalized):\n\n\"So from your quiz, it sounds like you [reflect {{feelings_alcohol}} in natural language]. Your goal is to {{goal_alcohol}}, and you're motivated by {{motivation}}. You want to learn about {{learning_topics}}. Does that sound right?\"\n\nExample (if feelings_alcohol is \"curious about changing\", goal is \"drink less\"):\n\"So from your quiz, it sounds like you're curious about making some changes to your drinking. Your goal is to drink less, and you're motivated by feeling more in control and improving your health. You want to learn about managing triggers and building healthier routines. Does that sound right?\"\n\nBehavior:\n1. Deliver the personalized summary using ACTUAL quiz answer values\n2. Wait for user confirmation (\"yes\", \"sounds right\", \"yep\", etc.)\n3. After confirmation, call: trigger_event with arguments {\"eventId\": \"next_step_event\"}\n4. Transition: \"Great, let me ask you a few more questions to really personalize your program.\"\n\nIMPORTANT:\n- NEVER use generic phrases like \"based on your quiz\" without the actual values\n- If any variable is empty, acknowledge it naturally (\"I don't have that from your quiz yet, but...\")\n- The next_step_event navigates to the about-you screen",
+    "pq-start-programme": "Screen ID: pq-start-programme\nAvailable Events: complete_intake_flow\n\nPurpose: Completion\n\nScript:\n\"All set! Your program is ready. I'm here whenever you need support. Take care!\"\n\nBehavior:\n1. Say the closing message\n2. Call: trigger_event with arguments {\"eventId\": \"complete_intake_flow\"}\n3. Call: end_call with arguments {\"reason\": \"journey completed\"}",
+    "pq-notification-setup": "Screen ID: pq-notification-setup\nAvailable Events: permissions_screen_event, navigate_to_plan_review\n\nPurpose: Set up notifications\n\nBehavior:\n1. Listen for their preferred time\n2. Say: \"Got it, we'll remind you at [time].\"\n3. Call: trigger_event with arguments {\"eventId\": \"permissions_screen_event\"}\n4. Say: \"Tap Allow when you see the prompt.\"\n5. Wait for acknowledgment (or 3 seconds)\n6. Call: trigger_event with arguments {\"eventId\": \"navigate_to_plan_review\"}\n7. Continue to plan review"
+  }
+}
