@@ -362,6 +362,30 @@ function VoiceAgentContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run only once on mount
 
+  // Refresh journey when page becomes visible (e.g., returning from Journey Builder)
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && sessionStatus === 'DISCONNECTED' && currentJourney) {
+        console.log('🔄 Page visible, refreshing current journey...');
+        try {
+          const refreshedJourney = await loadJourneyForRuntime(currentJourney.id);
+          if (refreshedJourney) {
+            setCurrentJourney(refreshedJourney);
+            console.log('✅ Journey refreshed:', refreshedJourney.name);
+          }
+          // Also refresh journey list
+          const journeyList = await listJourneysForRuntime();
+          setAvailableJourneys(journeyList);
+        } catch (error) {
+          console.error('Failed to refresh journey:', error);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [sessionStatus, currentJourney?.id]);
+
   // Start a non-voice session (no microphone, no WebRTC)
   const startNonVoiceSession = useCallback((journey: Journey) => {
     console.log('🚀 Starting non-voice session for journey:', journey.name);
