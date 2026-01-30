@@ -638,6 +638,51 @@ function VoiceAgentContent() {
     };
   }, [addLog, switchToAgent, disableScreenRendering, enableScreenRendering, setAgents, flowContext, moduleState, updateFlowContext, currentJourney]);
 
+  // Listen for navigation events from ScreenContext for debugging
+  useEffect(() => {
+    const handleEventTriggered = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { eventId, currentScreen, screensCount, eventData } = customEvent.detail;
+      addLog('event', `🔘 Button/Event: "${eventId}" on screen "${currentScreen}"`, {
+        screensCount,
+        eventData,
+      });
+    };
+    
+    const handleNavigation = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { fromScreen, toScreen, deeplink, screensAvailable, screenIds } = customEvent.detail;
+      addLog('info', `🧭 Navigation: "${fromScreen}" → "${toScreen}"`, {
+        deeplink,
+        screensAvailable,
+        screenIds: screenIds?.slice(0, 5), // First 5 for brevity
+      });
+    };
+    
+    const handleNavigationResult = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { success, fromScreen, toScreen, availableScreens } = customEvent.detail;
+      if (success) {
+        addLog('success', `✅ Navigated: "${fromScreen}" → "${toScreen}"`);
+      } else {
+        addLog('error', `❌ Navigation failed: screen "${toScreen}" not found`, {
+          fromScreen,
+          availableScreens,
+        });
+      }
+    };
+    
+    window.addEventListener('eventTriggered', handleEventTriggered as EventListener);
+    window.addEventListener('screenNavigation', handleNavigation as EventListener);
+    window.addEventListener('screenNavigationResult', handleNavigationResult as EventListener);
+    
+    return () => {
+      window.removeEventListener('eventTriggered', handleEventTriggered as EventListener);
+      window.removeEventListener('screenNavigation', handleNavigation as EventListener);
+      window.removeEventListener('screenNavigationResult', handleNavigationResult as EventListener);
+    };
+  }, [addLog]);
+
   const connectToRealtime = async (journeyOverride?: Journey, flowContextOverride?: Record<string, any>, options?: { skipScreenReset?: boolean }) => {
     console.log('🎙️🎙️🎙️ connectToRealtime CALLED 🎙️🎙️🎙️');
     console.log('🎙️ Arguments:', {

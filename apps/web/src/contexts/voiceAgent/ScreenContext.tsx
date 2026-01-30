@@ -207,8 +207,24 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
           const navAction = action as NavigationAction;
           // Extract screen ID from deeplink
           const screenId = extractScreenIdFromDeeplink(navAction.deeplink);
+          console.log(`🧭 Navigation action: deeplink="${navAction.deeplink}" -> screenId="${screenId}"`);
+          
+          // Dispatch navigation event for logging
+          window.dispatchEvent(new CustomEvent('screenNavigation', {
+            detail: {
+              type: 'navigation',
+              fromScreen: currentScreen?.id,
+              toScreen: screenId,
+              deeplink: navAction.deeplink,
+              screensAvailable: screens.length,
+              screenIds: screens.map(s => s.id),
+            }
+          }));
+          
           if (screenId) {
             navigateToScreen(screenId, screens);
+          } else {
+            console.warn('⚠️ Could not extract screen ID from deeplink:', navAction.deeplink);
           }
           break;
         }
@@ -298,6 +314,16 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
   const triggerEvent = useCallback((eventId: string, screens: Screen[] = [], eventData?: Record<string, any>) => {
     console.log('📢 triggerEvent called:', eventId, 'currentScreen:', currentScreen?.id, 'screens:', screens.length, 'eventData:', eventData);
     
+    // Dispatch event trigger for logging
+    window.dispatchEvent(new CustomEvent('eventTriggered', {
+      detail: {
+        eventId,
+        currentScreen: currentScreen?.id,
+        screensCount: screens.length,
+        eventData,
+      }
+    }));
+    
     // If eventData includes storeKey and selectedValue, store in moduleState
     // This allows quiz elements to store their selections automatically
     if (eventData?.storeKey && eventData?.selectedValue !== undefined) {
@@ -351,13 +377,34 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
    * Navigate to a screen by ID
    */
   const navigateToScreen = useCallback((screenId: string, screens: Screen[]) => {
+    console.log(`🧭 navigateToScreen called: screenId="${screenId}", screens.length=${screens.length}`);
     const screen = screens.find(s => s.id === screenId);
     if (screen) {
+      console.log(`✅ Screen found: "${screenId}" - navigating from "${currentScreen?.id}" to "${screen.id}"`);
       setCurrentScreen(screen);
+      
+      // Dispatch success event for logging
+      window.dispatchEvent(new CustomEvent('screenNavigationResult', {
+        detail: {
+          success: true,
+          fromScreen: currentScreen?.id,
+          toScreen: screen.id,
+        }
+      }));
     } else {
-      console.warn('Screen not found:', screenId);
+      console.warn(`❌ Screen not found: "${screenId}". Available screens: [${screens.map(s => s.id).join(', ')}]`);
+      
+      // Dispatch failure event for logging
+      window.dispatchEvent(new CustomEvent('screenNavigationResult', {
+        detail: {
+          success: false,
+          fromScreen: currentScreen?.id,
+          toScreen: screenId,
+          availableScreens: screens.map(s => s.id),
+        }
+      }));
     }
-  }, [setCurrentScreen]);
+  }, [setCurrentScreen, currentScreen]);
 
   /**
    * Go back to previous screen
