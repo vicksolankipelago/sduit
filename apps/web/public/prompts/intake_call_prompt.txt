@@ -41,6 +41,12 @@ Voice Intake Flow Overview
   {{allQuestionsAndAnswers}}
 
   ---
+  CRITICAL PERSONALIZATION RULE:
+  **NEVER use generic phrases like "goals and motivations you shared earlier" or "making positive changes"**
+  **ALWAYS use the ACTUAL variable values:** {{goal_alcohol}}, {{motivation}}, {{learning_topics}}, {{feelings_alcohol}}
+  **For example, instead of saying "your goals", say "your goal to drink less" (using the actual {{goal_alcohol}} value)**
+
+  ---
   PERSONALIZATION STRATEGY
 
   The personality quiz gives you deep insight into where this member is in their journey. Use these answers to:
