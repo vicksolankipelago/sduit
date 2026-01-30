@@ -188,10 +188,12 @@ export class JourneyRuntime {
       this.createRealtimeTool(toolConfig, agentName)
     );
 
-    // Add trigger_event tool if agent has screens
-    if (agentConfig.screens && agentConfig.screens.length > 0) {
-      realtimeTools.push(this.createTriggerEventTool(agentName) as any);
-    }
+    // Add system tools available to all journeys
+    // trigger_event - for screen navigation and UI events
+    realtimeTools.push(this.createTriggerEventTool(agentName) as any);
+    
+    // record_input - for recording user responses (always available as system tool)
+    realtimeTools.push(this.createSystemRecordInputTool(agentName) as any);
 
     // Add end_call tool to all agents
     realtimeTools.push(this.createEndCallTool(agentName) as any);
@@ -280,6 +282,70 @@ export class JourneyRuntime {
         const { title, summary = '', description = '', nextEventId, delay, storeKey } = input;
 
         toolLogger.debug(`Recording input - Title: ${title}, Summary: ${summary}, NextEvent: ${nextEventId}`);
+
+        // Call the record input callback if set
+        if (runtime.recordInputCallback) {
+          runtime.recordInputCallback(title, summary, description, storeKey);
+        }
+
+        // Handle automatic navigation if requested
+        if (nextEventId) {
+          let delayMs = 2000; // Default 2s
+          if (typeof delay === 'number') delayMs = delay * 1000;
+          else if (typeof delay === 'string') delayMs = parseFloat(delay) * 1000;
+          if (isNaN(delayMs) || delayMs <= 0) delayMs = 2000;
+
+          if (runtime.eventTriggerCallback) {
+            toolLogger.debug(`Scheduling auto-navigation to ${nextEventId} in ${delayMs}ms`);
+            setTimeout(() => {
+              if (runtime.eventTriggerCallback) {
+                runtime.eventTriggerCallback(nextEventId, agentName);
+              }
+            }, delayMs);
+          }
+        }
+
+        return `Input recorded successfully: ${title}`;
+      },
+    });
+  }
+
+  /**
+   * Create the system record_input tool (available for all journeys without configuration)
+   */
+  private createSystemRecordInputTool(agentName: string) {
+    const runtime = this;
+
+    interface RecordInputParams {
+      title: string;
+      summary?: string;
+      description?: string;
+      nextEventId?: string;
+      delay?: number | string;
+      storeKey?: string;
+    }
+
+    return (tool as any)({
+      name: 'record_input',
+      description: 'Record user input/response for tracking and state management. Use this to capture what the user said and optionally trigger a follow-up event.',
+      parameters: {
+        type: 'object' as const,
+        properties: {
+          title: { type: 'string', description: 'A short title for the recorded input (e.g., "feelings_response", "goal_selection")' },
+          summary: { type: 'string', description: 'A one-line summary of what the user said or selected' },
+          description: { type: 'string', description: 'Optional: A short description providing more context' },
+          nextEventId: { type: 'string', description: 'Optional: The ID of the next event to trigger automatically after recording' },
+          delay: { type: 'number', description: 'Optional: Delay in seconds before triggering the next event (default: 2s)' },
+          storeKey: { type: 'string', description: 'Optional: Module state key to store the recorded summary for later use' },
+        },
+        required: ['title', 'summary'] as const,
+        additionalProperties: false as const,
+      },
+      strict: false,
+      execute: async (input: RecordInputParams) => {
+        const { title, summary = '', description = '', nextEventId, delay, storeKey } = input;
+
+        toolLogger.debug(`[System] Recording input - Title: ${title}, Summary: ${summary}, NextEvent: ${nextEventId}`);
 
         // Call the record input callback if set
         if (runtime.recordInputCallback) {
