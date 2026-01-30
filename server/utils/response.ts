@@ -8,8 +8,14 @@ import { Response } from 'express';
 
 /**
  * Standard success response
+ * Includes no-cache headers to ensure fresh data on each request
  */
 export function success<T>(res: Response, data: T, status: number = 200): Response {
+  res.set({
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+  });
   return res.status(status).json({
     success: true,
     data,

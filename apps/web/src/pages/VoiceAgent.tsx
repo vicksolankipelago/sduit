@@ -386,6 +386,52 @@ function VoiceAgentContent() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [sessionStatus, currentJourney?.id]);
 
+  // Listen for journey updates from Journey Builder (cross-tab communication)
+  useEffect(() => {
+    let channel: BroadcastChannel | null = null;
+    
+    try {
+      channel = new BroadcastChannel('journey-updates');
+      
+      channel.onmessage = async (event) => {
+        const { type, journeyId, timestamp } = event.data;
+        
+        if (type === 'journey-saved') {
+          console.log('📢 Received journey update broadcast:', journeyId, 'at', new Date(timestamp).toISOString());
+          
+          // Refresh the journey list
+          try {
+            const journeyList = await listJourneysForRuntime();
+            setAvailableJourneys(journeyList);
+            console.log('✅ Journey list refreshed');
+            
+            // If this is the currently loaded journey, refresh it too
+            if (currentJourney?.id === journeyId) {
+              const refreshedJourney = await loadJourneyForRuntime(journeyId);
+              if (refreshedJourney) {
+                setCurrentJourney(refreshedJourney);
+                console.log('✅ Current journey refreshed:', refreshedJourney.name);
+                addLog('info', `🔄 Journey updated: ${refreshedJourney.name}`);
+              }
+            }
+          } catch (error) {
+            console.error('Failed to refresh after journey update:', error);
+          }
+        }
+      };
+      
+      console.log('📡 Listening for journey updates via BroadcastChannel');
+    } catch (e) {
+      console.warn('BroadcastChannel not supported');
+    }
+    
+    return () => {
+      if (channel) {
+        channel.close();
+      }
+    };
+  }, [currentJourney?.id, addLog]);
+
   // Start a non-voice session (no microphone, no WebRTC)
   const startNonVoiceSession = useCallback(async (journey: Journey) => {
     console.log('🚀 Starting non-voice session for journey:', journey.name);

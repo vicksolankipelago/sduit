@@ -208,10 +208,18 @@ export type PromptTemplateKey = typeof PROMPT_TEMPLATES[keyof typeof PROMPT_TEMP
 
 /**
  * Load a prompt template from the public directory
+ * Uses cache-busting to ensure latest version is always loaded
  */
 export async function loadPromptTemplate(templateKey: PromptTemplateKey): Promise<string> {
   try {
-    const response = await fetch(`/prompts/${templateKey}.txt`);
+    const cacheBuster = Date.now();
+    const response = await fetch(`/prompts/${templateKey}.txt?v=${cacheBuster}`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+      },
+    });
     
     if (!response.ok) {
       throw new Error(`Failed to load prompt template: ${response.statusText}`);

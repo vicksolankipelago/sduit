@@ -134,6 +134,18 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
 
     const saved = await saveJourney(currentJourney);
     if (saved) {
+      try {
+        const channel = new BroadcastChannel('journey-updates');
+        channel.postMessage({
+          type: 'journey-saved',
+          journeyId: currentJourney.id,
+          timestamp: Date.now(),
+        });
+        channel.close();
+        console.log('📢 Broadcast journey update:', currentJourney.id);
+      } catch (e) {
+        console.warn('BroadcastChannel not supported, manual refresh may be needed');
+      }
       alert(`Flow "${currentJourney.name}" saved successfully!`);
     } else {
       alert('Failed to save flow');
