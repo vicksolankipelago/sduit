@@ -23,7 +23,8 @@ export default function AgentUIRenderer({ bottomBar, onOpenSettings, onExit, sho
     screenRenderingMode,
     currentAgentScreens,
     currentScreenId,
-    moduleState
+    moduleState,
+    updateModuleState
   } = useAgentUI();
 
   // Debug logging - also log to console for debugging
@@ -90,6 +91,7 @@ export default function AgentUIRenderer({ bottomBar, onOpenSettings, onExit, sho
                   initialScreen={currentScreen} 
                   initialModuleState={moduleState}
                   onEnableVoice={onEnableVoice}
+                  onModuleStateChange={updateModuleState}
                 >
                   <ScreenPreview
                     key={currentScreen.id}

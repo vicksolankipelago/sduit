@@ -37,6 +37,7 @@ export interface ScreenProviderProps {
   initialScreen?: Screen;
   initialModuleState?: Record<string, AnyCodable>;
   onEnableVoice?: () => void; // Direct callback for enable_voice tool - preserves user gesture context
+  onModuleStateChange?: (updates: Record<string, AnyCodable>) => void; // Callback to propagate module state changes to parent
 }
 
 export const ScreenProvider: React.FC<ScreenProviderProps> = ({
@@ -44,6 +45,7 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
   initialScreen,
   initialModuleState = {},
   onEnableVoice,
+  onModuleStateChange,
 }) => {
   const [currentScreen, setCurrentScreenState] = useState<Screen | null>(initialScreen || null);
   const [screenState, setScreenState] = useState<Record<string, AnyCodable>>(
@@ -91,7 +93,12 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
 
   const updateModuleState = useCallback((updates: Record<string, AnyCodable>) => {
     setModuleState(prev => ({ ...prev, ...updates }));
-  }, []);
+    // Propagate module state changes to parent (AgentUIContext)
+    if (onModuleStateChange) {
+      console.log('📤 ScreenContext: Propagating module state to parent:', Object.keys(updates));
+      onModuleStateChange(updates);
+    }
+  }, [onModuleStateChange]);
 
   // Listen for record_input events from voice agent
   React.useEffect(() => {
