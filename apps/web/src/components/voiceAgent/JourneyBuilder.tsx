@@ -720,7 +720,12 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
               {isAdmin && (
                 <button 
                   className={`journey-action-btn ${hasUnsavedChanges ? 'has-changes' : ''} ${isSaving ? 'saving' : ''} ${saveSuccess ? 'success' : ''}`} 
-                  onClick={handleSaveJourney} 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔘 Save button click event fired', { disabled, isSaving });
+                    handleSaveJourney();
+                  }} 
                   disabled={disabled || isSaving}
                   title={hasUnsavedChanges ? 'You have unsaved changes' : 'Save flow'}
                 >
