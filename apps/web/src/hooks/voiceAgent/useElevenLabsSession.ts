@@ -85,10 +85,11 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
       callbacksRef.current.onError?.('DEBUG: onConnect fired', {});
       updateStatus('CONNECTED');
     },
-    onDisconnect: () => {
-      elevenLabsLogger.info('ElevenLabs conversation disconnected');
-      console.log('🔌 ElevenLabs onDisconnect callback fired');
-      callbacksRef.current.onError?.('DEBUG: onDisconnect fired - session ended', {});
+    onDisconnect: (details?: { reason?: string }) => {
+      const reason = details?.reason || 'unknown';
+      elevenLabsLogger.info('ElevenLabs conversation disconnected, reason:', reason);
+      console.log('🔌 ElevenLabs onDisconnect - reason:', reason, 'details:', details);
+      callbacksRef.current.onError?.(`Disconnected (${reason})`, details);
       updateStatus('DISCONNECTED');
       callbacksRef.current.onConversationComplete?.();
     },
