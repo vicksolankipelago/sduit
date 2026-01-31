@@ -51,6 +51,10 @@ export interface ElevenLabsConnectOptions {
   onEndCall?: (reason?: string) => void;
   elevenLabsAgentId?: string;
   elevenLabsVoiceId?: string;
+  // Client-side tools that the ElevenLabs agent can call
+  clientTools?: Record<string, (params: any) => Promise<any>>;
+  // Dynamic variables to inject into the agent's prompt
+  dynamicVariables?: Record<string, string>;
 }
 
 export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {}) {
@@ -67,6 +71,9 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
     setStatus(s);
     callbacksRef.current.onConnectionChange?.(s);
   }, []);
+
+  // Store client tools reference for dynamic updates
+  const clientToolsRef = useRef<Record<string, (params: any) => Promise<any>>>({});
 
   const conversation = useConversation({
     onConnect: () => {
@@ -106,6 +113,8 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         updateStatus('DISCONNECTED');
       }
     },
+    // Client-side tools - these are called by the ElevenLabs agent
+    clientTools: clientToolsRef.current,
   });
 
   const connect = useCallback(async (options: ElevenLabsConnectOptions) => {
@@ -120,24 +129,41 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
     elevenLabsLogger.info('Agent ID:', agentId);
     updateStatus('CONNECTING');
 
+    // Register client tools if provided
+    if (options.clientTools) {
+      elevenLabsLogger.info('Registering client tools:', Object.keys(options.clientTools));
+      Object.assign(clientToolsRef.current, options.clientTools);
+    }
+
     try {
       const overrides: any = {};
       
-      if (options.customInstructions) {
+      // Pass prompt/instructions as agent override
+      if (options.customInstructions || options.agentConfig?.instructions) {
+        const prompt = options.customInstructions || options.agentConfig?.instructions;
         overrides.agent = {
           prompt: {
-            prompt: options.customInstructions,
+            prompt: prompt,
           },
         };
+        elevenLabsLogger.info('Overriding agent prompt with journey instructions');
       }
       
+      // Pass dynamic variables for template substitution
+      if (options.dynamicVariables && Object.keys(options.dynamicVariables).length > 0) {
+        overrides.variables = options.dynamicVariables;
+        elevenLabsLogger.info('Passing dynamic variables:', Object.keys(options.dynamicVariables));
+      }
+      
+      // Override voice if specified
       if (options.elevenLabsVoiceId || options.voice) {
         overrides.tts = {
           voiceId: options.elevenLabsVoiceId || options.voice,
         };
       }
       
-      if (options.skipInitialGreeting === false && options.agentConfig?.instructions) {
+      // Set first message if greeting not skipped
+      if (options.skipInitialGreeting === false && options.agentConfig?.name) {
         if (!overrides.agent) overrides.agent = {};
         overrides.agent.firstMessage = `Hello! I'm ${options.agentConfig.name}. How can I help you today?`;
       }
