@@ -32,6 +32,26 @@ router.post("/", isAuthenticated, async (req: Request, res: Response) => {
     if (typeof rating !== "number" || rating < 1 || rating > 5) {
       return apiResponse.validationError(res, "rating must be a number between 1 and 5");
     }
+    
+    // Validate optional rating fields (1-5 scale)
+    if (conversationNaturalness !== undefined && conversationNaturalness !== null) {
+      if (typeof conversationNaturalness !== "number" || conversationNaturalness < 1 || conversationNaturalness > 5) {
+        return apiResponse.validationError(res, "conversationNaturalness must be a number between 1 and 5");
+      }
+    }
+    if (informationHelpfulness !== undefined && informationHelpfulness !== null) {
+      if (typeof informationHelpfulness !== "number" || informationHelpfulness < 1 || informationHelpfulness > 5) {
+        return apiResponse.validationError(res, "informationHelpfulness must be a number between 1 and 5");
+      }
+    }
+    
+    // Validate wouldDownloadApp enum
+    const validDownloadOptions = ['yes', 'maybe', 'no'];
+    if (wouldDownloadApp !== undefined && wouldDownloadApp !== null) {
+      if (!validDownloadOptions.includes(wouldDownloadApp)) {
+        return apiResponse.validationError(res, "wouldDownloadApp must be 'yes', 'maybe', or 'no'");
+      }
+    }
 
     // Look up by sessionId field (client session ID) or database id
     let session;
@@ -149,6 +169,7 @@ router.get("/:id", isAuthenticated, async (req: Request, res: Response) => {
       return apiResponse.unauthorized(res);
     }
 
+    const feedbackId = req.params.id as string;
     const [fb] = await db
       .select({
         id: feedback.id,
@@ -168,7 +189,7 @@ router.get("/:id", isAuthenticated, async (req: Request, res: Response) => {
       })
       .from(feedback)
       .leftJoin(voiceSessions, eq(feedback.voiceSessionId, voiceSessions.id))
-      .where(eq(feedback.id, req.params.id))
+      .where(eq(feedback.id, feedbackId))
       .limit(1);
 
     if (!fb) {

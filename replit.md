@@ -22,7 +22,13 @@ The application is built as a monorepo with a React 19 frontend (Vite) and an Ex
 *   **Journey Management:** Supports creation, editing, deletion, duplication, and versioning of voice agent journeys. Journeys can be configured as `voiceEnabled` or non-voice.
 *   **Publishing System:** Features a distinct development and production environment separation, with an explicit publishing workflow that stores ready journeys in Object Storage for production deployment.
 *   **Voice Interaction & Recording:** Manages real-time voice sessions, including recording audio chunks, saving full session transcripts, and providing playback functionality with audio-synced text highlighting.
-*   **Feedback System:** Allows users to submit ratings and comments linked to voice sessions, providing valuable insights into journey performance.
+*   **Feedback Survey System:** Full-screen multi-step survey after voice sessions collecting:
+    - Overall experience rating (1-5 stars)
+    - Conversation naturalness rating (1-5)
+    - Information helpfulness rating (1-5)
+    - App download intent (yes/maybe/no)
+    - Open-ended feedback (liked most, improvements, comments)
+    - Prolific completion code support for research participants
 *   **Preview Access System:** Administrators can generate temporary, revocable credentials for preview users, facilitating testing and research studies without full registration. Bulk creation and CSV export of credentials are supported.
 *   **System Tooling:** Integrates a core `end_call` tool for AI agents to gracefully conclude conversations.
 *   **Flow Composition System:** Enables linking multiple journeys together where data flows between them. Key components:
