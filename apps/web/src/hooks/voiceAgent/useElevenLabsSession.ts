@@ -82,14 +82,20 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
     onConnect: () => {
       elevenLabsLogger.info('ElevenLabs conversation connected');
       console.log('✅ ElevenLabs onConnect callback fired');
-      callbacksRef.current.onError?.('DEBUG: onConnect fired', {});
       updateStatus('CONNECTED');
     },
     onDisconnect: (details?: { reason?: string }) => {
       const reason = details?.reason || 'unknown';
       elevenLabsLogger.info('ElevenLabs conversation disconnected, reason:', reason);
       console.log('🔌 ElevenLabs onDisconnect - reason:', reason, 'details:', details);
-      callbacksRef.current.onError?.(`Disconnected (${reason})`, details);
+      
+      // Only report as error if it's an unexpected disconnect (not user/agent initiated)
+      const normalReasons = ['user', 'agent', 'user_ended', 'agent_ended', 'call_ended', 'normal'];
+      const isNormalDisconnect = normalReasons.some(r => reason.toLowerCase().includes(r.toLowerCase()));
+      if (!isNormalDisconnect) {
+        callbacksRef.current.onError?.(`Disconnected (${reason})`, details);
+      }
+      
       updateStatus('DISCONNECTED');
       callbacksRef.current.onConversationComplete?.();
     },
