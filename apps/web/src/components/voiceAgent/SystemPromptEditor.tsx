@@ -35,11 +35,31 @@ const SystemPromptEditor: React.FC<SystemPromptEditorProps> = ({
     setIsEditing(false);
   };
 
-  const COLLAPSED_LINES = 5;
+  const COLLAPSED_LINES = 3;
+  const MAX_COLLAPSED_CHARS = 300;
   const lines = value?.split('\n') || [];
-  const shouldShowExpand = lines.length > COLLAPSED_LINES;
-  const displayLines = isExpanded ? lines : lines.slice(0, COLLAPSED_LINES);
-  const displayText = displayLines.join('\n');
+  
+  // Truncate by both lines and characters for a compact view
+  let displayText = '';
+  let isTruncated = false;
+  
+  if (isExpanded) {
+    displayText = value || '';
+  } else {
+    const collapsedLines = lines.slice(0, COLLAPSED_LINES);
+    let tempText = collapsedLines.join('\n');
+    
+    // Also limit by character count
+    if (tempText.length > MAX_COLLAPSED_CHARS) {
+      tempText = tempText.slice(0, MAX_COLLAPSED_CHARS).trim() + '...';
+      isTruncated = true;
+    } else if (lines.length > COLLAPSED_LINES) {
+      isTruncated = true;
+    }
+    displayText = tempText;
+  }
+  
+  const shouldShowExpand = isTruncated || lines.length > COLLAPSED_LINES;
 
   return (
     <div className={`system-prompt-editor ${disabled ? 'disabled' : ''}`}>
@@ -93,7 +113,7 @@ const SystemPromptEditor: React.FC<SystemPromptEditorProps> = ({
                 className="system-prompt-expand-btn"
                 onClick={() => setIsExpanded(true)}
               >
-                Show more ({lines.length - COLLAPSED_LINES} more lines)
+                Show full prompt ({lineCount} lines, {characterCount} chars)
               </button>
             )}
             {isExpanded && shouldShowExpand && (
