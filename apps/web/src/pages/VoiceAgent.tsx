@@ -1951,15 +1951,16 @@ Important guidelines:
     onConnectionChange: (s) => {
       if (currentProviderRef.current !== 'elevenlabs') return;
       setSessionStatus(s as SessionStatus);
+      const timestamp = new Date().toLocaleTimeString();
       if (s === 'CONNECTING') {
-        addLog('info', 'Connecting to ElevenLabs...');
+        addLog('info', `[${timestamp}] Connecting to ElevenLabs...`);
         setConnectionError(null); // Clear any previous errors
       } else if (s === 'CONNECTED') {
-        addLog('success', 'Connected to ElevenLabs');
+        addLog('success', `[${timestamp}] Connected to ElevenLabs`);
         setIsTransitioningJourney(false);
         setConnectionError(null); // Clear any previous errors
       } else if (s === 'DISCONNECTED') {
-        addLog('info', 'Disconnected from ElevenLabs');
+        addLog('info', `[${timestamp}] Disconnected from ElevenLabs`);
         setIsTransitioningJourney(false);
       }
     },
@@ -1975,8 +1976,15 @@ Important guidelines:
       disconnectFromRealtime();
     },
     onError: (errorMessage, details) => {
+      const timestamp = new Date().toLocaleTimeString();
       console.error('🔴 ElevenLabs Error:', errorMessage, details);
-      addLog('error', `ElevenLabs Error: ${errorMessage}`);
+      addLog('error', `[${timestamp}] ElevenLabs Error: ${errorMessage}`);
+      if (details?.name) {
+        addLog('error', `[${timestamp}] Error type: ${details.name}`);
+      }
+      if (details?.stack) {
+        addLog('error', `[${timestamp}] Stack: ${details.stack.substring(0, 200)}...`);
+      }
       setConnectionError(errorMessage);
     },
   });
