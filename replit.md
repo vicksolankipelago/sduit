@@ -34,7 +34,8 @@ The application is built as a monorepo with a React 19 frontend (Vite) and an Ex
 *   **Flow Composition System:** Enables linking multiple journeys together where data flows between them. Key components:
     - `flowContext`: Persistent key-value store in AgentUIContext that survives journey transitions
     - `start_journey` tool: Allows a button/CTA to trigger loading and starting a different journey, automatically passing collected data
-    - `{{key}}` prompt interpolation: Prompts can reference values from flowContext (e.g., `{{answer_feelings}}`, `{{profile.goal}}`), which are replaced at runtime
+    - `{{key}}` prompt interpolation: Prompts can reference values from flowContext (e.g., `{{feelings_alcohol}}`, `{{goal_alcohol}}`), which are replaced at runtime
+    - **Quiz Option ID Transformation**: Quiz answers are stored as option IDs (e.g., `drink_less`, `physical_health`) and automatically transformed to readable labels via `QUIZ_OPTION_LABELS` mapping before being passed to prompts and ElevenLabs dynamic variables
     - Supports both flat keys and nested dotted paths for flexible data referencing
 *   **UI/UX:** The frontend is built with React 19 and Vite, focusing on an intuitive flow builder experience. Navigation is role-specific, and all emojis have been replaced with professional SVG icons. Agent editor functionality is directly embedded within the journey page for streamlined workflow.
 

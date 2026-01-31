@@ -43,23 +43,28 @@ import { useAuth } from '../contexts/AuthContext';
 import { saveSession, DebouncedSessionSaver } from '../services/api/sessionService';
 
 // Mapping of quiz option IDs to readable labels for prompt interpolation
+// These must match the option IDs in the Personalisation Quiz journey
 const QUIZ_OPTION_LABELS: Record<string, string> = {
-  // Feelings about drinking
+  // Feelings about drinking (pq-feelings-alcohol screen)
   'i_recently_cut_down_or_quit': 'recently cut down or quit drinking',
   'i_plan_to_take_steps_very_soon': 'planning to take steps to change very soon',
   'i_am_curious_about_changing': 'curious about changing but haven\'t taken steps yet',
   'i_am_not_interested_in_changing': 'not interested in changing',
-  // Goals
+  
+  // Goals / Ideal outcome (pq-goal-alcohol screen)
   'drink_less': 'drink less',
   'quit_eventually': 'quit drinking eventually',
   'maintain_sobriety': 'maintain sobriety',
   'learn_explore': 'learn more and explore options',
   'explore': 'explore options',
-  // Areas to improve
+  'track_consumption': 'track consumption and discover patterns',
+  
+  // Areas to improve (pq-areas-to-improve screen)
   'frequency': 'limiting drinking to specific days or times',
   'moderation': 'having fewer drinks per typical drinking day',
   'intensity': 'avoiding or eliminating heavy drinking',
-  // Motivations (multi-select)
+  
+  // Motivations (pq-motivation screen - multi-select)
   'physical_health': 'physical health',
   'emotional_stability': 'emotional stability',
   'relationships': 'relationships',
@@ -69,24 +74,53 @@ const QUIZ_OPTION_LABELS: Record<string, string> = {
   'self_confidence': 'self-confidence',
   'personal_growth': 'personal growth',
   'financial_stability': 'financial stability',
-  'wellbeing': 'overall wellbeing',
-  // Learning topics (multi-select)
+  'wellbeing': 'wellbeing',
+  'incentive': 'earning incentives/gift cards',
+  
+  // Learning topics (pq-learning-topics screen - multi-select)
   'habits': 'building healthier habits',
   'cravings_support': 'managing cravings',
   'mindfulness': 'mindfulness techniques',
   'meditation': 'meditation practices',
   'diet_nutrition': 'diet and nutrition',
-  'track_consumption': 'tracking consumption patterns',
 };
 
 // Transform quiz module state option IDs to readable labels
+// Handles both single-select strings and multi-select arrays/JSON strings
 function transformQuizAnswersToLabels(moduleState: Record<string, any>): Record<string, any> {
   const transformed: Record<string, any> = {};
   
   for (const [key, value] of Object.entries(moduleState)) {
+    // Skip non-quiz fields
+    if (value === undefined || value === null) {
+      continue;
+    }
+    
+    let arrayValue: string[] | null = null;
+    
+    // Check if value is array or JSON array string
     if (Array.isArray(value)) {
+      arrayValue = value;
+    } else if (typeof value === 'string' && value.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          arrayValue = parsed;
+        }
+      } catch {
+        // Not valid JSON, treat as string
+      }
+    }
+    
+    if (arrayValue !== null) {
       // Multi-select: transform array of IDs to readable list
-      const labels = value.map(id => QUIZ_OPTION_LABELS[id] || id);
+      const labels = arrayValue.map(id => {
+        const label = QUIZ_OPTION_LABELS[id];
+        if (!label && typeof id === 'string' && id.length > 0) {
+          console.warn(`⚠️ Missing quiz label mapping for option ID: "${id}"`);
+        }
+        return label || id;
+      });
       transformed[key] = labels.join(', ');
     } else if (typeof value === 'string' && QUIZ_OPTION_LABELS[value]) {
       // Single select: transform ID to label
@@ -96,6 +130,12 @@ function transformQuizAnswersToLabels(moduleState: Record<string, any>): Record<
       transformed[key] = value;
     }
   }
+  
+  console.log('🔄 transformQuizAnswersToLabels:', {
+    inputKeys: Object.keys(moduleState),
+    outputKeys: Object.keys(transformed),
+    sampleOutput: Object.fromEntries(Object.entries(transformed).slice(0, 4)),
+  });
   
   return transformed;
 }
@@ -945,7 +985,13 @@ function VoiceAgentContent() {
     
     // Convert journey to runtime agents with flow context for {{key}} prompt interpolation
     // Use override if provided (from start_journey), otherwise use current context state
-    const effectiveFlowContext = flowContextOverride || flowContext || {};
+    // CRITICAL: Transform quiz option IDs to readable labels before use
+    const rawFlowContext = flowContextOverride || flowContext || {};
+    const effectiveFlowContext = transformQuizAnswersToLabels(rawFlowContext);
+    console.log('📊 Quiz context transformation:', {
+      rawKeys: Object.keys(rawFlowContext),
+      transformedSample: Object.entries(effectiveFlowContext).slice(0, 3),
+    });
     const runtime = new JourneyRuntime({
       callbacks: {
         onEventTrigger: handleEventTrigger,
