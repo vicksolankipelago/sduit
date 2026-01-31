@@ -25,6 +25,8 @@ router.get("/preview/:id", async (req: Request, res: Response) => {
       agents: journey.agents,
       startingAgentId: journey.startingAgentId,
       voiceEnabled: journey.voiceEnabled ?? true,
+      ttsProvider: journey.ttsProvider || 'azure',
+      elevenLabsConfig: journey.elevenLabsConfig,
     });
   } catch (error) {
     journeyLogger.error("Error fetching journey preview:", error);
@@ -72,6 +74,8 @@ router.get("/:id", isAuthenticated, async (req: Request, res: Response) => {
       systemPrompt: journey.systemPrompt,
       voice: journey.voice,
       voiceEnabled: journey.voiceEnabled ?? true,
+      ttsProvider: journey.ttsProvider || 'azure',
+      elevenLabsConfig: journey.elevenLabsConfig,
       agents: journey.agents,
       startingAgentId: journey.startingAgentId,
       createdAt: journey.createdAt,
@@ -94,7 +98,7 @@ router.post("/", isAdmin, async (req: Request, res: Response) => {
       return apiResponse.unauthorized(res);
     }
 
-    const { name, description, systemPrompt, voice, voiceEnabled, agents, startingAgentId, version } = req.body;
+    const { name, description, systemPrompt, voice, voiceEnabled, ttsProvider, elevenLabsConfig, agents, startingAgentId, version } = req.body;
 
     const journey = await storage.createJourney({
       id: uuidv4(),
@@ -104,6 +108,8 @@ router.post("/", isAdmin, async (req: Request, res: Response) => {
       systemPrompt: systemPrompt || "",
       voice: voice || null,
       voiceEnabled: voiceEnabled ?? true,
+      ttsProvider: ttsProvider || "azure",
+      elevenLabsConfig: elevenLabsConfig || null,
       agents: agents || [],
       startingAgentId: startingAgentId || "",
       version: version || "1.0.0",
@@ -116,6 +122,8 @@ router.post("/", isAdmin, async (req: Request, res: Response) => {
       systemPrompt: journey.systemPrompt,
       voice: journey.voice,
       voiceEnabled: journey.voiceEnabled ?? true,
+      ttsProvider: journey.ttsProvider || 'azure',
+      elevenLabsConfig: journey.elevenLabsConfig,
       agents: journey.agents,
       startingAgentId: journey.startingAgentId,
       createdAt: journey.createdAt,
@@ -142,7 +150,7 @@ router.put("/:id", isAdmin, async (req: Request, res: Response) => {
     }
 
     // Admins can edit any journey
-    const { name, description, systemPrompt, voice, voiceEnabled, agents, startingAgentId, version, changeNotes } = req.body;
+    const { name, description, systemPrompt, voice, voiceEnabled, ttsProvider, elevenLabsConfig, agents, startingAgentId, version, changeNotes } = req.body;
 
     const updated = await storage.updateJourney(
       req.params.id,
@@ -152,6 +160,8 @@ router.put("/:id", isAdmin, async (req: Request, res: Response) => {
         systemPrompt,
         voice,
         voiceEnabled,
+        ttsProvider,
+        elevenLabsConfig,
         agents,
         startingAgentId,
         version,
@@ -274,6 +284,8 @@ router.post("/:id/versions/:versionId/restore", isAdmin, async (req: Request, re
         systemPrompt: version.systemPrompt,
         voice: version.voice,
         voiceEnabled: version.voiceEnabled ?? true,
+        ttsProvider: version.ttsProvider || "azure",
+        elevenLabsConfig: version.elevenLabsConfig,
         agents: version.agents,
         startingAgentId: version.startingAgentId,
       },
@@ -353,6 +365,8 @@ router.post("/:id/publish", isAdmin, async (req: Request, res: Response) => {
         systemPrompt: published.systemPrompt,
         voice: published.voice,
         voiceEnabled: (published as any).voiceEnabled ?? true,
+        ttsProvider: published.ttsProvider || 'azure',
+        elevenLabsConfig: published.elevenLabsConfig as { agentId?: string; voiceId?: string } | null,
         agents: published.agents as any[],
         startingAgentId: published.startingAgentId,
         version: published.version,
@@ -526,6 +540,8 @@ router.post("/:id/duplicate", isAdmin, async (req: Request, res: Response) => {
       systemPrompt: original.systemPrompt,
       voice: original.voice,
       voiceEnabled: original.voiceEnabled,
+      ttsProvider: original.ttsProvider || "azure",
+      elevenLabsConfig: original.elevenLabsConfig,
       agents: duplicatedAgents,
       startingAgentId: newStartingAgentId,
       version: original.version,
@@ -580,6 +596,8 @@ router.get("/:id/export", isAuthenticated, async (req: any, res) => {
         systemPrompt: journey.systemPrompt,
         voice: journey.voice,
         voiceEnabled: journey.voiceEnabled ?? true,
+        ttsProvider: journey.ttsProvider || 'azure',
+        elevenLabsConfig: journey.elevenLabsConfig,
         agents: journey.agents,
         startingAgentId: journey.startingAgentId,
         version: journey.version,

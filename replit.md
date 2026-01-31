@@ -38,7 +38,7 @@ The application is built as a monorepo with a React 19 frontend (Vite) and an Ex
 *   **Frontend Framework:** React 19, Vite
 *   **Backend Framework:** Express.js, Node.js
 *   **Authentication:** Passport.js (passport-local)
-*   **Voice AI:** Azure OpenAI Realtime API (WebRTC)
+*   **Voice AI:** Azure OpenAI Realtime API (WebRTC), ElevenLabs Conversational AI (alternative TTS provider)
 *   **AI Generation:** AWS Bedrock (Claude)
 *   **Object Storage:** Used for storing published flows and audio recordings.
 *   **Prolific:** Integration for tracking research study participants via URL parameters (`PROLIFIC_PID`, `STUDY_ID`, `SESSION_ID`).

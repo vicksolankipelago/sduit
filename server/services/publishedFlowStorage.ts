@@ -11,6 +11,8 @@ export interface PublishedFlowData {
   systemPrompt: string;
   voice: string | null;
   voiceEnabled: boolean;
+  ttsProvider: string;
+  elevenLabsConfig: { agentId?: string; voiceId?: string } | null;
   agents: any[];
   startingAgentId: string;
   version: string;

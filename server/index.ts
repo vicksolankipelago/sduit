@@ -96,6 +96,8 @@ async function main() {
         voiceEnabled: journey.voiceEnabled ?? true,
         systemPrompt: journey.systemPrompt,
         voice: journey.voice,
+        ttsProvider: journey.ttsProvider || 'azure',
+        elevenLabsConfig: journey.elevenLabsConfig,
       });
     } catch (error) {
       console.error("Error fetching journey preview:", error);

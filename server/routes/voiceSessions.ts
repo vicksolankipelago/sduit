@@ -115,6 +115,8 @@ router.get("/:sessionId", isAuthenticated, async (req: Request, res: Response) =
           description: journey.description || "",
           systemPrompt: journey.systemPrompt,
           voice: journey.voice,
+          ttsProvider: journey.ttsProvider || 'azure',
+          elevenLabsConfig: journey.elevenLabsConfig,
           agents: journey.agents,
           startingAgentId: journey.startingAgentId,
           version: journey.version,
