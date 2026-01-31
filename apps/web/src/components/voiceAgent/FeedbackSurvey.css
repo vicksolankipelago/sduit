@@ -1,26 +1,31 @@
+/* Feedback Survey - Pelago Style (Black & White with Green Accents) */
+
 .survey-container {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+  width: 100vw;
+  height: 100vh;
+  background: #1a1a1a;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 99999; /* Maximum z-index to cover everything including headers */
   padding: 24px;
   overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .survey-content {
-  background: rgba(26, 26, 46, 0.95);
+  background: #212633;
   border-radius: 24px;
   padding: 48px;
   max-width: 600px;
   width: 100%;
   box-shadow: 0 16px 64px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .survey-content.thank-you,
@@ -44,7 +49,7 @@
 
 .survey-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: #A2CC6E; /* Pelago Mint Green */
   border-radius: 3px;
   transition: width 0.3s ease;
 }
@@ -56,7 +61,7 @@
 
 /* Title and subtitle */
 .survey-title {
-  color: #fff;
+  color: #ffffff;
   font-size: 28px;
   font-weight: 600;
   margin: 0 0 12px 0;
@@ -72,9 +77,9 @@
 
 /* Error message */
 .survey-error {
-  background: rgba(245, 87, 108, 0.15);
-  border: 1px solid rgba(245, 87, 108, 0.3);
-  color: #f5576c;
+  background: rgba(220, 53, 69, 0.15);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  color: #dc3545;
   padding: 12px 16px;
   border-radius: 8px;
   margin-bottom: 24px;
@@ -93,7 +98,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.2);
   transition: all 0.2s ease;
   padding: 8px;
   border-radius: 8px;
@@ -105,7 +110,7 @@
 
 .survey-star.active,
 .survey-star:hover {
-  color: #FAE355;
+  color: #A2CC6E; /* Pelago Mint Green for active stars */
   transform: scale(1.1);
 }
 
@@ -150,8 +155,8 @@
 }
 
 .survey-download-btn.selected {
-  background: rgba(102, 126, 234, 0.15);
-  border-color: #667eea;
+  background: rgba(162, 204, 110, 0.15);
+  border-color: #A2CC6E;
 }
 
 .download-btn-icon {
@@ -165,22 +170,22 @@
 }
 
 .download-btn-icon.yes {
-  background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
-  color: white;
+  background: #A2CC6E;
+  color: #1a1a1a;
 }
 
 .download-btn-icon.maybe {
-  background: linear-gradient(135deg, #FFC107 0%, #FF9800 100%);
+  background: #6b6b6b;
   color: white;
 }
 
 .download-btn-icon.no {
-  background: linear-gradient(135deg, #f5576c 0%, #c62828 100%);
+  background: #4a4a4a;
   color: white;
 }
 
 .download-btn-text {
-  color: #fff;
+  color: #ffffff;
   font-size: 18px;
   font-weight: 500;
 }
@@ -209,16 +214,17 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   padding: 16px;
-  color: #fff;
+  color: #ffffff;
   font-size: 15px;
   resize: none;
   font-family: inherit;
   transition: border-color 0.2s ease;
+  box-sizing: border-box;
 }
 
 .survey-textarea:focus {
   outline: none;
-  border-color: rgba(102, 126, 234, 0.5);
+  border-color: #A2CC6E;
 }
 
 .survey-textarea::placeholder {
@@ -234,9 +240,9 @@
 }
 
 .survey-btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #A2CC6E;
   border: none;
-  color: #fff;
+  color: #1a1a1a;
   padding: 14px 32px;
   border-radius: 12px;
   font-size: 16px;
@@ -246,8 +252,9 @@
 }
 
 .survey-btn-primary:hover:not(:disabled) {
+  background: #8fbc5c;
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 8px 24px rgba(162, 204, 110, 0.3);
 }
 
 .survey-btn-primary:disabled {
@@ -269,7 +276,7 @@
 
 .survey-btn-secondary:hover {
   border-color: rgba(255, 255, 255, 0.4);
-  color: #fff;
+  color: #ffffff;
 }
 
 .survey-btn-skip {
@@ -291,70 +298,103 @@
 .thank-you-icon {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+  background: #A2CC6E;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  margin: 0 auto 32px;
+  color: #1a1a1a;
+  margin: 0 auto 24px auto;
+}
+
+.thank-you-icon svg {
+  width: 40px;
+  height: 40px;
+}
+
+.thank-you-title {
+  color: #ffffff;
+  font-size: 32px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
 }
 
 .thank-you-message {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 15px;
-  margin: 24px 0 32px;
-}
-
-/* Prolific section */
-.prolific-section {
-  margin-top: 32px;
-  padding-top: 32px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.prolific-instruction {
   color: rgba(255, 255, 255, 0.7);
-  font-size: 15px;
-  margin: 0 0 20px 0;
-  line-height: 1.5;
+  font-size: 16px;
+  margin: 0 0 32px 0;
+  line-height: 1.6;
 }
 
-.prolific-btn {
-  width: 100%;
+/* Prolific completion */
+.prolific-section {
+  background: rgba(162, 204, 110, 0.1);
+  border: 1px solid rgba(162, 204, 110, 0.3);
+  border-radius: 16px;
+  padding: 24px;
   margin-bottom: 24px;
 }
 
-.prolific-code-label {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 13px;
-  margin: 0 0 12px 0;
-}
-
-.prolific-code-box {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 20px;
+.prolific-title {
+  color: #A2CC6E;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 8px 0;
 }
 
 .prolific-code {
-  color: #FAE355;
+  color: #ffffff;
   font-size: 24px;
-  font-weight: 600;
-  letter-spacing: 3px;
-  font-family: 'Monaco', 'Menlo', monospace;
+  font-weight: 700;
+  font-family: monospace;
+  margin: 0 0 16px 0;
 }
 
-/* Spinner */
+.prolific-btn {
+  background: #A2CC6E;
+  border: none;
+  color: #1a1a1a;
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.prolific-btn:hover {
+  background: #8fbc5c;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(162, 204, 110, 0.3);
+}
+
+.thank-you-close {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.7);
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.thank-you-close:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+}
+
+/* Loading spinner */
 .survey-spinner {
   width: 48px;
   height: 48px;
   border: 4px solid rgba(255, 255, 255, 0.1);
-  border-top-color: #667eea;
+  border-top-color: #A2CC6E;
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin: 0 auto 32px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 24px auto;
 }
 
 @keyframes spin {
@@ -363,42 +403,90 @@
   }
 }
 
+.submitting-text {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+}
+
 /* Responsive adjustments */
-@media (max-width: 600px) {
+@media (max-width: 640px) {
+  .survey-container {
+    padding: 16px;
+  }
+  
   .survey-content {
     padding: 32px 24px;
     border-radius: 16px;
   }
-
+  
   .survey-title {
-    font-size: 24px;
+    font-size: 22px;
   }
-
-  .survey-subtitle {
-    font-size: 15px;
-  }
-
+  
   .survey-star svg {
     width: 40px;
     height: 40px;
   }
-
+  
   .survey-star-rating {
     gap: 8px;
   }
-
+  
+  .survey-navigation {
+    flex-direction: column-reverse;
+  }
+  
+  .survey-btn-skip {
+    margin-right: 0;
+    text-align: center;
+  }
+  
+  .survey-download-btn {
+    padding: 16px 20px;
+  }
+  
   .download-btn-icon {
     width: 48px;
     height: 48px;
   }
+}
 
-  .download-btn-text {
-    font-size: 16px;
-  }
+/* Scale rating (1-5 numbers) */
+.survey-scale-rating {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
 
-  .survey-btn-primary,
-  .survey-btn-secondary {
-    padding: 12px 20px;
-    font-size: 15px;
+.survey-scale-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.survey-scale-btn:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
+.survey-scale-btn.active {
+  border-color: #A2CC6E;
+  background: rgba(162, 204, 110, 0.15);
+  color: #A2CC6E;
+}
+
+/* Ensure full coverage on all devices */
+@supports (height: 100dvh) {
+  .survey-container {
+    height: 100dvh;
   }
 }
