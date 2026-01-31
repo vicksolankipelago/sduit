@@ -1022,6 +1022,20 @@ function VoiceAgentContent() {
           instructionParts.push(screenPromptsText);
         }
       }
+      
+      // Add personalization quiz answers as context for the AI
+      // This provides the AI with user's quiz responses for reference during conversation
+      if (Object.keys(effectiveFlowContext).length > 0) {
+        const quizContextLines = Object.entries(effectiveFlowContext)
+          .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+          .map(([key, value]) => `- ${key}: ${typeof value === 'object' ? JSON.stringify(value) : value}`);
+        
+        if (quizContextLines.length > 0) {
+          const quizContextSection = `\n## USER CONTEXT (Personalization Quiz Answers)\nThe user has provided the following information during their personalization quiz. Use this context to personalize your responses:\n${quizContextLines.join('\n')}`;
+          instructionParts.push(quizContextSection);
+          addLog('info', `📝 Added ${quizContextLines.length} quiz answer(s) to prompt context`);
+        }
+      }
 
       const combinedInstructions = instructionParts.filter(Boolean).join('\n\n');
 
@@ -1088,6 +1102,14 @@ function VoiceAgentContent() {
         const { personaMicStream, agentMicStream } = 
           await audioRouterRef.current.setupBidirectionalRouting(sdkAudioElement!, personaAudioElement);
         
+        // Convert flow context to string values for ElevenLabs dynamic variables
+        const dynamicVariables: Record<string, string> = {};
+        Object.entries(effectiveFlowContext).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            dynamicVariables[key] = typeof value === 'object' ? JSON.stringify(value) : String(value);
+          }
+        });
+        
         // Connect agent with routed mic and journey agent config
         await connect({
           audioElement: sdkAudioElement,
@@ -1100,6 +1122,8 @@ function VoiceAgentContent() {
           // ElevenLabs-specific options
           elevenLabsAgentId: journeyToUse.elevenLabsConfig?.agentId,
           elevenLabsVoiceId: journeyToUse.elevenLabsConfig?.voiceId,
+          // Pass quiz answers as dynamic variables for {{variable}} substitution
+          dynamicVariables: Object.keys(dynamicVariables).length > 0 ? dynamicVariables : undefined,
         });
         addLog('success', 'Successfully initiated voice agent connection');
         
@@ -1142,6 +1166,18 @@ Important guidelines:
         console.log('🎙️ sdkAudioElement:', !!sdkAudioElement);
         console.log('🎙️ provider:', currentProviderRef.current);
         addLog('info', `🎙️ Initiating ${currentProviderRef.current === 'elevenlabs' ? 'ElevenLabs' : 'Azure'} connection...`);
+        
+        // Convert flow context to string values for ElevenLabs dynamic variables
+        const dynamicVariables: Record<string, string> = {};
+        Object.entries(effectiveFlowContext).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            dynamicVariables[key] = typeof value === 'object' ? JSON.stringify(value) : String(value);
+          }
+        });
+        if (Object.keys(dynamicVariables).length > 0) {
+          addLog('info', `🔗 Passing ${Object.keys(dynamicVariables).length} dynamic variable(s) to ElevenLabs`);
+        }
+        
         await connect({
           audioElement: sdkAudioElement,
           agentConfig: journeyAgentConfig,
@@ -1152,6 +1188,8 @@ Important guidelines:
           // ElevenLabs-specific options
           elevenLabsAgentId: journeyToUse.elevenLabsConfig?.agentId,
           elevenLabsVoiceId: journeyToUse.elevenLabsConfig?.voiceId,
+          // Pass quiz answers as dynamic variables for {{variable}} substitution
+          dynamicVariables: Object.keys(dynamicVariables).length > 0 ? dynamicVariables : undefined,
         });
         console.log('🎙️ connect() completed');
         addLog('success', `Successfully initiated ${currentProviderRef.current === 'elevenlabs' ? 'ElevenLabs' : 'Azure'} connection`);
