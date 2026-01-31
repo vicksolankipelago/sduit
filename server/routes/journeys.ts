@@ -721,12 +721,15 @@ router.post("/:id/import", isAdmin, async (req: any, res) => {
     const userId = req.user.id;
     
     // Update the journey with imported config - use ?? to preserve empty/cleared values
+    // Include ALL voice-related settings so export/import works seamlessly
     const updatedJourney = await storage.updateJourney(req.params.id, {
       name: importedJourney.name ?? existingJourney.name,
       description: importedJourney.description ?? existingJourney.description,
       systemPrompt: importedJourney.systemPrompt ?? existingJourney.systemPrompt,
       voice: importedJourney.voice ?? existingJourney.voice,
       voiceEnabled: importedJourney.voiceEnabled ?? existingJourney.voiceEnabled,
+      ttsProvider: importedJourney.ttsProvider ?? existingJourney.ttsProvider,
+      elevenLabsConfig: importedJourney.elevenLabsConfig ?? existingJourney.elevenLabsConfig,
       agents: importedJourney.agents ?? existingJourney.agents,
       startingAgentId: importedJourney.startingAgentId ?? existingJourney.startingAgentId,
       version: importedJourney.version ?? existingJourney.version,
@@ -746,6 +749,8 @@ router.post("/:id/import", isAdmin, async (req: any, res) => {
         systemPrompt: updatedJourney.systemPrompt,
         voice: updatedJourney.voice,
         voiceEnabled: updatedJourney.voiceEnabled ?? true,
+        ttsProvider: updatedJourney.ttsProvider || 'elevenlabs',
+        elevenLabsConfig: updatedJourney.elevenLabsConfig,
         agents: updatedJourney.agents,
         startingAgentId: updatedJourney.startingAgentId,
         updatedAt: updatedJourney.updatedAt,
