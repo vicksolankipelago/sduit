@@ -837,12 +837,12 @@ export const ELEVENLABS_VOICE_OPTIONS = [
 /**
  * Default Voice Options (Azure - for backwards compatibility)
  */
-export const VOICE_OPTIONS = AZURE_VOICE_OPTIONS;
+export const VOICE_OPTIONS = ELEVENLABS_VOICE_OPTIONS;
 
 /**
  * Get voice options for a specific provider
  */
-export function getVoiceOptionsForProvider(provider: TtsProvider = 'azure') {
+export function getVoiceOptionsForProvider(provider: TtsProvider = 'elevenlabs') {
   return provider === 'elevenlabs' ? ELEVENLABS_VOICE_OPTIONS : AZURE_VOICE_OPTIONS;
 }
 
