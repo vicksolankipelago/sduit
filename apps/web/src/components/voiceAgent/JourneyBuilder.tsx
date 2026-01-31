@@ -249,9 +249,20 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   }, [currentJourney]);
 
   const handlePublish = async () => {
-    if (!currentJourney) return;
+    console.log('🚀 Publish button clicked', { currentJourney: currentJourney?.name, isPublishing });
+    
+    if (!currentJourney) {
+      console.warn('🚀 No journey to publish');
+      return;
+    }
+    
+    if (isPublishing) {
+      console.warn('🚀 Already publishing, ignoring click');
+      return;
+    }
     
     const errors = validateJourney(currentJourney);
+    console.log('🚀 Validation result:', errors.length, 'errors');
     if (errors.length > 0) {
       alert(`Cannot publish: ${errors.length} validation error(s). Please fix them first.`);
       return;
@@ -264,19 +275,33 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     if (!window.confirm(confirmMsg)) return;
     
     setIsPublishing(true);
+    console.log('🚀 Starting publish...');
     try {
-      await saveJourney(currentJourney);
+      // First save the journey
+      console.log('🚀 Saving journey before publish...');
+      const saved = await saveJourney(currentJourney);
+      console.log('🚀 Save result:', saved);
+      
+      if (saved) {
+        // Update lastSavedJourneyRef since we just saved
+        lastSavedJourneyRef.current = JSON.stringify(currentJourney);
+        setHasUnsavedChanges(false);
+      }
+      
+      console.log('🚀 Publishing journey...');
       const result = await publishJourneyApi(currentJourney.id);
+      console.log('🚀 Publish result:', result);
       if (result.success) {
         setIsPublished(true);
         setHasUnpublishedChanges(false);
         alert('Flow published successfully!');
       } else {
+        console.error('🚀 Publish returned false');
         alert('Failed to publish flow');
       }
     } catch (error) {
-      console.error('Publish error:', error);
-      alert('Failed to publish flow');
+      console.error('🚀 Publish error:', error);
+      alert('Failed to publish flow: ' + (error as Error).message);
     } finally {
       setIsPublishing(false);
     }
@@ -712,20 +737,30 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
               )}
               {isAdmin && (isPublished ? (
                 <button 
-                  className={`journey-action-btn publish ${hasUnpublishedChanges ? 'has-changes' : ''}`}
+                  className={`journey-action-btn publish ${isPublishing ? 'publishing' : ''} ${hasUnpublishedChanges ? 'has-changes' : ''}`}
                   onClick={handlePublish} 
                   disabled={disabled || isPublishing}
                   title={hasUnpublishedChanges ? 'You have unpublished changes' : 'Update published version'}
                 >
-                  <RocketIcon size={14} /> {isPublishing ? 'Publishing...' : hasUnpublishedChanges ? 'Publish Changes' : 'Republish'}
+                  {isPublishing ? (
+                    <><LoaderIcon size={14} /> Publishing...</>
+                  ) : hasUnpublishedChanges ? (
+                    <><RocketIcon size={14} /> Publish Changes</>
+                  ) : (
+                    <><RocketIcon size={14} /> Republish</>
+                  )}
                 </button>
               ) : (
                 <button 
-                  className="journey-action-btn publish"
+                  className={`journey-action-btn publish ${isPublishing ? 'publishing' : ''}`}
                   onClick={handlePublish} 
                   disabled={disabled || isPublishing}
                 >
-                  <RocketIcon size={14} /> {isPublishing ? 'Publishing...' : 'Publish'}
+                  {isPublishing ? (
+                    <><LoaderIcon size={14} /> Publishing...</>
+                  ) : (
+                    <><RocketIcon size={14} /> Publish</>
+                  )}
                 </button>
               ))}
               <button className="journey-action-btn launch" onClick={handleLaunch} disabled={disabled}>

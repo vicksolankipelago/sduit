@@ -35,6 +35,12 @@
   50% { opacity: 0.85; }
 }
 
+/* Publishing state for publish button */
+.journey-action-btn.publish.publishing {
+  background: #059669 !important;
+  opacity: 0.8;
+}
+
 /* Success state for buttons */
 .journey-action-btn.success {
   background: #10b981 !important;
