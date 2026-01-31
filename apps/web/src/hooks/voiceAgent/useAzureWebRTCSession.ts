@@ -332,11 +332,12 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                     }
                   }
                   
-                  // Enforce default delay for navigation events if still not set
+                  // Apply minimal delay for voice-triggered navigation
+                  // In voice mode, the agent has already spoken the content, so long delays feel awkward
+                  // Only apply a brief delay if none is configured
                   if (delay === 0 && eventId.startsWith('navigate_to_')) {
-                    delay = 8; // Default 8s delay to give users time to read screens
-                    console.log(`🎯 Enforcing default ${delay}s delay for navigation event '${eventId}'`);
-                    voiceAgentLogger.warn(`Enforcing default ${delay}s delay for navigation event '${eventId}'`);
+                    delay = 0.5; // Brief 0.5s delay for smooth transition
+                    console.log(`🎯 Using minimal ${delay}s delay for voice navigation event '${eventId}'`);
                   }
 
                   console.log(`🎯 Final delay for ${eventId}: ${delay}s`);
