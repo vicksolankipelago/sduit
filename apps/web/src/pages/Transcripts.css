@@ -161,6 +161,28 @@
   flex-shrink: 0;
 }
 
+.transcripts-list-item-comment-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: var(--bg-global-secondary);
+  color: var(--text-global-secondary);
+  transition: all 0.2s ease;
+}
+
+.transcripts-list-item-comment-badge[data-has-comments="true"] {
+  background-color: #10b981;
+  color: white;
+}
+
+.transcripts-list-item-comment-badge svg {
+  flex-shrink: 0;
+}
+
 .transcripts-list-item-stats {
   font-size: 0.75rem;
   color: var(--text-global-secondary);
