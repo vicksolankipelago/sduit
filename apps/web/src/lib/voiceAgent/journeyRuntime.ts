@@ -417,7 +417,7 @@ export class JourneyRuntime {
           },
           delay: {
             type: 'number',
-            description: 'Optional delay in seconds before triggering the event. Use this to allow users to read information on screen before navigating.',
+            description: 'Delay in seconds before triggering the event. Use 0 for immediate transition, or higher values (e.g., 2, 3, 5) to give users time to read content. Default is 0.5s for smooth transitions.',
           },
         },
         required: ['eventId'] as const,
@@ -427,7 +427,7 @@ export class JourneyRuntime {
       execute: async (input: TriggerEventParams) => {
         const { eventId } = input;
 
-        // Robust delay parsing
+        // Robust delay parsing - use delay from tool call if provided
         let delay = 0;
         if (typeof input.delay === 'number') {
           delay = input.delay;
@@ -436,10 +436,11 @@ export class JourneyRuntime {
           if (isNaN(delay)) delay = 0;
         }
 
-        // Enforce delay for navigation events if not provided
+        // Only apply minimal default delay for navigation if none specified
+        // In voice mode, long delays feel awkward since the agent has already spoken
         if (delay === 0 && isNavigationEvent(eventId)) {
-          delay = 4; // Default delay increased to 4s to give users time to read screens
-          toolLogger.debug(`Enforcing default 4s delay for navigation event '${eventId}'`);
+          delay = 0.5; // Brief 0.5s delay for smooth transition
+          toolLogger.debug(`Using minimal 0.5s delay for navigation event '${eventId}'`);
         }
 
         toolLogger.debug(`Event triggered: ${eventId} by agent ${agentName} (delay: ${delay}s)`);
