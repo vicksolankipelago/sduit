@@ -85,6 +85,8 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
     },
     onDisconnect: () => {
       elevenLabsLogger.info('ElevenLabs conversation disconnected');
+      console.log('🔌 ElevenLabs onDisconnect callback fired');
+      console.trace('🔌 Disconnect stack trace:');
       updateStatus('DISCONNECTED');
       callbacksRef.current.onConversationComplete?.();
     },
@@ -243,12 +245,34 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         hasAgentId: !!sessionConfig.agentId,
         connectionType: sessionConfig.connectionType,
       });
+      console.log('🚀 About to call conversation.startSession...');
+      console.log('🚀 Session config:', JSON.stringify({
+        hasSignedUrl: !!sessionConfig.signedUrl,
+        hasToken: !!sessionConfig.conversationToken,
+        hasAgentId: !!sessionConfig.agentId,
+        connectionType: sessionConfig.connectionType,
+        hasOverrides: !!sessionConfig.overrides,
+      }));
 
-      const conversationId = await conversation.startSession(sessionConfig);
+      let conversationId: string;
+      try {
+        conversationId = await conversation.startSession(sessionConfig);
+        console.log('✅ conversation.startSession returned:', conversationId);
+      } catch (startError: any) {
+        console.error('🔴 conversation.startSession threw:', startError);
+        console.error('🔴 Error name:', startError?.name);
+        console.error('🔴 Error message:', startError?.message);
+        console.error('🔴 Error stack:', startError?.stack);
+        callbacksRef.current.onError?.(`Session start failed: ${startError?.message || startError}`, startError);
+        updateStatus('DISCONNECTED');
+        throw startError;
+      }
+      
       conversationIdRef.current = conversationId;
       agentIdRef.current = agentId;
       
       elevenLabsLogger.info('Session started, conversation ID:', conversationId);
+      console.log('✅ Session started successfully, ID:', conversationId);
       updateStatus('CONNECTED');
       
     } catch (error: any) {
