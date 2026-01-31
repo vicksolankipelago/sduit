@@ -241,11 +241,17 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         };
       }
 
-      // Add custom microphone stream if provided (fixes Safari timeout issue)
-      if (options.customMicStream) {
-        sessionConfig.customStream = options.customMicStream;
-        elevenLabsLogger.info('Using custom microphone stream');
-        console.log('🎤 Passing custom microphone stream to ElevenLabs');
+      // Add connection delay for Safari/iOS to allow audio mode switching
+      // This helps prevent the SDK's mic access from timing out
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (isSafari || isIOS) {
+        sessionConfig.connectionDelay = {
+          ios: 3000,
+          default: 2000,
+        };
+        elevenLabsLogger.info('Safari/iOS detected, adding connection delay');
+        console.log('🍎 Safari/iOS detected, adding 2-3s connection delay');
       }
 
       elevenLabsLogger.info('Starting session with config:', { 
@@ -253,7 +259,7 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         hasToken: !!sessionConfig.conversationToken,
         hasAgentId: !!sessionConfig.agentId,
         connectionType: sessionConfig.connectionType,
-        hasCustomStream: !!sessionConfig.customStream,
+        hasConnectionDelay: !!sessionConfig.connectionDelay,
       });
       console.log('🚀 About to call conversation.startSession...');
       console.log('🚀 Session config:', JSON.stringify({
@@ -262,7 +268,7 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         hasAgentId: !!sessionConfig.agentId,
         connectionType: sessionConfig.connectionType,
         hasOverrides: !!sessionConfig.overrides,
-        hasCustomStream: !!sessionConfig.customStream,
+        hasConnectionDelay: !!sessionConfig.connectionDelay,
       }));
 
       let conversationId: string;
