@@ -643,15 +643,16 @@ router.post("/import-new", isAdmin, async (req: Request, res: Response) => {
     }
     
     // Remap agents with new IDs and update handoff references
+    // Handoffs are string[] (array of agent IDs) that need remapping
     const remappedAgents = Array.isArray(importedJourney.agents)
       ? importedJourney.agents.map((agent: any) => ({
           ...agent,
           id: agentIdMapping[agent.id] || uuidv4(),
+          // Remap handoff agent IDs (they're just strings, not objects)
           handoffs: Array.isArray(agent.handoffs)
-            ? agent.handoffs.map((handoff: any) => ({
-                ...handoff,
-                targetAgentId: agentIdMapping[handoff.targetAgentId] || handoff.targetAgentId,
-              }))
+            ? agent.handoffs.map((handoffId: string) => 
+                agentIdMapping[handoffId] || handoffId
+              )
             : agent.handoffs || [],
         }))
       : [];
