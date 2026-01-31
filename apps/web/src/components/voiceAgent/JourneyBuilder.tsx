@@ -174,9 +174,17 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       return;
     }
 
-    const errors = validateJourney(currentJourney);
-    setValidationErrors(errors);
-    console.log('💾 Validation result:', errors.length, 'errors');
+    let errors: any[] = [];
+    try {
+      console.log('💾 Running validation...');
+      errors = validateJourney(currentJourney);
+      setValidationErrors(errors);
+      console.log('💾 Validation result:', errors.length, 'errors');
+    } catch (validationError) {
+      console.error('💾 Validation threw an error:', validationError);
+      alert('Error during validation. Check console for details.');
+      return;
+    }
 
     if (errors.length > 0) {
       alert(`Cannot save: ${errors.length} validation error(s). Check the validation panel.`);
