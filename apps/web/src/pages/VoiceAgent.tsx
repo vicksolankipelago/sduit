@@ -1048,6 +1048,64 @@ function VoiceAgentContent() {
     addLog('info', `Initiating connection with journey: ${journeyToUse.name}`);
     addLog('info', `Starting agent: ${startingAgent.name}`);
 
+    // Define client tools that ElevenLabs agent can call
+    // These must match the tool definitions configured in the ElevenLabs dashboard
+    const elevenLabsClientTools: Record<string, (params: any) => Promise<string>> = {
+      // Record user input to screen state
+      record_input: async (params: { title: string; summary?: string; description?: string; storeKey?: string }) => {
+        const { title, summary = '', description = '', storeKey } = params;
+        addLog('tool', `📝 record_input: ${title}`, { summary, storeKey });
+        
+        // Dispatch event for ScreenProvider
+        window.dispatchEvent(new CustomEvent('recordInput', {
+          detail: { title, summary, description, timestamp: Date.now(), storeKey }
+        }));
+        
+        // Update module state if storeKey provided
+        if (storeKey && summary && updateModuleState) {
+          updateModuleState({ [storeKey]: summary });
+        }
+        
+        return `Recorded: ${title}`;
+      },
+      
+      // End the call and show feedback
+      end_call: async (params: { reason?: string }) => {
+        addLog('tool', `📞 end_call: ${params.reason || 'User requested'}`);
+        setTimeout(() => disconnectFromRealtime(true), 500);
+        return 'Call ending';
+      },
+      
+      // Navigate to a specific screen
+      navigate_to_screen: async (params: { screen_id: string }) => {
+        addLog('tool', `📱 navigate_to_screen: ${params.screen_id}`);
+        window.dispatchEvent(new CustomEvent('navigateToScreen', {
+          detail: { screenId: params.screen_id }
+        }));
+        return `Navigated to screen: ${params.screen_id}`;
+      },
+      
+      // Switch to another agent
+      switch_agent: async (params: { agent_id?: string; agent_name?: string }) => {
+        const agentIdentifier = params.agent_id || params.agent_name;
+        addLog('tool', `🔄 switch_agent: ${agentIdentifier}`);
+        if (switchToAgent && agentIdentifier) {
+          switchToAgent(agentIdentifier);
+        }
+        return `Switched to agent: ${agentIdentifier}`;
+      },
+      
+      // Transfer to agent (alias for switch_agent)
+      transfer_to_agent: async (params: { agent_id?: string; agent_name?: string }) => {
+        const agentIdentifier = params.agent_id || params.agent_name;
+        addLog('tool', `🔄 transfer_to_agent: ${agentIdentifier}`);
+        if (switchToAgent && agentIdentifier) {
+          switchToAgent(agentIdentifier);
+        }
+        return `Transferred to agent: ${agentIdentifier}`;
+      },
+    };
+
     try {
       // Get starting agent config (reuse the one we already found with PQ data applied)
       const startingAgentConfigForConnect = journeyWithPQData.agents.find(a => a.id === journeyWithPQData.startingAgentId);
@@ -1175,6 +1233,8 @@ function VoiceAgentContent() {
           elevenLabsVoiceId: journeyToUse.elevenLabsConfig?.voiceId,
           // Pass quiz answers as dynamic variables for {{variable}} substitution
           dynamicVariables: Object.keys(dynamicVariables).length > 0 ? dynamicVariables : undefined,
+          // Client tools that ElevenLabs agent can call
+          clientTools: elevenLabsClientTools,
         });
         addLog('success', 'Successfully initiated voice agent connection');
         
@@ -1245,6 +1305,8 @@ Important guidelines:
           elevenLabsVoiceId: journeyToUse.elevenLabsConfig?.voiceId,
           // Pass quiz answers as dynamic variables for {{variable}} substitution
           dynamicVariables: Object.keys(dynamicVariables).length > 0 ? dynamicVariables : undefined,
+          // Client tools that ElevenLabs agent can call
+          clientTools: elevenLabsClientTools,
         });
         console.log('🎙️ connect() completed');
         addLog('success', `Successfully initiated ${currentProviderRef.current === 'elevenlabs' ? 'ElevenLabs' : 'Azure'} connection`);
