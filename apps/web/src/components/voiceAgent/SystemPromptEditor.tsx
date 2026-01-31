@@ -35,8 +35,8 @@ const SystemPromptEditor: React.FC<SystemPromptEditorProps> = ({
     setIsEditing(false);
   };
 
-  const COLLAPSED_LINES = 3;
-  const MAX_COLLAPSED_CHARS = 300;
+  const COLLAPSED_LINES = 4;
+  const MAX_COLLAPSED_CHARS = 250;
   const lines = value?.split('\n') || [];
   
   // Truncate by both lines and characters for a compact view
@@ -49,13 +49,22 @@ const SystemPromptEditor: React.FC<SystemPromptEditorProps> = ({
     const collapsedLines = lines.slice(0, COLLAPSED_LINES);
     let tempText = collapsedLines.join('\n');
     
-    // Also limit by character count
-    if (tempText.length > MAX_COLLAPSED_CHARS) {
-      tempText = tempText.slice(0, MAX_COLLAPSED_CHARS).trim() + '...';
-      isTruncated = true;
-    } else if (lines.length > COLLAPSED_LINES) {
+    // Truncate by line count first
+    if (lines.length > COLLAPSED_LINES) {
       isTruncated = true;
     }
+    
+    // Also limit by character count
+    if (tempText.length > MAX_COLLAPSED_CHARS) {
+      tempText = tempText.slice(0, MAX_COLLAPSED_CHARS).trim();
+      isTruncated = true;
+    }
+    
+    // Add ellipsis if truncated
+    if (isTruncated) {
+      tempText = tempText.trim() + '...';
+    }
+    
     displayText = tempText;
   }
   
