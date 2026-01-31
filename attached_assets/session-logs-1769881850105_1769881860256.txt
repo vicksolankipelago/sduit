@@ -1,0 +1,29 @@
+[17:50:29.141] INFO: Initiating connection with journey: PQ + Intake (Internal)
+
+[17:50:29.141] INFO: Starting agent: pQIntake
+
+[17:50:29.141] INFO: 📝 Added 5 quiz answer(s) to prompt context
+
+[17:50:29.141] INFO: 📋 Agent configuration prepared (146113 chars)
+
+[17:50:29.141] INFO: 🎵 Using voice: pNInz6obpgDQGcFmaJgB
+
+[17:50:29.141] INFO: 👥 Journey has 1 agent(s) configured
+
+[17:50:29.141] INFO: 🎙️ Initiating ElevenLabs connection...
+
+[17:50:29.141] INFO: 🔗 Passing 7 dynamic variable(s) to ElevenLabs
+
+[17:50:29.142] INFO: [17:50:29] Connecting to ElevenLabs...
+
+[17:50:29.515] INFO: [17:50:29] Connecting to ElevenLabs...
+
+[17:50:33.652] ERROR: [17:50:33] ElevenLabs Error: DEBUG: onConnect fired
+
+[17:50:33.653] SUCCESS: [17:50:33] Connected to ElevenLabs
+
+[17:50:33.653] SUCCESS: [17:50:33] Connected to ElevenLabs
+
+[17:50:33.653] SUCCESS: [17:50:33] Connected to ElevenLabs
+
+[17:50:33.653] SUCCESS: Successfully initiated ElevenLabs connection

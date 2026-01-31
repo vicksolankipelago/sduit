@@ -10,7 +10,7 @@ import SystemPromptEditor from './SystemPromptEditor';
 import ToolEditor from './ToolEditor';
 import { ScreenProvider } from '../../contexts/voiceAgent/ScreenContext';
 import ScreenPreview from './ScreenPreview';
-import { TrashIcon, FileTextIcon, EditIcon, RocketIcon, TargetIcon, HistoryIcon, SaveIcon, ToolIcon, SettingsIcon, MoreIcon, DownloadIcon, UploadIcon, LinkIcon } from '../Icons';
+import { TrashIcon, FileTextIcon, EditIcon, RocketIcon, TargetIcon, HistoryIcon, SaveIcon, ToolIcon, SettingsIcon, MoreIcon, DownloadIcon, UploadIcon, LinkIcon, CheckIcon, LoaderIcon } from '../Icons';
 import VersionHistory from './VersionHistory';
 import { useAuth } from '../../contexts/AuthContext';
 import './JourneyBuilder.css';
@@ -47,6 +47,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   
   // Save state
   const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   
   // Publishing state
   const [isPublished, setIsPublished] = useState(false);
@@ -136,6 +137,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     }
 
     setIsSaving(true);
+    setSaveSuccess(false);
     try {
       const saved = await saveJourney(currentJourney);
       if (saved) {
@@ -151,7 +153,9 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
         } catch (e) {
           console.warn('BroadcastChannel not supported, manual refresh may be needed');
         }
-        alert(`Flow "${currentJourney.name}" saved successfully!`);
+        // Show success state briefly instead of alert
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2000);
       } else {
         alert('Failed to save flow');
       }
@@ -649,8 +653,18 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
           {currentJourney && (
             <>
               {isAdmin && (
-                <button className="journey-action-btn" onClick={handleSaveJourney} disabled={disabled || isSaving}>
-                  <SaveIcon size={14} /> {isSaving ? 'Saving...' : 'Save'}
+                <button 
+                  className={`journey-action-btn ${saveSuccess ? 'success' : ''}`} 
+                  onClick={handleSaveJourney} 
+                  disabled={disabled || isSaving}
+                >
+                  {isSaving ? (
+                    <><LoaderIcon size={14} /> Saving...</>
+                  ) : saveSuccess ? (
+                    <><CheckIcon size={14} /> Saved!</>
+                  ) : (
+                    <><SaveIcon size={14} /> Save</>
+                  )}
                 </button>
               )}
               {isAdmin && (isPublished ? (

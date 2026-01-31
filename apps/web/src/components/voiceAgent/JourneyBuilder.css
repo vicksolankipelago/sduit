@@ -1,3 +1,28 @@
+/* Spin animation for loading icons */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin-animation {
+  animation: spin 1s linear infinite;
+}
+
+/* Success state for buttons */
+.journey-action-btn.success {
+  background: #10b981 !important;
+  color: white !important;
+  border-color: #10b981 !important;
+}
+
+.journey-action-btn.success:hover {
+  background: #059669 !important;
+}
+
 .journey-builder {
   display: flex;
   flex-direction: column;
