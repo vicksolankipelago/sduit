@@ -614,7 +614,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
               {currentJourney.voiceEnabled !== false && (
                 <select
                   className="journey-provider-select"
-                  value={currentJourney.ttsProvider || 'azure'}
+                  value={currentJourney.ttsProvider || 'elevenlabs'}
                   onChange={(e) => {
                     const provider = e.target.value as TtsProvider;
                     const defaultVoice = provider === 'elevenlabs' 
@@ -831,7 +831,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                         <span>Voice Provider</span>
                         <select
                           className="journey-voice-settings-select"
-                          value={currentJourney.ttsProvider || 'azure'}
+                          value={currentJourney.ttsProvider || 'elevenlabs'}
                           onChange={(e) => {
                             const provider = e.target.value as TtsProvider;
                             const defaultVoice = provider === 'elevenlabs' 
@@ -854,7 +854,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                   </div>
                   
                   {/* ElevenLabs Configuration */}
-                  {currentJourney.voiceEnabled !== false && currentJourney.ttsProvider === 'elevenlabs' && (
+                  {currentJourney.voiceEnabled !== false && (currentJourney.ttsProvider === 'elevenlabs' || !currentJourney.ttsProvider) && (
                     <div className="journey-voice-settings-elevenlabs">
                       <div className="journey-agent-field">
                         <label>ElevenLabs Agent ID</label>

@@ -744,7 +744,7 @@ export interface Journey {
   systemPrompt: string; // Global prompt shared by all agents
   voice?: string; // Voice for all agents in journey (e.g., 'alloy', 'sage', 'echo')
   voiceEnabled?: boolean; // Whether voice interaction is enabled (default true)
-  ttsProvider?: TtsProvider; // TTS provider: 'azure' (default) or 'elevenlabs'
+  ttsProvider?: TtsProvider; // TTS provider: 'elevenlabs' (default) or 'azure'
   elevenLabsConfig?: ElevenLabsConfig; // ElevenLabs-specific configuration
   azureConfig?: AzureConfig; // Azure-specific configuration
   agents: Agent[];

@@ -791,11 +791,11 @@ function VoiceAgentContent() {
 
     console.log('🚀 connectToRealtime called with journey:', journeyToUse.name, 'ID:', journeyToUse.id);
     console.log('🚀 voiceEnabled:', journeyToUse.voiceEnabled);
-    console.log('🚀 ttsProvider:', journeyToUse.ttsProvider || 'azure');
+    console.log('🚀 ttsProvider:', journeyToUse.ttsProvider || 'elevenlabs');
     console.log('🚀 options:', options);
     
     // Set the current provider based on journey configuration
-    currentProviderRef.current = journeyToUse.ttsProvider || 'azure';
+    currentProviderRef.current = journeyToUse.ttsProvider || 'elevenlabs';
     
     // Validate ElevenLabs configuration if selected
     if (currentProviderRef.current === 'elevenlabs' && !journeyToUse.elevenLabsConfig?.agentId) {
@@ -1577,7 +1577,7 @@ Important guidelines:
   } = useAzureWebRTCSession();
 
   // Track which provider to use (determined by journey)
-  const currentProviderRef = useRef<'azure' | 'elevenlabs'>('azure');
+  const currentProviderRef = useRef<'azure' | 'elevenlabs'>('elevenlabs');
 
   const {
     connect: connectAzure,
