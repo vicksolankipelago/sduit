@@ -21,7 +21,7 @@ import { VoiceAgentAudioRouter } from '../utils/voiceAgent/audioRouting';
 import AgentUIRenderer from '../components/voiceAgent/AgentUIRenderer';
 import SessionLogViewer, { LogEntry } from '../components/voiceAgent/SessionLogViewer';
 import MemberPersonaEditor from '../components/voiceAgent/MemberPersonaEditor';
-import FeedbackForm from '../components/voiceAgent/FeedbackForm';
+import FeedbackSurvey from '../components/voiceAgent/FeedbackSurvey';
 import VoiceControlBar from '../components/voiceAgent/VoiceControlBar';
 import { ErrorBoundary } from '../components/voiceAgent/ErrorBoundary';
 import { useAudioLevel } from '../hooks/voiceAgent/useAudioLevel';
@@ -2314,9 +2314,9 @@ Important guidelines:
         </div>
       )}
       
-      {/* Feedback Form Modal */}
+      {/* Full-screen Feedback Survey */}
       {showFeedbackForm && feedbackSessionId && (
-        <FeedbackForm
+        <FeedbackSurvey
           voiceSessionId={feedbackSessionId}
           isPreviewMode={isPreviewMode}
           onSubmit={() => {

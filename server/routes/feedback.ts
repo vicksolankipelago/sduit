@@ -15,7 +15,16 @@ router.post("/", isAuthenticated, async (req: Request, res: Response) => {
       return apiResponse.unauthorized(res);
     }
 
-    const { voiceSessionId, rating, comment } = req.body;
+    const { 
+      voiceSessionId, 
+      rating, 
+      conversationNaturalness,
+      informationHelpfulness,
+      wouldDownloadApp,
+      likedMost,
+      improvements,
+      comment 
+    } = req.body;
 
     if (!voiceSessionId) {
       return apiResponse.validationError(res, "voiceSessionId is required");
@@ -56,7 +65,12 @@ router.post("/", isAuthenticated, async (req: Request, res: Response) => {
         userId,
         voiceSessionId: session.id,
         rating,
-        comment: comment || null,
+        conversationNaturalness: conversationNaturalness || null,
+        informationHelpfulness: informationHelpfulness || null,
+        wouldDownloadApp: wouldDownloadApp || null,
+        likedMost: likedMost?.trim() || null,
+        improvements: improvements?.trim() || null,
+        comment: comment?.trim() || null,
       })
       .returning();
 
@@ -82,6 +96,11 @@ router.get("/", isAuthenticated, async (req: Request, res: Response) => {
         .select({
           id: feedback.id,
           rating: feedback.rating,
+          conversationNaturalness: feedback.conversationNaturalness,
+          informationHelpfulness: feedback.informationHelpfulness,
+          wouldDownloadApp: feedback.wouldDownloadApp,
+          likedMost: feedback.likedMost,
+          improvements: feedback.improvements,
           comment: feedback.comment,
           createdAt: feedback.createdAt,
           voiceSessionId: feedback.voiceSessionId,
@@ -97,6 +116,11 @@ router.get("/", isAuthenticated, async (req: Request, res: Response) => {
         .select({
           id: feedback.id,
           rating: feedback.rating,
+          conversationNaturalness: feedback.conversationNaturalness,
+          informationHelpfulness: feedback.informationHelpfulness,
+          wouldDownloadApp: feedback.wouldDownloadApp,
+          likedMost: feedback.likedMost,
+          improvements: feedback.improvements,
           comment: feedback.comment,
           createdAt: feedback.createdAt,
           voiceSessionId: feedback.voiceSessionId,
@@ -129,6 +153,11 @@ router.get("/:id", isAuthenticated, async (req: Request, res: Response) => {
       .select({
         id: feedback.id,
         rating: feedback.rating,
+        conversationNaturalness: feedback.conversationNaturalness,
+        informationHelpfulness: feedback.informationHelpfulness,
+        wouldDownloadApp: feedback.wouldDownloadApp,
+        likedMost: feedback.likedMost,
+        improvements: feedback.improvements,
         comment: feedback.comment,
         createdAt: feedback.createdAt,
         voiceSessionId: feedback.voiceSessionId,

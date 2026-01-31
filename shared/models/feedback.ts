@@ -7,8 +7,22 @@ export const feedback = pgTable("feedback", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   voiceSessionId: varchar("voice_session_id").notNull().references(() => voiceSessions.id, { onDelete: "cascade" }),
+  
+  // Overall experience rating (1-5 stars)
   rating: integer("rating").notNull(),
+  
+  // Additional experience questions (1-5 scale)
+  conversationNaturalness: integer("conversation_naturalness"),
+  informationHelpfulness: integer("information_helpfulness"),
+  
+  // App download intent: 'yes', 'maybe', 'no'
+  wouldDownloadApp: varchar("would_download_app", { length: 10 }),
+  
+  // Open-ended feedback
+  likedMost: text("liked_most"),
+  improvements: text("improvements"),
   comment: text("comment"),
+  
   createdAt: timestamp("created_at").defaultNow(),
 });
 
