@@ -340,10 +340,11 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                     console.log(`🎯 Using minimal ${delay}s delay for voice navigation event '${eventId}'`);
                   }
 
-                  console.log(`🎯 Final delay for ${eventId}: ${delay}s`);
+                  console.log(`🎯 Final delay for ${eventId}: ${delay}s (delay > 0: ${delay > 0})`);
                   voiceAgentLogger.debug(`Triggering event: ${eventId} (delay: ${delay}s)`);
                   
                   const trigger = () => {
+                    console.log(`🎯 trigger() executed for ${eventId} at ${new Date().toISOString()}`);
                     // Call the event trigger callback
                     if (onEventTrigger) {
                       onEventTrigger(eventId, currentAgentRef.current);
@@ -354,8 +355,10 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                   };
 
                   if (delay > 0) {
+                    console.log(`🎯 Scheduling ${eventId} with ${delay * 1000}ms setTimeout`);
                     setTimeout(trigger, delay * 1000);
                   } else {
+                    console.log(`🎯 Executing ${eventId} immediately (no delay)`);
                     trigger();
                   }
                   
