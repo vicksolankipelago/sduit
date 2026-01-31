@@ -277,6 +277,85 @@ async function main() {
     return (app as any)._router.handle(req, res);
   });
 
+  // ElevenLabs Session Endpoint - generates signed URL or conversation token
+  app.get("/api/elevenlabs/session", async (req, res) => {
+    try {
+      const agentId = req.query.agentId as string;
+      const apiKey = process.env.ELEVENLABS_API_KEY;
+
+      sessionLogger.info("=== ElevenLabs Session Request ===");
+      sessionLogger.info("Configuration:", {
+        agentId: agentId || "NOT PROVIDED",
+        apiKeySet: !!apiKey,
+        apiKeyLength: apiKey ? apiKey.length : 0,
+      });
+
+      if (!agentId) {
+        return apiResponse.validationError(res, "Agent ID is required");
+      }
+
+      if (!apiKey) {
+        sessionLogger.warn("ELEVENLABS_API_KEY not set - attempting public agent connection");
+        return res.json({ 
+          publicAgent: true,
+          agentId: agentId,
+          message: "No API key configured. Using public agent connection."
+        });
+      }
+
+      // Try to get a signed URL for WebSocket connection
+      const signedUrlResponse = await fetch(
+        `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${agentId}`,
+        {
+          method: 'GET',
+          headers: {
+            'xi-api-key': apiKey,
+          },
+        }
+      );
+
+      if (signedUrlResponse.ok) {
+        const data = await signedUrlResponse.json();
+        sessionLogger.info("ElevenLabs signed URL obtained successfully");
+        return res.json({ 
+          signedUrl: data.signed_url,
+          agentId: agentId,
+        });
+      }
+
+      // If signed URL fails, try conversation token for WebRTC
+      sessionLogger.info("Signed URL failed, trying conversation token...");
+      const tokenResponse = await fetch(
+        `https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${agentId}`,
+        {
+          method: 'GET',
+          headers: {
+            'xi-api-key': apiKey,
+          },
+        }
+      );
+
+      if (tokenResponse.ok) {
+        const data = await tokenResponse.json();
+        sessionLogger.info("ElevenLabs conversation token obtained successfully");
+        return res.json({ 
+          conversationToken: data.token,
+          agentId: agentId,
+        });
+      }
+
+      // Both failed - provide useful error
+      const errorText = await signedUrlResponse.text();
+      sessionLogger.error("ElevenLabs API error:", errorText);
+      return apiResponse.serverError(res, "Failed to authenticate with ElevenLabs", errorText);
+      
+    } catch (err: any) {
+      sessionLogger.error("=== ElevenLabs Error ===");
+      sessionLogger.error("Error getting ElevenLabs session:", err.message);
+      return apiResponse.serverError(res, "Failed to create ElevenLabs session", err.message);
+    }
+  });
+
   // SDP Exchange Proxy - handles CORS issues by proxying through server
   app.post("/api/voice/sdp-exchange", async (req, res) => {
     try {

@@ -1,0 +1,249 @@
+/**
+ * ElevenLabs Session Hook
+ * 
+ * Manages voice sessions with ElevenLabs Conversational AI
+ * Mirrors the useAzureWebRTCSession interface for provider interchangeability
+ */
+
+import { useCallback, useRef, useState, useEffect } from 'react';
+import { useConversation } from '@elevenlabs/react';
+import { SessionStatus } from '../../types/voiceAgent';
+import { logger } from '../../utils/logger';
+
+const elevenLabsLogger = logger;
+
+export interface ElevenLabsSessionCallbacks {
+  customPrompts?: Record<string, string>;
+  onConnectionChange?: (status: SessionStatus) => void;
+  onTranscript?: (role: string, text: string, isDone?: boolean) => void;
+  onEvent?: (event: any) => void;
+  onAgentHandoff?: (fromAgent: string, toAgent: string) => void;
+  onToolCall?: (toolName: string, args: any, result: any) => void;
+  onConversationComplete?: () => void;
+  onModeChange?: (mode: 'speaking' | 'listening') => void;
+}
+
+export interface ElevenLabsConnectOptions {
+  audioElement?: HTMLAudioElement;
+  customInstructions?: string;
+  skipInitialGreeting?: boolean;
+  voice?: string;
+  customMicStream?: MediaStream;
+  agentConfig?: {
+    name: string;
+    instructions: string;
+    voice: string;
+    tools?: any[];
+    handoffs?: string[];
+  };
+  allJourneyAgents?: Map<string, {
+    name: string;
+    instructions: string;
+    voice: string;
+    handoffs?: string[];
+  }>;
+  screens?: Array<{
+    id: string;
+    events?: Array<{ id: string; delay?: number }>;
+    sections?: Array<{ elements?: Array<{ events?: Array<{ id: string; delay?: number }> }> }>;
+  }>;
+  onEventTrigger?: (eventId: string, agentName: string) => void;
+  onEndCall?: (reason?: string) => void;
+  elevenLabsAgentId?: string;
+  elevenLabsVoiceId?: string;
+}
+
+export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {}) {
+  const [status, setStatus] = useState<SessionStatus>('DISCONNECTED');
+  const conversationIdRef = useRef<string | null>(null);
+  const agentIdRef = useRef<string | null>(null);
+  const callbacksRef = useRef(callbacks);
+
+  useEffect(() => {
+    callbacksRef.current = callbacks;
+  }, [callbacks]);
+
+  const updateStatus = useCallback((s: SessionStatus) => {
+    setStatus(s);
+    callbacksRef.current.onConnectionChange?.(s);
+  }, []);
+
+  const conversation = useConversation({
+    onConnect: () => {
+      elevenLabsLogger.info('ElevenLabs conversation connected');
+      updateStatus('CONNECTED');
+    },
+    onDisconnect: () => {
+      elevenLabsLogger.info('ElevenLabs conversation disconnected');
+      updateStatus('DISCONNECTED');
+      callbacksRef.current.onConversationComplete?.();
+    },
+    onMessage: (message) => {
+      elevenLabsLogger.debug('ElevenLabs message:', message);
+      if (message.source === 'user') {
+        callbacksRef.current.onTranscript?.('user', message.message, true);
+      } else if (message.source === 'ai') {
+        callbacksRef.current.onTranscript?.('assistant', message.message, true);
+      }
+      callbacksRef.current.onEvent?.(message);
+    },
+    onError: (error) => {
+      elevenLabsLogger.error('ElevenLabs error:', error);
+      updateStatus('DISCONNECTED');
+    },
+    onModeChange: (data) => {
+      const mode = data.mode === 'speaking' ? 'speaking' : 'listening';
+      elevenLabsLogger.debug('Mode changed:', mode);
+      callbacksRef.current.onModeChange?.(mode);
+    },
+    onStatusChange: (statusData) => {
+      elevenLabsLogger.debug('Status changed:', statusData);
+      if (statusData.status === 'connected') {
+        updateStatus('CONNECTED');
+      } else if (statusData.status === 'connecting') {
+        updateStatus('CONNECTING');
+      } else {
+        updateStatus('DISCONNECTED');
+      }
+    },
+  });
+
+  const connect = useCallback(async (options: ElevenLabsConnectOptions) => {
+    const agentId = options.elevenLabsAgentId;
+    
+    if (!agentId) {
+      elevenLabsLogger.error('ElevenLabs Agent ID is required');
+      throw new Error('ElevenLabs Agent ID is required. Please configure it in the flow settings.');
+    }
+
+    elevenLabsLogger.info('=== Starting ElevenLabs Connection ===');
+    elevenLabsLogger.info('Agent ID:', agentId);
+    updateStatus('CONNECTING');
+
+    try {
+      const overrides: any = {};
+      
+      if (options.customInstructions) {
+        overrides.agent = {
+          prompt: {
+            prompt: options.customInstructions,
+          },
+        };
+      }
+      
+      if (options.elevenLabsVoiceId || options.voice) {
+        overrides.tts = {
+          voiceId: options.elevenLabsVoiceId || options.voice,
+        };
+      }
+      
+      if (options.skipInitialGreeting === false && options.agentConfig?.instructions) {
+        if (!overrides.agent) overrides.agent = {};
+        overrides.agent.firstMessage = `Hello! I'm ${options.agentConfig.name}. How can I help you today?`;
+      }
+
+      let sessionConfig: any;
+      
+      try {
+        elevenLabsLogger.info('Fetching signed URL from server...');
+        const response = await fetch(`/api/elevenlabs/session?agentId=${agentId}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.signedUrl) {
+            elevenLabsLogger.info('Using signed URL for authenticated connection');
+            sessionConfig = {
+              signedUrl: data.signedUrl,
+              connectionType: 'websocket' as const,
+              overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
+            };
+          } else if (data.conversationToken) {
+            elevenLabsLogger.info('Using conversation token for WebRTC connection');
+            sessionConfig = {
+              conversationToken: data.conversationToken,
+              connectionType: 'webrtc' as const,
+              overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
+            };
+          }
+        }
+      } catch (err) {
+        elevenLabsLogger.warn('Could not get signed URL, using public agent connection:', err);
+      }
+      
+      if (!sessionConfig) {
+        elevenLabsLogger.info('Using public agent connection');
+        sessionConfig = {
+          agentId,
+          connectionType: 'webrtc' as const,
+          overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
+        };
+      }
+
+      elevenLabsLogger.info('Starting session with config:', { 
+        hasSignedUrl: !!sessionConfig.signedUrl,
+        hasToken: !!sessionConfig.conversationToken,
+        hasAgentId: !!sessionConfig.agentId,
+        connectionType: sessionConfig.connectionType,
+      });
+
+      const conversationId = await conversation.startSession(sessionConfig);
+      conversationIdRef.current = conversationId;
+      agentIdRef.current = agentId;
+      
+      elevenLabsLogger.info('Session started, conversation ID:', conversationId);
+      updateStatus('CONNECTED');
+      
+    } catch (error) {
+      elevenLabsLogger.error('Failed to start ElevenLabs session:', error);
+      updateStatus('DISCONNECTED');
+      throw error;
+    }
+  }, [conversation, updateStatus]);
+
+  const disconnect = useCallback(async () => {
+    elevenLabsLogger.info('Disconnecting ElevenLabs session...');
+    try {
+      await conversation.endSession();
+    } catch (error) {
+      elevenLabsLogger.warn('Error ending session:', error);
+    }
+    conversationIdRef.current = null;
+    agentIdRef.current = null;
+    updateStatus('DISCONNECTED');
+    elevenLabsLogger.info('Disconnected');
+  }, [conversation, updateStatus]);
+
+  const sendMessage = useCallback((message: unknown) => {
+    elevenLabsLogger.debug('sendMessage called (ElevenLabs uses sendUserMessage instead)');
+    if (typeof message === 'object' && message !== null && 'text' in message) {
+      conversation.sendUserMessage((message as { text: string }).text);
+    }
+  }, [conversation]);
+
+  const sendUserMessage = useCallback((text: string) => {
+    elevenLabsLogger.debug('Sending user message:', text);
+    conversation.sendUserMessage(text);
+  }, [conversation]);
+
+  const sendContextualUpdate = useCallback((text: string) => {
+    elevenLabsLogger.debug('Sending contextual update:', text);
+    conversation.sendContextualUpdate(text);
+  }, [conversation]);
+
+  const setMicMuted = useCallback((muted: boolean) => {
+    elevenLabsLogger.debug(`Setting mic muted: ${muted}`);
+  }, []);
+
+  return {
+    status,
+    connect,
+    disconnect,
+    sendMessage,
+    setMicMuted,
+    sendUserMessage,
+    sendContextualUpdate,
+    isSpeaking: conversation.isSpeaking,
+    getInputVolume: conversation.getInputVolume,
+    getOutputVolume: conversation.getOutputVolume,
+  };
+}

@@ -12,6 +12,7 @@ import { useTranscript } from '../contexts/voiceAgent/TranscriptContext';
 import { useEvent } from '../contexts/voiceAgent/EventContext';
 import { useAgentUI } from '../contexts/voiceAgent/AgentUIContext';
 import { useAzureWebRTCSession } from '../hooks/voiceAgent/useAzureWebRTCSession';
+import { useElevenLabsSession } from '../hooks/voiceAgent/useElevenLabsSession';
 import useAudioDownload from '../hooks/voiceAgent/useAudioDownload';
 import { useStreamingRecording } from '../hooks/voiceAgent/useStreamingRecording';
 import { VoiceAgentAudioRouter } from '../utils/voiceAgent/audioRouting';
@@ -790,7 +791,18 @@ function VoiceAgentContent() {
 
     console.log('🚀 connectToRealtime called with journey:', journeyToUse.name, 'ID:', journeyToUse.id);
     console.log('🚀 voiceEnabled:', journeyToUse.voiceEnabled);
+    console.log('🚀 ttsProvider:', journeyToUse.ttsProvider || 'azure');
     console.log('🚀 options:', options);
+    
+    // Set the current provider based on journey configuration
+    currentProviderRef.current = journeyToUse.ttsProvider || 'azure';
+    
+    // Validate ElevenLabs configuration if selected
+    if (currentProviderRef.current === 'elevenlabs' && !journeyToUse.elevenLabsConfig?.agentId) {
+      addLog('error', 'ElevenLabs is selected but Agent ID is not configured. Please add the Agent ID in flow settings.');
+      setIsTransitioningJourney(false);
+      return;
+    }
 
     // Apply prompt variable substitution using flowContext from quiz answers
     // Priority: flowContextOverride (quiz answers) > pqData (manual settings) > DEFAULT_PQ_DATA
@@ -1085,6 +1097,9 @@ function VoiceAgentContent() {
           screens: startingAgentConfigForConnect.screens,
           onEventTrigger: handleEventTrigger,
           onEndCall: handleEndCall,
+          // ElevenLabs-specific options
+          elevenLabsAgentId: journeyToUse.elevenLabsConfig?.agentId,
+          elevenLabsVoiceId: journeyToUse.elevenLabsConfig?.voiceId,
         });
         addLog('success', 'Successfully initiated voice agent connection');
         
@@ -1125,7 +1140,8 @@ Important guidelines:
         // Normal mode: Connect agent with regular microphone and journey agent config
         console.log('🎙️ About to call connect() with agentConfig:', journeyAgentConfig.name);
         console.log('🎙️ sdkAudioElement:', !!sdkAudioElement);
-        addLog('info', '🎙️ Initiating WebRTC connection...');
+        console.log('🎙️ provider:', currentProviderRef.current);
+        addLog('info', `🎙️ Initiating ${currentProviderRef.current === 'elevenlabs' ? 'ElevenLabs' : 'Azure'} connection...`);
         await connect({
           audioElement: sdkAudioElement,
           agentConfig: journeyAgentConfig,
@@ -1133,9 +1149,12 @@ Important guidelines:
           screens: startingAgentConfigForConnect.screens,
           onEventTrigger: handleEventTrigger,
           onEndCall: handleEndCall,
+          // ElevenLabs-specific options
+          elevenLabsAgentId: journeyToUse.elevenLabsConfig?.agentId,
+          elevenLabsVoiceId: journeyToUse.elevenLabsConfig?.voiceId,
         });
         console.log('🎙️ connect() completed');
-        addLog('success', 'Successfully initiated voice agent connection');
+        addLog('success', `Successfully initiated ${currentProviderRef.current === 'elevenlabs' ? 'ElevenLabs' : 'Azure'} connection`);
       }
       
       // Configure real-time saver with session info (only if user is authenticated)
@@ -1557,14 +1576,18 @@ Important guidelines:
     status: personaStatus,
   } = useAzureWebRTCSession();
 
+  // Track which provider to use (determined by journey)
+  const currentProviderRef = useRef<'azure' | 'elevenlabs'>('azure');
+
   const {
-    connect,
-    disconnect,
-    sendMessage: _sendMessage,
-    setMicMuted,
+    connect: connectAzure,
+    disconnect: disconnectAzure,
+    sendMessage: _sendMessageAzure,
+    setMicMuted: setMicMutedAzure,
   } = useAzureWebRTCSession({
     customPrompts, // Pass custom prompts to the hook
     onConnectionChange: (s) => {
+      if (currentProviderRef.current !== 'azure') return;
       setSessionStatus(s as SessionStatus);
       if (s === 'CONNECTING') {
         addLog('info', 'Connecting to Azure OpenAI...');
@@ -1785,6 +1808,63 @@ Important guidelines:
       disconnectFromRealtime();
     },
   });
+
+  // ElevenLabs hook with same callbacks
+  const {
+    connect: connectElevenLabs,
+    disconnect: disconnectElevenLabs,
+    setMicMuted: setMicMutedElevenLabs,
+  } = useElevenLabsSession({
+    customPrompts,
+    onConnectionChange: (s) => {
+      if (currentProviderRef.current !== 'elevenlabs') return;
+      setSessionStatus(s as SessionStatus);
+      if (s === 'CONNECTING') {
+        addLog('info', 'Connecting to ElevenLabs...');
+      } else if (s === 'CONNECTED') {
+        addLog('success', 'Connected to ElevenLabs');
+        setIsTransitioningJourney(false);
+      } else if (s === 'DISCONNECTED') {
+        addLog('info', 'Disconnected from ElevenLabs');
+        setIsTransitioningJourney(false);
+      }
+    },
+    onTranscript: (role: string, text: string) => {
+      if (role === 'user') {
+        addLog('info', `User: ${text}`);
+      } else {
+        addLog('info', `Assistant: ${text}`);
+      }
+    },
+    onConversationComplete: () => {
+      console.log('🎬 ElevenLabs conversation complete');
+      disconnectFromRealtime();
+    },
+  });
+
+  // Provider-aware wrapper functions
+  const connect = useCallback(async (options: any) => {
+    if (currentProviderRef.current === 'elevenlabs') {
+      return connectElevenLabs(options);
+    }
+    return connectAzure(options);
+  }, [connectAzure, connectElevenLabs]);
+
+  const disconnect = useCallback(() => {
+    if (currentProviderRef.current === 'elevenlabs') {
+      disconnectElevenLabs();
+    } else {
+      disconnectAzure();
+    }
+  }, [disconnectAzure, disconnectElevenLabs]);
+
+  const setMicMuted = useCallback((muted: boolean) => {
+    if (currentProviderRef.current === 'elevenlabs') {
+      setMicMutedElevenLabs(muted);
+    } else {
+      setMicMutedAzure(muted);
+    }
+  }, [setMicMutedAzure, setMicMutedElevenLabs]);
 
 
   const handleToggleMute = () => {

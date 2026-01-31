@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
-import { Journey, Agent, DEFAULT_SYSTEM_PROMPT, validateJourney, Screen, VOICE_OPTIONS } from '../../types/journey';
+import { Journey, Agent, DEFAULT_SYSTEM_PROMPT, validateJourney, Screen, TtsProvider, ELEVENLABS_VOICE_OPTIONS, AZURE_VOICE_OPTIONS } from '../../types/journey';
 import { loadJourney, saveJourney, deleteJourney, duplicateJourney } from '../../services/journeyStorage';
 import { publishJourney as publishJourneyApi, unpublishJourney as unpublishJourneyApi, getPublishedJourney } from '../../services/api/journeyService';
 import { SCREEN_TEMPLATES } from '../../lib/voiceAgent/screenTemplates';
@@ -611,6 +611,29 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                 <span className="journey-voice-toggle-slider"></span>
                 <span className="journey-voice-toggle-label">{currentJourney.voiceEnabled !== false ? '🎙️ Voice' : '👆 Buttons'}</span>
               </label>
+              {currentJourney.voiceEnabled !== false && (
+                <select
+                  className="journey-provider-select"
+                  value={currentJourney.ttsProvider || 'azure'}
+                  onChange={(e) => {
+                    const provider = e.target.value as TtsProvider;
+                    const defaultVoice = provider === 'elevenlabs' 
+                      ? ELEVENLABS_VOICE_OPTIONS[0].value 
+                      : AZURE_VOICE_OPTIONS[0].value;
+                    setCurrentJourney({ 
+                      ...currentJourney, 
+                      ttsProvider: provider,
+                      voice: defaultVoice,
+                      elevenLabsConfig: provider === 'elevenlabs' ? (currentJourney.elevenLabsConfig || {}) : undefined
+                    });
+                  }}
+                  disabled={disabled || !isAdmin}
+                  title="Select voice provider"
+                >
+                  <option value="azure">Azure OpenAI</option>
+                  <option value="elevenlabs">ElevenLabs</option>
+                </select>
+              )}
             </div>
           )}
         </div>
@@ -780,6 +803,33 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                 disabled={disabled || !isAdmin}
               />
 
+              {/* ElevenLabs Configuration */}
+              {currentJourney.ttsProvider === 'elevenlabs' && (
+                <div className="journey-provider-config">
+                  <div className="journey-provider-config-label">ElevenLabs Configuration</div>
+                  <div className="journey-agent-field">
+                    <label>Agent ID</label>
+                    <input
+                      type="text"
+                      className="journey-provider-config-input"
+                      value={currentJourney.elevenLabsConfig?.agentId || ''}
+                      onChange={(e) => setCurrentJourney({
+                        ...currentJourney,
+                        elevenLabsConfig: {
+                          ...currentJourney.elevenLabsConfig,
+                          agentId: e.target.value
+                        }
+                      })}
+                      placeholder="e.g., agent_abc123xyz"
+                      disabled={disabled || !isAdmin}
+                    />
+                    <div className="journey-provider-config-hint">
+                      Get your Agent ID from the ElevenLabs Conversational AI dashboard
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Agent Selector */}
               <div className="journey-agent-selector">
                 <div className="journey-agent-selector-header">
@@ -883,7 +933,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                               onChange={(e) => handleUpdateAgent({ ...selectedAgent, voice: e.target.value })}
                               disabled={disabled || !isAdmin}
                             >
-                              {VOICE_OPTIONS.map(option => (
+                              {(currentJourney?.ttsProvider === 'elevenlabs' ? ELEVENLABS_VOICE_OPTIONS : AZURE_VOICE_OPTIONS).map(option => (
                                 <option key={option.value} value={option.value}>
                                   {option.label}
                                 </option>

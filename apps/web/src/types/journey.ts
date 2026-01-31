@@ -710,6 +710,30 @@ export interface Agent {
 }
 
 /**
+ * TTS Provider Types
+ * Supported voice/TTS providers for journeys
+ */
+export type TtsProvider = 'azure' | 'elevenlabs';
+
+/**
+ * ElevenLabs Configuration
+ * Settings specific to ElevenLabs provider
+ */
+export interface ElevenLabsConfig {
+  agentId?: string; // ElevenLabs Agent ID from their platform
+  voiceId?: string; // ElevenLabs Voice ID
+  modelId?: string; // ElevenLabs model (e.g., 'eleven_multilingual_v2')
+}
+
+/**
+ * Azure Configuration
+ * Settings specific to Azure OpenAI provider
+ */
+export interface AzureConfig {
+  deploymentName?: string; // Azure deployment name override
+}
+
+/**
  * Journey Definition
  * Complete multi-agent conversation flow
  */
@@ -720,6 +744,9 @@ export interface Journey {
   systemPrompt: string; // Global prompt shared by all agents
   voice?: string; // Voice for all agents in journey (e.g., 'alloy', 'sage', 'echo')
   voiceEnabled?: boolean; // Whether voice interaction is enabled (default true)
+  ttsProvider?: TtsProvider; // TTS provider: 'azure' (default) or 'elevenlabs'
+  elevenLabsConfig?: ElevenLabsConfig; // ElevenLabs-specific configuration
+  azureConfig?: AzureConfig; // Azure-specific configuration
   agents: Agent[];
   startingAgentId: string; // ID of the first agent in the flow
   createdAt: string;
@@ -742,6 +769,7 @@ export interface JourneyListItem {
   isPublished?: boolean;
   publishedAt?: string;
   voiceEnabled?: boolean;
+  ttsProvider?: TtsProvider;
 }
 
 /**
@@ -756,6 +784,9 @@ export interface PublishedJourney {
   systemPrompt: string;
   voice: string;
   voiceEnabled?: boolean;
+  ttsProvider?: TtsProvider;
+  elevenLabsConfig?: ElevenLabsConfig;
+  azureConfig?: AzureConfig;
   agents: Agent[];
   startingAgentId: string;
   version: string;
@@ -773,10 +804,10 @@ export interface JourneyExport {
 }
 
 /**
- * Default Voice Options
+ * Azure Voice Options
  */
-export const VOICE_OPTIONS = [
-  { value: 'shimmer', label: 'Shimmer (Soft & Gentle)' }, // Default voice - first in list
+export const AZURE_VOICE_OPTIONS = [
+  { value: 'shimmer', label: 'Shimmer (Soft & Gentle)' },
   { value: 'sage', label: 'Sage (Warm & Wise)' },
   { value: 'alloy', label: 'Alloy (Neutral & Clear)' },
   { value: 'echo', label: 'Echo (Friendly & Upbeat)' },
@@ -785,6 +816,35 @@ export const VOICE_OPTIONS = [
   { value: 'coral', label: 'Coral (Bright & Energetic)' },
   { value: 'verse', label: 'Verse (Smooth & Articulate)' },
 ] as const;
+
+/**
+ * ElevenLabs Voice Options
+ * Common ElevenLabs voices - users can also provide custom voice IDs
+ */
+export const ELEVENLABS_VOICE_OPTIONS = [
+  { value: 'pNInz6obpgDQGcFmaJgB', label: 'Adam (Deep & Warm)' },
+  { value: '21m00Tcm4TlvDq8ikWAM', label: 'Rachel (Clear & Friendly)' },
+  { value: 'EXAVITQu4vr4xnSDxMaL', label: 'Bella (Soft & Expressive)' },
+  { value: 'ErXwobaYiN019PkySvjV', label: 'Antoni (Articulate & Engaging)' },
+  { value: 'MF3mGyEYCl7XYWbV9V6O', label: 'Elli (Young & Cheerful)' },
+  { value: 'TxGEqnHWrfWFTfGW9XjX', label: 'Josh (Dynamic & Confident)' },
+  { value: 'VR6AewLTigWG4xSOukaG', label: 'Arnold (Authoritative)' },
+  { value: 'pqHfZKP75CvOlQylNhV4', label: 'Bill (Warm & Professional)' },
+  { value: 'nPczCjzI2devNBz1zQrb', label: 'Brian (Deep & Soothing)' },
+  { value: 'N2lVS1w4EtoT3dr4eOWO', label: 'Callum (Calm & Clear)' },
+] as const;
+
+/**
+ * Default Voice Options (Azure - for backwards compatibility)
+ */
+export const VOICE_OPTIONS = AZURE_VOICE_OPTIONS;
+
+/**
+ * Get voice options for a specific provider
+ */
+export function getVoiceOptionsForProvider(provider: TtsProvider = 'azure') {
+  return provider === 'elevenlabs' ? ELEVENLABS_VOICE_OPTIONS : AZURE_VOICE_OPTIONS;
+}
 
 /**
  * Default System Prompt Template
