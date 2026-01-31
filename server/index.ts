@@ -305,28 +305,8 @@ async function main() {
         });
       }
 
-      // Try to get a signed URL for WebSocket connection
-      const signedUrlResponse = await fetch(
-        `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${agentId}`,
-        {
-          method: 'GET',
-          headers: {
-            'xi-api-key': apiKey,
-          },
-        }
-      );
-
-      if (signedUrlResponse.ok) {
-        const data = await signedUrlResponse.json();
-        sessionLogger.info("ElevenLabs signed URL obtained successfully");
-        return res.json({ 
-          signedUrl: data.signed_url,
-          agentId: agentId,
-        });
-      }
-
-      // If signed URL fails, try conversation token for WebRTC
-      sessionLogger.info("Signed URL failed, trying conversation token...");
+      // Get conversation token for WebRTC connection (preferred - better Safari support)
+      sessionLogger.info("Getting conversation token for WebRTC...");
       const tokenResponse = await fetch(
         `https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${agentId}`,
         {
@@ -339,15 +319,36 @@ async function main() {
 
       if (tokenResponse.ok) {
         const data = await tokenResponse.json();
-        sessionLogger.info("ElevenLabs conversation token obtained successfully");
+        sessionLogger.info("ElevenLabs conversation token obtained successfully (WebRTC)");
         return res.json({ 
           conversationToken: data.token,
           agentId: agentId,
         });
       }
 
+      // If conversation token fails, try signed URL for WebSocket as fallback
+      sessionLogger.info("Conversation token failed, trying signed URL...");
+      const signedUrlResponse = await fetch(
+        `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${agentId}`,
+        {
+          method: 'GET',
+          headers: {
+            'xi-api-key': apiKey,
+          },
+        }
+      );
+
+      if (signedUrlResponse.ok) {
+        const data = await signedUrlResponse.json();
+        sessionLogger.info("ElevenLabs signed URL obtained successfully (WebSocket fallback)");
+        return res.json({ 
+          signedUrl: data.signed_url,
+          agentId: agentId,
+        });
+      }
+
       // Both failed - provide useful error
-      const errorText = await signedUrlResponse.text();
+      const errorText = await tokenResponse.text();
       sessionLogger.error("ElevenLabs API error:", errorText);
       return apiResponse.serverError(res, "Failed to authenticate with ElevenLabs", errorText);
       
