@@ -1980,14 +1980,27 @@ Important guidelines:
     onError: (errorMessage, details) => {
       const timestamp = new Date().toLocaleTimeString();
       console.error('🔴 ElevenLabs Error:', errorMessage, details);
-      addLog('error', `[${timestamp}] ElevenLabs Error: ${errorMessage}`);
-      if (details?.name) {
-        addLog('error', `[${timestamp}] Error type: ${details.name}`);
+      
+      // Don't show error modal for debug messages or normal disconnects
+      const isDebugMessage = errorMessage.startsWith('DEBUG:');
+      const isNormalDisconnect = errorMessage.includes('Disconnected (user)') || 
+                                  errorMessage.includes('Disconnected (agent)');
+      
+      if (isDebugMessage) {
+        addLog('info', `[${timestamp}] ${errorMessage}`);
+      } else if (isNormalDisconnect) {
+        addLog('info', `[${timestamp}] Session ended normally`);
+      } else {
+        addLog('error', `[${timestamp}] ElevenLabs Error: ${errorMessage}`);
+        if (details?.name) {
+          addLog('error', `[${timestamp}] Error type: ${details.name}`);
+        }
+        if (details?.stack) {
+          addLog('error', `[${timestamp}] Stack: ${details.stack.substring(0, 200)}...`);
+        }
+        // Only show error modal for actual errors
+        setConnectionError(errorMessage);
       }
-      if (details?.stack) {
-        addLog('error', `[${timestamp}] Stack: ${details.stack.substring(0, 200)}...`);
-      }
-      setConnectionError(errorMessage);
     },
   });
 
