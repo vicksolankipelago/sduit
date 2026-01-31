@@ -254,6 +254,9 @@ function VoiceAgentContent() {
   // Microphone permission error state
   const [micPermissionError, setMicPermissionError] = useState(false);
   
+  // Connection error state for displaying persistent error messages
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  
   // Journey transition state - prevents journeys list from showing during flow transitions
   const [isTransitioningJourney, setIsTransitioningJourney] = useState(false);
   
@@ -1950,9 +1953,11 @@ Important guidelines:
       setSessionStatus(s as SessionStatus);
       if (s === 'CONNECTING') {
         addLog('info', 'Connecting to ElevenLabs...');
+        setConnectionError(null); // Clear any previous errors
       } else if (s === 'CONNECTED') {
         addLog('success', 'Connected to ElevenLabs');
         setIsTransitioningJourney(false);
+        setConnectionError(null); // Clear any previous errors
       } else if (s === 'DISCONNECTED') {
         addLog('info', 'Disconnected from ElevenLabs');
         setIsTransitioningJourney(false);
@@ -1972,8 +1977,7 @@ Important guidelines:
     onError: (errorMessage, details) => {
       console.error('🔴 ElevenLabs Error:', errorMessage, details);
       addLog('error', `ElevenLabs Error: ${errorMessage}`);
-      // Show user-friendly error message
-      alert(`Voice connection failed: ${errorMessage}\n\nPlease check the session log for details.`);
+      setConnectionError(errorMessage);
     },
   });
 
@@ -2363,6 +2367,38 @@ Important guidelines:
             <button 
               className="mic-permission-btn"
               onClick={() => setMicPermissionError(false)}
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Connection Error Modal */}
+      {connectionError && (
+        <div className="voice-agent-settings-overlay" onClick={() => setConnectionError(null)}>
+          <div className="mic-permission-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="mic-permission-icon" style={{ color: '#dc3545' }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+              </svg>
+            </div>
+            <h3>Connection Failed</h3>
+            <p style={{ wordBreak: 'break-word' }}>{connectionError}</p>
+            <div className="mic-permission-instructions">
+              <strong>Troubleshooting:</strong>
+              <ol>
+                <li>Check that the ElevenLabs API key is configured in secrets</li>
+                <li>Verify the Agent ID is correct in the flow settings</li>
+                <li>Ensure your browser allows microphone access</li>
+                <li>Try refreshing the page and trying again</li>
+              </ol>
+            </div>
+            <button 
+              className="mic-permission-btn"
+              onClick={() => setConnectionError(null)}
             >
               Got it
             </button>

@@ -196,10 +196,12 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
       
       try {
         elevenLabsLogger.info('Fetching signed URL from server...');
+        console.log('🔑 Fetching signed URL from /api/elevenlabs/session...');
         const response = await fetch(`/api/elevenlabs/session?agentId=${agentId}`);
         
         if (response.ok) {
           const data = await response.json();
+          console.log('🔑 Session response:', { hasSignedUrl: !!data.signedUrl, hasToken: !!data.conversationToken });
           if (data.signedUrl) {
             elevenLabsLogger.info('Using signed URL for authenticated connection');
             sessionConfig = {
@@ -215,9 +217,15 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
               overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
             };
           }
+        } else {
+          const errorText = await response.text();
+          console.error('🔴 Signed URL fetch failed:', response.status, errorText);
+          callbacksRef.current.onError?.(`Server auth failed (${response.status}): ${errorText}`, { status: response.status, error: errorText });
         }
-      } catch (err) {
+      } catch (err: any) {
+        console.error('🔴 Could not get signed URL:', err);
         elevenLabsLogger.warn('Could not get signed URL, using public agent connection:', err);
+        callbacksRef.current.onError?.(`Could not get auth: ${err?.message || err}`, err);
       }
       
       if (!sessionConfig) {
