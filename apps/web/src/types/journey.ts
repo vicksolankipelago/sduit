@@ -1001,8 +1001,8 @@ export function validateJourney(journey: Journey): JourneyValidationError[] {
     if (visited.has(agentId)) return true;
     visited.add(agentId);
     
-    const agent = journey.agents.find(a => a.id === agentId);
-    if (!agent) return false;
+    const agent = journey.agents?.find(a => a.id === agentId);
+    if (!agent || !agent.handoffs || agent.handoffs.length === 0) return false;
     
     return agent.handoffs.some(targetId => detectCircular(targetId, new Set(visited)));
   };

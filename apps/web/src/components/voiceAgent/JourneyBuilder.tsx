@@ -50,22 +50,6 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const lastSavedJourneyRef = useRef<string | null>(null);
-  const saveButtonRef = useRef<HTMLButtonElement>(null);
-  
-  // Debug: Add native DOM event listener to save button
-  useEffect(() => {
-    const button = saveButtonRef.current;
-    if (button) {
-      const handleNativeClick = (e: MouseEvent) => {
-        console.log('🔴 NATIVE DOM click event on save button', e);
-      };
-      button.addEventListener('click', handleNativeClick, true);
-      console.log('🟢 Native click listener attached to save button');
-      return () => {
-        button.removeEventListener('click', handleNativeClick, true);
-      };
-    }
-  }, [saveButtonRef.current]);
   
   // Publishing state
   const [isPublished, setIsPublished] = useState(false);
@@ -162,29 +146,10 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   };
 
   const handleSaveJourney = async () => {
-    console.log('💾 Save button clicked', { currentJourney: currentJourney?.name, isSaving });
-    
-    if (!currentJourney) {
-      console.warn('💾 No journey to save');
-      return;
-    }
-    
-    if (isSaving) {
-      console.warn('💾 Already saving, ignoring click');
-      return;
-    }
+    if (!currentJourney || isSaving) return;
 
-    let errors: any[] = [];
-    try {
-      console.log('💾 Running validation...');
-      errors = validateJourney(currentJourney);
-      setValidationErrors(errors);
-      console.log('💾 Validation result:', errors.length, 'errors');
-    } catch (validationError) {
-      console.error('💾 Validation threw an error:', validationError);
-      alert('Error during validation. Check console for details.');
-      return;
-    }
+    const errors = validateJourney(currentJourney);
+    setValidationErrors(errors);
 
     if (errors.length > 0) {
       alert(`Cannot save: ${errors.length} validation error(s). Check the validation panel.`);
@@ -193,10 +158,8 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
 
     setIsSaving(true);
     setSaveSuccess(false);
-    console.log('💾 Starting save...');
     try {
       const saved = await saveJourney(currentJourney);
-      console.log('💾 Save result:', saved);
       if (saved) {
         try {
           const channel = new BroadcastChannel('journey-updates');
@@ -206,22 +169,17 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
             timestamp: Date.now(),
           });
           channel.close();
-          console.log('📢 Broadcast journey update:', currentJourney.id);
         } catch (e) {
-          console.warn('BroadcastChannel not supported, manual refresh may be needed');
+          // BroadcastChannel not supported
         }
-        // Update the saved state and show success
         lastSavedJourneyRef.current = JSON.stringify(currentJourney);
         setHasUnsavedChanges(false);
         setSaveSuccess(true);
-        console.log('💾 Save successful, showing success state');
         setTimeout(() => setSaveSuccess(false), 2000);
       } else {
-        console.error('💾 Save returned false');
         alert('Failed to save flow');
       }
     } catch (err) {
-      console.error('💾 Save error:', err);
       alert('Error saving flow: ' + (err as Error).message);
     } finally {
       setIsSaving(false);
@@ -743,14 +701,8 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
             <>
               {isAdmin && (
                 <button 
-                  ref={saveButtonRef}
                   className={`journey-action-btn ${hasUnsavedChanges ? 'has-changes' : ''} ${isSaving ? 'saving' : ''} ${saveSuccess ? 'success' : ''}`} 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('🔘 Save button click event fired', { disabled, isSaving });
-                    handleSaveJourney();
-                  }} 
+                  onClick={handleSaveJourney}
                   disabled={disabled || isSaving}
                   title={hasUnsavedChanges ? 'You have unsaved changes' : 'Save flow'}
                 >
