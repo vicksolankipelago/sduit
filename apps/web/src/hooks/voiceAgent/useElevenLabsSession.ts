@@ -29,6 +29,8 @@ export interface ElevenLabsConnectOptions {
   skipInitialGreeting?: boolean;
   voice?: string;
   customMicStream?: MediaStream;
+  // System prompt - global instructions shared by all agents
+  systemPrompt?: string;
   agentConfig?: {
     name: string;
     instructions: string;
@@ -138,15 +140,32 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
     try {
       const overrides: any = {};
       
-      // Pass prompt/instructions as agent override
-      if (options.customInstructions || options.agentConfig?.instructions) {
-        const prompt = options.customInstructions || options.agentConfig?.instructions;
+      // Build combined prompt: system prompt + agent instructions + custom instructions
+      // Priority: customInstructions can override, but systemPrompt is always prepended
+      const promptParts: string[] = [];
+      
+      // Always include system prompt first if provided
+      if (options.systemPrompt) {
+        promptParts.push(options.systemPrompt);
+        elevenLabsLogger.info('Including system prompt in ElevenLabs agent');
+      }
+      
+      // Add agent instructions (which may already include system prompt for backwards compatibility)
+      if (options.customInstructions) {
+        promptParts.push(options.customInstructions);
+      } else if (options.agentConfig?.instructions) {
+        promptParts.push(options.agentConfig.instructions);
+      }
+      
+      // If we have any prompt content, pass it to ElevenLabs
+      if (promptParts.length > 0) {
+        const combinedPrompt = promptParts.join('\n\n');
         overrides.agent = {
           prompt: {
-            prompt: prompt,
+            prompt: combinedPrompt,
           },
         };
-        elevenLabsLogger.info('Overriding agent prompt with journey instructions');
+        elevenLabsLogger.info(`Overriding agent prompt with combined instructions (${combinedPrompt.length} chars)`);
       }
       
       // Pass dynamic variables for template substitution

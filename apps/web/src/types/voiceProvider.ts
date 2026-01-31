@@ -26,6 +26,8 @@ export interface VoiceConnectOptions {
   skipInitialGreeting?: boolean;
   voice?: string;
   customMicStream?: MediaStream;
+  // System prompt - global instructions shared by all agents
+  systemPrompt?: string;
   agentConfig?: {
     name: string;
     instructions: string;
@@ -48,6 +50,8 @@ export interface VoiceConnectOptions {
   onEndCall?: (reason?: string) => void;
   elevenLabsAgentId?: string;
   elevenLabsVoiceId?: string;
+  // Dynamic variables to inject into the agent's prompt
+  dynamicVariables?: Record<string, string>;
 }
 
 export interface VoiceSession {

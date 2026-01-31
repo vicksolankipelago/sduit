@@ -1160,6 +1160,8 @@ function VoiceAgentContent() {
         await connect({
           audioElement: sdkAudioElement,
           customMicStream: agentMicStream,
+          // Pass system prompt explicitly for ElevenLabs
+          systemPrompt: journeyWithPQData.systemPrompt,
           agentConfig: journeyAgentConfig,
           allJourneyAgents: allJourneyAgentsMap,
           screens: startingAgentConfigForConnect.screens,
@@ -1226,6 +1228,8 @@ Important guidelines:
         
         await connect({
           audioElement: sdkAudioElement,
+          // Pass system prompt explicitly for ElevenLabs
+          systemPrompt: journeyWithPQData.systemPrompt,
           agentConfig: journeyAgentConfig,
           allJourneyAgents: allJourneyAgentsMap,
           screens: startingAgentConfigForConnect.screens,
