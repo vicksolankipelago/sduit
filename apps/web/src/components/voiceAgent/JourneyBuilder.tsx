@@ -50,6 +50,22 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const lastSavedJourneyRef = useRef<string | null>(null);
+  const saveButtonRef = useRef<HTMLButtonElement>(null);
+  
+  // Debug: Add native DOM event listener to save button
+  useEffect(() => {
+    const button = saveButtonRef.current;
+    if (button) {
+      const handleNativeClick = (e: MouseEvent) => {
+        console.log('🔴 NATIVE DOM click event on save button', e);
+      };
+      button.addEventListener('click', handleNativeClick, true);
+      console.log('🟢 Native click listener attached to save button');
+      return () => {
+        button.removeEventListener('click', handleNativeClick, true);
+      };
+    }
+  }, [saveButtonRef.current]);
   
   // Publishing state
   const [isPublished, setIsPublished] = useState(false);
@@ -719,6 +735,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
             <>
               {isAdmin && (
                 <button 
+                  ref={saveButtonRef}
                   className={`journey-action-btn ${hasUnsavedChanges ? 'has-changes' : ''} ${isSaving ? 'saving' : ''} ${saveSuccess ? 'success' : ''}`} 
                   onClick={(e) => {
                     e.preventDefault();
