@@ -81,12 +81,14 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
   const conversation = useConversation({
     onConnect: () => {
       elevenLabsLogger.info('ElevenLabs conversation connected');
+      console.log('✅ ElevenLabs onConnect callback fired');
+      callbacksRef.current.onError?.('DEBUG: onConnect fired', {});
       updateStatus('CONNECTED');
     },
     onDisconnect: () => {
       elevenLabsLogger.info('ElevenLabs conversation disconnected');
       console.log('🔌 ElevenLabs onDisconnect callback fired');
-      console.trace('🔌 Disconnect stack trace:');
+      callbacksRef.current.onError?.('DEBUG: onDisconnect fired - session ended', {});
       updateStatus('DISCONNECTED');
       callbacksRef.current.onConversationComplete?.();
     },
@@ -103,8 +105,8 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
       const errorObj = error as any;
       const errorMessage = typeof error === 'string' ? error : (errorObj?.message || JSON.stringify(error));
       elevenLabsLogger.error('ElevenLabs error:', error);
-      console.error('🔴 ElevenLabs Connection Error:', error);
-      callbacksRef.current.onError?.(errorMessage, error);
+      console.error('🔴 ElevenLabs SDK onError callback:', error);
+      callbacksRef.current.onError?.(`SDK Error: ${errorMessage}`, error);
       updateStatus('DISCONNECTED');
     },
     onModeChange: (data) => {
