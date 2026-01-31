@@ -803,32 +803,83 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                 disabled={disabled || !isAdmin}
               />
 
-              {/* ElevenLabs Configuration */}
-              {currentJourney.ttsProvider === 'elevenlabs' && (
-                <div className="journey-provider-config">
-                  <div className="journey-provider-config-label">ElevenLabs Configuration</div>
-                  <div className="journey-agent-field">
-                    <label>Agent ID</label>
-                    <input
-                      type="text"
-                      className="journey-provider-config-input"
-                      value={currentJourney.elevenLabsConfig?.agentId || ''}
-                      onChange={(e) => setCurrentJourney({
-                        ...currentJourney,
-                        elevenLabsConfig: {
-                          ...currentJourney.elevenLabsConfig,
-                          agentId: e.target.value
-                        }
-                      })}
-                      placeholder="e.g., agent_abc123xyz"
-                      disabled={disabled || !isAdmin}
-                    />
-                    <div className="journey-provider-config-hint">
-                      Get your Agent ID from the ElevenLabs Conversational AI dashboard
-                    </div>
-                  </div>
+              {/* Voice Settings Section */}
+              <div className="journey-voice-settings-section">
+                <div className="journey-voice-settings-header">
+                  <label className="journey-voice-settings-label">Voice Settings</label>
                 </div>
-              )}
+                <div className="journey-voice-settings-content">
+                  <div className="journey-voice-settings-row">
+                    <label className="journey-voice-settings-item">
+                      <span>Voice Mode</span>
+                      <select
+                        className="journey-voice-settings-select"
+                        value={currentJourney.voiceEnabled !== false ? 'voice' : 'buttons'}
+                        onChange={(e) => setCurrentJourney({ 
+                          ...currentJourney, 
+                          voiceEnabled: e.target.value === 'voice' 
+                        })}
+                        disabled={disabled || !isAdmin}
+                      >
+                        <option value="voice">Voice (users speak)</option>
+                        <option value="buttons">Buttons (users click)</option>
+                      </select>
+                    </label>
+                    
+                    {currentJourney.voiceEnabled !== false && (
+                      <label className="journey-voice-settings-item">
+                        <span>Voice Provider</span>
+                        <select
+                          className="journey-voice-settings-select"
+                          value={currentJourney.ttsProvider || 'azure'}
+                          onChange={(e) => {
+                            const provider = e.target.value as TtsProvider;
+                            const defaultVoice = provider === 'elevenlabs' 
+                              ? ELEVENLABS_VOICE_OPTIONS[0].value 
+                              : AZURE_VOICE_OPTIONS[0].value;
+                            setCurrentJourney({ 
+                              ...currentJourney, 
+                              ttsProvider: provider,
+                              voice: defaultVoice,
+                              elevenLabsConfig: provider === 'elevenlabs' ? (currentJourney.elevenLabsConfig || {}) : undefined
+                            });
+                          }}
+                          disabled={disabled || !isAdmin}
+                        >
+                          <option value="azure">Azure OpenAI</option>
+                          <option value="elevenlabs">ElevenLabs</option>
+                        </select>
+                      </label>
+                    )}
+                  </div>
+                  
+                  {/* ElevenLabs Configuration */}
+                  {currentJourney.voiceEnabled !== false && currentJourney.ttsProvider === 'elevenlabs' && (
+                    <div className="journey-voice-settings-elevenlabs">
+                      <div className="journey-agent-field">
+                        <label>ElevenLabs Agent ID</label>
+                        <input
+                          type="text"
+                          className="journey-provider-config-input"
+                          value={currentJourney.elevenLabsConfig?.agentId || ''}
+                          onChange={(e) => setCurrentJourney({
+                            ...currentJourney,
+                            elevenLabsConfig: {
+                              ...currentJourney.elevenLabsConfig,
+                              agentId: e.target.value
+                            }
+                          })}
+                          placeholder="e.g., agent_abc123xyz"
+                          disabled={disabled || !isAdmin}
+                        />
+                        <div className="journey-provider-config-hint">
+                          Get your Agent ID from the ElevenLabs Conversational AI dashboard
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
 
               {/* Agent Selector */}
               <div className="journey-agent-selector">
