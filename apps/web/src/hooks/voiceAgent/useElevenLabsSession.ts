@@ -21,6 +21,7 @@ export interface ElevenLabsSessionCallbacks {
   onToolCall?: (toolName: string, args: any, result: any) => void;
   onConversationComplete?: () => void;
   onModeChange?: (mode: 'speaking' | 'listening') => void;
+  onError?: (error: string, details?: any) => void;
 }
 
 export interface ElevenLabsConnectOptions {
@@ -96,8 +97,12 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
       }
       callbacksRef.current.onEvent?.(message);
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
+      const errorObj = error as any;
+      const errorMessage = typeof error === 'string' ? error : (errorObj?.message || JSON.stringify(error));
       elevenLabsLogger.error('ElevenLabs error:', error);
+      console.error('🔴 ElevenLabs Connection Error:', error);
+      callbacksRef.current.onError?.(errorMessage, error);
       updateStatus('DISCONNECTED');
     },
     onModeChange: (data) => {
@@ -238,8 +243,11 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
       elevenLabsLogger.info('Session started, conversation ID:', conversationId);
       updateStatus('CONNECTED');
       
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage = error?.message || String(error);
       elevenLabsLogger.error('Failed to start ElevenLabs session:', error);
+      console.error('🔴 Failed to start ElevenLabs session:', error);
+      callbacksRef.current.onError?.(`Connection failed: ${errorMessage}`, error);
       updateStatus('DISCONNECTED');
       throw error;
     }

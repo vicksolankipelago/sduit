@@ -1969,6 +1969,12 @@ Important guidelines:
       console.log('🎬 ElevenLabs conversation complete');
       disconnectFromRealtime();
     },
+    onError: (errorMessage, details) => {
+      console.error('🔴 ElevenLabs Error:', errorMessage, details);
+      addLog('error', `ElevenLabs Error: ${errorMessage}`);
+      // Show user-friendly error message
+      alert(`Voice connection failed: ${errorMessage}\n\nPlease check the session log for details.`);
+    },
   });
 
   // Provider-aware wrapper functions
