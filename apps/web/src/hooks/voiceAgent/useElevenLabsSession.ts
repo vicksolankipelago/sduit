@@ -241,11 +241,19 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         };
       }
 
+      // Add custom microphone stream if provided (fixes Safari timeout issue)
+      if (options.customMicStream) {
+        sessionConfig.customStream = options.customMicStream;
+        elevenLabsLogger.info('Using custom microphone stream');
+        console.log('🎤 Passing custom microphone stream to ElevenLabs');
+      }
+
       elevenLabsLogger.info('Starting session with config:', { 
         hasSignedUrl: !!sessionConfig.signedUrl,
         hasToken: !!sessionConfig.conversationToken,
         hasAgentId: !!sessionConfig.agentId,
         connectionType: sessionConfig.connectionType,
+        hasCustomStream: !!sessionConfig.customStream,
       });
       console.log('🚀 About to call conversation.startSession...');
       console.log('🚀 Session config:', JSON.stringify({
@@ -254,6 +262,7 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         hasAgentId: !!sessionConfig.agentId,
         connectionType: sessionConfig.connectionType,
         hasOverrides: !!sessionConfig.overrides,
+        hasCustomStream: !!sessionConfig.customStream,
       }));
 
       let conversationId: string;

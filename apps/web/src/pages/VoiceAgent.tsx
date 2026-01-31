@@ -794,8 +794,9 @@ function VoiceAgentContent() {
     // Voice mode: Check microphone permission before connecting
     console.log('🎤 Requesting microphone permission...');
     addLog('info', '🎤 Requesting microphone permission...');
+    let microphoneStream: MediaStream;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      microphoneStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
@@ -804,8 +805,7 @@ function VoiceAgentContent() {
       });
       console.log('🎤 Microphone permission GRANTED');
       addLog('success', '🎤 Microphone permission granted');
-      // Permission granted - stop the stream immediately (connection will request again)
-      stream.getTracks().forEach(track => track.stop());
+      // Keep the stream - we'll pass it to ElevenLabs to avoid Safari timeout issues
       
       // DEBUG: Track execution
       console.log('🚀🚀🚀 AFTER MIC PERMISSION - ABOUT TO CONTINUE 🚀🚀🚀');
@@ -1231,6 +1231,8 @@ Important guidelines:
         
         await connect({
           audioElement: sdkAudioElement,
+          // Pass microphone stream to ElevenLabs to avoid Safari timeout issues
+          customMicStream: microphoneStream,
           // Pass system prompt explicitly for ElevenLabs
           systemPrompt: journeyWithPQData.systemPrompt,
           agentConfig: journeyAgentConfig,
