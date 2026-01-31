@@ -1,0 +1,422 @@
+[12:17:09.872] INFO: Initiating connection with journey: Personalisation Quiz
+
+[12:17:09.872] INFO: Starting agent: newAgent
+
+[12:17:09.872] INFO: 📋 Agent configuration prepared (17949 chars)
+
+[12:17:09.872] INFO: 🎵 Using voice: sage
+
+[12:17:09.872] INFO: 👥 Journey has 1 agent(s) configured
+
+[12:17:09.872] INFO: 🎙️ Initiating WebRTC connection...
+
+[12:17:09.873] INFO: Connecting to Azure OpenAI...
+
+[12:17:12.455] SUCCESS: Successfully initiated voice agent connection
+
+[12:17:13.013] SUCCESS: Connected to Azure OpenAI WebRTC
+
+[12:17:13.015] AGENT: Agent initialized: newAgent
+{
+  "agentName": "newAgent"
+}
+
+[12:17:19.543] INFO: Assistant: Hi, welcome to Pelago. I'm Navi, your personalized AI assistant. I've reviewed what you shared in the quiz. So you're here because you want to cut back on drinking, and you're motivated by improving your health and having more energy. You'd also like to learn more about managing stress, building healthier routines, and understanding triggers. Does that sound right?
+
+[12:17:19.547] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="none"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "eventType": "response.done"
+}
+
+[12:17:29.266] INFO: User: Um beijão, um abraço e até o próximo vídeo.
+
+[12:17:34.512] INFO: Assistant: Hi, welcome to Pelago. I'm Navi, your personalized AI assistant. I've reviewed what you shared in the quiz. So you're here because you want to cut back on drinking, and you're motivated by improving your health and having better relationships. You'd also like to learn more about managing stress, building healthier habits, and understanding how alcohol affects your body. Does that sound right?
+
+[12:17:34.513] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="none"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "eventType": "response.done"
+}
+
+[12:17:57.701] INFO: User: Yeah, sounds right.
+
+[12:17:58.545] INFO: Assistant: Great! Let's learn a little more about what brought you here.
+
+[12:17:58.821] EVENT: 📢 Screen event triggered: next_step_event
+{
+  "agentName": "newAgent"
+}
+
+[12:17:58.821] INFO: 📱 Processing event "next_step_event" within 18 screen(s)
+
+[12:17:58.821] INFO: 🎯 Navigating to screen: about-you
+
+[12:17:58.821] TOOL: Tool executed: trigger_event
+{
+  "args": {
+    "eventId": "next_step_event"
+  },
+  "result": "Event \"next_step_event\" triggered successfully"
+}
+
+[12:17:58.821] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="trigger_event"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "trigger_event",
+  "eventType": "response.done"
+}
+
+[12:18:00.947] INFO: Assistant: Tell me a little bit more about what specifically brings you to Pelago today. What's happening in your life right now that made you decide to reach out?
+
+[12:18:00.963] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="trigger_event"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "trigger_event",
+  "eventType": "response.done"
+}
+
+[12:18:13.524] INFO: User: I'm just looking to cut down and be a bit healthier.
+
+[12:18:13.869] TOOL: Tool executed: record_input
+{
+  "args": {
+    "title": "about you",
+    "summary": "Looking to cut down and be healthier",
+    "storeKey": "aboutYouSummary",
+    "nextEventId": "navigate_to_outcomes",
+    "delay": 2
+  },
+  "result": "Input recorded successfully: about you"
+}
+
+[12:18:13.869] INFO: 📝 Recording input - Title: about you, Summary: Looking to cut down and be healthier
+
+[12:18:13.869] INFO: ✅ Updated persistent module state: aboutYouSummary
+
+[12:18:13.869] INFO: ✅ Recorded input dispatched to screen state
+
+[12:18:13.872] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="record_input"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "record_input",
+  "eventType": "response.done"
+}
+
+[12:18:15.465] INFO: Assistant: I appreciate you sharing that. Let's talk about what success looks like for you.
+
+[12:18:15.469] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="record_input"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "record_input",
+  "eventType": "response.done"
+}
+
+[12:18:15.870] EVENT: 📢 Screen event triggered: navigate_to_outcomes
+{
+  "agentName": "newAgent"
+}
+
+[12:18:15.870] INFO: 📱 Processing event "navigate_to_outcomes" within 18 screen(s)
+
+[12:18:15.870] INFO: 🎯 Navigating to screen: outcomes
+
+[12:18:32.439] INFO: User: Go ahead.
+
+[12:18:33.367] INFO: Assistant: What specific outcomes are you hoping to achieve with Pelago's support?
+
+[12:18:33.368] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="record_input"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "record_input",
+  "eventType": "response.done"
+}
+
+[12:18:43.417] INFO: User: I'd love to just be a bit healthier and cut down.
+
+[12:18:43.739] TOOL: Tool executed: record_input
+{
+  "args": {
+    "title": "Outcomes",
+    "summary": "Be healthier and cut down",
+    "storeKey": "outcomesSummary",
+    "nextEventId": "navigate_to_voice_motivation",
+    "delay": 2
+  },
+  "result": "Input recorded successfully: Outcomes"
+}
+
+[12:18:43.739] INFO: 📝 Recording input - Title: Outcomes, Summary: Be healthier and cut down
+
+[12:18:43.739] INFO: ✅ Updated persistent module state: outcomesSummary
+
+[12:18:43.739] INFO: ✅ Recorded input dispatched to screen state
+
+[12:18:43.746] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="record_input"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "record_input",
+  "eventType": "response.done"
+}
+
+[12:18:44.720] INFO: Assistant: And what's motivating you to make that change?
+
+[12:18:44.726] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="record_input"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "record_input",
+  "eventType": "response.done"
+}
+
+[12:18:45.741] EVENT: 📢 Screen event triggered: navigate_to_voice_motivation
+{
+  "agentName": "newAgent"
+}
+
+[12:18:45.741] INFO: 📱 Processing event "navigate_to_voice_motivation" within 18 screen(s)
+
+[12:18:45.741] INFO: 🎯 Navigating to screen: motivation
+
+[12:18:55.256] INFO: User: Mainly just, yeah, being a bit healthier and cutting some old habits.
+
+[12:18:55.717] TOOL: Tool executed: record_input
+{
+  "args": {
+    "title": "your why",
+    "summary": "Being healthier and cutting old habits",
+    "storeKey": "yourWhySummary",
+    "nextEventId": "navigate_to_intention",
+    "delay": 2
+  },
+  "result": "Input recorded successfully: your why"
+}
+
+[12:18:55.717] INFO: 📝 Recording input - Title: your why, Summary: Being healthier and cutting old habits
+
+[12:18:55.717] INFO: ✅ Updated persistent module state: yourWhySummary
+
+[12:18:55.717] INFO: ✅ Recorded input dispatched to screen state
+
+[12:18:55.727] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="record_input"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "record_input",
+  "eventType": "response.done"
+}
+
+[12:18:57.042] INFO: Assistant: Now let's set a focus for this week. What would you like to work on?
+
+[12:18:57.043] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="record_input"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "record_input",
+  "eventType": "response.done"
+}
+
+[12:18:57.719] EVENT: 📢 Screen event triggered: navigate_to_intention
+{
+  "agentName": "newAgent"
+}
+
+[12:18:57.719] INFO: 📱 Processing event "navigate_to_intention" within 18 screen(s)
+
+[12:18:57.719] INFO: 🎯 Navigating to screen: intention
+
+[12:19:09.127] INFO: User: Yeah, I'd love to just work on my fitness actually and just, you know, focusing on eating well and exercising.
+
+[12:19:09.527] TOOL: Tool executed: record_input
+{
+  "args": {
+    "title": "Intention",
+    "summary": "Focus on fitness, eating well, and exercising",
+    "storeKey": "weeklyIntention",
+    "nextEventId": "navigate_to_cm_rewards_intro",
+    "delay": 0
+  },
+  "result": "Input recorded successfully: Intention"
+}
+
+[12:19:09.527] INFO: 📝 Recording input - Title: Intention, Summary: Focus on fitness, eating well, and exercising
+
+[12:19:09.527] INFO: ✅ Updated persistent module state: weeklyIntention
+
+[12:19:09.527] INFO: ✅ Recorded input dispatched to screen state
+
+[12:19:09.532] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="record_input"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "record_input",
+  "eventType": "response.done"
+}
+
+[12:19:11.530] EVENT: 📢 Screen event triggered: navigate_to_cm_rewards_intro
+{
+  "agentName": "newAgent"
+}
+
+[12:19:11.530] INFO: 📱 Processing event "navigate_to_cm_rewards_intro" within 18 screen(s)
+
+[12:19:11.530] INFO: 🎯 Navigating to screen: cm-rewards-intro
+
+[12:19:13.775] INFO: Assistant: Great intention! Now, every time you check in, you'll earn points you can redeem for rewards. Members who check in daily are 5 times more likely to reach their goals. How often would you like to check in this week - every day, a few times, or just once?
+
+[12:19:13.780] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="record_input"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "record_input",
+  "eventType": "response.done"
+}
+
+[12:19:30.434] INFO: User: Do you like it every day?
+
+[12:19:30.658] EVENT: 📢 Screen event triggered: select_daily_commitment
+{
+  "agentName": "newAgent"
+}
+
+[12:19:30.658] INFO: 📱 Processing event "select_daily_commitment" within 18 screen(s)
+
+[12:19:30.658] INFO: 📝 Event "select_daily_commitment" executed state update
+
+[12:19:30.658] TOOL: Tool executed: trigger_event
+{
+  "args": {
+    "eventId": "select_daily_commitment"
+  },
+  "result": "Event \"select_daily_commitment\" triggered successfully"
+}
+
+[12:19:30.660] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="trigger_event"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "trigger_event",
+  "eventType": "response.done"
+}
+
+[12:19:31.365] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="trigger_event"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "trigger_event",
+  "eventType": "response.done"
+}
+
+[12:19:32.598] INFO: Assistant: Great choice. What time would you like your daily reminder?
+
+[12:19:32.603] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="trigger_event"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "trigger_event",
+  "eventType": "response.done"
+}
+
+[12:19:39.356] EVENT: 📢 Screen event triggered: navigate_to_notification_setup
+{
+  "agentName": "newAgent"
+}
+
+[12:19:39.356] INFO: 📱 Processing event "navigate_to_notification_setup" within 18 screen(s)
+
+[12:19:39.356] INFO: 🎯 Navigating to screen: pq-notification-setup
+
+[12:19:39.356] TOOL: Tool executed: trigger_event
+{
+  "args": {
+    "eventId": "navigate_to_notification_setup"
+  },
+  "result": "Event \"navigate_to_notification_setup\" triggered successfully"
+}
+
+[12:19:41.817] INFO: User: Um...
+
+[12:19:42.154] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="trigger_event"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "trigger_event",
+  "eventType": "response.done"
+}
+
+[12:19:44.429] INFO: User: Say 8 p.m.
+
+[12:19:45.541] INFO: Assistant: Got it, we'll remind you at 8 p.m. Tap Allow when you see the prompt.
+
+[12:19:45.548] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="trigger_event"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "trigger_event",
+  "eventType": "response.done"
+}
+
+[12:19:57.101] INFO: User: Sure.
+
+[12:19:57.232] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="trigger_event"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "trigger_event",
+  "eventType": "response.done"
+}
+
+[12:19:58.916] INFO: Assistant: Let me summarize what we've set up. We'll focus on cutting back on drinking this week. Ready to get started?
+
+[12:19:58.916] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="trigger_event"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "trigger_event",
+  "eventType": "response.done"
+}
+
+[12:20:05.229] EVENT: 📢 Screen event triggered: navigate_to_plan_review
+{
+  "agentName": "newAgent"
+}
+
+[12:20:05.229] INFO: 📱 Processing event "navigate_to_plan_review" within 18 screen(s)
+
+[12:20:05.230] INFO: 🎯 Navigating to screen: pq-plan-review
+
+[12:20:05.230] TOOL: Tool executed: trigger_event
+{
+  "args": {
+    "eventId": "navigate_to_plan_review"
+  },
+  "result": "Event \"navigate_to_plan_review\" triggered successfully"
+}
+
+[12:20:06.680] INFO: User: Yeah.
+
+[12:20:06.823] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="trigger_event"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "trigger_event",
+  "eventType": "response.done"
+}
+
+[12:20:07.907] INFO: Assistant: Perfect, let's get you started.
+
+[12:20:07.911] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="trigger_event"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "trigger_event",
+  "eventType": "response.done"
+}
