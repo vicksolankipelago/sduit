@@ -126,10 +126,21 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   };
 
   const handleSaveJourney = async () => {
-    if (!currentJourney || isSaving) return;
+    console.log('💾 Save button clicked', { currentJourney: currentJourney?.name, isSaving });
+    
+    if (!currentJourney) {
+      console.warn('💾 No journey to save');
+      return;
+    }
+    
+    if (isSaving) {
+      console.warn('💾 Already saving, ignoring click');
+      return;
+    }
 
     const errors = validateJourney(currentJourney);
     setValidationErrors(errors);
+    console.log('💾 Validation result:', errors.length, 'errors');
 
     if (errors.length > 0) {
       alert(`Cannot save: ${errors.length} validation error(s). Check the validation panel.`);
@@ -138,8 +149,10 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
 
     setIsSaving(true);
     setSaveSuccess(false);
+    console.log('💾 Starting save...');
     try {
       const saved = await saveJourney(currentJourney);
+      console.log('💾 Save result:', saved);
       if (saved) {
         try {
           const channel = new BroadcastChannel('journey-updates');
@@ -155,10 +168,15 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
         }
         // Show success state briefly instead of alert
         setSaveSuccess(true);
+        console.log('💾 Save successful, showing success state');
         setTimeout(() => setSaveSuccess(false), 2000);
       } else {
+        console.error('💾 Save returned false');
         alert('Failed to save flow');
       }
+    } catch (err) {
+      console.error('💾 Save error:', err);
+      alert('Error saving flow: ' + (err as Error).message);
     } finally {
       setIsSaving(false);
     }
