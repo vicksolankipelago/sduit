@@ -129,7 +129,7 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
   }, [updateScreenState, updateModuleState]);
 
   /**
-   * Interpolate template strings like {$moduleData.key} or {$screenData.key}
+   * Interpolate template strings like {$moduleData.key}, {$screenData.key}, or {$screenState.key}
    */
   const interpolateString = useCallback((template: string): string => {
     let result = template;
@@ -148,6 +148,30 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
       const key = rawKey?.trim() ?? '';
       const value = getNestedValue(screenState, key);
       return value !== undefined ? String(value) : match;
+    });
+
+    // Replace {$screenState.key} or {{$screenState.key}} patterns (used by quiz screens)
+    // This is the primary pattern used for storing quiz answers like {$screenState.selectedOption}
+    // For multi-select (selectedOptions), stores as JSON array for later parsing
+    const screenStatePattern = /\{\{?\$screenState\.([^}]+)\}\}?/g;
+    result = result.replace(screenStatePattern, (match, rawKey) => {
+      const key = rawKey?.trim() ?? '';
+      const value = getNestedValue(screenState, key);
+      
+      if (value === undefined || value === null) {
+        console.log(`📝 Interpolating {$screenState.${key}}: undefined (keeping original)`);
+        return match;
+      }
+      
+      // Handle arrays (for multi-select like selectedOptions) - store as JSON
+      if (Array.isArray(value)) {
+        const jsonValue = JSON.stringify(value);
+        console.log(`📝 Interpolating {$screenState.${key}} (array): ${jsonValue}`);
+        return jsonValue;
+      }
+      
+      console.log(`📝 Interpolating {$screenState.${key}}: ${String(value)}`);
+      return String(value);
     });
 
     return result;
@@ -232,10 +256,30 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
         case 'stateUpdate': {
           const stateAction = action as StateUpdateAction;
           const scope = stateAction.scope || 'screen';
+          
+          // CRITICAL: Interpolate values like {$screenState.selectedOption} before storing
+          // This ensures quiz answers are stored as actual values, not template strings
+          const interpolatedUpdates: Record<string, any> = {};
+          for (const [key, value] of Object.entries(stateAction.updates)) {
+            if (typeof value === 'string') {
+              const interpolatedValue = interpolateString(value);
+              interpolatedUpdates[key] = interpolatedValue;
+              console.log(`📝 StateUpdate: ${key} = "${value}" → "${interpolatedValue}"`);
+            } else if (Array.isArray(value)) {
+              // Handle arrays (for multi-select like selectedOptions)
+              interpolatedUpdates[key] = value.map(v => 
+                typeof v === 'string' ? interpolateString(v) : v
+              );
+              console.log(`📝 StateUpdate (array): ${key} = ${JSON.stringify(value)} → ${JSON.stringify(interpolatedUpdates[key])}`);
+            } else {
+              interpolatedUpdates[key] = value;
+            }
+          }
+          
           if (scope === 'screen') {
-            updateScreenState(stateAction.updates);
+            updateScreenState(interpolatedUpdates);
           } else {
-            updateModuleState(stateAction.updates);
+            updateModuleState(interpolatedUpdates);
           }
           break;
         }

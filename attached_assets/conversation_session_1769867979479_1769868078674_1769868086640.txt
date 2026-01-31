@@ -1,0 +1,58 @@
+
+╔══════════════════════════════════════════════════════════╗
+║  VOICE AGENT CONVERSATION TRANSCRIPT                     ║
+╚══════════════════════════════════════════════════════════╝
+
+Session ID: session_1769867979479
+Date: 31/01/2026, 14:01:18
+Duration: 1m 26s
+Journey: Personalisation Quiz
+Agent: newAgent
+
+────────────────────────────────────────────────────────────
+
+[13:59:43.274] COACH:
+  "Hi, welcome to Pelago. I'm Navi, your personalized AI assistant. I've reviewed what you shared in the quiz. So you're here because you want to cut back on drinking, and you're motivated by improving your health and setting a good example for your family. You'd also like to learn more about managing stress, setting boundaries, and building healthier routines. Does that sound right?"
+
+[14:00:16.808] COACH:
+  "Yes, I can see your answers from the quiz. You want to cut back on drinking, you're motivated by improving your health and setting a good example for your family, and you want to learn more about managing stress, setting boundaries, and building healthier routines. Does that sound right?"
+
+
+[14:00:17.126] MEMBER:
+  "Was that, do you know what answers I gave in my quiz?"
+
+
+[14:00:38.280] COACH:
+  "Great! Let's learn a little more about what brought you here."
+
+
+[14:00:38.385] MEMBER:
+  "Yeah."
+
+
+[14:00:39.832] COACH:
+  "Tell me a little bit more about what specifically brings you to Pelago today. What's happening in your life right now that made you decide to reach out?"
+
+
+[14:00:57.107] MEMBER:
+  "I'm just looking to be a bit healthier and cut some bad habits."
+
+
+[14:00:57.701] COACH:
+  "I appreciate you sharing that. Let's talk about what success looks like for you."
+
+
+[14:01:09.225] MEMBER:
+  "Sure."
+
+
+[14:01:09.596] COACH:
+  "What specific outcomes are you hoping to achieve with Pelago's support?"
+
+────────────────────────────────────────────────────────────
+
+CONVERSATION SUMMARY
+  Total exchanges: 10
+  Member messages: 4
+  Coach responses: 6
+  Actions taken: 3
