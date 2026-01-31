@@ -654,7 +654,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
             <>
               {isAdmin && (
                 <button 
-                  className={`journey-action-btn ${saveSuccess ? 'success' : ''}`} 
+                  className={`journey-action-btn ${isSaving ? 'saving' : ''} ${saveSuccess ? 'success' : ''}`} 
                   onClick={handleSaveJourney} 
                   disabled={disabled || isSaving}
                 >

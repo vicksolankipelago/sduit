@@ -12,11 +12,25 @@
   animation: spin 1s linear infinite;
 }
 
+/* Saving state for buttons */
+.journey-action-btn.saving {
+  background: var(--primary-cta-default) !important;
+  color: white !important;
+  opacity: 0.8;
+}
+
 /* Success state for buttons */
 .journey-action-btn.success {
   background: #10b981 !important;
   color: white !important;
   border-color: #10b981 !important;
+  animation: pulse-success 0.3s ease-out;
+}
+
+@keyframes pulse-success {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
 .journey-action-btn.success:hover {
