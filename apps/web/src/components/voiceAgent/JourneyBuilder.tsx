@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { Journey, Agent, DEFAULT_SYSTEM_PROMPT, validateJourney, Screen, TtsProvider, ELEVENLABS_VOICE_OPTIONS, AZURE_VOICE_OPTIONS } from '../../types/journey';
@@ -48,6 +48,8 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   // Save state
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const lastSavedJourneyRef = useRef<string | null>(null);
   
   // Publishing state
   const [isPublished, setIsPublished] = useState(false);
@@ -77,6 +79,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
           version: '1.0.0',
         };
         setCurrentJourney(newJourney);
+        lastSavedJourneyRef.current = JSON.stringify(newJourney);
         setSelectedAgentId(null);
         setIsLoading(false);
         // Clear the query param so refreshing doesn't create another new flow
@@ -90,6 +93,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
         const journeyToEdit = await loadJourney(editId);
         if (journeyToEdit) {
           setCurrentJourney(journeyToEdit);
+          lastSavedJourneyRef.current = JSON.stringify(journeyToEdit);
           setSelectedAgentId(journeyToEdit.agents.length > 0 ? journeyToEdit.agents[0].id : null);
           setIsLoading(false);
           // Clear the query param
@@ -105,6 +109,22 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     initAndLoad();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Track unsaved changes
+  useEffect(() => {
+    if (!currentJourney || !lastSavedJourneyRef.current) {
+      setHasUnsavedChanges(false);
+      return;
+    }
+    
+    const currentJson = JSON.stringify(currentJourney);
+    const hasChanges = currentJson !== lastSavedJourneyRef.current;
+    setHasUnsavedChanges(hasChanges);
+    
+    if (hasChanges) {
+      console.log('📝 Unsaved changes detected');
+    }
+  }, [currentJourney]);
 
   const handleCreateNewJourney = () => {
     const newJourney: Journey = {
@@ -166,7 +186,9 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
         } catch (e) {
           console.warn('BroadcastChannel not supported, manual refresh may be needed');
         }
-        // Show success state briefly instead of alert
+        // Update the saved state and show success
+        lastSavedJourneyRef.current = JSON.stringify(currentJourney);
+        setHasUnsavedChanges(false);
         setSaveSuccess(true);
         console.log('💾 Save successful, showing success state');
         setTimeout(() => setSaveSuccess(false), 2000);
@@ -672,14 +694,17 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
             <>
               {isAdmin && (
                 <button 
-                  className={`journey-action-btn ${isSaving ? 'saving' : ''} ${saveSuccess ? 'success' : ''}`} 
+                  className={`journey-action-btn ${hasUnsavedChanges ? 'has-changes' : ''} ${isSaving ? 'saving' : ''} ${saveSuccess ? 'success' : ''}`} 
                   onClick={handleSaveJourney} 
                   disabled={disabled || isSaving}
+                  title={hasUnsavedChanges ? 'You have unsaved changes' : 'Save flow'}
                 >
                   {isSaving ? (
                     <><LoaderIcon size={14} /> Saving...</>
                   ) : saveSuccess ? (
                     <><CheckIcon size={14} /> Saved!</>
+                  ) : hasUnsavedChanges ? (
+                    <><SaveIcon size={14} /> Save*</>
                   ) : (
                     <><SaveIcon size={14} /> Save</>
                   )}

@@ -19,6 +19,22 @@
   opacity: 0.8;
 }
 
+/* Unsaved changes state for Save button */
+.journey-action-btn.has-changes {
+  background: #f59e0b !important;
+  color: white !important;
+  animation: pulse-unsaved 2s infinite;
+}
+
+.journey-action-btn.has-changes:hover:not(:disabled) {
+  background: #d97706 !important;
+}
+
+@keyframes pulse-unsaved {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
 /* Success state for buttons */
 .journey-action-btn.success {
   background: #10b981 !important;
