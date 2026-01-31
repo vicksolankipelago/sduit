@@ -45,6 +45,9 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   
+  // Save state
+  const [isSaving, setIsSaving] = useState(false);
+  
   // Publishing state
   const [isPublished, setIsPublished] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -122,7 +125,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   };
 
   const handleSaveJourney = async () => {
-    if (!currentJourney) return;
+    if (!currentJourney || isSaving) return;
 
     const errors = validateJourney(currentJourney);
     setValidationErrors(errors);
@@ -132,23 +135,28 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       return;
     }
 
-    const saved = await saveJourney(currentJourney);
-    if (saved) {
-      try {
-        const channel = new BroadcastChannel('journey-updates');
-        channel.postMessage({
-          type: 'journey-saved',
-          journeyId: currentJourney.id,
-          timestamp: Date.now(),
-        });
-        channel.close();
-        console.log('📢 Broadcast journey update:', currentJourney.id);
-      } catch (e) {
-        console.warn('BroadcastChannel not supported, manual refresh may be needed');
+    setIsSaving(true);
+    try {
+      const saved = await saveJourney(currentJourney);
+      if (saved) {
+        try {
+          const channel = new BroadcastChannel('journey-updates');
+          channel.postMessage({
+            type: 'journey-saved',
+            journeyId: currentJourney.id,
+            timestamp: Date.now(),
+          });
+          channel.close();
+          console.log('📢 Broadcast journey update:', currentJourney.id);
+        } catch (e) {
+          console.warn('BroadcastChannel not supported, manual refresh may be needed');
+        }
+        alert(`Flow "${currentJourney.name}" saved successfully!`);
+      } else {
+        alert('Failed to save flow');
       }
-      alert(`Flow "${currentJourney.name}" saved successfully!`);
-    } else {
-      alert('Failed to save flow');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -641,8 +649,8 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
           {currentJourney && (
             <>
               {isAdmin && (
-                <button className="journey-action-btn" onClick={handleSaveJourney} disabled={disabled}>
-                  <SaveIcon size={14} /> Save
+                <button className="journey-action-btn" onClick={handleSaveJourney} disabled={disabled || isSaving}>
+                  <SaveIcon size={14} /> {isSaving ? 'Saving...' : 'Save'}
                 </button>
               )}
               {isAdmin && (isPublished ? (
