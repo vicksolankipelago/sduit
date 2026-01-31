@@ -1575,6 +1575,47 @@ Important guidelines:
   // Suppress unused customPrompts setter (kept for future prompt customization feature)
   void setCustomPrompts;
 
+  const handleImportNewFlow = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      
+      try {
+        const text = await file.text();
+        const importData = JSON.parse(text);
+        
+        const response = await fetch('/api/journeys/import-new', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(importData),
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Failed to import flow');
+        }
+        
+        const result = await response.json();
+        const newJourney = result.data;
+        
+        addLog('info', `✅ Imported flow "${newJourney.name}" successfully`);
+        alert(`Flow "${newJourney.name}" imported successfully!`);
+        
+        navigate(`/builder?journey=${newJourney.id}`);
+      } catch (error) {
+        console.error('Import error:', error);
+        const message = error instanceof Error ? error.message : 'Failed to import flow';
+        addLog('error', `❌ Import failed: ${message}`);
+        alert(`Import failed: ${message}`);
+      }
+    };
+    input.click();
+  };
+
   const handlePersonaChange = (enabled: boolean, description: string) => {
     setPersonaEnabled(enabled);
     setPersonaDescription(description);
@@ -2037,12 +2078,20 @@ Important guidelines:
         <div className="voice-agent-header">
           <h2 className="voice-agent-title">Flows</h2>
           {isAdmin && (
-            <button
-              className="voice-agent-create-btn"
-              onClick={() => navigate('/builder?new=true')}
-            >
-              Create Flow
-            </button>
+            <div className="voice-agent-header-actions">
+              <button
+                className="voice-agent-import-btn"
+                onClick={handleImportNewFlow}
+              >
+                Import Flow
+              </button>
+              <button
+                className="voice-agent-create-btn"
+                onClick={() => navigate('/builder?new=true')}
+              >
+                Create Flow
+              </button>
+            </div>
           )}
         </div>
       )}

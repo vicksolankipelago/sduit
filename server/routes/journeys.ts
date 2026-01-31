@@ -612,6 +612,94 @@ router.get("/:id/export", isAuthenticated, async (req: any, res) => {
   }
 });
 
+// Import journey config to create a NEW journey (with new IDs)
+router.post("/import-new", isAdmin, async (req: Request, res: Response) => {
+  try {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return apiResponse.unauthorized(res);
+    }
+    
+    const importData = req.body;
+    
+    // Validate import data structure
+    if (!importData.journey) {
+      return res.status(400).json({ message: "Invalid import format: missing 'journey' field" });
+    }
+    
+    const importedJourney = importData.journey;
+    
+    // Generate new UUIDs for journey and all agents
+    const newJourneyId = uuidv4();
+    const agentIdMapping: Record<string, string> = {};
+    
+    // Create mapping of old agent IDs to new ones
+    if (Array.isArray(importedJourney.agents)) {
+      for (const agent of importedJourney.agents) {
+        if (agent.id) {
+          agentIdMapping[agent.id] = uuidv4();
+        }
+      }
+    }
+    
+    // Remap agents with new IDs and update handoff references
+    const remappedAgents = Array.isArray(importedJourney.agents)
+      ? importedJourney.agents.map((agent: any) => ({
+          ...agent,
+          id: agentIdMapping[agent.id] || uuidv4(),
+          handoffs: Array.isArray(agent.handoffs)
+            ? agent.handoffs.map((handoff: any) => ({
+                ...handoff,
+                targetAgentId: agentIdMapping[handoff.targetAgentId] || handoff.targetAgentId,
+              }))
+            : agent.handoffs || [],
+        }))
+      : [];
+    
+    // Remap startingAgentId to new ID
+    const newStartingAgentId = importedJourney.startingAgentId
+      ? agentIdMapping[importedJourney.startingAgentId] || importedJourney.startingAgentId
+      : remappedAgents.length > 0 ? remappedAgents[0].id : "";
+    
+    // Create the new journey with all fields
+    const journey = await storage.createJourney({
+      id: newJourneyId,
+      userId,
+      name: importedJourney.name || "Imported Journey",
+      description: importedJourney.description || "",
+      systemPrompt: importedJourney.systemPrompt || "",
+      voice: importedJourney.voice || null,
+      voiceEnabled: importedJourney.voiceEnabled ?? true,
+      ttsProvider: importedJourney.ttsProvider || "azure",
+      elevenLabsConfig: importedJourney.elevenLabsConfig || null,
+      agents: remappedAgents,
+      startingAgentId: newStartingAgentId,
+      version: importedJourney.version || "1.0.0",
+    });
+    
+    journeyLogger.info(`Imported new journey "${journey.name}" (${journey.id}) from export`);
+    
+    return apiResponse.success(res, {
+      id: journey.id,
+      name: journey.name,
+      description: journey.description || "",
+      systemPrompt: journey.systemPrompt,
+      voice: journey.voice,
+      voiceEnabled: journey.voiceEnabled ?? true,
+      ttsProvider: journey.ttsProvider || 'azure',
+      elevenLabsConfig: journey.elevenLabsConfig,
+      agents: journey.agents,
+      startingAgentId: journey.startingAgentId,
+      createdAt: journey.createdAt,
+      updatedAt: journey.updatedAt,
+      version: journey.version,
+    }, 201);
+  } catch (error) {
+    journeyLogger.error("Error importing new journey:", error);
+    return apiResponse.serverError(res, "Failed to import journey");
+  }
+});
+
 // Import journey config to update an existing journey
 router.post("/:id/import", isAdmin, async (req: any, res) => {
   try {
