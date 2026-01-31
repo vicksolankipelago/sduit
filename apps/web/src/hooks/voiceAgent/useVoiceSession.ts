@@ -68,7 +68,7 @@ export interface VoiceSession {
 }
 
 export function useVoiceSession(
-  provider: TtsProvider = 'azure',
+  provider: TtsProvider = 'elevenlabs',
   callbacks: VoiceSessionCallbacks = {}
 ): VoiceSession {
   const azureCallbacks: AzureWebRTCSessionCallbacks = useMemo(() => ({

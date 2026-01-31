@@ -1,0 +1,43 @@
+[15:04:33.463] INFO: Initiating connection with journey: PQ + Intake (Internal)
+
+[15:04:33.463] INFO: Starting agent: pQIntake
+
+[15:04:33.463] INFO: 📝 Added 5 quiz answer(s) to prompt context
+
+[15:04:33.463] INFO: 📋 Agent configuration prepared (146113 chars)
+
+[15:04:33.463] INFO: 🎵 Using voice: sage
+
+[15:04:33.463] INFO: 👥 Journey has 1 agent(s) configured
+
+[15:04:33.463] INFO: 🎙️ Initiating Azure connection...
+
+[15:04:33.463] INFO: 🔗 Passing 7 dynamic variable(s) to ElevenLabs
+
+[15:04:33.463] INFO: Connecting to Azure OpenAI...
+
+[15:04:35.494] SUCCESS: Successfully initiated Azure connection
+
+[15:04:36.051] SUCCESS: Connected to Azure OpenAI WebRTC
+
+[15:04:36.052] AGENT: Agent initialized: pQIntake
+{
+  "agentName": "pQIntake"
+}
+
+[15:04:37.876] INFO: 🔍 Checking Handoff: Current="pQIntake", Last Tool="none"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "pQIntake",
+  "eventType": "response.done"
+}
+
+[15:04:43.044] INFO: User: Bye-bye.
+
+[15:04:43.048] INFO: 🔍 Checking Handoff: Current="pQIntake", Last Tool="run_code"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "pQIntake",
+  "lastTool": "run_code",
+  "eventType": "response.done"
+}

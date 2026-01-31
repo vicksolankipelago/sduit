@@ -96,7 +96,7 @@ async function main() {
         voiceEnabled: journey.voiceEnabled ?? true,
         systemPrompt: journey.systemPrompt,
         voice: journey.voice,
-        ttsProvider: journey.ttsProvider || 'azure',
+        ttsProvider: journey.ttsProvider || 'elevenlabs',
         elevenLabsConfig: journey.elevenLabsConfig,
       });
     } catch (error) {
