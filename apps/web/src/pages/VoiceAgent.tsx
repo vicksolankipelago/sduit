@@ -1989,6 +1989,29 @@ Important guidelines:
     }));
     
     // Handle specific tool patterns
+    
+    // trigger_event - Triggers UI events for navigation between screens
+    if (toolName === 'trigger_event' && params.eventId) {
+      const delay = params.delay || 0;
+      const triggerFn = () => {
+        window.dispatchEvent(new CustomEvent('triggerEvent', {
+          detail: { eventId: params.eventId }
+        }));
+        // Also dispatch navigateToScreen if the eventId looks like a navigation event
+        if (params.eventId.startsWith('navigate_to_') || params.eventId.includes('_event')) {
+          window.dispatchEvent(new CustomEvent('navigateToScreen', {
+            detail: { screenId: params.eventId.replace('navigate_to_', '').replace('_event', '') }
+          }));
+        }
+      };
+      if (delay > 0) {
+        setTimeout(triggerFn, delay * 1000);
+      } else {
+        triggerFn();
+      }
+      return `Triggered event: ${params.eventId}`;
+    }
+    
     if (toolName === 'navigate_to_agent' && params.agentId) {
       if (switchToAgentRef.current) {
         switchToAgentRef.current(params.agentId);
@@ -2001,6 +2024,7 @@ Important guidelines:
       return 'Session ended';
     }
     
+    // record_input - Captures user input and optionally triggers next event
     if (toolName === 'record_input' || toolName === 'save_response') {
       const storeKey = params.storeKey || params.key || params.field;
       const value = params.summary || params.value || params.response;
@@ -2010,7 +2034,26 @@ Important guidelines:
       window.dispatchEvent(new CustomEvent('recordInput', {
         detail: { ...params, timestamp: Date.now() }
       }));
-      return `Recorded: ${storeKey || 'response'}`;
+      
+      // Handle nextEventId parameter - trigger the next event after recording
+      if (params.nextEventId) {
+        const delay = params.delay || 0;
+        const triggerNext = () => {
+          window.dispatchEvent(new CustomEvent('triggerEvent', {
+            detail: { eventId: params.nextEventId }
+          }));
+          window.dispatchEvent(new CustomEvent('navigateToScreen', {
+            detail: { screenId: params.nextEventId.replace('navigate_to_', '') }
+          }));
+        };
+        if (delay > 0) {
+          setTimeout(triggerNext, delay * 1000);
+        } else {
+          triggerNext();
+        }
+      }
+      
+      return `Recorded: ${storeKey || params.title || 'response'}`;
     }
     
     if (toolName === 'navigate_to_screen' && params.screen_id) {
@@ -2054,8 +2097,8 @@ Important guidelines:
     
     // Also add common tool handlers in case they're not in the journey
     const commonTools = [
-      'record_input', 'save_response', 'end_call', 'end_session', 'complete_quiz',
-      'navigate_to_screen', 'switch_agent', 'transfer_to_agent', 'navigate_to_agent'
+      'trigger_event', 'record_input', 'save_response', 'end_call', 'end_session', 
+      'complete_quiz', 'navigate_to_screen', 'switch_agent', 'transfer_to_agent', 'navigate_to_agent'
     ];
     for (const toolName of commonTools) {
       if (!tools[toolName]) {
