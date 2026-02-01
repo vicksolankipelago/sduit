@@ -1057,63 +1057,8 @@ function VoiceAgentContent() {
     addLog('info', `Initiating connection with journey: ${journeyToUse.name}`);
     addLog('info', `Starting agent: ${startingAgent.name}`);
 
-    // Define client tools that ElevenLabs agent can call
-    // These must match the tool definitions configured in the ElevenLabs dashboard
-    const elevenLabsClientTools: Record<string, (params: any) => Promise<string>> = {
-      // Record user input to screen state
-      record_input: async (params: { title: string; summary?: string; description?: string; storeKey?: string }) => {
-        const { title, summary = '', description = '', storeKey } = params;
-        addLog('tool', `📝 record_input: ${title}`, { summary, storeKey });
-        
-        // Dispatch event for ScreenProvider
-        window.dispatchEvent(new CustomEvent('recordInput', {
-          detail: { title, summary, description, timestamp: Date.now(), storeKey }
-        }));
-        
-        // Update module state if storeKey provided
-        if (storeKey && summary && updateModuleState) {
-          updateModuleState({ [storeKey]: summary });
-        }
-        
-        return `Recorded: ${title}`;
-      },
-      
-      // End the call and show feedback
-      end_call: async (params: { reason?: string }) => {
-        addLog('tool', `📞 end_call: ${params.reason || 'User requested'}`);
-        setTimeout(() => disconnectFromRealtime(true), 500);
-        return 'Call ending';
-      },
-      
-      // Navigate to a specific screen
-      navigate_to_screen: async (params: { screen_id: string }) => {
-        addLog('tool', `📱 navigate_to_screen: ${params.screen_id}`);
-        window.dispatchEvent(new CustomEvent('navigateToScreen', {
-          detail: { screenId: params.screen_id }
-        }));
-        return `Navigated to screen: ${params.screen_id}`;
-      },
-      
-      // Switch to another agent
-      switch_agent: async (params: { agent_id?: string; agent_name?: string }) => {
-        const agentIdentifier = params.agent_id || params.agent_name;
-        addLog('tool', `🔄 switch_agent: ${agentIdentifier}`);
-        if (switchToAgent && agentIdentifier) {
-          switchToAgent(agentIdentifier);
-        }
-        return `Switched to agent: ${agentIdentifier}`;
-      },
-      
-      // Transfer to agent (alias for switch_agent)
-      transfer_to_agent: async (params: { agent_id?: string; agent_name?: string }) => {
-        const agentIdentifier = params.agent_id || params.agent_name;
-        addLog('tool', `🔄 transfer_to_agent: ${agentIdentifier}`);
-        if (switchToAgent && agentIdentifier) {
-          switchToAgent(agentIdentifier);
-        }
-        return `Transferred to agent: ${agentIdentifier}`;
-      },
-    };
+    // Note: ElevenLabs client tools are now defined at component level via useMemo
+    // and passed to useElevenLabsSession at hook initialization time
 
     try {
       // Get starting agent config (reuse the one we already found with PQ data applied)
@@ -1242,8 +1187,7 @@ function VoiceAgentContent() {
           elevenLabsVoiceId: journeyToUse.elevenLabsConfig?.voiceId,
           // Pass quiz answers as dynamic variables for {{variable}} substitution
           dynamicVariables: Object.keys(dynamicVariables).length > 0 ? dynamicVariables : undefined,
-          // Client tools that ElevenLabs agent can call
-          clientTools: elevenLabsClientTools,
+          // Note: clientTools are passed at hook initialization, not here
         });
         addLog('success', 'Successfully initiated voice agent connection');
         
@@ -1314,8 +1258,7 @@ Important guidelines:
           elevenLabsVoiceId: journeyToUse.elevenLabsConfig?.voiceId,
           // Pass quiz answers as dynamic variables for {{variable}} substitution
           dynamicVariables: Object.keys(dynamicVariables).length > 0 ? dynamicVariables : undefined,
-          // Client tools that ElevenLabs agent can call
-          clientTools: elevenLabsClientTools,
+          // Note: clientTools are passed at hook initialization, not here
         });
         console.log('🎙️ connect() completed');
         addLog('success', `Successfully initiated ${currentProviderRef.current === 'elevenlabs' ? 'ElevenLabs' : 'Azure'} connection`);
@@ -2020,13 +1963,65 @@ Important guidelines:
     },
   });
 
-  // ElevenLabs hook with same callbacks
+  // ElevenLabs client tools - must be defined before hook initialization
+  // These tools allow the ElevenLabs agent to interact with the UI
+  const elevenLabsClientTools = useMemo(() => ({
+    record_input: async (params: { title: string; summary?: string; description?: string; storeKey?: string }) => {
+      const { title, summary = '', description = '', storeKey } = params;
+      addLog('tool', `📝 record_input: ${title}`, { summary, storeKey });
+      
+      window.dispatchEvent(new CustomEvent('recordInput', {
+        detail: { title, summary, description, timestamp: Date.now(), storeKey }
+      }));
+      
+      if (storeKey && summary && updateModuleState) {
+        updateModuleState({ [storeKey]: summary });
+      }
+      
+      return `Recorded: ${title}`;
+    },
+    
+    end_call: async (params: { reason?: string }) => {
+      addLog('tool', `📞 end_call: ${params.reason || 'User requested'}`);
+      setTimeout(() => disconnectFromRealtime(true), 500);
+      return 'Call ending';
+    },
+    
+    navigate_to_screen: async (params: { screen_id: string }) => {
+      addLog('tool', `📱 navigate_to_screen: ${params.screen_id}`);
+      window.dispatchEvent(new CustomEvent('navigateToScreen', {
+        detail: { screenId: params.screen_id }
+      }));
+      return `Navigated to screen: ${params.screen_id}`;
+    },
+    
+    switch_agent: async (params: { agent_id?: string; agent_name?: string }) => {
+      const agentIdentifier = params.agent_id || params.agent_name;
+      addLog('tool', `🔄 switch_agent: ${agentIdentifier}`);
+      if (switchToAgent && agentIdentifier) {
+        switchToAgent(agentIdentifier);
+      }
+      return `Switched to agent: ${agentIdentifier}`;
+    },
+    
+    transfer_to_agent: async (params: { agent_id?: string; agent_name?: string }) => {
+      const agentIdentifier = params.agent_id || params.agent_name;
+      addLog('tool', `🔄 transfer_to_agent: ${agentIdentifier}`);
+      if (switchToAgent && agentIdentifier) {
+        switchToAgent(agentIdentifier);
+      }
+      return `Transferred to agent: ${agentIdentifier}`;
+    },
+  }), [addLog, updateModuleState, disconnectFromRealtime, switchToAgent]);
+
+  // ElevenLabs hook with client tools passed at initialization
   const {
     connect: connectElevenLabs,
     disconnect: disconnectElevenLabs,
     setMicMuted: setMicMutedElevenLabs,
   } = useElevenLabsSession({
     customPrompts,
+    clientTools: elevenLabsClientTools,
     onConnectionChange: (s) => {
       if (currentProviderRef.current !== 'elevenlabs') return;
       setSessionStatus(s as SessionStatus);

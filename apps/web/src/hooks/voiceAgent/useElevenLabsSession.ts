@@ -22,6 +22,8 @@ export interface ElevenLabsSessionCallbacks {
   onConversationComplete?: () => void;
   onModeChange?: (mode: 'speaking' | 'listening') => void;
   onError?: (error: string, details?: any) => void;
+  // Client tools must be passed at hook initialization, not at connect time
+  clientTools?: Record<string, (params: any) => Promise<any> | any>;
 }
 
 export interface ElevenLabsConnectOptions {
@@ -54,8 +56,7 @@ export interface ElevenLabsConnectOptions {
   onEndCall?: (reason?: string) => void;
   elevenLabsAgentId?: string;
   elevenLabsVoiceId?: string;
-  // Client-side tools that the ElevenLabs agent can call
-  clientTools?: Record<string, (params: any) => Promise<any>>;
+  // Note: clientTools are now passed via ElevenLabsSessionCallbacks at hook initialization
   // Dynamic variables to inject into the agent's prompt
   dynamicVariables?: Record<string, string>;
 }
@@ -75,7 +76,12 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
     callbacksRef.current.onConnectionChange?.(s);
   }, []);
 
+  // Client tools must be defined at hook initialization for ElevenLabs SDK
+  const clientTools = callbacks.clientTools;
+  
   const conversation = useConversation({
+    // Pass client tools at initialization - they can't be added dynamically
+    clientTools: clientTools && Object.keys(clientTools).length > 0 ? clientTools : undefined,
     onConnect: ({ conversationId }) => {
       elevenLabsLogger.info('ElevenLabs conversation connected, ID:', conversationId);
       console.log('✅ ElevenLabs onConnect callback fired, conversationId:', conversationId);
