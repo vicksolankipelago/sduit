@@ -59,6 +59,8 @@ export interface ElevenLabsConnectOptions {
   // Note: clientTools are now passed via ElevenLabsSessionCallbacks at hook initialization
   // Dynamic variables to inject into the agent's prompt
   dynamicVariables?: Record<string, string>;
+  // Override the agent's system prompt (must be enabled in ElevenLabs dashboard Security settings)
+  promptOverride?: string;
 }
 
 export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {}) {
@@ -209,12 +211,29 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         connectionType: 'webrtc' as const,
       };
       
-      // Only pass dynamic variables if they exist (for {{variable}} substitution in prompts)
+      // Build overrides for dynamic variables and/or prompt
+      const overrides: any = {};
+      
+      // Pass dynamic variables if they exist (for {{variable}} substitution in prompts)
       if (options.dynamicVariables && Object.keys(options.dynamicVariables).length > 0) {
-        sessionConfig.overrides = {
-          variables: options.dynamicVariables,
-        };
+        overrides.variables = options.dynamicVariables;
         elevenLabsLogger.info('Passing dynamic variables:', Object.keys(options.dynamicVariables));
+      }
+      
+      // Pass prompt override if provided (must be enabled in ElevenLabs dashboard Security settings)
+      if (options.promptOverride) {
+        overrides.agent = {
+          prompt: {
+            prompt: options.promptOverride,
+          },
+        };
+        elevenLabsLogger.info('Passing prompt override:', options.promptOverride.length, 'chars');
+        console.log('📝 Prompt override enabled, length:', options.promptOverride.length);
+      }
+      
+      // Only add overrides to config if we have any
+      if (Object.keys(overrides).length > 0) {
+        sessionConfig.overrides = overrides;
       }
       
       elevenLabsLogger.info('Using direct agentId connection (public agent)');

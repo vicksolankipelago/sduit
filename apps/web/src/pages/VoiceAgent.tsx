@@ -1303,7 +1303,9 @@ Important guidelines:
           elevenLabsVoiceId: journeyToUse.elevenLabsConfig?.voiceId,
           // Pass quiz answers as dynamic variables for {{variable}} substitution
           dynamicVariables: Object.keys(dynamicVariables).length > 0 ? dynamicVariables : undefined,
-          // Note: clientTools are passed at hook initialization, not here
+          // Override ElevenLabs agent prompt with our combined journey prompt
+          // NOTE: Must enable "System prompt" override in ElevenLabs dashboard Settings → Security
+          promptOverride: combinedInstructions,
         });
         console.log('🎙️ connect() completed');
         addLog('success', `Successfully initiated ${currentProviderRef.current === 'elevenlabs' ? 'ElevenLabs' : 'Azure'} connection`);
