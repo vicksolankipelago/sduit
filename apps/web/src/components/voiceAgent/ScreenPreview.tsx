@@ -29,6 +29,8 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
     evaluateConditions,
     goBack,
     navigationStack,
+    updateScreenState,
+    screenState,
   } = useScreenContext();
 
   // Use currentScreen from context if available (for navigation), otherwise use prop
@@ -66,6 +68,40 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
       return evaluateConditions(element.conditions);
     });
   };
+
+  // Handle single-select option change (for LargeQuestionElement)
+  // Updates screenState.selectedOption so stateUpdate actions can read it
+  const handleSingleSelectChange = useCallback((optionId: string) => {
+    console.log('📝 ScreenPreview: Single select changed to:', optionId);
+    updateScreenState({ selectedOption: optionId });
+  }, [updateScreenState]);
+
+  // Handle multi-select option toggle (for CheckboxButtonElement)
+  // Updates screenState.selectedOptions array
+  const handleMultiSelectToggle = useCallback((optionId: string, isSelected: boolean) => {
+    const currentSelections = (screenState.selectedOptions as string[]) || [];
+    let newSelections: string[];
+    
+    if (isSelected) {
+      // Add to selections if not already present
+      newSelections = currentSelections.includes(optionId) 
+        ? currentSelections 
+        : [...currentSelections, optionId];
+    } else {
+      // Remove from selections
+      newSelections = currentSelections.filter(id => id !== optionId);
+    }
+    
+    console.log('📝 ScreenPreview: Multi select changed:', { optionId, isSelected, newSelections });
+    updateScreenState({ selectedOptions: newSelections });
+  }, [screenState.selectedOptions, updateScreenState]);
+
+  // Handle multi-selection change from LargeQuestionElement (for multi-select questions)
+  // Updates screenState.selectedOptions with the complete selection array
+  const handleMultiSelectionChange = useCallback((selectedOptions: string[]) => {
+    console.log('📝 ScreenPreview: Multi selection changed to:', selectedOptions);
+    updateScreenState({ selectedOptions });
+  }, [updateScreenState]);
 
   // Render a single element
   const renderElement = (element: ElementConfig, index: number, sectionIndex: number, totalIndex: number) => {
@@ -123,6 +159,9 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
                 ? interpolatedDataRecord.description
                 : undefined
             }
+            onSelectionChange={element.type === 'largeQuestion' ? handleSingleSelectChange : undefined}
+            onMultiSelectionChange={element.type === 'largeQuestion' ? handleMultiSelectionChange : undefined}
+            onMultiSelectToggle={element.type === 'checkboxButton' ? handleMultiSelectToggle : undefined}
           />
         </ElementErrorBoundary>
         {isSelected && editable && (
