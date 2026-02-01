@@ -221,50 +221,16 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         overrides.agent.firstMessage = `Hello! I'm ${options.agentConfig.name}. How can I help you today?`;
       }
 
-      let sessionConfig: any;
+      // Use direct agentId connection (public agent approach)
+      // This is the recommended pattern from ElevenLabs React SDK docs
+      let sessionConfig: any = {
+        agentId,
+        connectionType: 'webrtc' as const,
+        overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
+      };
       
-      try {
-        elevenLabsLogger.info('Fetching signed URL from server...');
-        console.log('🔑 Fetching signed URL from /api/elevenlabs/session...');
-        const response = await fetch(`/api/elevenlabs/session?agentId=${agentId}`);
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('🔑 Session response:', { hasSignedUrl: !!data.signedUrl, hasToken: !!data.conversationToken });
-          if (data.signedUrl) {
-            elevenLabsLogger.info('Using signed URL for authenticated connection');
-            sessionConfig = {
-              signedUrl: data.signedUrl,
-              connectionType: 'websocket' as const,
-              overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
-            };
-          } else if (data.conversationToken) {
-            elevenLabsLogger.info('Using conversation token for WebRTC connection');
-            sessionConfig = {
-              conversationToken: data.conversationToken,
-              connectionType: 'webrtc' as const,
-              overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
-            };
-          }
-        } else {
-          const errorText = await response.text();
-          console.error('🔴 Signed URL fetch failed:', response.status, errorText);
-          callbacksRef.current.onError?.(`Server auth failed (${response.status}): ${errorText}`, { status: response.status, error: errorText });
-        }
-      } catch (err: any) {
-        console.error('🔴 Could not get signed URL:', err);
-        elevenLabsLogger.warn('Could not get signed URL, using public agent connection:', err);
-        callbacksRef.current.onError?.(`Could not get auth: ${err?.message || err}`, err);
-      }
-      
-      if (!sessionConfig) {
-        elevenLabsLogger.info('Using public agent connection');
-        sessionConfig = {
-          agentId,
-          connectionType: 'webrtc' as const,
-          overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
-        };
-      }
+      elevenLabsLogger.info('Using direct agentId connection (public agent)');
+      console.log('🔌 Using direct agentId connection:', agentId);
 
       // Add connection delay for Safari/iOS to allow audio mode switching
       // This helps prevent the SDK's mic access from timing out
