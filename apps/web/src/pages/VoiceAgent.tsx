@@ -792,29 +792,36 @@ function VoiceAgentContent() {
     }
 
     // Voice mode: Check microphone permission before connecting
-    console.log('🎤 Requesting microphone permission...');
-    addLog('info', '🎤 Requesting microphone permission...');
-    let microphoneStream: MediaStream;
-    try {
-      microphoneStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        }
-      });
-      console.log('🎤 Microphone permission GRANTED');
-      addLog('success', '🎤 Microphone permission granted');
-      // Keep the stream - we'll pass it to ElevenLabs to avoid Safari timeout issues
-      
-      // DEBUG: Track execution
-      console.log('🚀🚀🚀 AFTER MIC PERMISSION - ABOUT TO CONTINUE 🚀🚀🚀');
-    } catch (error) {
-      console.error('🎤 MICROPHONE PERMISSION DENIED:', error);
-      setMicPermissionError(true);
-      addLog('error', `Microphone access denied: ${error}`);
-      setIsTransitioningJourney(false);
-      return;
+    // For ElevenLabs, let the SDK handle microphone access internally
+    // For Azure, we need to get the stream ourselves
+    const isElevenLabs = (journeyToUse.ttsProvider || 'elevenlabs') === 'elevenlabs';
+    let microphoneStream: MediaStream | undefined;
+    
+    if (!isElevenLabs) {
+      // Azure: Get microphone permission ourselves
+      console.log('🎤 Requesting microphone permission for Azure...');
+      addLog('info', '🎤 Requesting microphone permission...');
+      try {
+        microphoneStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          }
+        });
+        console.log('🎤 Microphone permission GRANTED');
+        addLog('success', '🎤 Microphone permission granted');
+      } catch (error) {
+        console.error('🎤 MICROPHONE PERMISSION DENIED:', error);
+        setMicPermissionError(true);
+        addLog('error', `Microphone access denied: ${error}`);
+        setIsTransitioningJourney(false);
+        return;
+      }
+    } else {
+      // ElevenLabs: SDK will handle microphone access internally
+      console.log('🎤 ElevenLabs will handle microphone access');
+      addLog('info', '🎤 ElevenLabs SDK will request microphone access');
     }
 
     // Generate new session ID for this session
