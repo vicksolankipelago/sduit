@@ -214,10 +214,15 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         console.log('🔗 Dynamic variables set:', Object.keys(options.dynamicVariables));
       }
       
+      // TEMPORARILY DISABLED: Prompt override for debugging
       // Pass prompt override if provided (must be enabled in ElevenLabs dashboard Security settings)
       // ElevenLabs may have limits on prompt size, so warn if very large
       const MAX_PROMPT_SIZE = 100000; // 100KB limit to be safe
       if (options.promptOverride) {
+        console.log('⚠️ PROMPT OVERRIDE DISABLED FOR DEBUGGING - using dashboard prompt instead');
+        console.log('📝 Would have sent prompt override of', options.promptOverride.length, 'chars');
+        // Temporarily commented out to test if this is causing audio issues
+        /*
         if (options.promptOverride.length > MAX_PROMPT_SIZE) {
           console.warn(`⚠️ Prompt override is very large (${options.promptOverride.length} chars), may cause issues`);
           elevenLabsLogger.warn('Prompt override exceeds recommended size:', options.promptOverride.length);
@@ -231,6 +236,7 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         };
         elevenLabsLogger.info('Passing prompt override:', options.promptOverride.length, 'chars');
         console.log('📝 Prompt override enabled, length:', options.promptOverride.length);
+        */
       }
       
       elevenLabsLogger.info('Using direct agentId connection (public agent)');
