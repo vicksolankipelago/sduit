@@ -151,13 +151,19 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
     updateStatus('CONNECTING');
 
     // Request microphone permission before starting ElevenLabs session
-    // This must happen in response to user action for browser to allow it
+    // Per ElevenLabs React SDK docs: call getUserMedia before startSession
+    // This ensures browser grants permission in the user gesture context
     console.log('🎤 Requesting microphone permission for ElevenLabs...');
     try {
       const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       console.log('🎤 Microphone permission granted for ElevenLabs');
-      // Stop the stream immediately - ElevenLabs SDK will request its own
-      micStream.getTracks().forEach(track => track.stop());
+      // Store stream reference for SDK - don't stop it yet
+      // The ElevenLabs SDK will request its own stream but permission is now granted
+      // Stop after a brief delay to allow SDK to initialize
+      setTimeout(() => {
+        micStream.getTracks().forEach(track => track.stop());
+        console.log('🎤 Initial mic stream released after SDK initialization');
+      }, 2000);
     } catch (micError: any) {
       console.error('🔴 Microphone permission denied:', micError);
       callbacksRef.current.onError?.(`Microphone access denied: ${micError?.message || micError}`, micError);
@@ -231,36 +237,14 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
       
       elevenLabsLogger.info('Using direct agentId connection (public agent)');
       console.log('🔌 Using direct agentId connection:', agentId);
-
-      // Add connection delay for Safari/iOS to allow audio mode switching
-      // This helps prevent the SDK's mic access from timing out
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      if (isSafari || isIOS) {
-        sessionConfig.connectionDelay = {
-          ios: 3000,
-          default: 2000,
-        };
-        elevenLabsLogger.info('Safari/iOS detected, adding connection delay');
-        console.log('🍎 Safari/iOS detected, adding 2-3s connection delay');
-      }
+      console.log('🔌 Overrides:', JSON.stringify(overrides, null, 2));
 
       elevenLabsLogger.info('Starting session with config:', { 
-        hasSignedUrl: !!sessionConfig.signedUrl,
-        hasToken: !!sessionConfig.conversationToken,
-        hasAgentId: !!sessionConfig.agentId,
+        agentId: sessionConfig.agentId,
         connectionType: sessionConfig.connectionType,
-        hasConnectionDelay: !!sessionConfig.connectionDelay,
+        hasOverrides: Object.keys(overrides).length > 0,
       });
       console.log('🚀 About to call conversation.startSession...');
-      console.log('🚀 Session config:', JSON.stringify({
-        hasSignedUrl: !!sessionConfig.signedUrl,
-        hasToken: !!sessionConfig.conversationToken,
-        hasAgentId: !!sessionConfig.agentId,
-        connectionType: sessionConfig.connectionType,
-        hasOverrides: !!sessionConfig.overrides,
-        hasConnectionDelay: !!sessionConfig.connectionDelay,
-      }));
 
       let conversationId: string;
       try {
