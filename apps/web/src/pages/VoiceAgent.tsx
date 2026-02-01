@@ -2158,9 +2158,25 @@ Important guidelines:
           checkInStreak: '7', // Simulate 7-day streak
         });
         
-        // Pass the journey directly to connectToRealtime to avoid state closure issues
+        // Check if this is a voice-enabled journey or non-voice
+        const isVoiceJourney = journey.voiceEnabled !== false;
+        console.log('🚀 handleStartJourney voice check:', {
+          name: journey.name,
+          voiceEnabled: journey.voiceEnabled,
+          isVoiceJourney,
+        });
+        
+        // Pass the journey directly to avoid state closure issues
         setTimeout(() => {
-          connectToRealtime(journey); // Pass journey directly, don't rely on state
+          if (isVoiceJourney) {
+            // Voice journey - connect to realtime immediately
+            connectToRealtime(journey);
+          } else {
+            // Non-voice journey - start in button-based mode
+            // Voice will be enabled later via enable_voice tool
+            console.log('🔇 Starting non-voice session for:', journey.name);
+            startNonVoiceSession(journey);
+          }
         }, 300);
       } else {
         addLog('error', `Failed to load journey with ID: ${journeyId}`);
@@ -2170,7 +2186,7 @@ Important guidelines:
       console.error('❌ Error starting journey:', error);
       addLog('error', `Error starting journey: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  }, [sessionStatus, addLog, setCurrentJourney, connectToRealtime, checkMicrophonePermission]);
+  }, [sessionStatus, addLog, setCurrentJourney, connectToRealtime, startNonVoiceSession, checkMicrophonePermission]);
 
   // Show loading overlay while preview mode is loading the journey
   if (previewLoading) {
