@@ -178,71 +178,30 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
     }
 
     try {
-      const overrides: any = {};
+      // Use simple connection like the working test page
+      // Let the ElevenLabs agent use its dashboard configuration
+      // Only pass dynamic variables if needed for template substitution
+      const sessionConfig: any = {
+        agentId,
+        connectionType: 'webrtc' as const,
+      };
       
-      // Build combined prompt: system prompt + agent instructions + custom instructions
-      // Priority: customInstructions can override, but systemPrompt is always prepended
-      const promptParts: string[] = [];
-      
-      // Always include system prompt first if provided
-      if (options.systemPrompt) {
-        promptParts.push(options.systemPrompt);
-        elevenLabsLogger.info('Including system prompt in ElevenLabs agent');
-      }
-      
-      // Add agent instructions (which may already include system prompt for backwards compatibility)
-      if (options.customInstructions) {
-        promptParts.push(options.customInstructions);
-      } else if (options.agentConfig?.instructions) {
-        promptParts.push(options.agentConfig.instructions);
-      }
-      
-      // If we have any prompt content, pass it to ElevenLabs
-      if (promptParts.length > 0) {
-        const combinedPrompt = promptParts.join('\n\n');
-        overrides.agent = {
-          prompt: {
-            prompt: combinedPrompt,
-          },
-        };
-        elevenLabsLogger.info(`Overriding agent prompt with combined instructions (${combinedPrompt.length} chars)`);
-      }
-      
-      // Pass dynamic variables for template substitution
+      // Only pass dynamic variables if they exist (for {{variable}} substitution in prompts)
       if (options.dynamicVariables && Object.keys(options.dynamicVariables).length > 0) {
-        overrides.variables = options.dynamicVariables;
+        sessionConfig.overrides = {
+          variables: options.dynamicVariables,
+        };
         elevenLabsLogger.info('Passing dynamic variables:', Object.keys(options.dynamicVariables));
       }
       
-      // Override voice if specified
-      if (options.elevenLabsVoiceId || options.voice) {
-        overrides.tts = {
-          voiceId: options.elevenLabsVoiceId || options.voice,
-        };
-      }
-      
-      // Set first message if greeting not skipped
-      if (options.skipInitialGreeting === false && options.agentConfig?.name) {
-        if (!overrides.agent) overrides.agent = {};
-        overrides.agent.firstMessage = `Hello! I'm ${options.agentConfig.name}. How can I help you today?`;
-      }
-
-      // Use direct agentId connection (public agent approach)
-      // This is the recommended pattern from ElevenLabs React SDK docs
-      let sessionConfig: any = {
-        agentId,
-        connectionType: 'webrtc' as const,
-        overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
-      };
-      
       elevenLabsLogger.info('Using direct agentId connection (public agent)');
       console.log('🔌 Using direct agentId connection:', agentId);
-      console.log('🔌 Overrides:', JSON.stringify(overrides, null, 2));
+      console.log('🔌 Session config:', JSON.stringify(sessionConfig, null, 2));
 
       elevenLabsLogger.info('Starting session with config:', { 
         agentId: sessionConfig.agentId,
         connectionType: sessionConfig.connectionType,
-        hasOverrides: Object.keys(overrides).length > 0,
+        hasOverrides: !!sessionConfig.overrides,
       });
       console.log('🚀 About to call conversation.startSession...');
 
