@@ -36,21 +36,6 @@ export default function ElevenLabsTest() {
     },
   });
 
-  const testClientTools = {
-    end_call: async (params: { reason?: string }) => {
-      addLog(`Tool called: end_call with reason: ${params.reason || 'none'}`);
-      return { success: true, message: 'Call ended' };
-    },
-    show_screen: async (params: { screenId: string }) => {
-      addLog(`Tool called: show_screen with screenId: ${params.screenId}`);
-      return { success: true, screenId: params.screenId };
-    },
-    collect_data: async (params: { key: string; value: string }) => {
-      addLog(`Tool called: collect_data - ${params.key}: ${params.value}`);
-      return { success: true };
-    },
-  };
-
   const handleConnect = async () => {
     addLog('Starting connection...');
     try {
@@ -61,7 +46,7 @@ export default function ElevenLabsTest() {
           instructions: 'You are a helpful test assistant. Keep responses brief.',
           voice: 'alloy',
         },
-        clientTools: testClientTools,
+        // Note: clientTools are configured in ElevenLabs dashboard, not passed here
         dynamicVariables: {
           user_name: 'Test User',
           session_id: `test_${Date.now()}`,
@@ -140,9 +125,8 @@ export default function ElevenLabsTest() {
         <h3>Test Features:</h3>
         <ul>
           <li>Agent ID: Using your ElevenLabs dashboard agent</li>
-          <li>Prompt Override: Custom instructions passed to agent</li>
-          <li>Client Tools: end_call, show_screen, collect_data</li>
           <li>Dynamic Variables: user_name, session_id</li>
+          <li>Client Tools: Configured in ElevenLabs dashboard</li>
         </ul>
       </div>
 
