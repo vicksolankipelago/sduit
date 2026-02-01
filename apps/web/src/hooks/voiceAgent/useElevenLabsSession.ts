@@ -2,11 +2,16 @@
  * ElevenLabs Session Hook
  * 
  * Manages voice sessions with ElevenLabs Conversational AI
- * Mirrors the useAzureWebRTCSession interface for provider interchangeability
+ * Uses the vanilla @elevenlabs/client SDK directly (not the React hook)
+ * to support dynamic prompt overrides at runtime.
+ * 
+ * The React useConversation hook only accepts overrides at initialization time,
+ * but we need to pass dynamic prompts based on journeys loaded at runtime.
  */
 
 import { useCallback, useRef, useState, useEffect } from 'react';
-import { useConversation } from '@elevenlabs/react';
+import { Conversation } from '@elevenlabs/client';
+import type { SessionConfig } from '@elevenlabs/client';
 import { SessionStatus } from '../../types/voiceAgent';
 import { logger } from '../../utils/logger';
 
@@ -65,9 +70,12 @@ export interface ElevenLabsConnectOptions {
 
 export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {}) {
   const [status, setStatus] = useState<SessionStatus>('DISCONNECTED');
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const conversationIdRef = useRef<string | null>(null);
   const agentIdRef = useRef<string | null>(null);
   const callbacksRef = useRef(callbacks);
+  // Store the conversation instance for the vanilla SDK
+  const conversationRef = useRef<Awaited<ReturnType<typeof Conversation.startSession>> | null>(null);
 
   useEffect(() => {
     callbacksRef.current = callbacks;
@@ -78,97 +86,38 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
     callbacksRef.current.onConnectionChange?.(s);
   }, []);
 
-  // Client tools must be defined at hook initialization for ElevenLabs SDK
+  // Client tools - wrapped with logging for debugging
   const rawClientTools = callbacks.clientTools;
+  const clientToolsRef = useRef(rawClientTools);
+  useEffect(() => {
+    clientToolsRef.current = rawClientTools;
+  }, [rawClientTools]);
   
-  // Wrap client tools with logging to debug tool invocations
-  const clientTools = rawClientTools ? Object.fromEntries(
-    Object.entries(rawClientTools).map(([name, handler]) => [
-      name,
-      async (params: any) => {
-        console.log(`🔧 [CLIENT TOOL CALLED] ${name}`, params);
-        elevenLabsLogger.info(`Client tool called: ${name}`, params);
-        try {
-          const result = await handler(params);
-          console.log(`🔧 [CLIENT TOOL RESULT] ${name}:`, result);
-          return result;
-        } catch (error) {
-          console.error(`🔧 [CLIENT TOOL ERROR] ${name}:`, error);
-          throw error;
+  // Create wrapped client tools with logging
+  const getWrappedClientTools = useCallback(() => {
+    const raw = clientToolsRef.current;
+    if (!raw) return undefined;
+    
+    return Object.fromEntries(
+      Object.entries(raw).map(([name, handler]) => [
+        name,
+        async (params: any) => {
+          console.log(`🔧 [CLIENT TOOL CALLED] ${name}`, params);
+          elevenLabsLogger.info(`Client tool called: ${name}`, params);
+          try {
+            const result = await handler(params);
+            console.log(`🔧 [CLIENT TOOL RESULT] ${name}:`, result);
+            return result;
+          } catch (error) {
+            console.error(`🔧 [CLIENT TOOL ERROR] ${name}:`, error);
+            throw error;
+          }
         }
-      }
-    ])
-  ) : undefined;
+      ])
+    );
+  }, []);
   
-  // Debug: Log client tools at initialization
-  // NOTE: Client tools are configured in ElevenLabs dashboard, not passed here
-  // Passing clientTools via SDK was causing connection issues
-  console.log('🔧 ElevenLabs useConversation init - clientTools from callbacks:', 
-    clientTools ? Object.keys(clientTools) : 'none',
-    '(will use dashboard config, not SDK clientTools)');
-  
-  const conversation = useConversation({
-    // IMPORTANT: Do NOT pass clientTools here - it causes connection issues!
-    // Client tools must be configured in the ElevenLabs dashboard instead.
-    // The callback clientTools are only used for local handlers (dispatching events, etc.)
-    onConnect: ({ conversationId }) => {
-      elevenLabsLogger.info('ElevenLabs conversation connected, ID:', conversationId);
-      console.log('✅ ElevenLabs onConnect callback fired, conversationId:', conversationId);
-      updateStatus('CONNECTED');
-    },
-    onDisconnect: (details?: { reason?: string }) => {
-      const reason = details?.reason || 'unknown';
-      elevenLabsLogger.info('ElevenLabs conversation disconnected, reason:', reason);
-      console.log('🔌 ElevenLabs onDisconnect - reason:', reason, 'details:', details);
-      
-      // Only report as error if it's an unexpected disconnect (not user/agent initiated)
-      const normalReasons = ['user', 'agent', 'user_ended', 'agent_ended', 'call_ended', 'normal'];
-      const isNormalDisconnect = normalReasons.some(r => reason.toLowerCase().includes(r.toLowerCase()));
-      if (!isNormalDisconnect) {
-        callbacksRef.current.onError?.(`Disconnected (${reason})`, details);
-      }
-      
-      updateStatus('DISCONNECTED');
-      callbacksRef.current.onConversationComplete?.();
-    },
-    onMessage: (message) => {
-      elevenLabsLogger.debug('ElevenLabs message:', message);
-      console.log('💬 ElevenLabs message:', message.source, message.message?.substring(0, 50));
-      if (message.source === 'user') {
-        callbacksRef.current.onTranscript?.('user', message.message, true);
-      } else if (message.source === 'ai') {
-        callbacksRef.current.onTranscript?.('assistant', message.message, true);
-      }
-      callbacksRef.current.onEvent?.(message);
-    },
-    onError: (error: unknown) => {
-      const errorObj = error as any;
-      const errorMessage = typeof error === 'string' ? error : (errorObj?.message || JSON.stringify(error));
-      elevenLabsLogger.error('ElevenLabs error:', error);
-      console.error('🔴 ElevenLabs SDK onError callback:', error);
-      callbacksRef.current.onError?.(`SDK Error: ${errorMessage}`, error);
-      updateStatus('DISCONNECTED');
-    },
-    onModeChange: (data) => {
-      const mode = data.mode === 'speaking' ? 'speaking' : 'listening';
-      elevenLabsLogger.debug('Mode changed:', mode);
-      console.log('🔊 ElevenLabs mode changed:', mode);
-      callbacksRef.current.onModeChange?.(mode);
-    },
-    onStatusChange: (statusData) => {
-      elevenLabsLogger.debug('Status changed:', statusData);
-      console.log('📊 ElevenLabs status changed:', statusData.status);
-      if (statusData.status === 'connected') {
-        updateStatus('CONNECTED');
-      } else if (statusData.status === 'connecting') {
-        updateStatus('CONNECTING');
-      } else {
-        updateStatus('DISCONNECTED');
-      }
-    },
-    // Note: clientTools removed - passing empty object caused connection issues
-    // Client tools should be configured in the ElevenLabs dashboard instead
-  });
+  console.log('🔧 ElevenLabs hook init - using vanilla SDK for dynamic overrides');
 
   const connect = useCallback(async (options: ElevenLabsConnectOptions) => {
     console.log('🚀 ElevenLabs connect() called with options:', {
@@ -188,40 +137,84 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
       throw new Error('ElevenLabs Agent ID is required. Please configure it in the flow settings.');
     }
 
-    elevenLabsLogger.info('=== Starting ElevenLabs Connection ===');
+    elevenLabsLogger.info('=== Starting ElevenLabs Connection (Vanilla SDK) ===');
     elevenLabsLogger.info('Agent ID:', agentId);
     console.log('🔌 ElevenLabs Agent ID validated:', agentId);
     updateStatus('CONNECTING');
 
-    // NOTE: Do NOT request microphone permission here!
-    // The ElevenLabs SDK handles microphone internally via startSession.
-    // Requesting it separately causes conflicts and connection failures.
-
     try {
-      // Use simple connection like the working test page
-      // Let the ElevenLabs agent use its dashboard configuration
-      // Only pass dynamic variables if needed for template substitution
-      const sessionConfig: any = {
+      // Build session config for the vanilla SDK
+      // The vanilla SDK supports overrides directly in startSession()
+      const sessionConfig: Parameters<typeof Conversation.startSession>[0] = {
         agentId,
-        connectionType: 'webrtc' as const,
+        connectionType: 'webrtc',
+        // Callbacks for the vanilla SDK
+        onConnect: ({ conversationId }) => {
+          elevenLabsLogger.info('ElevenLabs conversation connected, ID:', conversationId);
+          console.log('✅ ElevenLabs onConnect callback fired, conversationId:', conversationId);
+          conversationIdRef.current = conversationId;
+          updateStatus('CONNECTED');
+        },
+        onDisconnect: (details) => {
+          const reason = (details as any)?.reason || 'unknown';
+          elevenLabsLogger.info('ElevenLabs conversation disconnected, reason:', reason);
+          console.log('🔌 ElevenLabs onDisconnect - reason:', reason);
+          
+          const normalReasons = ['user', 'agent', 'user_ended', 'agent_ended', 'call_ended', 'normal'];
+          const isNormalDisconnect = normalReasons.some(r => reason.toLowerCase().includes(r.toLowerCase()));
+          if (!isNormalDisconnect) {
+            callbacksRef.current.onError?.(`Disconnected (${reason})`, details);
+          }
+          
+          conversationRef.current = null;
+          updateStatus('DISCONNECTED');
+          callbacksRef.current.onConversationComplete?.();
+        },
+        onMessage: (message) => {
+          elevenLabsLogger.debug('ElevenLabs message:', message);
+          const msg = message as any;
+          console.log('💬 ElevenLabs message:', msg.source, msg.message?.substring?.(0, 50));
+          if (msg.source === 'user') {
+            callbacksRef.current.onTranscript?.('user', msg.message, true);
+          } else if (msg.source === 'ai') {
+            callbacksRef.current.onTranscript?.('assistant', msg.message, true);
+          }
+          callbacksRef.current.onEvent?.(message);
+        },
+        onError: (error) => {
+          const errorMessage = typeof error === 'string' ? error : ((error as any)?.message || JSON.stringify(error));
+          elevenLabsLogger.error('ElevenLabs error:', error);
+          console.error('🔴 ElevenLabs SDK onError callback:', error);
+          callbacksRef.current.onError?.(`SDK Error: ${errorMessage}`, error);
+          updateStatus('DISCONNECTED');
+        },
+        onModeChange: (data) => {
+          const mode = (data as any).mode === 'speaking' ? 'speaking' : 'listening';
+          elevenLabsLogger.debug('Mode changed:', mode);
+          console.log('🔊 ElevenLabs mode changed:', mode);
+          setIsSpeaking(mode === 'speaking');
+          callbacksRef.current.onModeChange?.(mode);
+        },
+        onStatusChange: (statusData) => {
+          elevenLabsLogger.debug('Status changed:', statusData);
+          console.log('📊 ElevenLabs status changed:', (statusData as any).status);
+        },
       };
       
       // Pass dynamic variables at root level (for {{variable}} substitution in prompts)
-      // Note: ElevenLabs SDK expects 'dynamicVariables' at root, NOT 'variables' inside overrides
       if (options.dynamicVariables && Object.keys(options.dynamicVariables).length > 0) {
-        sessionConfig.dynamicVariables = options.dynamicVariables;
+        (sessionConfig as any).dynamicVariables = options.dynamicVariables;
         elevenLabsLogger.info('Passing dynamic variables:', Object.keys(options.dynamicVariables));
         console.log('🔗 Dynamic variables set:', Object.keys(options.dynamicVariables));
       }
       
-      // Pass prompt override if provided
-      // IMPORTANT: Must enable "System prompt" override in ElevenLabs dashboard Settings → Security
+      // Pass prompt override if provided - THIS IS THE KEY FEATURE
+      // The vanilla SDK supports overrides directly in startSession()!
       if (options.promptOverride) {
         console.log('📝 Prompt override requested, length:', options.promptOverride.length, 'chars');
         console.log('📝 First 200 chars:', options.promptOverride.substring(0, 200));
         
-        // Per ElevenLabs docs, overrides go in sessionConfig.overrides.agent.prompt.prompt
-        sessionConfig.overrides = {
+        (sessionConfig as any).overrides = {
           agent: {
             prompt: {
               prompt: options.promptOverride,
@@ -231,92 +224,86 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         elevenLabsLogger.info('Prompt override enabled:', options.promptOverride.length, 'chars');
       }
       
-      elevenLabsLogger.info('Using direct agentId connection (public agent)');
-      console.log('🔌 Using direct agentId connection:', agentId);
-      // Log config without the full prompt (which can be very large)
+      // Log config without the full prompt
       const configForLog = {
-        ...sessionConfig,
-        dynamicVariables: sessionConfig.dynamicVariables 
-          ? `[${Object.keys(sessionConfig.dynamicVariables).length} vars]` 
-          : undefined,
-        overrides: sessionConfig.overrides ? {
-          agent: sessionConfig.overrides.agent ? {
-            prompt: { prompt: `[${sessionConfig.overrides.agent?.prompt?.prompt?.length || 0} chars]` }
-          } : undefined,
-        } : undefined,
-      };
-      console.log('🔌 Session config:', JSON.stringify(configForLog, null, 2));
-
-      elevenLabsLogger.info('Starting session with config:', { 
         agentId: sessionConfig.agentId,
         connectionType: sessionConfig.connectionType,
-        hasOverrides: !!sessionConfig.overrides,
-      });
-      console.log('🚀 About to call conversation.startSession...');
+        hasDynamicVariables: !!(sessionConfig as any).dynamicVariables,
+        hasOverrides: !!(sessionConfig as any).overrides,
+        overridePromptLength: (sessionConfig as any).overrides?.agent?.prompt?.prompt?.length || 0,
+      };
+      console.log('🔌 Session config (vanilla SDK):', JSON.stringify(configForLog, null, 2));
+      console.log('🚀 About to call Conversation.startSession (vanilla SDK)...');
 
-      let conversationId: string;
-      try {
-        conversationId = await conversation.startSession(sessionConfig);
-        console.log('✅ conversation.startSession returned:', conversationId);
-      } catch (startError: any) {
-        console.error('🔴 conversation.startSession threw:', startError);
-        console.error('🔴 Error name:', startError?.name);
-        console.error('🔴 Error message:', startError?.message);
-        console.error('🔴 Error stack:', startError?.stack);
-        callbacksRef.current.onError?.(`Session start failed: ${startError?.message || startError}`, startError);
-        updateStatus('DISCONNECTED');
-        throw startError;
-      }
-      
-      conversationIdRef.current = conversationId;
+      // Use the vanilla SDK's Conversation.startSession()
+      const conversation = await Conversation.startSession(sessionConfig);
+      conversationRef.current = conversation;
       agentIdRef.current = agentId;
       
-      elevenLabsLogger.info('Session started, conversation ID:', conversationId);
-      console.log('✅ Session started successfully, ID:', conversationId);
-      updateStatus('CONNECTED');
+      console.log('✅ Conversation.startSession returned successfully');
+      elevenLabsLogger.info('Session started with vanilla SDK');
       
     } catch (error: any) {
       const errorMessage = error?.message || String(error);
       elevenLabsLogger.error('Failed to start ElevenLabs session:', error);
       console.error('🔴 Failed to start ElevenLabs session:', error);
+      console.error('🔴 Error details:', error);
       callbacksRef.current.onError?.(`Connection failed: ${errorMessage}`, error);
       updateStatus('DISCONNECTED');
       throw error;
     }
-  }, [conversation, updateStatus]);
+  }, [updateStatus]);
 
   const disconnect = useCallback(async () => {
     elevenLabsLogger.info('Disconnecting ElevenLabs session...');
     try {
-      await conversation.endSession();
+      if (conversationRef.current) {
+        await conversationRef.current.endSession();
+      }
     } catch (error) {
       elevenLabsLogger.warn('Error ending session:', error);
     }
+    conversationRef.current = null;
     conversationIdRef.current = null;
     agentIdRef.current = null;
     updateStatus('DISCONNECTED');
     elevenLabsLogger.info('Disconnected');
-  }, [conversation, updateStatus]);
+  }, [updateStatus]);
 
   const sendMessage = useCallback((message: unknown) => {
     elevenLabsLogger.debug('sendMessage called (ElevenLabs uses sendUserMessage instead)');
-    if (typeof message === 'object' && message !== null && 'text' in message) {
-      conversation.sendUserMessage((message as { text: string }).text);
+    if (conversationRef.current && typeof message === 'object' && message !== null && 'text' in message) {
+      conversationRef.current.sendUserMessage((message as { text: string }).text);
     }
-  }, [conversation]);
+  }, []);
 
   const sendUserMessage = useCallback((text: string) => {
     elevenLabsLogger.debug('Sending user message:', text);
-    conversation.sendUserMessage(text);
-  }, [conversation]);
+    if (conversationRef.current) {
+      conversationRef.current.sendUserMessage(text);
+    }
+  }, []);
 
   const sendContextualUpdate = useCallback((text: string) => {
     elevenLabsLogger.debug('Sending contextual update:', text);
-    conversation.sendContextualUpdate(text);
-  }, [conversation]);
+    if (conversationRef.current) {
+      conversationRef.current.sendContextualUpdate(text);
+    }
+  }, []);
 
   const setMicMuted = useCallback((muted: boolean) => {
     elevenLabsLogger.debug(`Setting mic muted: ${muted}`);
+    if (conversationRef.current) {
+      conversationRef.current.setMicMuted(muted);
+    }
+  }, []);
+
+  const getInputVolume = useCallback(() => {
+    return conversationRef.current?.getInputVolume?.() ?? 0;
+  }, []);
+
+  const getOutputVolume = useCallback(() => {
+    return conversationRef.current?.getOutputVolume?.() ?? 0;
   }, []);
 
   return {
@@ -327,8 +314,8 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
     setMicMuted,
     sendUserMessage,
     sendContextualUpdate,
-    isSpeaking: conversation.isSpeaking,
-    getInputVolume: conversation.getInputVolume,
-    getOutputVolume: conversation.getOutputVolume,
+    isSpeaking,
+    getInputVolume,
+    getOutputVolume,
   };
 }
