@@ -5,14 +5,17 @@
  * to verify the connection works with the basic SDK example.
  */
 
-import { useState, useCallback } from 'react';
-import { useConversation } from '@elevenlabs/react';
+import { useState, useCallback, useRef } from 'react';
+import { Conversation } from '@elevenlabs/client';
 
 const TEST_AGENT_ID = 'agent_7001kga118rtf1q9c72ay45512ad';
 
 export default function ElevenLabsTest() {
   const [logs, setLogs] = useState<string[]>([]);
   const [useOverride, setUseOverride] = useState(false);
+  const [status, setStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const conversationRef = useRef<Awaited<ReturnType<typeof Conversation.startSession>> | null>(null);
 
   const addLog = useCallback((message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -21,66 +24,74 @@ export default function ElevenLabsTest() {
     console.log(`[ElevenLabs Test] ${message}`);
   }, []);
 
-  // Use the ElevenLabs SDK DIRECTLY - exactly like the docs example
-  const conversation = useConversation({
-    onConnect: ({ conversationId }) => {
-      addLog(`Connected! ID: ${conversationId}`);
-    },
-    onDisconnect: () => {
-      addLog('Disconnected');
-    },
-    onError: (error) => {
-      addLog(`Error: ${error}`);
-      console.error('ElevenLabs error:', error);
-    },
-    onMessage: (message) => {
-      addLog(`Message: ${JSON.stringify(message).substring(0, 100)}...`);
-    },
-    onModeChange: ({ mode }) => {
-      addLog(`Mode: ${mode}`);
-    },
-  });
-
   const handleConnect = async () => {
-    addLog('Connecting...');
+    addLog('Connecting with VANILLA SDK (not React hook)...');
     addLog(`Override enabled: ${useOverride}`);
     console.log('🟢 handleConnect clicked, useOverride:', useOverride);
+    setStatus('connecting');
     
     try {
-      const sessionConfig: any = {
+      const sessionConfig: Parameters<typeof Conversation.startSession>[0] = {
         agentId: TEST_AGENT_ID,
         connectionType: 'webrtc',
+        onConnect: ({ conversationId }) => {
+          addLog(`Connected! ID: ${conversationId}`);
+          setStatus('connected');
+        },
+        onDisconnect: () => {
+          addLog('Disconnected');
+          setStatus('disconnected');
+          conversationRef.current = null;
+        },
+        onError: (error) => {
+          addLog(`Error: ${error}`);
+          console.error('ElevenLabs error:', error);
+        },
+        onMessage: (message) => {
+          addLog(`Message: ${JSON.stringify(message).substring(0, 100)}...`);
+        },
+        onModeChange: (data) => {
+          const mode = (data as any).mode;
+          addLog(`Mode: ${mode}`);
+          setIsSpeaking(mode === 'speaking');
+        },
       };
       
-      // Test: Pass override to startSession (vanilla SDK style)
+      // Test: Pass override directly to vanilla SDK's startSession
       if (useOverride) {
-        sessionConfig.overrides = {
+        (sessionConfig as any).overrides = {
           agent: {
             prompt: {
               prompt: "You are a friendly test assistant. Respond with SHORT answers. Start by saying 'Hello! Override is working!'",
             },
           },
         };
-        addLog('Sending prompt override to startSession');
-        console.log('📝 Prompt override:', sessionConfig.overrides);
+        addLog('Sending prompt override to vanilla SDK startSession');
+        console.log('📝 Prompt override:', (sessionConfig as any).overrides);
       }
       
-      const conversationId = await conversation.startSession(sessionConfig);
+      // Use vanilla SDK directly - this SHOULD support overrides in startSession
+      const conversation = await Conversation.startSession(sessionConfig);
+      conversationRef.current = conversation;
       
-      addLog(`Session started: ${conversationId}`);
-      console.log('🟢 Session started:', conversationId);
+      addLog(`Session started successfully`);
+      console.log('🟢 Vanilla SDK session started');
     } catch (error: any) {
       addLog(`Error: ${error.message || error}`);
       console.error('🔴 Connection error:', error);
+      setStatus('disconnected');
     }
   };
 
   const handleDisconnect = async () => {
     addLog('Disconnecting...');
-    await conversation.endSession();
+    if (conversationRef.current) {
+      await conversationRef.current.endSession();
+    }
+    setStatus('disconnected');
   };
 
-  const isConnected = conversation.status === 'connected';
+  const isConnected = status === 'connected';
 
   return (
     <div style={{ padding: '20px', fontFamily: 'system-ui, sans-serif', maxWidth: '800px', margin: '0 auto' }}>
@@ -88,8 +99,9 @@ export default function ElevenLabsTest() {
       
       <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
         <p><strong>Agent ID:</strong> {TEST_AGENT_ID}</p>
-        <p><strong>Status:</strong> <span style={{ color: isConnected ? 'green' : 'gray' }}>{conversation.status}</span></p>
-        <p><strong>Speaking:</strong> {conversation.isSpeaking ? 'Yes' : 'No'}</p>
+        <p><strong>Status:</strong> <span style={{ color: isConnected ? 'green' : 'gray' }}>{status}</span></p>
+        <p><strong>Speaking:</strong> {isSpeaking ? 'Yes' : 'No'}</p>
+        <p><strong>SDK:</strong> Vanilla @elevenlabs/client (not React hook)</p>
       </div>
 
       <div style={{ marginBottom: '15px', padding: '10px', backgroundColor: '#fff3cd', borderRadius: '8px' }}>
