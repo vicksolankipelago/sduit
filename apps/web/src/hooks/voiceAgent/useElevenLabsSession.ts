@@ -211,13 +211,12 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         connectionType: 'webrtc' as const,
       };
       
-      // Build overrides for dynamic variables and/or prompt
-      const overrides: any = {};
-      
-      // Pass dynamic variables if they exist (for {{variable}} substitution in prompts)
+      // Pass dynamic variables at root level (for {{variable}} substitution in prompts)
+      // Note: ElevenLabs SDK expects 'dynamicVariables' at root, NOT 'variables' inside overrides
       if (options.dynamicVariables && Object.keys(options.dynamicVariables).length > 0) {
-        overrides.variables = options.dynamicVariables;
+        sessionConfig.dynamicVariables = options.dynamicVariables;
         elevenLabsLogger.info('Passing dynamic variables:', Object.keys(options.dynamicVariables));
+        console.log('🔗 Dynamic variables set:', Object.keys(options.dynamicVariables));
       }
       
       // Pass prompt override if provided (must be enabled in ElevenLabs dashboard Security settings)
@@ -228,18 +227,15 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
           console.warn(`⚠️ Prompt override is very large (${options.promptOverride.length} chars), may cause issues`);
           elevenLabsLogger.warn('Prompt override exceeds recommended size:', options.promptOverride.length);
         }
-        overrides.agent = {
-          prompt: {
-            prompt: options.promptOverride,
+        sessionConfig.overrides = {
+          agent: {
+            prompt: {
+              prompt: options.promptOverride,
+            },
           },
         };
         elevenLabsLogger.info('Passing prompt override:', options.promptOverride.length, 'chars');
         console.log('📝 Prompt override enabled, length:', options.promptOverride.length);
-      }
-      
-      // Only add overrides to config if we have any
-      if (Object.keys(overrides).length > 0) {
-        sessionConfig.overrides = overrides;
       }
       
       elevenLabsLogger.info('Using direct agentId connection (public agent)');
@@ -247,12 +243,13 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
       // Log config without the full prompt (which can be very large)
       const configForLog = {
         ...sessionConfig,
+        dynamicVariables: sessionConfig.dynamicVariables 
+          ? `[${Object.keys(sessionConfig.dynamicVariables).length} vars]` 
+          : undefined,
         overrides: sessionConfig.overrides ? {
-          ...sessionConfig.overrides,
           agent: sessionConfig.overrides.agent ? {
             prompt: { prompt: `[${sessionConfig.overrides.agent?.prompt?.prompt?.length || 0} chars]` }
           } : undefined,
-          variables: sessionConfig.overrides.variables ? `[${Object.keys(sessionConfig.overrides.variables).length} vars]` : undefined,
         } : undefined,
       };
       console.log('🔌 Session config:', JSON.stringify(configForLog, null, 2));
