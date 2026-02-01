@@ -842,7 +842,9 @@ function VoiceAgentContent() {
     
     // Validate ElevenLabs configuration if selected
     if (currentProviderRef.current === 'elevenlabs' && !journeyToUse.elevenLabsConfig?.agentId) {
-      addLog('error', 'ElevenLabs is selected but Agent ID is not configured. Please add the Agent ID in flow settings.');
+      const errorMsg = 'ElevenLabs Agent ID is not configured. Please add the Agent ID in the flow settings under "ElevenLabs Configuration".';
+      addLog('error', errorMsg);
+      setConnectionError(errorMsg);
       setIsTransitioningJourney(false);
       return;
     }
