@@ -56,6 +56,11 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
     initialScreen ? [initialScreen.id] : []
   );
   const [eventQueue, setEventQueue] = useState<ScreenEvent[]>([]);
+  
+  // CRITICAL: Use refs to store the latest screen state immediately (synchronously)
+  // This fixes the race condition where stateUpdate reads from screenState before React's async state update
+  const screenStateRef = React.useRef<Record<string, AnyCodable>>(initialScreen?.state || {});
+  const moduleStateRef = React.useRef<Record<string, AnyCodable>>(initialModuleState);
 
   // Update current screen when initialScreen prop changes
   React.useEffect(() => {
@@ -64,7 +69,9 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
       setCurrentScreenState(initialScreen);
       // Only reset screen state if it's a different screen
       if (initialScreen.id !== currentScreen?.id) {
-        setScreenState(initialScreen.state || {});
+        const newState = initialScreen.state || {};
+        screenStateRef.current = newState; // Sync ref immediately
+        setScreenState(newState);
       }
     }
   }, [initialScreen]);
@@ -74,6 +81,7 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
     if (initialModuleState && Object.keys(initialModuleState).length > 0) {
       // Merge with existing state rather than replacing completely, to preserve
       // any state that might have been set locally before prop update
+      moduleStateRef.current = { ...moduleStateRef.current, ...initialModuleState }; // Sync ref immediately
       setModuleState(prev => ({ ...prev, ...initialModuleState }));
     }
   }, [initialModuleState]);
@@ -82,16 +90,23 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
     setCurrentScreenState(screen);
     if (screen) {
       // Reset screen state to initial state, clearing any recorded input from previous screen
-      setScreenState(screen.state || {});
+      const newState = screen.state || {};
+      screenStateRef.current = newState; // Sync ref immediately
+      setScreenState(newState);
       setNavigationStack(prev => [...prev, screen.id]);
     }
   }, []);
 
   const updateScreenState = useCallback((updates: Record<string, AnyCodable>) => {
+    // CRITICAL: Update ref immediately (synchronous) to fix race condition
+    // This ensures interpolateString can read the latest value even before React re-renders
+    screenStateRef.current = { ...screenStateRef.current, ...updates };
     setScreenState(prev => ({ ...prev, ...updates }));
   }, []);
 
   const updateModuleState = useCallback((updates: Record<string, AnyCodable>) => {
+    // CRITICAL: Update ref immediately (synchronous) to fix race condition
+    moduleStateRef.current = { ...moduleStateRef.current, ...updates };
     setModuleState(prev => ({ ...prev, ...updates }));
     // Propagate module state changes to parent (AgentUIContext)
     if (onModuleStateChange) {
@@ -130,33 +145,37 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
 
   /**
    * Interpolate template strings like {$moduleData.key}, {$screenData.key}, or {$screenState.key}
+   * CRITICAL: Uses refs instead of state to avoid race conditions with async React state updates
    */
   const interpolateString = useCallback((template: string): string => {
     let result = template;
 
     // Replace {$moduleData.key} or {{$moduleData.key}} patterns
+    // Uses ref for immediate access to latest value
     const moduleDataPattern = /\{\{?\$moduleData\.([^}]+)\}\}?/g;
     result = result.replace(moduleDataPattern, (match, rawKey) => {
       const key = rawKey?.trim() ?? '';
-      const value = getNestedValue(moduleState, key);
+      const value = getNestedValue(moduleStateRef.current, key);
       return value !== undefined ? String(value) : match;
     });
 
     // Replace {$screenData.key} or {{$screenData.key}} patterns
+    // Uses ref for immediate access to latest value
     const screenDataPattern = /\{\{?\$screenData\.([^}]+)\}\}?/g;
     result = result.replace(screenDataPattern, (match, rawKey) => {
       const key = rawKey?.trim() ?? '';
-      const value = getNestedValue(screenState, key);
+      const value = getNestedValue(screenStateRef.current, key);
       return value !== undefined ? String(value) : match;
     });
 
     // Replace {$screenState.key} or {{$screenState.key}} patterns (used by quiz screens)
     // This is the primary pattern used for storing quiz answers like {$screenState.selectedOption}
     // For multi-select (selectedOptions), stores as JSON array for later parsing
+    // CRITICAL: Uses screenStateRef for immediate synchronous access to fix race condition
     const screenStatePattern = /\{\{?\$screenState\.([^}]+)\}\}?/g;
     result = result.replace(screenStatePattern, (match, rawKey) => {
       const key = rawKey?.trim() ?? '';
-      const value = getNestedValue(screenState, key);
+      const value = getNestedValue(screenStateRef.current, key);
       
       if (value === undefined || value === null) {
         console.log(`📝 Interpolating {$screenState.${key}}: undefined (keeping original)`);
@@ -175,7 +194,7 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
     });
 
     return result;
-  }, [screenState, moduleState]);
+  }, []);
 
   /**
    * Evaluate JSON Logic conditions
@@ -185,18 +204,19 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
 
     try {
       // Evaluate each condition
+      // CRITICAL: Uses refs instead of React state to avoid race conditions with async state updates
       for (const condition of conditions) {
         if (!condition.rules || !condition.state) continue;
 
-        // Resolve state variables
+        // Resolve state variables using refs for immediate access
         const resolvedState: Record<string, any> = {};
         for (const [key, valuePath] of Object.entries(condition.state)) {
           if (typeof valuePath === 'string' && valuePath.startsWith('$moduleData.')) {
             const path = valuePath.substring('$moduleData.'.length);
-            resolvedState[key] = getNestedValue(moduleState, path);
+            resolvedState[key] = getNestedValue(moduleStateRef.current, path);
           } else if (typeof valuePath === 'string' && valuePath.startsWith('$screenData.')) {
             const path = valuePath.substring('$screenData.'.length);
-            resolvedState[key] = getNestedValue(screenState, path);
+            resolvedState[key] = getNestedValue(screenStateRef.current, path);
           } else {
             resolvedState[key] = valuePath;
           }
@@ -212,7 +232,7 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
       console.error('Error evaluating conditions:', error);
       return false;
     }
-  }, [screenState, moduleState]);
+  }, []); // No dependencies - refs are stable and always have latest values
 
   /**
    * Execute event actions
@@ -480,7 +500,9 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
       const screen = screens.find(s => s.id === previousScreenId);
       if (screen) {
         setCurrentScreenState(screen);
-        setScreenState(screen.state || {});
+        const newState = screen.state || {};
+        screenStateRef.current = newState; // Sync ref immediately
+        setScreenState(newState);
       }
       
       return newStack;
