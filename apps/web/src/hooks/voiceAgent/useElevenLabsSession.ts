@@ -167,15 +167,26 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
   });
 
   const connect = useCallback(async (options: ElevenLabsConnectOptions) => {
+    console.log('🚀 ElevenLabs connect() called with options:', {
+      hasAgentId: !!options.elevenLabsAgentId,
+      agentId: options.elevenLabsAgentId,
+      hasPromptOverride: !!options.promptOverride,
+      promptOverrideLength: options.promptOverride?.length,
+      hasDynamicVars: !!options.dynamicVariables,
+      dynamicVarKeys: options.dynamicVariables ? Object.keys(options.dynamicVariables) : [],
+    });
+    
     const agentId = options.elevenLabsAgentId;
     
     if (!agentId) {
+      console.error('🔴 ElevenLabs Agent ID is missing!');
       elevenLabsLogger.error('ElevenLabs Agent ID is required');
       throw new Error('ElevenLabs Agent ID is required. Please configure it in the flow settings.');
     }
 
     elevenLabsLogger.info('=== Starting ElevenLabs Connection ===');
     elevenLabsLogger.info('Agent ID:', agentId);
+    console.log('🔌 ElevenLabs Agent ID validated:', agentId);
     updateStatus('CONNECTING');
 
     // Request microphone permission before starting ElevenLabs session
