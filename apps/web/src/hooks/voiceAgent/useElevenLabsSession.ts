@@ -193,29 +193,9 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
     console.log('🔌 ElevenLabs Agent ID validated:', agentId);
     updateStatus('CONNECTING');
 
-    // Request microphone permission before starting ElevenLabs session
-    // Per ElevenLabs React SDK docs: call getUserMedia before startSession
-    // This ensures browser grants permission in the user gesture context
-    console.log('🎤 Requesting microphone permission for ElevenLabs...');
-    try {
-      const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log('🎤 Microphone permission granted for ElevenLabs');
-      // Store stream reference for SDK - don't stop it yet
-      // The ElevenLabs SDK will request its own stream but permission is now granted
-      // Stop after a brief delay to allow SDK to initialize
-      setTimeout(() => {
-        micStream.getTracks().forEach(track => track.stop());
-        console.log('🎤 Initial mic stream released after SDK initialization');
-      }, 2000);
-    } catch (micError: any) {
-      console.error('🔴 Microphone permission denied:', micError);
-      callbacksRef.current.onError?.(`Microphone access denied: ${micError?.message || micError}`, micError);
-      updateStatus('DISCONNECTED');
-      throw new Error(`Microphone access denied: ${micError?.message || 'Please allow microphone access to use voice.'}`);
-    }
-
-    // Note: Client tools are now configured in the ElevenLabs dashboard
-    // Dynamic client tool registration was removed as it caused connection issues
+    // NOTE: Do NOT request microphone permission here!
+    // The ElevenLabs SDK handles microphone internally via startSession.
+    // Requesting it separately causes conflicts and connection failures.
 
     try {
       // Use simple connection like the working test page
