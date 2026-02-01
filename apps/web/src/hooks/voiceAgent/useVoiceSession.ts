@@ -7,7 +7,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { useAzureWebRTCSession, type AzureWebRTCSessionCallbacks, type AzureWebRTCConnectOptions } from './useAzureWebRTCSession';
-import { useElevenLabsSession, type ElevenLabsSessionCallbacks, type ElevenLabsConnectOptions, type ElevenLabsSessionOptions } from './useElevenLabsSession';
+import { useElevenLabsSession, type ElevenLabsSessionCallbacks, type ElevenLabsConnectOptions } from './useElevenLabsSession';
 import { TtsProvider } from '../../types/journey';
 import { SessionStatus } from '../../types/voiceAgent';
 
@@ -100,15 +100,12 @@ export function useVoiceSession(
     onToolCall: callbacks.onToolCall,
     onConversationComplete: callbacks.onConversationComplete,
     onModeChange: callbacks.onModeChange,
-  }), [callbacks]);
-
-  // ElevenLabs session options - pass clientTools for agent tool calls
-  const elevenLabsOptions: ElevenLabsSessionOptions = useMemo(() => ({
+    // Client tools must be passed at hook initialization
     clientTools: options.clientTools,
-  }), [options.clientTools]);
+  }), [callbacks, options.clientTools]);
 
   const azureSession = useAzureWebRTCSession(azureCallbacks);
-  const elevenLabsSession = useElevenLabsSession(elevenLabsCallbacks, elevenLabsOptions);
+  const elevenLabsSession = useElevenLabsSession(elevenLabsCallbacks);
 
   const connect = useCallback(async (options: VoiceConnectOptions) => {
     if (provider === 'elevenlabs') {

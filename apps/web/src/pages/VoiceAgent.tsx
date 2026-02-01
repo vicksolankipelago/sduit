@@ -730,6 +730,51 @@ function VoiceAgentContent() {
     };
   }, [addLog]);
 
+  // Listen for tool-dispatched events and connect them to screen context functions
+  // This bridges the gap between ElevenLabs client tool calls and UI navigation
+  useEffect(() => {
+    const handleTriggerEvent = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { eventId } = customEvent.detail;
+      console.log('🔧 [TOOL->UI] triggerEvent received:', eventId);
+      addLog('tool', `🔧 Tool triggered event: ${eventId}`);
+      
+      // Use triggerEventUI from context to actually trigger the event
+      if (triggerEventUI) {
+        triggerEventUI(eventId);
+      }
+    };
+    
+    const handleNavigateToScreen = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { screenId } = customEvent.detail;
+      console.log('🔧 [TOOL->UI] navigateToScreen received:', screenId);
+      addLog('tool', `🔧 Tool navigating to screen: ${screenId}`);
+      
+      // Use navigateToScreen from context to actually navigate
+      if (navigateToScreen) {
+        navigateToScreen(screenId);
+      }
+    };
+    
+    const handleRecordInput = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { title, summary, storeKey } = customEvent.detail;
+      console.log('🔧 [TOOL->UI] recordInput received:', { title, summary, storeKey });
+      addLog('tool', `🔧 Tool recorded: ${title} = "${summary?.substring(0, 50)}..."`);
+    };
+    
+    window.addEventListener('triggerEvent', handleTriggerEvent as EventListener);
+    window.addEventListener('navigateToScreen', handleNavigateToScreen as EventListener);
+    window.addEventListener('recordInput', handleRecordInput as EventListener);
+    
+    return () => {
+      window.removeEventListener('triggerEvent', handleTriggerEvent as EventListener);
+      window.removeEventListener('navigateToScreen', handleNavigateToScreen as EventListener);
+      window.removeEventListener('recordInput', handleRecordInput as EventListener);
+    };
+  }, [addLog, triggerEventUI, navigateToScreen]);
+
   const connectToRealtime = async (journeyOverride?: Journey, flowContextOverride?: Record<string, any>, options?: { skipScreenReset?: boolean }) => {
     console.log('🎙️🎙️🎙️ connectToRealtime CALLED 🎙️🎙️🎙️');
     console.log('🎙️ Arguments:', {
@@ -795,29 +840,36 @@ function VoiceAgentContent() {
     }
 
     // Voice mode: Check microphone permission before connecting
-    console.log('🎤 Requesting microphone permission...');
-    addLog('info', '🎤 Requesting microphone permission...');
-    let microphoneStream: MediaStream;
-    try {
-      microphoneStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        }
-      });
-      console.log('🎤 Microphone permission GRANTED');
-      addLog('success', '🎤 Microphone permission granted');
-      // Keep the stream - we'll pass it to ElevenLabs to avoid Safari timeout issues
-      
-      // DEBUG: Track execution
-      console.log('🚀🚀🚀 AFTER MIC PERMISSION - ABOUT TO CONTINUE 🚀🚀🚀');
-    } catch (error) {
-      console.error('🎤 MICROPHONE PERMISSION DENIED:', error);
-      setMicPermissionError(true);
-      addLog('error', `Microphone access denied: ${error}`);
-      setIsTransitioningJourney(false);
-      return;
+    // For ElevenLabs, let the SDK handle microphone access internally
+    // For Azure, we need to get the stream ourselves
+    const isElevenLabs = (journeyToUse.ttsProvider || 'elevenlabs') === 'elevenlabs';
+    let microphoneStream: MediaStream | undefined;
+    
+    if (!isElevenLabs) {
+      // Azure: Get microphone permission ourselves
+      console.log('🎤 Requesting microphone permission for Azure...');
+      addLog('info', '🎤 Requesting microphone permission...');
+      try {
+        microphoneStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          }
+        });
+        console.log('🎤 Microphone permission GRANTED');
+        addLog('success', '🎤 Microphone permission granted');
+      } catch (error) {
+        console.error('🎤 MICROPHONE PERMISSION DENIED:', error);
+        setMicPermissionError(true);
+        addLog('error', `Microphone access denied: ${error}`);
+        setIsTransitioningJourney(false);
+        return;
+      }
+    } else {
+      // ElevenLabs: SDK will handle microphone access internally
+      console.log('🎤 ElevenLabs will handle microphone access');
+      addLog('info', '🎤 ElevenLabs SDK will request microphone access');
     }
 
     // Generate new session ID for this session
@@ -845,7 +897,9 @@ function VoiceAgentContent() {
     
     // Validate ElevenLabs configuration if selected
     if (currentProviderRef.current === 'elevenlabs' && !journeyToUse.elevenLabsConfig?.agentId) {
-      addLog('error', 'ElevenLabs is selected but Agent ID is not configured. Please add the Agent ID in flow settings.');
+      const errorMsg = 'ElevenLabs Agent ID is not configured. Please add the Agent ID in the flow settings under "ElevenLabs Configuration".';
+      addLog('error', errorMsg);
+      setConnectionError(errorMsg);
       setIsTransitioningJourney(false);
       return;
     }
@@ -1253,6 +1307,9 @@ Important guidelines:
           elevenLabsVoiceId: journeyToUse.elevenLabsConfig?.voiceId,
           // Pass quiz answers as dynamic variables for {{variable}} substitution
           dynamicVariables: Object.keys(dynamicVariables).length > 0 ? dynamicVariables : undefined,
+          // Override ElevenLabs agent prompt with our combined journey prompt
+          // NOTE: Must enable "System prompt" override in ElevenLabs dashboard Settings → Security
+          promptOverride: combinedInstructions,
           // NOTE: clientTools are passed to useElevenLabsSession hook, not connect()
         });
         console.log('🎙️ connect() completed');
@@ -1574,11 +1631,17 @@ Important guidelines:
 
   // Removed sendSimulatedUserMessage - not needed for Azure WebSocket
 
-  // Audio is handled by the WebSocket client
+  // Audio is handled by the WebSocket client (Azure) or internally by SDK (ElevenLabs)
 
   useEffect(() => {
     if (sessionStatus === "CONNECTED") {
-      // Don't create a separate mic stream - it causes feedback/crackling
+      // ElevenLabs handles audio internally via WebRTC - no need to set up audio element
+      if (currentProviderRef.current === 'elevenlabs') {
+        console.log('🔊 ElevenLabs handles audio internally - skipping audio element setup');
+        return;
+      }
+
+      // Azure: Don't create a separate mic stream - it causes feedback/crackling
       // The WebRTC connection already has the microphone
       // We'll set micStream to null to disable audio visualization
       // This prevents duplicate microphone access which causes issues
@@ -2068,6 +2131,7 @@ Important guidelines:
     setMicMuted: setMicMutedElevenLabs,
   } = useElevenLabsSession({
     customPrompts,
+    clientTools: elevenLabsClientTools,
     onConnectionChange: (s) => {
       if (currentProviderRef.current !== 'elevenlabs') return;
       setSessionStatus(s as SessionStatus);
@@ -2120,7 +2184,7 @@ Important guidelines:
         setConnectionError(errorMessage);
       }
     },
-  }, { clientTools: elevenLabsClientTools }); // Pass client tools at hook init time
+  }); // clientTools already passed in callbacks object above
 
   // Provider-aware wrapper functions
   const connect = useCallback(async (options: any) => {
@@ -2212,10 +2276,25 @@ Important guidelines:
           checkInStreak: '7', // Simulate 7-day streak
         });
         
-        // Pass the journey directly to connectToRealtime to avoid state closure issues
-        setTimeout(() => {
-          connectToRealtime(journey); // Pass journey directly, don't rely on state
-        }, 300);
+        // Check if this is a voice-enabled journey or non-voice
+        const isVoiceJourney = journey.voiceEnabled !== false;
+        console.log('🚀 handleStartJourney voice check:', {
+          name: journey.name,
+          voiceEnabled: journey.voiceEnabled,
+          isVoiceJourney,
+        });
+        
+        // CRITICAL: Call connectToRealtime directly without setTimeout
+        // to preserve user gesture context for microphone permissions
+        if (isVoiceJourney) {
+          // Voice journey - connect to realtime immediately
+          await connectToRealtime(journey);
+        } else {
+          // Non-voice journey - start in button-based mode
+          // Voice will be enabled later via enable_voice tool
+          console.log('🔇 Starting non-voice session for:', journey.name);
+          startNonVoiceSession(journey);
+        }
       } else {
         addLog('error', `Failed to load journey with ID: ${journeyId}`);
         console.error('❌ Journey not found:', journeyId);
@@ -2224,7 +2303,7 @@ Important guidelines:
       console.error('❌ Error starting journey:', error);
       addLog('error', `Error starting journey: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  }, [sessionStatus, addLog, setCurrentJourney, connectToRealtime, checkMicrophonePermission]);
+  }, [sessionStatus, addLog, setCurrentJourney, connectToRealtime, startNonVoiceSession, checkMicrophonePermission]);
 
   // Show loading overlay while preview mode is loading the journey
   if (previewLoading) {

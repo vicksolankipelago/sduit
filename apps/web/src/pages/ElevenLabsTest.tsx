@@ -1,106 +1,121 @@
 /**
  * ElevenLabs Connection Test Page
- *
- * A simple test page to verify ElevenLabs Conversational AI connection works
- * with the provided agent ID, prompt overrides, and client tools.
- *
- * IMPORTANT: Client tools must be passed to useElevenLabsSession() hook,
- * NOT to connect(). This is a requirement of the ElevenLabs SDK.
+ * 
+ * A simple test page using the ElevenLabs SDK DIRECTLY (not our wrapper)
+ * to verify the connection works with the basic SDK example.
  */
 
-import { useState, useCallback, useMemo } from 'react';
-import { useElevenLabsSession } from '../hooks/voiceAgent/useElevenLabsSession';
+import { useState, useCallback, useRef } from 'react';
+import { Conversation } from '@elevenlabs/client';
 
 const TEST_AGENT_ID = 'agent_7001kga118rtf1q9c72ay45512ad';
 
 export default function ElevenLabsTest() {
   const [logs, setLogs] = useState<string[]>([]);
-  const [isConnected, setIsConnected] = useState(false);
+  const [useOverride, setUseOverride] = useState(false);
+  const [status, setStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const conversationRef = useRef<Awaited<ReturnType<typeof Conversation.startSession>> | null>(null);
 
   const addLog = useCallback((message: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
+    const logEntry = `[${timestamp}] ${message}`;
+    setLogs(prev => [...prev, logEntry]);
     console.log(`[ElevenLabs Test] ${message}`);
   }, []);
 
-  // Client tools MUST be defined outside connect() and passed to the hook
-  // They are registered at SDK initialization time, not at connection time
-  const clientTools = useMemo(() => ({
-    end_call: async (params: { reason?: string }) => {
-      addLog(`Tool called: end_call with reason: ${params.reason || 'none'}`);
-      return { success: true, message: 'Call ended' };
-    },
-    show_screen: async (params: { screenId: string }) => {
-      addLog(`Tool called: show_screen with screenId: ${params.screenId}`);
-      return { success: true, screenId: params.screenId };
-    },
-    collect_data: async (params: { key: string; value: string }) => {
-      addLog(`Tool called: collect_data - ${params.key}: ${params.value}`);
-      return { success: true };
-    },
-  }), [addLog]);
-
-  // Pass clientTools to the hook, NOT to connect()
-  const { status, connect, disconnect, isSpeaking } = useElevenLabsSession(
-    {
-      onConnectionChange: (s) => {
-        addLog(`Connection status: ${s}`);
-        setIsConnected(s === 'CONNECTED');
-      },
-      onTranscript: (role, text) => {
-        addLog(`${role}: ${text}`);
-      },
-      onModeChange: (mode) => {
-        addLog(`Mode: ${mode}`);
-      },
-      onConversationComplete: () => {
-        addLog('Conversation complete');
-      },
-      onError: (error, details) => {
-        addLog(`Error: ${error}`);
-        console.error('ElevenLabs error details:', details);
-      },
-    },
-    { clientTools } // Pass clientTools here at hook init
-  );
-
   const handleConnect = async () => {
-    addLog('Starting connection...');
+    addLog('Connecting with VANILLA SDK (not React hook)...');
+    addLog(`Override enabled: ${useOverride}`);
+    console.log('🟢 handleConnect clicked, useOverride:', useOverride);
+    setStatus('connecting');
+    
     try {
-      await connect({
-        elevenLabsAgentId: TEST_AGENT_ID,
-        agentConfig: {
-          name: 'Test Agent',
-          instructions: 'You are a helpful test assistant. Keep responses brief.',
-          voice: 'alloy',
+      const sessionConfig: Parameters<typeof Conversation.startSession>[0] = {
+        agentId: TEST_AGENT_ID,
+        connectionType: 'webrtc',
+        onConnect: ({ conversationId }) => {
+          addLog(`Connected! ID: ${conversationId}`);
+          setStatus('connected');
         },
-        // NOTE: clientTools are NOT passed here - they go to the hook
-        // Dynamic variables ARE passed here - they go to startSession()
-        dynamicVariables: {
-          user_name: 'Test User',
-          session_id: `test_${Date.now()}`,
+        onDisconnect: () => {
+          addLog('Disconnected');
+          setStatus('disconnected');
+          conversationRef.current = null;
         },
-      });
-      addLog('Connection initiated successfully');
+        onError: (error) => {
+          addLog(`Error: ${error}`);
+          console.error('ElevenLabs error:', error);
+        },
+        onMessage: (message) => {
+          addLog(`Message: ${JSON.stringify(message).substring(0, 100)}...`);
+        },
+        onModeChange: (data) => {
+          const mode = (data as any).mode;
+          addLog(`Mode: ${mode}`);
+          setIsSpeaking(mode === 'speaking');
+        },
+      };
+      
+      // Test: Pass override directly to vanilla SDK's startSession
+      if (useOverride) {
+        (sessionConfig as any).overrides = {
+          agent: {
+            prompt: {
+              prompt: "You are a friendly test assistant. Respond with SHORT answers. Start by saying 'Hello! Override is working!'",
+            },
+          },
+        };
+        addLog('Sending prompt override to vanilla SDK startSession');
+        console.log('📝 Prompt override:', (sessionConfig as any).overrides);
+      }
+      
+      // Use vanilla SDK directly - this SHOULD support overrides in startSession
+      const conversation = await Conversation.startSession(sessionConfig);
+      conversationRef.current = conversation;
+      
+      addLog(`Session started successfully`);
+      console.log('🟢 Vanilla SDK session started');
     } catch (error: any) {
-      addLog(`Connection error: ${error.message}`);
+      addLog(`Error: ${error.message || error}`);
+      console.error('🔴 Connection error:', error);
+      setStatus('disconnected');
     }
   };
 
   const handleDisconnect = async () => {
     addLog('Disconnecting...');
-    await disconnect();
-    addLog('Disconnected');
+    if (conversationRef.current) {
+      await conversationRef.current.endSession();
+    }
+    setStatus('disconnected');
   };
+
+  const isConnected = status === 'connected';
 
   return (
     <div style={{ padding: '20px', fontFamily: 'system-ui, sans-serif', maxWidth: '800px', margin: '0 auto' }}>
-      <h1 style={{ marginBottom: '20px' }}>ElevenLabs Connection Test</h1>
+      <h1 style={{ marginBottom: '20px' }}>ElevenLabs Connection Test (Direct SDK)</h1>
       
       <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
         <p><strong>Agent ID:</strong> {TEST_AGENT_ID}</p>
         <p><strong>Status:</strong> <span style={{ color: isConnected ? 'green' : 'gray' }}>{status}</span></p>
         <p><strong>Speaking:</strong> {isSpeaking ? 'Yes' : 'No'}</p>
+        <p><strong>SDK:</strong> Vanilla @elevenlabs/client (not React hook)</p>
+      </div>
+
+      <div style={{ marginBottom: '15px', padding: '10px', backgroundColor: '#fff3cd', borderRadius: '8px' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={useOverride}
+            onChange={(e) => setUseOverride(e.target.checked)}
+            disabled={isConnected}
+          />
+          <span>
+            <strong>Enable Prompt Override</strong> - When checked, sends a custom prompt to startSession
+          </span>
+        </label>
       </div>
 
       <div style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
@@ -153,15 +168,10 @@ export default function ElevenLabsTest() {
       <div style={{ marginBottom: '20px' }}>
         <h3>Test Features:</h3>
         <ul>
-          <li><strong>Agent ID:</strong> Using your ElevenLabs dashboard agent</li>
-          <li><strong>Prompt Override:</strong> Custom instructions passed via overrides</li>
-          <li><strong>Client Tools:</strong> end_call, show_screen, collect_data (passed to hook, not connect)</li>
-          <li><strong>Dynamic Variables:</strong> user_name, session_id (passed to startSession)</li>
+          <li>Using ElevenLabs SDK directly (not our wrapper)</li>
+          <li>Agent ID: {TEST_AGENT_ID}</li>
+          <li>Connection Type: WebRTC</li>
         </ul>
-        <p style={{ fontSize: '12px', color: '#666', marginTop: '10px' }}>
-          ⚠️ Client tools must be registered at hook initialization, not at connection time.
-          This is a requirement of the ElevenLabs SDK.
-        </p>
       </div>
 
       <div>

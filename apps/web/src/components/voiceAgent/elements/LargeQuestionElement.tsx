@@ -57,17 +57,55 @@ export interface LargeQuestionElementProps {
   data: LargeQuestionElementState;
   events?: ScreenEvent[];
   onEventTrigger?: (eventId: string, eventData?: Record<string, any>) => void;
+  onSelectionChange?: (optionId: string) => void;
+  onMultiSelectionChange?: (selectedOptions: string[]) => void;
 }
 
 export const LargeQuestionElement: React.FC<LargeQuestionElementProps> = ({
   data,
   events,
   onEventTrigger,
+  onSelectionChange,
+  onMultiSelectionChange,
 }) => {
+  // Check if this is a multi-select question
+  const isMultiSelect = (data as any).allowsMultiSelection === true;
+  
+  // Single select state
   const [selectedId, setSelectedId] = useState(data.selectedOptionId);
+  
+  // Multi-select state
+  const [selectedIds, setSelectedIds] = useState<string[]>(
+    ((data as any).currentlySelectedOptions as string[]) || []
+  );
 
   const handleSelect = (optionId: string) => {
-    setSelectedId(optionId);
+    if (isMultiSelect) {
+      // Multi-select: toggle the option in the array
+      setSelectedIds(prev => {
+        const newSelections = prev.includes(optionId)
+          ? prev.filter(id => id !== optionId)
+          : [...prev, optionId];
+        
+        // CRITICAL: Notify parent to update screenState.selectedOptions
+        // This ensures stateUpdate actions can read the selections via {$screenState.selectedOptions}
+        if (onMultiSelectionChange) {
+          onMultiSelectionChange(newSelections);
+        }
+        
+        console.log(`📝 LargeQuestion (multi): toggled ${optionId}, selections:`, newSelections);
+        return newSelections;
+      });
+    } else {
+      // Single select: set the one option
+      setSelectedId(optionId);
+      
+      // CRITICAL: Notify parent to update screenState.selectedOption
+      // This ensures stateUpdate actions can read the selected value via {$screenState.selectedOption}
+      if (onSelectionChange) {
+        onSelectionChange(optionId);
+      }
+    }
     
     const event = events?.find(e => e.type === 'onSelected');
     if (event && onEventTrigger) {
@@ -86,6 +124,11 @@ export const LargeQuestionElement: React.FC<LargeQuestionElementProps> = ({
       }
       onEventTrigger(event.id, eventData);
     }
+  };
+  
+  // Helper to check if an option is selected
+  const isSelected = (optionId: string): boolean => {
+    return isMultiSelect ? selectedIds.includes(optionId) : selectedId === optionId;
   };
 
   // Get title from either data.title or data.header.title (iOS structure)
@@ -106,7 +149,7 @@ export const LargeQuestionElement: React.FC<LargeQuestionElementProps> = ({
         {data.options.map((option) => (
           <button
             key={option.id}
-            className={`large-question-option ${selectedId === option.id ? 'selected' : ''}`}
+            className={`large-question-option ${isSelected(option.id) ? 'selected' : ''}`}
             onClick={() => handleSelect(option.id)}
           >
             {option.imageName && (
@@ -128,7 +171,7 @@ export const LargeQuestionElement: React.FC<LargeQuestionElementProps> = ({
                 </div>
               )}
             </div>
-            {selectedId === option.id && (
+            {isSelected(option.id) && (
               <div className="large-question-option-check">
                 <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <circle cx="11" cy="11" r="11" fill="#212633"/>

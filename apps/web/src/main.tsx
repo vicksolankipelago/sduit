@@ -20,6 +20,7 @@ import { AgentEditorPage } from './pages/AgentEditor';
 import { MobilePreviewPage } from './pages/MobilePreview';
 import { FeedbackPage } from './pages/Feedback';
 import ElevenLabsTest from './pages/ElevenLabsTest';
+import ElevenLabsSimpleTest from './pages/ElevenLabsSimpleTest';
 import './styles/pelago-design-system.css';
 import './pages/Login.css';
 
@@ -39,6 +40,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/feedback" element={<FeedbackPage />} />
             <Route path="/elevenlabs-test" element={<ElevenLabsTest />} />
+            <Route path="/elevenlabs-simple" element={<ElevenLabsSimpleTest />} />
 
             {/* Protected preview route (no layout - redirects to voice agent) */}
             <Route path="/preview/:journeyId" element={

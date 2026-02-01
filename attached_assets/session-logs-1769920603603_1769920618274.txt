@@ -1,0 +1,65 @@
+[04:35:38.748] INFO: Initiating connection with journey: Personalisation Quiz
+
+[04:35:38.748] INFO: Starting agent: newAgent
+
+[04:35:38.748] INFO: 📝 Added 7 quiz answer(s) to prompt context
+
+[04:35:38.749] INFO: 📋 Agent configuration prepared (97214 chars)
+
+[04:35:38.749] INFO: 🎵 Using voice: pNInz6obpgDQGcFmaJgB
+
+[04:35:38.749] INFO: 👥 Journey has 1 agent(s) configured
+
+[04:35:38.749] INFO: 🎙️ Initiating ElevenLabs connection...
+
+[04:35:38.749] INFO: 🔗 Passing 7 dynamic variable(s) to ElevenLabs
+
+[04:35:38.750] INFO: [04:35:38] Connecting to ElevenLabs...
+
+[04:35:39.971] INFO: [04:35:39] Connecting to ElevenLabs...
+
+[04:35:42.488] SUCCESS: [04:35:42] Connected to ElevenLabs
+
+[04:35:42.488] SUCCESS: [04:35:42] Connected to ElevenLabs
+
+[04:35:42.488] SUCCESS: [04:35:42] Connected to ElevenLabs
+
+[04:35:42.489] SUCCESS: Successfully initiated ElevenLabs connection
+
+[04:35:43.178] INFO: Assistant: Hi, 
+
+Welcome to pelago. Thanks for telling us a little bit about you. Let's get started. 
+
+[04:35:51.067] INFO: User: Sure.
+
+[04:35:51.303] INFO: Assistant: To begin, could you please share your full name with me? This will help me to personalise your experience.
+
+[04:36:00.429] TOOL: 🔧 record_input
+{
+  "title": "About You",
+  "summary": "The user provided their name as Vekash Salanki.",
+  "storeKey": "userName",
+  "description": "The user provided their name."
+}
+
+[04:36:00.429] TOOL: 🔧 Tool recorded: About You = "The user provided their name as Vekash Salanki...."
+
+[04:36:00.430] INFO: User: Yeah, it's Vekash Salanki.
+
+[04:36:02.459] INFO: Assistant: Thanks, Vekash. It's a pleasure to meet you.
+
+I understand you've completed a personalization quiz. To make sure I'm on the right track, could you tell me a little bit about what you're hoping to achieve with Pelago? For example, are you looking to improve your overall well-being, focus on specific health goals, or something else?
+
+[04:36:30.032] TOOL: 🔧 record_input
+{
+  "title": "User Goal",
+  "summary": "The user's goal is to be healthier.",
+  "storeKey": "userGoal",
+  "description": "The user wants to be healthier."
+}
+
+[04:36:30.032] TOOL: 🔧 Tool recorded: User Goal = "The user's goal is to be healthier...."
+
+[04:36:30.034] INFO: User: Yeah, I'd like to just be a bit healthier.
+
+[04:36:32.151] INFO: Assistant: That's a great goal, Vekash. "Being healthier" can mean different things to different people. To help me tailor a plan specifically for you, could you tell me a bit more about what being "healthier" means to you? For instance, are you thinking about improving your diet, increasing your physical activity, managing stress, or something else entirely?

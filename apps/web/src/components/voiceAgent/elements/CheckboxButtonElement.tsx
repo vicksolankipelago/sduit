@@ -7,6 +7,7 @@ export interface CheckboxButtonElementProps {
   style?: CheckboxButtonElementStyle;
   events?: ScreenEvent[];
   onEventTrigger?: (eventId: string) => void;
+  onMultiSelectToggle?: (optionId: string, isSelected: boolean) => void;
 }
 
 // Green filled circle with white checkmark - matches iOS SelectorCheck component
@@ -28,6 +29,7 @@ export const CheckboxButtonElement: React.FC<CheckboxButtonElementProps> = ({
   style: _style,
   events,
   onEventTrigger,
+  onMultiSelectToggle,
 }) => {
   const [isSelected, setIsSelected] = useState(data.isSelected || false);
 
@@ -39,6 +41,12 @@ export const CheckboxButtonElement: React.FC<CheckboxButtonElementProps> = ({
   const handleToggle = () => {
     const newValue = !isSelected;
     setIsSelected(newValue);
+
+    // CRITICAL: Notify parent to update screenState.selectedOptions array
+    // This ensures stateUpdate actions can read selections via {$screenState.selectedOptions}
+    if (onMultiSelectToggle && data.id) {
+      onMultiSelectToggle(data.id, newValue);
+    }
 
     const event = events?.find(e => e.type === 'onSelected');
     if (event && onEventTrigger) {

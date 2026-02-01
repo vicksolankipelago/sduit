@@ -306,9 +306,9 @@ router.post("/journey/:journeyId/configure", async (req: Request, res: Response)
  *     id: string,
  *     state: {},
  *     conditions: [],
- *     screens: [/* normalized iOS screens */]
+ *     screens: [ ...normalized iOS screens... ]
  *   },
- *   screenPrompts: { [screenId]: string },  // Voice agent prompts
+ *   screenPrompts: { [screenId]: string },
  *   metadata: {
  *     journeyId: string,
  *     journeyName: string,
