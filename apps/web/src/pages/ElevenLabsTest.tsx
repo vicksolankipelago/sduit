@@ -1,77 +1,79 @@
 /**
  * ElevenLabs Connection Test Page
  * 
- * A simple test page to verify ElevenLabs Conversational AI connection works
- * with the provided agent ID, prompt overrides, and client tools.
+ * A simple test page using the ElevenLabs SDK DIRECTLY (not our wrapper)
+ * to verify the connection works with the basic SDK example.
  */
 
 import { useState, useCallback } from 'react';
-import { useElevenLabsSession } from '../hooks/voiceAgent/useElevenLabsSession';
+import { useConversation } from '@elevenlabs/react';
 
 const TEST_AGENT_ID = 'agent_7001kga118rtf1q9c72ay45512ad';
 
 export default function ElevenLabsTest() {
   const [logs, setLogs] = useState<string[]>([]);
-  const [isConnected, setIsConnected] = useState(false);
 
   const addLog = useCallback((message: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
+    const logEntry = `[${timestamp}] ${message}`;
+    setLogs(prev => [...prev, logEntry]);
     console.log(`[ElevenLabs Test] ${message}`);
   }, []);
 
-  const { status, connect, disconnect, isSpeaking } = useElevenLabsSession({
-    onConnectionChange: (s) => {
-      addLog(`Connection status: ${s}`);
-      setIsConnected(s === 'CONNECTED');
+  // Use the ElevenLabs SDK DIRECTLY - exactly like the docs example
+  const conversation = useConversation({
+    onConnect: ({ conversationId }) => {
+      addLog(`Connected! ID: ${conversationId}`);
     },
-    onTranscript: (role, text) => {
-      addLog(`${role}: ${text}`);
+    onDisconnect: () => {
+      addLog('Disconnected');
     },
-    onModeChange: (mode) => {
+    onError: (error) => {
+      addLog(`Error: ${error}`);
+      console.error('ElevenLabs error:', error);
+    },
+    onMessage: (message) => {
+      addLog(`Message: ${JSON.stringify(message).substring(0, 100)}...`);
+    },
+    onModeChange: ({ mode }) => {
       addLog(`Mode: ${mode}`);
-    },
-    onConversationComplete: () => {
-      addLog('Conversation complete');
     },
   });
 
   const handleConnect = async () => {
-    addLog('Starting connection...');
+    addLog('Connecting...');
+    console.log('🟢 handleConnect clicked');
+    
     try {
-      await connect({
-        elevenLabsAgentId: TEST_AGENT_ID,
-        agentConfig: {
-          name: 'Test Agent',
-          instructions: 'You are a helpful test assistant. Keep responses brief.',
-          voice: 'alloy',
-        },
-        // Note: clientTools are configured in ElevenLabs dashboard, not passed here
-        dynamicVariables: {
-          user_name: 'Test User',
-          session_id: `test_${Date.now()}`,
-        },
+      // Simple connection - exactly like the docs
+      const conversationId = await conversation.startSession({
+        agentId: TEST_AGENT_ID,
+        connectionType: 'webrtc',
       });
-      addLog('Connection initiated successfully');
+      
+      addLog(`Session started: ${conversationId}`);
+      console.log('🟢 Session started:', conversationId);
     } catch (error: any) {
-      addLog(`Connection error: ${error.message}`);
+      addLog(`Error: ${error.message || error}`);
+      console.error('🔴 Connection error:', error);
     }
   };
 
   const handleDisconnect = async () => {
     addLog('Disconnecting...');
-    await disconnect();
-    addLog('Disconnected');
+    await conversation.endSession();
   };
+
+  const isConnected = conversation.status === 'connected';
 
   return (
     <div style={{ padding: '20px', fontFamily: 'system-ui, sans-serif', maxWidth: '800px', margin: '0 auto' }}>
-      <h1 style={{ marginBottom: '20px' }}>ElevenLabs Connection Test</h1>
+      <h1 style={{ marginBottom: '20px' }}>ElevenLabs Connection Test (Direct SDK)</h1>
       
       <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
         <p><strong>Agent ID:</strong> {TEST_AGENT_ID}</p>
-        <p><strong>Status:</strong> <span style={{ color: isConnected ? 'green' : 'gray' }}>{status}</span></p>
-        <p><strong>Speaking:</strong> {isSpeaking ? 'Yes' : 'No'}</p>
+        <p><strong>Status:</strong> <span style={{ color: isConnected ? 'green' : 'gray' }}>{conversation.status}</span></p>
+        <p><strong>Speaking:</strong> {conversation.isSpeaking ? 'Yes' : 'No'}</p>
       </div>
 
       <div style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
@@ -124,9 +126,9 @@ export default function ElevenLabsTest() {
       <div style={{ marginBottom: '20px' }}>
         <h3>Test Features:</h3>
         <ul>
-          <li>Agent ID: Using your ElevenLabs dashboard agent</li>
-          <li>Dynamic Variables: user_name, session_id</li>
-          <li>Client Tools: Configured in ElevenLabs dashboard</li>
+          <li>Using ElevenLabs SDK directly (not our wrapper)</li>
+          <li>Agent ID: {TEST_AGENT_ID}</li>
+          <li>Connection Type: WebRTC</li>
         </ul>
       </div>
 
