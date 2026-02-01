@@ -15,6 +15,7 @@ import { publishedFlowStorage, PublishedFlowData } from "../services/publishedFl
 import { storage } from "../storage";
 import { logger } from "../utils/logger";
 import * as apiResponse from "../utils/response";
+import { createModuleResponse, normalizeAgentToModule } from "../utils/moduleNormalize";
 
 const router = Router();
 const mobileLogger = logger.namespace("Mobile");
@@ -286,6 +287,165 @@ router.post("/journey/:journeyId/configure", async (req: Request, res: Response)
   } catch (error: any) {
     mobileLogger.error("Error configuring journey for mobile:", error.message);
     return apiResponse.serverError(res, "Failed to configure journey");
+  }
+});
+
+// ============================================================================
+// iOS SDUI Module Endpoints
+// ============================================================================
+
+/**
+ * GET /api/mobile/journey/:journeyId/module/:agentId
+ *
+ * Gets a single agent's screens formatted as an iOS-compatible SDUI module.
+ * This is the preferred endpoint for iOS apps that need to display SDUI screens.
+ *
+ * Response:
+ * {
+ *   module: {
+ *     id: string,
+ *     state: {},
+ *     conditions: [],
+ *     screens: [/* normalized iOS screens */]
+ *   },
+ *   screenPrompts: { [screenId]: string },  // Voice agent prompts
+ *   metadata: {
+ *     journeyId: string,
+ *     journeyName: string,
+ *     version: string,
+ *     publishedAt: string
+ *   }
+ * }
+ */
+router.get("/journey/:journeyId/module/:agentId", async (req: Request, res: Response) => {
+  try {
+    const { journeyId, agentId } = req.params;
+
+    // First try to get from published flows (production)
+    let journey = await publishedFlowStorage.getPublishedFlow(journeyId);
+
+    // If not found in published, try to get from draft storage (for development/testing)
+    if (!journey) {
+      const draftJourney = await storage.getJourney(journeyId);
+      if (draftJourney) {
+        journey = {
+          id: draftJourney.id,
+          journeyId: draftJourney.id,
+          name: draftJourney.name,
+          description: draftJourney.description || "",
+          systemPrompt: draftJourney.systemPrompt,
+          voice: draftJourney.voice,
+          agents: draftJourney.agents as any[],
+          startingAgentId: draftJourney.startingAgentId,
+          version: draftJourney.version,
+          publishedAt: draftJourney.updatedAt?.toISOString() || new Date().toISOString(),
+          publishedByUserId: "",
+        };
+      }
+    }
+
+    if (!journey) {
+      return apiResponse.notFound(res, "Journey");
+    }
+
+    // Find the requested agent
+    const agents = journey.agents || [];
+    const agent = agents.find((a: any) => a.id === agentId);
+
+    if (!agent) {
+      return apiResponse.notFound(res, "Agent");
+    }
+
+    // Create iOS-compatible module response
+    const moduleResponse = createModuleResponse(agent, {
+      journeyId: journey.journeyId,
+      journeyName: journey.name,
+      version: journey.version,
+      publishedAt: journey.publishedAt,
+    });
+
+    mobileLogger.info(
+      `Returned iOS module for journey ${journeyId}, agent ${agentId} with ${moduleResponse.module.screens.length} screens`
+    );
+
+    return apiResponse.success(res, moduleResponse);
+  } catch (error: any) {
+    mobileLogger.error("Error getting iOS module:", error.message);
+    return apiResponse.serverError(res, "Failed to get module");
+  }
+});
+
+/**
+ * GET /api/mobile/journey/:journeyId/modules
+ *
+ * Gets all agents in a journey formatted as iOS-compatible SDUI modules.
+ * Useful when iOS needs to preload all modules for a journey.
+ *
+ * Response:
+ * {
+ *   journeyId: string,
+ *   journeyName: string,
+ *   startingAgentId: string,
+ *   modules: [
+ *     {
+ *       module: { id, state, conditions, screens },
+ *       screenPrompts: { [screenId]: string }
+ *     }
+ *   ]
+ * }
+ */
+router.get("/journey/:journeyId/modules", async (req: Request, res: Response) => {
+  try {
+    const { journeyId } = req.params;
+
+    // First try to get from published flows (production)
+    let journey = await publishedFlowStorage.getPublishedFlow(journeyId);
+
+    // If not found in published, try to get from draft storage (for development/testing)
+    if (!journey) {
+      const draftJourney = await storage.getJourney(journeyId);
+      if (draftJourney) {
+        journey = {
+          id: draftJourney.id,
+          journeyId: draftJourney.id,
+          name: draftJourney.name,
+          description: draftJourney.description || "",
+          systemPrompt: draftJourney.systemPrompt,
+          voice: draftJourney.voice,
+          agents: draftJourney.agents as any[],
+          startingAgentId: draftJourney.startingAgentId,
+          version: draftJourney.version,
+          publishedAt: draftJourney.updatedAt?.toISOString() || new Date().toISOString(),
+          publishedByUserId: "",
+        };
+      }
+    }
+
+    if (!journey) {
+      return apiResponse.notFound(res, "Journey");
+    }
+
+    const agents = journey.agents || [];
+    const modules = agents.map((agent: any) => ({
+      module: normalizeAgentToModule(agent),
+      screenPrompts: agent.screenPrompts || {},
+    }));
+
+    mobileLogger.info(
+      `Returned ${modules.length} iOS modules for journey ${journeyId}`
+    );
+
+    return apiResponse.success(res, {
+      journeyId: journey.journeyId,
+      journeyName: journey.name,
+      version: journey.version,
+      startingAgentId: journey.startingAgentId,
+      publishedAt: journey.publishedAt,
+      modules,
+    });
+  } catch (error: any) {
+    mobileLogger.error("Error getting iOS modules:", error.message);
+    return apiResponse.serverError(res, "Failed to get modules");
   }
 });
 

@@ -8,31 +8,8 @@ import * as apiResponse from "../utils/response";
 
 const router = Router();
 
-// Public preview endpoint - no authentication required
-// Returns minimal journey data for mobile preview sharing
-router.get("/preview/:id", async (req: Request, res: Response) => {
-  try {
-    const journey = await storage.getJourney(req.params.id as string);
-    
-    if (!journey) {
-      return apiResponse.notFound(res, "Journey not found");
-    }
-
-    // Return only the data needed for preview rendering
-    return apiResponse.success(res, {
-      id: journey.id,
-      name: journey.name,
-      agents: journey.agents,
-      startingAgentId: journey.startingAgentId,
-      voiceEnabled: journey.voiceEnabled ?? true,
-      ttsProvider: journey.ttsProvider || 'elevenlabs',
-      elevenLabsConfig: journey.elevenLabsConfig,
-    });
-  } catch (error) {
-    journeyLogger.error("Error fetching journey preview:", error);
-    return apiResponse.serverError(res, "Failed to load journey preview");
-  }
-});
+// NOTE: Public preview endpoint /preview/:id is registered in server/index.ts
+// BEFORE the authenticated journeysRouter to bypass authentication.
 
 router.get("/", isAuthenticated, async (req: Request, res: Response) => {
   try {
@@ -466,42 +443,9 @@ router.get("/published/all", isAuthenticated, async (req: Request, res: Response
   }
 });
 
-// Get environment info for frontend
-router.get("/environment", (_req: Request, res: Response) => {
-  return apiResponse.success(res, {
-    isProduction: process.env.NODE_ENV === "production",
-    environment: process.env.NODE_ENV || "development",
-  });
-});
-
-// Production endpoints - fetch flows from Object Storage (shared between dev/prod)
-// These are public read-only endpoints since production runtime needs to load flows
-// List all production flows (from Object Storage)
-router.get("/production/list", async (_req: Request, res: Response) => {
-  try {
-    const flows = await publishedFlowStorage.listPublishedFlows();
-    return apiResponse.success(res, flows);
-  } catch (error) {
-    journeyLogger.error("Error listing production flows:", error);
-    return apiResponse.serverError(res, "Failed to list production flows");
-  }
-});
-
-// Get a specific production flow (from Object Storage)
-router.get("/production/:journeyId", async (req: Request, res: Response) => {
-  try {
-    const flow = await publishedFlowStorage.getPublishedFlow(req.params.journeyId);
-
-    if (!flow) {
-      return apiResponse.notFound(res, "Production flow");
-    }
-
-    return apiResponse.success(res, flow);
-  } catch (error) {
-    journeyLogger.error("Error getting production flow:", error);
-    return apiResponse.serverError(res, "Failed to get production flow");
-  }
-});
+// NOTE: Public routes for /environment, /production/list, /production/:journeyId
+// are registered in server/index.ts BEFORE the authenticated journeysRouter.
+// This ensures they bypass authentication. Do not add duplicates here.
 
 router.post("/:id/duplicate", isAdmin, async (req: Request, res: Response) => {
   try {
