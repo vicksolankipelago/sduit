@@ -1,0 +1,162 @@
+[16:01:57.156] INFO: Initiating connection with journey: Personalisation Quiz
+
+[16:01:57.156] INFO: Starting agent: newAgent
+
+[16:01:57.156] INFO: 📝 Added 7 quiz answer(s) to prompt context
+
+[16:01:57.156] INFO: 📋 Agent configuration prepared (97243 chars)
+
+[16:01:57.156] INFO: 🎵 Using voice: shimmer
+
+[16:01:57.156] INFO: 👥 Journey has 1 agent(s) configured
+
+[16:01:57.156] INFO: 🎙️ Initiating Azure connection...
+
+[16:01:57.156] INFO: 🔗 Passing 7 dynamic variable(s) to ElevenLabs
+
+[16:01:57.157] INFO: Connecting to Azure OpenAI...
+
+[16:01:59.495] SUCCESS: Successfully initiated Azure connection
+
+[16:02:00.037] SUCCESS: Connected to Azure OpenAI WebRTC
+
+[16:02:00.052] AGENT: Agent initialized: newAgent
+{
+  "agentName": "newAgent"
+}
+
+[16:02:02.860] TOOL: Tool executed: record_input
+{
+  "args": {
+    "title": "Outcomes",
+    "summary": "Exploring and learning more about my drinking patterns and emotional stability",
+    "storeKey": "outcomesSummary"
+  },
+  "result": "Input recorded successfully: Outcomes"
+}
+
+[16:02:02.861] INFO: 📝 Recording input - Title: Outcomes, Summary: Exploring and learning more about my drinking patterns and emotional stability
+
+[16:02:02.861] TOOL: 🔧 Tool recorded: Outcomes = "Exploring and learning more about my drinking patt..."
+
+[16:02:02.861] INFO: ✅ Updated persistent module state: outcomesSummary
+
+[16:02:02.861] INFO: ✅ Recorded input dispatched to screen state
+
+[16:02:02.863] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="record_input"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "record_input",
+  "eventType": "response.done"
+}
+
+[16:02:03.413] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="trigger_event"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "trigger_event",
+  "eventType": "response.done"
+}
+
+[16:02:04.726] INFO: Assistant: You mentioned personal growth matters to you. Tell me more – what's really driving this?
+
+[16:02:04.731] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="trigger_event"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "trigger_event",
+  "eventType": "response.done"
+}
+
+[16:02:05.413] EVENT: 📢 Screen event triggered: navigate_to_motivation
+{
+  "agentName": "newAgent"
+}
+
+[16:02:05.413] INFO: 📱 Processing event "navigate_to_motivation" within 18 screen(s)
+
+[16:02:05.413] INFO: 🎯 Navigating to screen: motivation
+
+[16:02:05.413] TOOL: Tool executed: trigger_event
+{
+  "args": {
+    "eventId": "navigate_to_motivation",
+    "delay": 2
+  },
+  "result": "Event \"navigate_to_motivation\" triggered successfully"
+}
+
+[16:02:06.409] INFO: User: That's it.
+
+[16:02:07.204] TOOL: Tool executed: record_input
+{
+  "args": {
+    "title": "Your why",
+    "summary": "Driven by personal growth and gaining emotional stability",
+    "storeKey": "yourWhySummary"
+  },
+  "result": "Input recorded successfully: Your why"
+}
+
+[16:02:07.205] INFO: 📝 Recording input - Title: Your why, Summary: Driven by personal growth and gaining emotional stability
+
+[16:02:07.205] TOOL: 🔧 Tool recorded: Your why = "Driven by personal growth and gaining emotional st..."
+
+[16:02:07.205] INFO: ✅ Updated persistent module state: yourWhySummary
+
+[16:02:07.205] INFO: ✅ Recorded input dispatched to screen state
+
+[16:02:07.210] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="record_input"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "record_input",
+  "eventType": "response.done"
+}
+
+[16:02:07.714] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="trigger_event"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "trigger_event",
+  "eventType": "response.done"
+}
+
+[16:02:08.798] INFO: Assistant: Now let's set a focus for this week. What would
+
+[16:02:08.804] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="trigger_event"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "trigger_event",
+  "eventType": "response.done"
+}
+
+[16:02:09.710] EVENT: 📢 Screen event triggered: navigate_to_intention
+{
+  "agentName": "newAgent"
+}
+
+[16:02:09.710] INFO: 📱 Processing event "navigate_to_intention" within 18 screen(s)
+
+[16:02:09.710] INFO: 🎯 Navigating to screen: intention
+
+[16:02:09.710] TOOL: Tool executed: trigger_event
+{
+  "args": {
+    "eventId": "navigate_to_intention",
+    "delay": 2
+  },
+  "result": "Event \"navigate_to_intention\" triggered successfully"
+}
+
+[16:02:12.944] INFO: 🔍 Checking Handoff: Current="newAgent", Last Tool="trigger_event"
+{
+  "type": "handoff_attempt",
+  "currentAgent": "newAgent",
+  "lastTool": "trigger_event",
+  "eventType": "response.done"
+}
+
+[16:02:13.173] INFO: User: You didn't, you didn't start the.
