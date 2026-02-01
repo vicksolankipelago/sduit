@@ -12,6 +12,7 @@ const TEST_AGENT_ID = 'agent_7001kga118rtf1q9c72ay45512ad';
 
 export default function ElevenLabsTest() {
   const [logs, setLogs] = useState<string[]>([]);
+  const [useOverride, setUseOverride] = useState(false);
 
   const addLog = useCallback((message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -42,14 +43,29 @@ export default function ElevenLabsTest() {
 
   const handleConnect = async () => {
     addLog('Connecting...');
-    console.log('🟢 handleConnect clicked');
+    addLog(`Override enabled: ${useOverride}`);
+    console.log('🟢 handleConnect clicked, useOverride:', useOverride);
     
     try {
-      // Simple connection - exactly like the docs
-      const conversationId = await conversation.startSession({
+      const sessionConfig: any = {
         agentId: TEST_AGENT_ID,
         connectionType: 'webrtc',
-      });
+      };
+      
+      // Test: Pass override to startSession (vanilla SDK style)
+      if (useOverride) {
+        sessionConfig.overrides = {
+          agent: {
+            prompt: {
+              prompt: "You are a friendly test assistant. Respond with SHORT answers. Start by saying 'Hello! Override is working!'",
+            },
+          },
+        };
+        addLog('Sending prompt override to startSession');
+        console.log('📝 Prompt override:', sessionConfig.overrides);
+      }
+      
+      const conversationId = await conversation.startSession(sessionConfig);
       
       addLog(`Session started: ${conversationId}`);
       console.log('🟢 Session started:', conversationId);
@@ -74,6 +90,20 @@ export default function ElevenLabsTest() {
         <p><strong>Agent ID:</strong> {TEST_AGENT_ID}</p>
         <p><strong>Status:</strong> <span style={{ color: isConnected ? 'green' : 'gray' }}>{conversation.status}</span></p>
         <p><strong>Speaking:</strong> {conversation.isSpeaking ? 'Yes' : 'No'}</p>
+      </div>
+
+      <div style={{ marginBottom: '15px', padding: '10px', backgroundColor: '#fff3cd', borderRadius: '8px' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={useOverride}
+            onChange={(e) => setUseOverride(e.target.checked)}
+            disabled={isConnected}
+          />
+          <span>
+            <strong>Enable Prompt Override</strong> - When checked, sends a custom prompt to startSession
+          </span>
+        </label>
       </div>
 
       <div style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
