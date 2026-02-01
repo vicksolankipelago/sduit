@@ -2173,18 +2173,17 @@ Important guidelines:
           isVoiceJourney,
         });
         
-        // Pass the journey directly to avoid state closure issues
-        setTimeout(() => {
-          if (isVoiceJourney) {
-            // Voice journey - connect to realtime immediately
-            connectToRealtime(journey);
-          } else {
-            // Non-voice journey - start in button-based mode
-            // Voice will be enabled later via enable_voice tool
-            console.log('🔇 Starting non-voice session for:', journey.name);
-            startNonVoiceSession(journey);
-          }
-        }, 300);
+        // CRITICAL: Call connectToRealtime directly without setTimeout
+        // to preserve user gesture context for microphone permissions
+        if (isVoiceJourney) {
+          // Voice journey - connect to realtime immediately
+          await connectToRealtime(journey);
+        } else {
+          // Non-voice journey - start in button-based mode
+          // Voice will be enabled later via enable_voice tool
+          console.log('🔇 Starting non-voice session for:', journey.name);
+          startNonVoiceSession(journey);
+        }
       } else {
         addLog('error', `Failed to load journey with ID: ${journeyId}`);
         console.error('❌ Journey not found:', journeyId);
