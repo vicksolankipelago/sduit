@@ -727,6 +727,51 @@ function VoiceAgentContent() {
     };
   }, [addLog]);
 
+  // Listen for tool-dispatched events and connect them to screen context functions
+  // This bridges the gap between ElevenLabs client tool calls and UI navigation
+  useEffect(() => {
+    const handleTriggerEvent = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { eventId } = customEvent.detail;
+      console.log('🔧 [TOOL->UI] triggerEvent received:', eventId);
+      addLog('tool', `🔧 Tool triggered event: ${eventId}`);
+      
+      // Use triggerEventUI from context to actually trigger the event
+      if (triggerEventUI) {
+        triggerEventUI(eventId);
+      }
+    };
+    
+    const handleNavigateToScreen = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { screenId } = customEvent.detail;
+      console.log('🔧 [TOOL->UI] navigateToScreen received:', screenId);
+      addLog('tool', `🔧 Tool navigating to screen: ${screenId}`);
+      
+      // Use navigateToScreen from context to actually navigate
+      if (navigateToScreen) {
+        navigateToScreen(screenId);
+      }
+    };
+    
+    const handleRecordInput = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { title, summary, storeKey } = customEvent.detail;
+      console.log('🔧 [TOOL->UI] recordInput received:', { title, summary, storeKey });
+      addLog('tool', `🔧 Tool recorded: ${title} = "${summary?.substring(0, 50)}..."`);
+    };
+    
+    window.addEventListener('triggerEvent', handleTriggerEvent as EventListener);
+    window.addEventListener('navigateToScreen', handleNavigateToScreen as EventListener);
+    window.addEventListener('recordInput', handleRecordInput as EventListener);
+    
+    return () => {
+      window.removeEventListener('triggerEvent', handleTriggerEvent as EventListener);
+      window.removeEventListener('navigateToScreen', handleNavigateToScreen as EventListener);
+      window.removeEventListener('recordInput', handleRecordInput as EventListener);
+    };
+  }, [addLog, triggerEventUI, navigateToScreen]);
+
   const connectToRealtime = async (journeyOverride?: Journey, flowContextOverride?: Record<string, any>, options?: { skipScreenReset?: boolean }) => {
     console.log('🎙️🎙️🎙️ connectToRealtime CALLED 🎙️🎙️🎙️');
     console.log('🎙️ Arguments:', {
