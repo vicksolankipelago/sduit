@@ -214,19 +214,13 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         console.log('🔗 Dynamic variables set:', Object.keys(options.dynamicVariables));
       }
       
-      // TEMPORARILY DISABLED: Prompt override for debugging
-      // Pass prompt override if provided (must be enabled in ElevenLabs dashboard Security settings)
-      // ElevenLabs may have limits on prompt size, so warn if very large
-      const MAX_PROMPT_SIZE = 100000; // 100KB limit to be safe
+      // Pass prompt override if provided
+      // IMPORTANT: Must enable "System prompt" override in ElevenLabs dashboard Settings → Security
       if (options.promptOverride) {
-        console.log('⚠️ PROMPT OVERRIDE DISABLED FOR DEBUGGING - using dashboard prompt instead');
-        console.log('📝 Would have sent prompt override of', options.promptOverride.length, 'chars');
-        // Temporarily commented out to test if this is causing audio issues
-        /*
-        if (options.promptOverride.length > MAX_PROMPT_SIZE) {
-          console.warn(`⚠️ Prompt override is very large (${options.promptOverride.length} chars), may cause issues`);
-          elevenLabsLogger.warn('Prompt override exceeds recommended size:', options.promptOverride.length);
-        }
+        console.log('📝 Prompt override requested, length:', options.promptOverride.length, 'chars');
+        console.log('📝 First 200 chars:', options.promptOverride.substring(0, 200));
+        
+        // Per ElevenLabs docs, overrides go in sessionConfig.overrides.agent.prompt.prompt
         sessionConfig.overrides = {
           agent: {
             prompt: {
@@ -234,9 +228,7 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
             },
           },
         };
-        elevenLabsLogger.info('Passing prompt override:', options.promptOverride.length, 'chars');
-        console.log('📝 Prompt override enabled, length:', options.promptOverride.length);
-        */
+        elevenLabsLogger.info('Prompt override enabled:', options.promptOverride.length, 'chars');
       }
       
       elevenLabsLogger.info('Using direct agentId connection (public agent)');
