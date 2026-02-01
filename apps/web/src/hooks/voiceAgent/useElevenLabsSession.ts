@@ -79,9 +79,9 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
   const clientToolsRef = useRef<Record<string, (params: any) => Promise<any>>>({});
 
   const conversation = useConversation({
-    onConnect: () => {
-      elevenLabsLogger.info('ElevenLabs conversation connected');
-      console.log('✅ ElevenLabs onConnect callback fired');
+    onConnect: ({ conversationId }) => {
+      elevenLabsLogger.info('ElevenLabs conversation connected, ID:', conversationId);
+      console.log('✅ ElevenLabs onConnect callback fired, conversationId:', conversationId);
       updateStatus('CONNECTED');
     },
     onDisconnect: (details?: { reason?: string }) => {
@@ -101,6 +101,7 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
     },
     onMessage: (message) => {
       elevenLabsLogger.debug('ElevenLabs message:', message);
+      console.log('💬 ElevenLabs message:', message.source, message.message?.substring(0, 50));
       if (message.source === 'user') {
         callbacksRef.current.onTranscript?.('user', message.message, true);
       } else if (message.source === 'ai') {
@@ -119,10 +120,12 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
     onModeChange: (data) => {
       const mode = data.mode === 'speaking' ? 'speaking' : 'listening';
       elevenLabsLogger.debug('Mode changed:', mode);
+      console.log('🔊 ElevenLabs mode changed:', mode);
       callbacksRef.current.onModeChange?.(mode);
     },
     onStatusChange: (statusData) => {
       elevenLabsLogger.debug('Status changed:', statusData);
+      console.log('📊 ElevenLabs status changed:', statusData.status);
       if (statusData.status === 'connected') {
         updateStatus('CONNECTED');
       } else if (statusData.status === 'connecting') {
@@ -146,6 +149,21 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
     elevenLabsLogger.info('=== Starting ElevenLabs Connection ===');
     elevenLabsLogger.info('Agent ID:', agentId);
     updateStatus('CONNECTING');
+
+    // Request microphone permission before starting ElevenLabs session
+    // This must happen in response to user action for browser to allow it
+    console.log('🎤 Requesting microphone permission for ElevenLabs...');
+    try {
+      const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('🎤 Microphone permission granted for ElevenLabs');
+      // Stop the stream immediately - ElevenLabs SDK will request its own
+      micStream.getTracks().forEach(track => track.stop());
+    } catch (micError: any) {
+      console.error('🔴 Microphone permission denied:', micError);
+      callbacksRef.current.onError?.(`Microphone access denied: ${micError?.message || micError}`, micError);
+      updateStatus('DISCONNECTED');
+      throw new Error(`Microphone access denied: ${micError?.message || 'Please allow microphone access to use voice.'}`);
+    }
 
     // Register client tools if provided
     if (options.clientTools) {
