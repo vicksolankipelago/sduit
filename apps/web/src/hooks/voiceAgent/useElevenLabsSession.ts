@@ -101,12 +101,16 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
   ) : undefined;
   
   // Debug: Log client tools at initialization
-  console.log('🔧 ElevenLabs useConversation init - clientTools:', 
-    clientTools ? Object.keys(clientTools) : 'none');
+  // NOTE: Client tools are configured in ElevenLabs dashboard, not passed here
+  // Passing clientTools via SDK was causing connection issues
+  console.log('🔧 ElevenLabs useConversation init - clientTools from callbacks:', 
+    clientTools ? Object.keys(clientTools) : 'none',
+    '(will use dashboard config, not SDK clientTools)');
   
   const conversation = useConversation({
-    // Pass client tools at initialization - they can't be added dynamically
-    clientTools: clientTools && Object.keys(clientTools).length > 0 ? clientTools : undefined,
+    // IMPORTANT: Do NOT pass clientTools here - it causes connection issues!
+    // Client tools must be configured in the ElevenLabs dashboard instead.
+    // The callback clientTools are only used for local handlers (dispatching events, etc.)
     onConnect: ({ conversationId }) => {
       elevenLabsLogger.info('ElevenLabs conversation connected, ID:', conversationId);
       console.log('✅ ElevenLabs onConnect callback fired, conversationId:', conversationId);
