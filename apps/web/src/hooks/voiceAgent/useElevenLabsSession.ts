@@ -75,9 +75,6 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
     callbacksRef.current.onConnectionChange?.(s);
   }, []);
 
-  // Store client tools reference for dynamic updates
-  const clientToolsRef = useRef<Record<string, (params: any) => Promise<any>>>({});
-
   const conversation = useConversation({
     onConnect: ({ conversationId }) => {
       elevenLabsLogger.info('ElevenLabs conversation connected, ID:', conversationId);
@@ -134,8 +131,8 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         updateStatus('DISCONNECTED');
       }
     },
-    // Client-side tools - these are called by the ElevenLabs agent
-    clientTools: clientToolsRef.current,
+    // Note: clientTools removed - passing empty object caused connection issues
+    // Client tools should be configured in the ElevenLabs dashboard instead
   });
 
   const connect = useCallback(async (options: ElevenLabsConnectOptions) => {
@@ -171,11 +168,8 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
       throw new Error(`Microphone access denied: ${micError?.message || 'Please allow microphone access to use voice.'}`);
     }
 
-    // Register client tools if provided
-    if (options.clientTools) {
-      elevenLabsLogger.info('Registering client tools:', Object.keys(options.clientTools));
-      Object.assign(clientToolsRef.current, options.clientTools);
-    }
+    // Note: Client tools are now configured in the ElevenLabs dashboard
+    // Dynamic client tool registration was removed as it caused connection issues
 
     try {
       // Use simple connection like the working test page
