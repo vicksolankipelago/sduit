@@ -796,9 +796,58 @@ function VoiceAgentContent() {
       return;
     }
 
-    // ALWAYS fetch fresh journey data from database to get latest screen edits
-    // This ensures changes made in the screen builder are immediately reflected
+    // Get initial journey reference (before any async work)
     let journeyToUse = journeyOverride || currentJourney;
+
+    // Check if we have a journey to run (early check before async work)
+    if (!journeyToUse) {
+      console.log('🎙️ EARLY EXIT: No journey to use');
+      addLog('error', 'No journey selected. Please load or create a journey first.');
+      return;
+    }
+
+    // Check if this is a non-voice journey (voiceEnabled is explicitly false)
+    const isVoiceEnabled = journeyToUse.voiceEnabled !== false;
+    console.log('🔊 Journey voiceEnabled check:', {
+      voiceEnabled: journeyToUse.voiceEnabled,
+      isVoiceEnabled,
+      typeofVoiceEnabled: typeof journeyToUse.voiceEnabled,
+    });
+
+    if (!isVoiceEnabled) {
+      console.log('🔇 EARLY EXIT: Starting non-voice session instead');
+      addLog('info', '🔇 Non-voice journey detected');
+      startNonVoiceSession(journeyToUse);
+      return;
+    }
+
+    // CRITICAL: Request microphone permission FIRST, before any async work
+    // This preserves the user gesture context needed for mic permission prompts
+    // Both Azure and ElevenLabs need this - the SDK's internal request happens too late
+    let microphoneStream: MediaStream | undefined;
+
+    console.log('🎤 Requesting microphone permission EARLY (preserves user gesture)...');
+    addLog('info', '🎤 Requesting microphone permission...');
+    try {
+      microphoneStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        }
+      });
+      console.log('🎤 Microphone permission GRANTED');
+      addLog('success', '🎤 Microphone permission granted');
+    } catch (error) {
+      console.error('🎤 MICROPHONE PERMISSION DENIED:', error);
+      setMicPermissionError(true);
+      addLog('error', `Microphone access denied: ${error}`);
+      setIsTransitioningJourney(false);
+      return;
+    }
+
+    // NOW we can do async work - mic permission is secured
+    // Fetch fresh journey data from database to get latest screen edits
     if (journeyToUse?.id) {
       console.log('🔄 Fetching fresh journey data from database...');
       try {
@@ -815,62 +864,6 @@ function VoiceAgentContent() {
       }
     }
     console.log('🎙️ Using journey:', journeyToUse?.name, 'voiceEnabled:', journeyToUse?.voiceEnabled);
-
-    // Check if we have a journey to run
-    if (!journeyToUse) {
-      console.log('🎙️ EARLY EXIT: No journey to use');
-      addLog('error', 'No journey selected. Please load or create a journey first.');
-      return;
-    }
-
-    // Check if this is a non-voice journey (voiceEnabled is explicitly false)
-    // Handle all falsy values including undefined, null, or false
-    const isVoiceEnabled = journeyToUse.voiceEnabled !== false;
-    console.log('🔊 Journey voiceEnabled check:', {
-      voiceEnabled: journeyToUse.voiceEnabled,
-      isVoiceEnabled,
-      typeofVoiceEnabled: typeof journeyToUse.voiceEnabled,
-    });
-    
-    if (!isVoiceEnabled) {
-      console.log('🔇 EARLY EXIT: Starting non-voice session instead');
-      addLog('info', '🔇 Non-voice journey detected');
-      startNonVoiceSession(journeyToUse);
-      return;
-    }
-
-    // Voice mode: Check microphone permission before connecting
-    // For ElevenLabs, let the SDK handle microphone access internally
-    // For Azure, we need to get the stream ourselves
-    const isElevenLabs = (journeyToUse.ttsProvider || 'elevenlabs') === 'elevenlabs';
-    let microphoneStream: MediaStream | undefined;
-    
-    if (!isElevenLabs) {
-      // Azure: Get microphone permission ourselves
-      console.log('🎤 Requesting microphone permission for Azure...');
-      addLog('info', '🎤 Requesting microphone permission...');
-      try {
-        microphoneStream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          }
-        });
-        console.log('🎤 Microphone permission GRANTED');
-        addLog('success', '🎤 Microphone permission granted');
-      } catch (error) {
-        console.error('🎤 MICROPHONE PERMISSION DENIED:', error);
-        setMicPermissionError(true);
-        addLog('error', `Microphone access denied: ${error}`);
-        setIsTransitioningJourney(false);
-        return;
-      }
-    } else {
-      // ElevenLabs: SDK will handle microphone access internally
-      console.log('🎤 ElevenLabs will handle microphone access');
-      addLog('info', '🎤 ElevenLabs SDK will request microphone access');
-    }
 
     // Generate new session ID for this session
     sessionIdRef.current = `session_${Date.now()}`;
@@ -1148,6 +1141,18 @@ function VoiceAgentContent() {
       }
 
       const combinedInstructions = instructionParts.filter(Boolean).join('\n\n');
+
+      // Check prompt size - WebRTC has a 64KB limit
+      const promptBytes = new TextEncoder().encode(combinedInstructions).length;
+      const MAX_PROMPT_BYTES = 60000; // Leave some headroom below 65535
+      console.log(`📏 Combined prompt size: ${promptBytes} bytes (${(promptBytes / 1024).toFixed(1)} KB)`);
+      if (promptBytes > MAX_PROMPT_BYTES) {
+        console.error(`🔴 PROMPT TOO LARGE! ${promptBytes} bytes exceeds ${MAX_PROMPT_BYTES} byte limit`);
+        addLog('error', `Prompt too large (${(promptBytes / 1024).toFixed(1)} KB) - WebRTC limit is ~60KB. Reduce screen prompts or agent instructions.`);
+        setConnectionError(`Prompt is too large (${(promptBytes / 1024).toFixed(1)} KB). Please reduce the size of your screen prompts or agent instructions. WebRTC has a ~60KB limit.`);
+        setIsTransitioningJourney(false);
+        return;
+      }
 
       // Store combined prompt for export
       combinedPromptRef.current = combinedInstructions;
