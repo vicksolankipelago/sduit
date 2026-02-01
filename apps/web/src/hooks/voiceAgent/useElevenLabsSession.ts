@@ -77,7 +77,26 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
   }, []);
 
   // Client tools must be defined at hook initialization for ElevenLabs SDK
-  const clientTools = callbacks.clientTools;
+  const rawClientTools = callbacks.clientTools;
+  
+  // Wrap client tools with logging to debug tool invocations
+  const clientTools = rawClientTools ? Object.fromEntries(
+    Object.entries(rawClientTools).map(([name, handler]) => [
+      name,
+      async (params: any) => {
+        console.log(`🔧 [CLIENT TOOL CALLED] ${name}`, params);
+        elevenLabsLogger.info(`Client tool called: ${name}`, params);
+        try {
+          const result = await handler(params);
+          console.log(`🔧 [CLIENT TOOL RESULT] ${name}:`, result);
+          return result;
+        } catch (error) {
+          console.error(`🔧 [CLIENT TOOL ERROR] ${name}:`, error);
+          throw error;
+        }
+      }
+    ])
+  ) : undefined;
   
   // Debug: Log client tools at initialization
   console.log('🔧 ElevenLabs useConversation init - clientTools:', 
