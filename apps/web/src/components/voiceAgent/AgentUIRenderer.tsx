@@ -89,10 +89,11 @@ export default function AgentUIRenderer({ bottomBar, onOpenSettings, onExit, sho
           <div className="agent-ui-device-screen-wrapper">
             <div className="agent-ui-device-screen">
               {currentScreen && currentScreen.id ? (
-                <ScreenProvider 
+                <ScreenProvider
                   key={`screen-provider-${currentAgentScreens.length}-${currentAgentScreens[0]?.id || 'none'}`}
-                  initialScreen={currentScreen} 
+                  initialScreen={currentScreen}
                   initialModuleState={moduleState}
+                  allScreens={currentAgentScreens}
                   onSetVoiceEnabled={onSetVoiceEnabled}
                   onModuleStateChange={updateModuleState}
                 >

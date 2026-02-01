@@ -36,6 +36,7 @@ export interface ScreenProviderProps {
   children: ReactNode;
   initialScreen?: Screen;
   initialModuleState?: Record<string, AnyCodable>;
+  allScreens?: Screen[]; // All screens for event-driven navigation from voice agent tools
   onSetVoiceEnabled?: (enabled: boolean) => void; // Direct callback for setVoiceEnabled tool - preserves user gesture context
   onModuleStateChange?: (updates: Record<string, AnyCodable>) => void; // Callback to propagate module state changes to parent
 }
@@ -44,6 +45,7 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
   children,
   initialScreen,
   initialModuleState = {},
+  allScreens = [],
   onSetVoiceEnabled,
   onModuleStateChange,
 }) => {
@@ -486,6 +488,30 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
       return newStack;
     });
   }, []);
+
+  // Listen for trigger_event events from voice agent tools (ElevenLabs)
+  // This allows the agent to navigate screens via tool calls
+  React.useEffect(() => {
+    const handleTriggerEvent = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { eventId, eventData } = customEvent.detail;
+
+      console.log('⚡ ScreenContext: Received trigger_event', { eventId, eventData, screensCount: allScreens.length });
+
+      // Call triggerEvent with the stored allScreens
+      if (eventId && allScreens.length > 0) {
+        triggerEvent(eventId, allScreens, eventData);
+      } else {
+        console.warn('⚠️ Cannot trigger event: missing eventId or no screens available');
+      }
+    };
+
+    window.addEventListener('triggerEvent', handleTriggerEvent as EventListener);
+
+    return () => {
+      window.removeEventListener('triggerEvent', handleTriggerEvent as EventListener);
+    };
+  }, [triggerEvent, allScreens]);
 
   const value: ScreenContextState = {
     currentScreen,

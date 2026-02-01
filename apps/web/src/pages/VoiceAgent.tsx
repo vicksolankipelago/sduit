@@ -283,6 +283,9 @@ function VoiceAgentContent() {
   const combinedPromptRef = useRef<string>('');
   // Ref to hold the latest connectToRealtime function (avoids stale closure in event handlers)
   const connectToRealtimeRef = useRef<((journeyOverride?: Journey, flowContextOverride?: Record<string, any>, options?: { skipScreenReset?: boolean }) => Promise<void>) | null>(null);
+
+  // Ref for disconnectFromRealtime - needed for client tools that are registered at hook init time
+  const disconnectFromRealtimeRef = useRef<((forceShowFeedback?: boolean) => Promise<void>) | null>(null);
   // Real-time session saver with debouncing
   const sessionSaverRef = useRef<DebouncedSessionSaver>(
     new DebouncedSessionSaver(500, (error) => {
@@ -1048,63 +1051,9 @@ function VoiceAgentContent() {
     addLog('info', `Initiating connection with journey: ${journeyToUse.name}`);
     addLog('info', `Starting agent: ${startingAgent.name}`);
 
-    // Define client tools that ElevenLabs agent can call
-    // These must match the tool definitions configured in the ElevenLabs dashboard
-    const elevenLabsClientTools: Record<string, (params: any) => Promise<string>> = {
-      // Record user input to screen state
-      record_input: async (params: { title: string; summary?: string; description?: string; storeKey?: string }) => {
-        const { title, summary = '', description = '', storeKey } = params;
-        addLog('tool', `📝 record_input: ${title}`, { summary, storeKey });
-        
-        // Dispatch event for ScreenProvider
-        window.dispatchEvent(new CustomEvent('recordInput', {
-          detail: { title, summary, description, timestamp: Date.now(), storeKey }
-        }));
-        
-        // Update module state if storeKey provided
-        if (storeKey && summary && updateModuleState) {
-          updateModuleState({ [storeKey]: summary });
-        }
-        
-        return `Recorded: ${title}`;
-      },
-      
-      // End the call and show feedback
-      end_call: async (params: { reason?: string }) => {
-        addLog('tool', `📞 end_call: ${params.reason || 'User requested'}`);
-        setTimeout(() => disconnectFromRealtime(true), 500);
-        return 'Call ending';
-      },
-      
-      // Navigate to a specific screen
-      navigate_to_screen: async (params: { screen_id: string }) => {
-        addLog('tool', `📱 navigate_to_screen: ${params.screen_id}`);
-        window.dispatchEvent(new CustomEvent('navigateToScreen', {
-          detail: { screenId: params.screen_id }
-        }));
-        return `Navigated to screen: ${params.screen_id}`;
-      },
-      
-      // Switch to another agent
-      switch_agent: async (params: { agent_id?: string; agent_name?: string }) => {
-        const agentIdentifier = params.agent_id || params.agent_name;
-        addLog('tool', `🔄 switch_agent: ${agentIdentifier}`);
-        if (switchToAgent && agentIdentifier) {
-          switchToAgent(agentIdentifier);
-        }
-        return `Switched to agent: ${agentIdentifier}`;
-      },
-      
-      // Transfer to agent (alias for switch_agent)
-      transfer_to_agent: async (params: { agent_id?: string; agent_name?: string }) => {
-        const agentIdentifier = params.agent_id || params.agent_name;
-        addLog('tool', `🔄 transfer_to_agent: ${agentIdentifier}`);
-        if (switchToAgent && agentIdentifier) {
-          switchToAgent(agentIdentifier);
-        }
-        return `Transferred to agent: ${agentIdentifier}`;
-      },
-    };
+    // NOTE: elevenLabsClientTools are now defined at component level (useMemo)
+    // and passed to useElevenLabsSession hook at init time, NOT to connect().
+    // This is required by the ElevenLabs SDK - tools must be registered at hook init.
 
     try {
       // Get starting agent config (reuse the one we already found with PQ data applied)
@@ -1233,8 +1182,7 @@ function VoiceAgentContent() {
           elevenLabsVoiceId: journeyToUse.elevenLabsConfig?.voiceId,
           // Pass quiz answers as dynamic variables for {{variable}} substitution
           dynamicVariables: Object.keys(dynamicVariables).length > 0 ? dynamicVariables : undefined,
-          // Client tools that ElevenLabs agent can call
-          clientTools: elevenLabsClientTools,
+          // NOTE: clientTools are passed to useElevenLabsSession hook, not connect()
         });
         addLog('success', 'Successfully initiated voice agent connection');
         
@@ -1305,8 +1253,7 @@ Important guidelines:
           elevenLabsVoiceId: journeyToUse.elevenLabsConfig?.voiceId,
           // Pass quiz answers as dynamic variables for {{variable}} substitution
           dynamicVariables: Object.keys(dynamicVariables).length > 0 ? dynamicVariables : undefined,
-          // Client tools that ElevenLabs agent can call
-          clientTools: elevenLabsClientTools,
+          // NOTE: clientTools are passed to useElevenLabsSession hook, not connect()
         });
         console.log('🎙️ connect() completed');
         addLog('success', `Successfully initiated ${currentProviderRef.current === 'elevenlabs' ? 'ElevenLabs' : 'Azure'} connection`);
@@ -1619,6 +1566,11 @@ Important guidelines:
       setShowFeedbackForm(true);
     }
   };
+
+  // Keep disconnectFromRealtimeRef updated for client tools to call
+  useEffect(() => {
+    disconnectFromRealtimeRef.current = disconnectFromRealtime;
+  });
 
   // Removed sendSimulatedUserMessage - not needed for Azure WebSocket
 
@@ -2005,7 +1957,111 @@ Important guidelines:
     },
   });
 
-  // ElevenLabs hook with same callbacks
+  // Define ElevenLabs client tools at component level for SDK initialization
+  // These tools call through refs to avoid stale closures and circular dependencies
+  // The actual implementations are updated via refs when they're available
+  const elevenLabsClientTools = React.useMemo(() => ({
+    // Trigger an event (e.g., navigate to next screen, trigger UI action)
+    // This is the primary navigation tool used by the agent prompt
+    // Supports optional delay in seconds before triggering
+    trigger_event: async (params: { eventId: string; delay?: number }) => {
+      const { eventId, delay = 0 } = params;
+      const delayMs = delay * 1000;
+      addLog('tool', `⚡ trigger_event: ${eventId}${delay ? ` (delay: ${delay}s)` : ''}`);
+
+      // Dispatch event after delay (if specified)
+      if (delayMs > 0) {
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('triggerEvent', {
+            detail: { eventId, timestamp: Date.now() }
+          }));
+        }, delayMs);
+      } else {
+        window.dispatchEvent(new CustomEvent('triggerEvent', {
+          detail: { eventId, timestamp: Date.now() }
+        }));
+      }
+
+      return `Event triggered: ${eventId}${delay ? ` (after ${delay}s)` : ''}`;
+    },
+
+    // Record user input to screen state
+    // Supports nextEventId to automatically trigger navigation after recording
+    record_input: async (params: {
+      title: string;
+      summary?: string;
+      description?: string;
+      storeKey?: string;
+      nextEventId?: string;
+      delay?: number;
+    }) => {
+      const { title, summary = '', description = '', storeKey, nextEventId, delay = 0 } = params;
+      addLog('tool', `📝 record_input: ${title}`, { summary, storeKey, nextEventId, delay });
+
+      // Dispatch event for ScreenProvider
+      window.dispatchEvent(new CustomEvent('recordInput', {
+        detail: { title, summary, description, timestamp: Date.now(), storeKey }
+      }));
+
+      // Update module state if storeKey provided
+      if (storeKey && summary && updateModuleState) {
+        updateModuleState({ [storeKey]: summary });
+      }
+
+      // Trigger next event after delay if specified
+      if (nextEventId) {
+        const delayMs = (delay || 0) * 1000;
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('triggerEvent', {
+            detail: { eventId: nextEventId, timestamp: Date.now() }
+          }));
+        }, delayMs);
+      }
+
+      return `Recorded: ${title}`;
+    },
+
+    // End the call and show feedback
+    // Supports delaySeconds for delayed disconnect
+    end_call: async (params: { reason?: string; delaySeconds?: number }) => {
+      const delayMs = (params.delaySeconds || 0) * 1000 + 500; // Add 500ms base delay
+      addLog('tool', `📞 end_call: ${params.reason || 'User requested'} (delay: ${delayMs}ms)`);
+      // Use ref to call the actual disconnect function (avoids circular dependency)
+      setTimeout(() => disconnectFromRealtimeRef.current?.(true), delayMs);
+      return 'Call ending';
+    },
+
+    // Navigate to a specific screen
+    navigate_to_screen: async (params: { screen_id: string }) => {
+      addLog('tool', `📱 navigate_to_screen: ${params.screen_id}`);
+      window.dispatchEvent(new CustomEvent('navigateToScreen', {
+        detail: { screenId: params.screen_id }
+      }));
+      return `Navigated to screen: ${params.screen_id}`;
+    },
+
+    // Switch to another agent
+    switch_agent: async (params: { agent_id?: string; agent_name?: string }) => {
+      const agentIdentifier = params.agent_id || params.agent_name;
+      addLog('tool', `🔄 switch_agent: ${agentIdentifier}`);
+      if (switchToAgent && agentIdentifier) {
+        switchToAgent(agentIdentifier);
+      }
+      return `Switched to agent: ${agentIdentifier}`;
+    },
+
+    // Transfer to agent (alias for switch_agent)
+    transfer_to_agent: async (params: { agent_id?: string; agent_name?: string }) => {
+      const agentIdentifier = params.agent_id || params.agent_name;
+      addLog('tool', `🔄 transfer_to_agent: ${agentIdentifier}`);
+      if (switchToAgent && agentIdentifier) {
+        switchToAgent(agentIdentifier);
+      }
+      return `Transferred to agent: ${agentIdentifier}`;
+    },
+  }), [updateModuleState, switchToAgent]); // addLog is stable (regular function)
+
+  // ElevenLabs hook with same callbacks - pass clientTools at init time
   const {
     connect: connectElevenLabs,
     disconnect: disconnectElevenLabs,
@@ -2064,7 +2120,7 @@ Important guidelines:
         setConnectionError(errorMessage);
       }
     },
-  });
+  }, { clientTools: elevenLabsClientTools }); // Pass client tools at hook init time
 
   // Provider-aware wrapper functions
   const connect = useCallback(async (options: any) => {

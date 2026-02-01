@@ -24,6 +24,15 @@ export interface ElevenLabsSessionCallbacks {
   onError?: (error: string, details?: any) => void;
 }
 
+export interface ElevenLabsSessionOptions {
+  /**
+   * Client-side tools that the ElevenLabs agent can call.
+   * IMPORTANT: These must be passed at hook initialization time, not in connect().
+   * The tools must match the configuration in your ElevenLabs dashboard.
+   */
+  clientTools?: Record<string, (params: any) => Promise<any> | any>;
+}
+
 export interface ElevenLabsConnectOptions {
   audioElement?: HTMLAudioElement;
   customInstructions?: string;
@@ -60,7 +69,10 @@ export interface ElevenLabsConnectOptions {
   dynamicVariables?: Record<string, string>;
 }
 
-export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {}) {
+export function useElevenLabsSession(
+  callbacks: ElevenLabsSessionCallbacks = {},
+  options: ElevenLabsSessionOptions = {}
+) {
   const [status, setStatus] = useState<SessionStatus>('DISCONNECTED');
   const conversationIdRef = useRef<string | null>(null);
   const agentIdRef = useRef<string | null>(null);
@@ -75,8 +87,18 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
     callbacksRef.current.onConnectionChange?.(s);
   }, []);
 
-  // Store client tools reference for dynamic updates
-  const clientToolsRef = useRef<Record<string, (params: any) => Promise<any>>>({});
+  // Client tools must be available at useConversation init time
+  // The SDK captures these at initialization - late assignment won't work
+  const clientTools = options.clientTools || {};
+
+  // Log which tools are registered at hook init time
+  useEffect(() => {
+    const toolNames = Object.keys(clientTools);
+    if (toolNames.length > 0) {
+      elevenLabsLogger.info('Client tools registered at hook init:', toolNames);
+      console.log('🔧 ElevenLabs client tools registered:', toolNames);
+    }
+  }, []);
 
   const conversation = useConversation({
     onConnect: () => {
@@ -88,14 +110,14 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
       const reason = details?.reason || 'unknown';
       elevenLabsLogger.info('ElevenLabs conversation disconnected, reason:', reason);
       console.log('🔌 ElevenLabs onDisconnect - reason:', reason, 'details:', details);
-      
+
       // Only report as error if it's an unexpected disconnect (not user/agent initiated)
       const normalReasons = ['user', 'agent', 'user_ended', 'agent_ended', 'call_ended', 'normal'];
       const isNormalDisconnect = normalReasons.some(r => reason.toLowerCase().includes(r.toLowerCase()));
       if (!isNormalDisconnect) {
         callbacksRef.current.onError?.(`Disconnected (${reason})`, details);
       }
-      
+
       updateStatus('DISCONNECTED');
       callbacksRef.current.onConversationComplete?.();
     },
@@ -131,13 +153,14 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         updateStatus('DISCONNECTED');
       }
     },
-    // Client-side tools - these are called by the ElevenLabs agent
-    clientTools: clientToolsRef.current,
+    // Client-side tools - MUST be passed at init, not dynamically
+    // These are called by the ElevenLabs agent and must match your dashboard config
+    clientTools,
   });
 
   const connect = useCallback(async (options: ElevenLabsConnectOptions) => {
     const agentId = options.elevenLabsAgentId;
-    
+
     if (!agentId) {
       elevenLabsLogger.error('ElevenLabs Agent ID is required');
       throw new Error('ElevenLabs Agent ID is required. Please configure it in the flow settings.');
@@ -147,32 +170,33 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
     elevenLabsLogger.info('Agent ID:', agentId);
     updateStatus('CONNECTING');
 
-    // Register client tools if provided
+    // Note: clientTools should be passed to useElevenLabsSession hook, not connect()
+    // If tools were passed here, log a warning (they won't work due to SDK init timing)
     if (options.clientTools) {
-      elevenLabsLogger.info('Registering client tools:', Object.keys(options.clientTools));
-      Object.assign(clientToolsRef.current, options.clientTools);
+      console.warn('⚠️ clientTools passed to connect() will be IGNORED. Pass them to useElevenLabsSession() hook instead.');
+      elevenLabsLogger.warn('clientTools should be passed to useElevenLabsSession hook, not connect(). These tools will be ignored.');
     }
 
     try {
       const overrides: any = {};
-      
+
       // Build combined prompt: system prompt + agent instructions + custom instructions
       // Priority: customInstructions can override, but systemPrompt is always prepended
       const promptParts: string[] = [];
-      
+
       // Always include system prompt first if provided
       if (options.systemPrompt) {
         promptParts.push(options.systemPrompt);
         elevenLabsLogger.info('Including system prompt in ElevenLabs agent');
       }
-      
+
       // Add agent instructions (which may already include system prompt for backwards compatibility)
       if (options.customInstructions) {
         promptParts.push(options.customInstructions);
       } else if (options.agentConfig?.instructions) {
         promptParts.push(options.agentConfig.instructions);
       }
-      
+
       // If we have any prompt content, pass it to ElevenLabs
       if (promptParts.length > 0) {
         const combinedPrompt = promptParts.join('\n\n');
@@ -183,24 +207,28 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         };
         elevenLabsLogger.info(`Overriding agent prompt with combined instructions (${combinedPrompt.length} chars)`);
       }
-      
-      // Pass dynamic variables for template substitution
-      if (options.dynamicVariables && Object.keys(options.dynamicVariables).length > 0) {
-        overrides.variables = options.dynamicVariables;
-        elevenLabsLogger.info('Passing dynamic variables:', Object.keys(options.dynamicVariables));
-      }
-      
+
       // Override voice if specified
       if (options.elevenLabsVoiceId || options.voice) {
         overrides.tts = {
           voiceId: options.elevenLabsVoiceId || options.voice,
         };
       }
-      
+
       // Set first message if greeting not skipped
       if (options.skipInitialGreeting === false && options.agentConfig?.name) {
         if (!overrides.agent) overrides.agent = {};
         overrides.agent.firstMessage = `Hello! I'm ${options.agentConfig.name}. How can I help you today?`;
+      }
+
+      // Prepare dynamic variables (passed as top-level param, NOT inside overrides)
+      const dynamicVariables = options.dynamicVariables && Object.keys(options.dynamicVariables).length > 0
+        ? options.dynamicVariables
+        : undefined;
+
+      if (dynamicVariables) {
+        elevenLabsLogger.info('Passing dynamic variables to startSession:', Object.keys(dynamicVariables));
+        console.log('🔗 Dynamic variables:', Object.keys(dynamicVariables));
       }
 
       let sessionConfig: any;
@@ -219,6 +247,7 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
               signedUrl: data.signedUrl,
               connectionType: 'websocket' as const,
               overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
+              dynamicVariables, // Top-level param for {{variable}} substitution
             };
           } else if (data.conversationToken) {
             elevenLabsLogger.info('Using conversation token for WebRTC connection');
@@ -226,6 +255,7 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
               conversationToken: data.conversationToken,
               connectionType: 'webrtc' as const,
               overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
+              dynamicVariables, // Top-level param for {{variable}} substitution
             };
           }
         } else {
@@ -245,6 +275,7 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
           agentId,
           connectionType: 'webrtc' as const,
           overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
+          dynamicVariables, // Top-level param for {{variable}} substitution
         };
       }
 
@@ -261,12 +292,14 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         console.log('🍎 Safari/iOS detected, adding 2-3s connection delay');
       }
 
-      elevenLabsLogger.info('Starting session with config:', { 
+      elevenLabsLogger.info('Starting session with config:', {
         hasSignedUrl: !!sessionConfig.signedUrl,
         hasToken: !!sessionConfig.conversationToken,
         hasAgentId: !!sessionConfig.agentId,
         connectionType: sessionConfig.connectionType,
         hasConnectionDelay: !!sessionConfig.connectionDelay,
+        hasDynamicVariables: !!sessionConfig.dynamicVariables,
+        hasOverrides: !!sessionConfig.overrides,
       });
       console.log('🚀 About to call conversation.startSession...');
       console.log('🚀 Session config:', JSON.stringify({
@@ -276,6 +309,8 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         connectionType: sessionConfig.connectionType,
         hasOverrides: !!sessionConfig.overrides,
         hasConnectionDelay: !!sessionConfig.connectionDelay,
+        hasDynamicVariables: !!sessionConfig.dynamicVariables,
+        dynamicVariableKeys: sessionConfig.dynamicVariables ? Object.keys(sessionConfig.dynamicVariables) : [],
       }));
 
       let conversationId: string;

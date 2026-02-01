@@ -1,13 +1,13 @@
 /**
  * Unified Voice Session Hook
- * 
+ *
  * Provides a provider-agnostic interface for voice sessions.
  * Automatically switches between Azure and ElevenLabs based on configuration.
  */
 
 import { useCallback, useMemo } from 'react';
 import { useAzureWebRTCSession, type AzureWebRTCSessionCallbacks, type AzureWebRTCConnectOptions } from './useAzureWebRTCSession';
-import { useElevenLabsSession, type ElevenLabsSessionCallbacks, type ElevenLabsConnectOptions } from './useElevenLabsSession';
+import { useElevenLabsSession, type ElevenLabsSessionCallbacks, type ElevenLabsConnectOptions, type ElevenLabsSessionOptions } from './useElevenLabsSession';
 import { TtsProvider } from '../../types/journey';
 import { SessionStatus } from '../../types/voiceAgent';
 
@@ -20,6 +20,15 @@ export interface VoiceSessionCallbacks {
   onToolCall?: (toolName: string, args: any, result: any) => void;
   onConversationComplete?: () => void;
   onModeChange?: (mode: 'speaking' | 'listening') => void;
+}
+
+export interface VoiceSessionOptions {
+  /**
+   * Client-side tools for ElevenLabs agent to call.
+   * IMPORTANT: Must be passed at hook initialization, not in connect().
+   * These must match tool definitions in your ElevenLabs dashboard.
+   */
+  clientTools?: Record<string, (params: any) => Promise<any> | any>;
 }
 
 export interface VoiceConnectOptions {
@@ -69,7 +78,8 @@ export interface VoiceSession {
 
 export function useVoiceSession(
   provider: TtsProvider = 'elevenlabs',
-  callbacks: VoiceSessionCallbacks = {}
+  callbacks: VoiceSessionCallbacks = {},
+  options: VoiceSessionOptions = {}
 ): VoiceSession {
   const azureCallbacks: AzureWebRTCSessionCallbacks = useMemo(() => ({
     customPrompts: callbacks.customPrompts,
@@ -92,8 +102,13 @@ export function useVoiceSession(
     onModeChange: callbacks.onModeChange,
   }), [callbacks]);
 
+  // ElevenLabs session options - pass clientTools for agent tool calls
+  const elevenLabsOptions: ElevenLabsSessionOptions = useMemo(() => ({
+    clientTools: options.clientTools,
+  }), [options.clientTools]);
+
   const azureSession = useAzureWebRTCSession(azureCallbacks);
-  const elevenLabsSession = useElevenLabsSession(elevenLabsCallbacks);
+  const elevenLabsSession = useElevenLabsSession(elevenLabsCallbacks, elevenLabsOptions);
 
   const connect = useCallback(async (options: VoiceConnectOptions) => {
     if (provider === 'elevenlabs') {
