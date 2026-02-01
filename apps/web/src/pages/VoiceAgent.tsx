@@ -1631,11 +1631,17 @@ Important guidelines:
 
   // Removed sendSimulatedUserMessage - not needed for Azure WebSocket
 
-  // Audio is handled by the WebSocket client
+  // Audio is handled by the WebSocket client (Azure) or internally by SDK (ElevenLabs)
 
   useEffect(() => {
     if (sessionStatus === "CONNECTED") {
-      // Don't create a separate mic stream - it causes feedback/crackling
+      // ElevenLabs handles audio internally via WebRTC - no need to set up audio element
+      if (currentProviderRef.current === 'elevenlabs') {
+        console.log('🔊 ElevenLabs handles audio internally - skipping audio element setup');
+        return;
+      }
+
+      // Azure: Don't create a separate mic stream - it causes feedback/crackling
       // The WebRTC connection already has the microphone
       // We'll set micStream to null to disable audio visualization
       // This prevents duplicate microphone access which causes issues
