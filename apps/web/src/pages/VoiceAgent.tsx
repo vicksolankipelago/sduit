@@ -1371,7 +1371,7 @@ Important guidelines:
   // This MUST be called synchronously during button click for mic permission to work
   const handleSetVoiceEnabled = useCallback((enabled: boolean) => {
     console.log(`🎤🎤🎤 handleSetVoiceEnabled CALLED DIRECTLY (preserves user gesture): enabled=${enabled} 🎤🎤🎤`);
-    
+
     if (!enabled) {
       // Disable voice mode - disconnect and switch to button-based navigation
       addLog('info', '🎤 Disabling voice mode');
@@ -1379,14 +1379,27 @@ Important guidelines:
       setIsNonVoiceMode(true);
       return;
     }
-    
+
     addLog('info', '🎤 Enabling voice mode mid-flow');
-    
+
     // Get journey from ref SYNCHRONOUSLY (avoid closure issues)
     const journey = currentJourneyRef.current;
+    console.log('🎤 Journey from ref:', journey?.name);
+    console.log('🎤 Journey elevenLabsConfig:', journey?.elevenLabsConfig);
+    console.log('🎤 Journey ttsProvider:', journey?.ttsProvider);
+
     if (!journey) {
       console.error('🎤 ERROR: No journey in currentJourneyRef!');
       addLog('error', 'No journey found - cannot enable voice');
+      return;
+    }
+
+    // Check if ElevenLabs is configured
+    if (!journey.elevenLabsConfig?.agentId) {
+      console.error('🎤 ERROR: ElevenLabs Agent ID not configured on journey!');
+      console.error('🎤 Journey elevenLabsConfig:', JSON.stringify(journey.elevenLabsConfig));
+      addLog('error', 'ElevenLabs Agent ID not configured - please add it in Journey Builder settings');
+      setConnectionError('ElevenLabs Agent ID is not configured. Please add it in the flow settings.');
       return;
     }
     

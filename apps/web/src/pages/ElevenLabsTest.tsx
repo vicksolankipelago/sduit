@@ -1,8 +1,10 @@
 /**
  * ElevenLabs Connection Test Page
- * 
+ *
  * A simple test page using the ElevenLabs SDK DIRECTLY (not our wrapper)
  * to verify the connection works with the basic SDK example.
+ *
+ * Also tests client tools to verify they're being called.
  */
 
 import { useState, useCallback, useRef } from 'react';
@@ -13,8 +15,10 @@ const TEST_AGENT_ID = 'agent_7001kga118rtf1q9c72ay45512ad';
 export default function ElevenLabsTest() {
   const [logs, setLogs] = useState<string[]>([]);
   const [useOverride, setUseOverride] = useState(false);
+  const [useClientTools, setUseClientTools] = useState(true);
   const [status, setStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [toolCalls, setToolCalls] = useState<string[]>([]);
   const conversationRef = useRef<Awaited<ReturnType<typeof Conversation.startSession>> | null>(null);
 
   const addLog = useCallback((message: string) => {
@@ -24,18 +28,55 @@ export default function ElevenLabsTest() {
     console.log(`[ElevenLabs Test] ${message}`);
   }, []);
 
+  // Client tools matching VoiceAgent.tsx
+  const clientTools = {
+    trigger_event: async (params: { eventId: string; delay?: number }) => {
+      const { eventId, delay = 0 } = params;
+      const msg = `🔧 trigger_event called: ${eventId}${delay ? ` (delay: ${delay}s)` : ''}`;
+      addLog(msg);
+      setToolCalls(prev => [...prev, msg]);
+      return `Event triggered: ${eventId}`;
+    },
+    record_input: async (params: { title: string; summary?: string; storeKey?: string; nextEventId?: string; delay?: number }) => {
+      const msg = `🔧 record_input called: ${params.title}`;
+      addLog(msg);
+      setToolCalls(prev => [...prev, msg]);
+      return `Recorded: ${params.title}`;
+    },
+    end_call: async (params: { reason?: string; delaySeconds?: number }) => {
+      const msg = `🔧 end_call called: ${params.reason || 'No reason'}`;
+      addLog(msg);
+      setToolCalls(prev => [...prev, msg]);
+      return 'Call ending';
+    },
+    navigate_to_screen: async (params: { screen_id: string }) => {
+      const msg = `🔧 navigate_to_screen called: ${params.screen_id}`;
+      addLog(msg);
+      setToolCalls(prev => [...prev, msg]);
+      return `Navigated to: ${params.screen_id}`;
+    },
+    switch_agent: async (params: { agent_id?: string; agent_name?: string }) => {
+      const msg = `🔧 switch_agent called: ${params.agent_id || params.agent_name}`;
+      addLog(msg);
+      setToolCalls(prev => [...prev, msg]);
+      return `Switched to: ${params.agent_id || params.agent_name}`;
+    },
+  };
+
   const handleConnect = async () => {
     addLog('Connecting with VANILLA SDK (not React hook)...');
     addLog(`Override enabled: ${useOverride}`);
-    console.log('🟢 handleConnect clicked, useOverride:', useOverride);
+    addLog(`Client tools enabled: ${useClientTools}`);
+    console.log('🟢 handleConnect clicked, useOverride:', useOverride, 'useClientTools:', useClientTools);
     setStatus('connecting');
-    
+    setToolCalls([]);
+
     try {
       const sessionConfig: Parameters<typeof Conversation.startSession>[0] = {
         agentId: TEST_AGENT_ID,
         connectionType: 'webrtc',
         onConnect: ({ conversationId }) => {
-          addLog(`Connected! ID: ${conversationId}`);
+          addLog(`✅ Connected! ID: ${conversationId}`);
           setStatus('connected');
         },
         onDisconnect: () => {
@@ -44,19 +85,32 @@ export default function ElevenLabsTest() {
           conversationRef.current = null;
         },
         onError: (error) => {
-          addLog(`Error: ${error}`);
+          addLog(`❌ Error: ${error}`);
           console.error('ElevenLabs error:', error);
         },
         onMessage: (message) => {
-          addLog(`Message: ${JSON.stringify(message).substring(0, 100)}...`);
+          const msg = message as any;
+          if (msg.source === 'user') {
+            addLog(`👤 User: ${msg.message}`);
+          } else if (msg.source === 'ai') {
+            addLog(`🤖 AI: ${msg.message}`);
+          } else {
+            addLog(`Message: ${JSON.stringify(message).substring(0, 100)}...`);
+          }
         },
         onModeChange: (data) => {
           const mode = (data as any).mode;
-          addLog(`Mode: ${mode}`);
+          addLog(`🔊 Mode: ${mode}`);
           setIsSpeaking(mode === 'speaking');
         },
       };
-      
+
+      // Add client tools if enabled
+      if (useClientTools) {
+        (sessionConfig as any).clientTools = clientTools;
+        addLog(`🔧 Client tools registered: ${Object.keys(clientTools).join(', ')}`);
+      }
+
       // Test: Pass override directly to vanilla SDK's startSession
       if (useOverride) {
         (sessionConfig as any).overrides = {
@@ -66,18 +120,26 @@ export default function ElevenLabsTest() {
             },
           },
         };
-        addLog('Sending prompt override to vanilla SDK startSession');
+        addLog('📝 Sending prompt override to vanilla SDK startSession');
         console.log('📝 Prompt override:', (sessionConfig as any).overrides);
       }
-      
+
+      addLog('🚀 Calling Conversation.startSession...');
+      console.log('🚀 Session config:', {
+        agentId: sessionConfig.agentId,
+        connectionType: sessionConfig.connectionType,
+        hasClientTools: !!(sessionConfig as any).clientTools,
+        hasOverrides: !!(sessionConfig as any).overrides,
+      });
+
       // Use vanilla SDK directly - this SHOULD support overrides in startSession
       const conversation = await Conversation.startSession(sessionConfig);
       conversationRef.current = conversation;
-      
-      addLog(`Session started successfully`);
+
+      addLog(`✅ Session started successfully`);
       console.log('🟢 Vanilla SDK session started');
     } catch (error: any) {
-      addLog(`Error: ${error.message || error}`);
+      addLog(`❌ Error: ${error.message || error}`);
       console.error('🔴 Connection error:', error);
       setStatus('disconnected');
     }
@@ -105,7 +167,7 @@ export default function ElevenLabsTest() {
       </div>
 
       <div style={{ marginBottom: '15px', padding: '10px', backgroundColor: '#fff3cd', borderRadius: '8px' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '10px' }}>
           <input
             type="checkbox"
             checked={useOverride}
@@ -114,6 +176,17 @@ export default function ElevenLabsTest() {
           />
           <span>
             <strong>Enable Prompt Override</strong> - When checked, sends a custom prompt to startSession
+          </span>
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={useClientTools}
+            onChange={(e) => setUseClientTools(e.target.checked)}
+            disabled={isConnected}
+          />
+          <span>
+            <strong>Enable Client Tools</strong> - Register trigger_event, record_input, end_call, etc.
           </span>
         </label>
       </div>
@@ -171,8 +244,26 @@ export default function ElevenLabsTest() {
           <li>Using ElevenLabs SDK directly (not our wrapper)</li>
           <li>Agent ID: {TEST_AGENT_ID}</li>
           <li>Connection Type: WebRTC</li>
+          <li>Client Tools: trigger_event, record_input, end_call, navigate_to_screen, switch_agent</li>
         </ul>
       </div>
+
+      {toolCalls.length > 0 && (
+        <div style={{ marginBottom: '20px' }}>
+          <h3>Tool Calls ({toolCalls.length}):</h3>
+          <div style={{
+            backgroundColor: '#e8f5e9',
+            padding: '10px',
+            borderRadius: '8px',
+            fontFamily: 'monospace',
+            fontSize: '13px',
+          }}>
+            {toolCalls.map((call, i) => (
+              <div key={i} style={{ marginBottom: '5px' }}>{call}</div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div>
         <h3>Connection Logs:</h3>
