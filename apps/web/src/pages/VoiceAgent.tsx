@@ -1977,61 +1977,97 @@ Important guidelines:
     switchToAgentRef.current = switchToAgent;
   }, [addLog, updateModuleState, disconnectFromRealtime, switchToAgent]);
 
-  // ElevenLabs client tools - defined once with stable refs (no dependencies = never recreated)
-  // These tools allow the ElevenLabs agent to interact with the UI
-  const elevenLabsClientTools = useMemo(() => ({
-    record_input: async (params: { title: string; summary?: string; description?: string; storeKey?: string }) => {
-      const { title, summary = '', description = '', storeKey } = params;
-      console.log('🔧 CLIENT TOOL CALLED: record_input', params);
-      addLogRef.current('tool', `📝 record_input: ${title}`, { summary, storeKey });
-      
-      window.dispatchEvent(new CustomEvent('recordInput', {
-        detail: { title, summary, description, timestamp: Date.now(), storeKey }
-      }));
-      
-      if (storeKey && summary && updateModuleStateRef.current) {
-        updateModuleStateRef.current({ [storeKey]: summary });
+  // Generic tool handler that processes any tool call based on tool name patterns
+  // This matches the behavior of handleToolCallAction for Azure
+  const handleGenericToolCall = useCallback(async (toolName: string, params: Record<string, any>) => {
+    console.log('🔧 ELEVENLABS CLIENT TOOL CALLED:', toolName, params);
+    addLogRef.current('tool', `🔧 ${toolName}`, params);
+    
+    // Dispatch event so other listeners can handle it (same as Azure flow)
+    window.dispatchEvent(new CustomEvent('toolCallAction', {
+      detail: { tool: toolName, params }
+    }));
+    
+    // Handle specific tool patterns
+    if (toolName === 'navigate_to_agent' && params.agentId) {
+      if (switchToAgentRef.current) {
+        switchToAgentRef.current(params.agentId);
       }
-      
-      return `Recorded: ${title}`;
-    },
+      return `Navigated to agent: ${params.agentId}`;
+    }
     
-    end_call: async (params: { reason?: string }) => {
-      console.log('🔧 CLIENT TOOL CALLED: end_call', params);
-      addLogRef.current('tool', `📞 end_call: ${params.reason || 'User requested'}`);
+    if (toolName === 'end_session' || toolName === 'complete_quiz' || toolName === 'end_call') {
       setTimeout(() => disconnectFromRealtimeRef.current(true), 500);
-      return 'Call ending';
-    },
+      return 'Session ended';
+    }
     
-    navigate_to_screen: async (params: { screen_id: string }) => {
-      console.log('🔧 CLIENT TOOL CALLED: navigate_to_screen', params);
-      addLogRef.current('tool', `📱 navigate_to_screen: ${params.screen_id}`);
+    if (toolName === 'record_input' || toolName === 'save_response') {
+      const storeKey = params.storeKey || params.key || params.field;
+      const value = params.summary || params.value || params.response;
+      if (storeKey && value && updateModuleStateRef.current) {
+        updateModuleStateRef.current({ [storeKey]: value });
+      }
+      window.dispatchEvent(new CustomEvent('recordInput', {
+        detail: { ...params, timestamp: Date.now() }
+      }));
+      return `Recorded: ${storeKey || 'response'}`;
+    }
+    
+    if (toolName === 'navigate_to_screen' && params.screen_id) {
       window.dispatchEvent(new CustomEvent('navigateToScreen', {
         detail: { screenId: params.screen_id }
       }));
       return `Navigated to screen: ${params.screen_id}`;
-    },
+    }
     
-    switch_agent: async (params: { agent_id?: string; agent_name?: string }) => {
-      const agentIdentifier = params.agent_id || params.agent_name;
-      console.log('🔧 CLIENT TOOL CALLED: switch_agent', params);
-      addLogRef.current('tool', `🔄 switch_agent: ${agentIdentifier}`);
-      if (switchToAgentRef.current && agentIdentifier) {
-        switchToAgentRef.current(agentIdentifier);
+    if ((toolName === 'switch_agent' || toolName === 'transfer_to_agent') && (params.agent_id || params.agent_name)) {
+      const agentId = params.agent_id || params.agent_name;
+      if (switchToAgentRef.current) {
+        switchToAgentRef.current(agentId);
       }
-      return `Switched to agent: ${agentIdentifier}`;
-    },
+      return `Switched to agent: ${agentId}`;
+    }
     
-    transfer_to_agent: async (params: { agent_id?: string; agent_name?: string }) => {
-      const agentIdentifier = params.agent_id || params.agent_name;
-      console.log('🔧 CLIENT TOOL CALLED: transfer_to_agent', params);
-      addLogRef.current('tool', `🔄 transfer_to_agent: ${agentIdentifier}`);
-      if (switchToAgentRef.current && agentIdentifier) {
-        switchToAgentRef.current(agentIdentifier);
+    // Default: just acknowledge the tool was called
+    return `Tool ${toolName} executed`;
+  }, []);
+
+  // ElevenLabs client tools - dynamically generated from journey config
+  // These are built from the current journey's tool definitions
+  const elevenLabsClientTools = useMemo(() => {
+    const tools: Record<string, (params: any) => Promise<string>> = {};
+    
+    // Get tools from current journey's agents
+    const journey = currentJourneyRef.current;
+    if (journey?.agents) {
+      for (const agent of journey.agents) {
+        if (agent.tools) {
+          for (const tool of agent.tools) {
+            // Create a handler for each tool defined in the journey
+            tools[tool.name] = async (params: any) => {
+              return handleGenericToolCall(tool.name, params);
+            };
+          }
+        }
       }
-      return `Transferred to agent: ${agentIdentifier}`;
-    },
-  }), []); // Empty deps = stable reference
+    }
+    
+    // Also add common tool handlers in case they're not in the journey
+    const commonTools = [
+      'record_input', 'save_response', 'end_call', 'end_session', 'complete_quiz',
+      'navigate_to_screen', 'switch_agent', 'transfer_to_agent', 'navigate_to_agent'
+    ];
+    for (const toolName of commonTools) {
+      if (!tools[toolName]) {
+        tools[toolName] = async (params: any) => {
+          return handleGenericToolCall(toolName, params);
+        };
+      }
+    }
+    
+    console.log('🔧 ElevenLabs client tools registered:', Object.keys(tools));
+    return tools;
+  }, [handleGenericToolCall]); // Rebuilds when journey changes
 
   // ElevenLabs hook with client tools passed at initialization
   const {
