@@ -221,7 +221,13 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
       }
       
       // Pass prompt override if provided (must be enabled in ElevenLabs dashboard Security settings)
+      // ElevenLabs may have limits on prompt size, so warn if very large
+      const MAX_PROMPT_SIZE = 100000; // 100KB limit to be safe
       if (options.promptOverride) {
+        if (options.promptOverride.length > MAX_PROMPT_SIZE) {
+          console.warn(`⚠️ Prompt override is very large (${options.promptOverride.length} chars), may cause issues`);
+          elevenLabsLogger.warn('Prompt override exceeds recommended size:', options.promptOverride.length);
+        }
         overrides.agent = {
           prompt: {
             prompt: options.promptOverride,
@@ -238,7 +244,18 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
       
       elevenLabsLogger.info('Using direct agentId connection (public agent)');
       console.log('🔌 Using direct agentId connection:', agentId);
-      console.log('🔌 Session config:', JSON.stringify(sessionConfig, null, 2));
+      // Log config without the full prompt (which can be very large)
+      const configForLog = {
+        ...sessionConfig,
+        overrides: sessionConfig.overrides ? {
+          ...sessionConfig.overrides,
+          agent: sessionConfig.overrides.agent ? {
+            prompt: { prompt: `[${sessionConfig.overrides.agent?.prompt?.prompt?.length || 0} chars]` }
+          } : undefined,
+          variables: sessionConfig.overrides.variables ? `[${Object.keys(sessionConfig.overrides.variables).length} vars]` : undefined,
+        } : undefined,
+      };
+      console.log('🔌 Session config:', JSON.stringify(configForLog, null, 2));
 
       elevenLabsLogger.info('Starting session with config:', { 
         agentId: sessionConfig.agentId,
