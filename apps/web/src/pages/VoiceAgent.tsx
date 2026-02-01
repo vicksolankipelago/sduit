@@ -1963,32 +1963,49 @@ Important guidelines:
     },
   });
 
-  // ElevenLabs client tools - must be defined before hook initialization
+  // Refs for stable access to functions in client tools (prevents recreating tools on every render)
+  const addLogRef = useRef(addLog);
+  const updateModuleStateRef = useRef(updateModuleState);
+  const disconnectFromRealtimeRef = useRef(disconnectFromRealtime);
+  const switchToAgentRef = useRef(switchToAgent);
+  
+  // Keep refs up to date
+  useEffect(() => {
+    addLogRef.current = addLog;
+    updateModuleStateRef.current = updateModuleState;
+    disconnectFromRealtimeRef.current = disconnectFromRealtime;
+    switchToAgentRef.current = switchToAgent;
+  }, [addLog, updateModuleState, disconnectFromRealtime, switchToAgent]);
+
+  // ElevenLabs client tools - defined once with stable refs (no dependencies = never recreated)
   // These tools allow the ElevenLabs agent to interact with the UI
   const elevenLabsClientTools = useMemo(() => ({
     record_input: async (params: { title: string; summary?: string; description?: string; storeKey?: string }) => {
       const { title, summary = '', description = '', storeKey } = params;
-      addLog('tool', `📝 record_input: ${title}`, { summary, storeKey });
+      console.log('🔧 CLIENT TOOL CALLED: record_input', params);
+      addLogRef.current('tool', `📝 record_input: ${title}`, { summary, storeKey });
       
       window.dispatchEvent(new CustomEvent('recordInput', {
         detail: { title, summary, description, timestamp: Date.now(), storeKey }
       }));
       
-      if (storeKey && summary && updateModuleState) {
-        updateModuleState({ [storeKey]: summary });
+      if (storeKey && summary && updateModuleStateRef.current) {
+        updateModuleStateRef.current({ [storeKey]: summary });
       }
       
       return `Recorded: ${title}`;
     },
     
     end_call: async (params: { reason?: string }) => {
-      addLog('tool', `📞 end_call: ${params.reason || 'User requested'}`);
-      setTimeout(() => disconnectFromRealtime(true), 500);
+      console.log('🔧 CLIENT TOOL CALLED: end_call', params);
+      addLogRef.current('tool', `📞 end_call: ${params.reason || 'User requested'}`);
+      setTimeout(() => disconnectFromRealtimeRef.current(true), 500);
       return 'Call ending';
     },
     
     navigate_to_screen: async (params: { screen_id: string }) => {
-      addLog('tool', `📱 navigate_to_screen: ${params.screen_id}`);
+      console.log('🔧 CLIENT TOOL CALLED: navigate_to_screen', params);
+      addLogRef.current('tool', `📱 navigate_to_screen: ${params.screen_id}`);
       window.dispatchEvent(new CustomEvent('navigateToScreen', {
         detail: { screenId: params.screen_id }
       }));
@@ -1997,22 +2014,24 @@ Important guidelines:
     
     switch_agent: async (params: { agent_id?: string; agent_name?: string }) => {
       const agentIdentifier = params.agent_id || params.agent_name;
-      addLog('tool', `🔄 switch_agent: ${agentIdentifier}`);
-      if (switchToAgent && agentIdentifier) {
-        switchToAgent(agentIdentifier);
+      console.log('🔧 CLIENT TOOL CALLED: switch_agent', params);
+      addLogRef.current('tool', `🔄 switch_agent: ${agentIdentifier}`);
+      if (switchToAgentRef.current && agentIdentifier) {
+        switchToAgentRef.current(agentIdentifier);
       }
       return `Switched to agent: ${agentIdentifier}`;
     },
     
     transfer_to_agent: async (params: { agent_id?: string; agent_name?: string }) => {
       const agentIdentifier = params.agent_id || params.agent_name;
-      addLog('tool', `🔄 transfer_to_agent: ${agentIdentifier}`);
-      if (switchToAgent && agentIdentifier) {
-        switchToAgent(agentIdentifier);
+      console.log('🔧 CLIENT TOOL CALLED: transfer_to_agent', params);
+      addLogRef.current('tool', `🔄 transfer_to_agent: ${agentIdentifier}`);
+      if (switchToAgentRef.current && agentIdentifier) {
+        switchToAgentRef.current(agentIdentifier);
       }
       return `Transferred to agent: ${agentIdentifier}`;
     },
-  }), [addLog, updateModuleState, disconnectFromRealtime, switchToAgent]);
+  }), []); // Empty deps = stable reference
 
   // ElevenLabs hook with client tools passed at initialization
   const {

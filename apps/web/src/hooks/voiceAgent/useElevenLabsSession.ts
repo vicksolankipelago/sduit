@@ -79,6 +79,10 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
   // Client tools must be defined at hook initialization for ElevenLabs SDK
   const clientTools = callbacks.clientTools;
   
+  // Debug: Log client tools at initialization
+  console.log('🔧 ElevenLabs useConversation init - clientTools:', 
+    clientTools ? Object.keys(clientTools) : 'none');
+  
   const conversation = useConversation({
     // Pass client tools at initialization - they can't be added dynamically
     clientTools: clientTools && Object.keys(clientTools).length > 0 ? clientTools : undefined,
