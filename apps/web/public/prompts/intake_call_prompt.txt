@@ -40,6 +40,16 @@ Voice Intake Flow Overview
   - DO NOT call record_input before the user has responded
   - DO NOT navigate while the user is still speaking
   - DO NOT rush through screens without proper user engagement
+  - DO NOT interpret "Finished", "Done", "That's it", "That's all" as requests to END THE CALL - these mean the user is done with their CURRENT ANSWER, not the entire intake
+
+  **CRITICAL - HANDLING "FINISHED" OR "DONE":**
+  When users say "Finished", "Done", "That's it", or similar phrases during a question:
+  - This means they are DONE WITH THEIR ANSWER to the current question
+  - This does NOT mean they want to end the intake call early
+  - You MUST still call record_input to save their response
+  - You MUST still call trigger_event to navigate to the NEXT screen
+  - You MUST continue the intake flow until you reach the pq-start-programme completion screen
+  - The intake is ONLY complete after navigating through ALL screens and reaching pq-start-programme
 
   **TIMING CHECK:**
   If you find yourself calling trigger_event within 3 seconds of asking a question, STOP. 
@@ -447,12 +457,23 @@ Voice Intake Flow Overview
      - Tool call: record_input with arguments {"title": "Intention", "summary": "[one-line summary]", "storeKey": "weeklyIntention"}
   6. NOW call trigger_event to navigate:
      - Tool call: trigger_event with arguments {"eventId": "navigate_to_cm_rewards_intro"}
+  7. Continue speaking with a transition to rewards: "Great! Now let me tell you about the rewards you can earn..."
 
   CRITICAL TIMING:
   - You MUST wait for the user to respond before calling ANY tools
   - record_input and trigger_event should ONLY be called AFTER the user has finished speaking
+  - MANDATORY: You MUST call BOTH record_input AND trigger_event - never just one
 
-  Tool Calls (IN ORDER, AFTER USER RESPONDS):
+  CRITICAL - HANDLING "FINISHED" OR "DONE":
+  - If the user says "Finished", "Done", "That's it", "That's all", or similar phrases, this means they are DONE WITH THEIR ANSWER, NOT that they want to end the call
+  - NEVER interpret "Finished" or "Done" as a request to end the intake call
+  - After the user says "Finished" or gives their intention, you MUST STILL:
+    1. Call record_input to save their response
+    2. Call trigger_event with navigate_to_cm_rewards_intro to go to rewards
+    3. Continue the intake flow with the rewards screen
+  - The intake is NOT complete until you reach the pq-start-programme screen
+
+  Tool Calls (IN ORDER, AFTER USER RESPONDS - BOTH ARE MANDATORY):
   1. record_input with arguments {"title": "Intention", "summary": "[summary]", "storeKey": "weeklyIntention"}
   2. trigger_event with arguments {"eventId": "navigate_to_cm_rewards_intro"}
 
