@@ -359,15 +359,22 @@ function VoiceAgentContent() {
           }
         }
 
-        // Check if there's a journey to auto-launch (from Journey Builder or preview mode)
-        const launchJourneyId = localStorage.getItem('voice-agent-launch-journey');
+        // Check URL params for journey ID (for Prolific/external links)
+        // Supports: ?journey=ID or ?flow=ID
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlJourneyId = urlParams.get('journey') || urlParams.get('flow');
+
+        // Check if there's a journey to auto-launch (URL param takes priority, then localStorage)
+        const launchJourneyId = urlJourneyId || localStorage.getItem('voice-agent-launch-journey');
         if (launchJourneyId) {
-          localStorage.removeItem('voice-agent-launch-journey'); // Clear flag
+          if (!urlJourneyId) {
+            localStorage.removeItem('voice-agent-launch-journey'); // Clear localStorage flag (not URL param)
+          }
           const journeyToLaunch = await loadJourneyForRuntime(launchJourneyId);
           if (journeyToLaunch) {
             setCurrentJourney(journeyToLaunch);
             setPreviewLoading(false); // Journey loaded, hide loading overlay
-            addLog('info', `🚀 Launching journey: ${journeyToLaunch.name}`);
+            addLog('info', `🚀 Launching journey: ${journeyToLaunch.name}${urlJourneyId ? ' (from URL)' : ''}`);
             
             // Check if this is a voice-enabled journey or non-voice
             const isVoiceJourney = journeyToLaunch.voiceEnabled !== false;
