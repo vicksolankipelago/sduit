@@ -87,7 +87,7 @@ export async function createPostWebPQJourney(): Promise<Journey> {
       {
         id: 'record_input',
         name: 'record_input',
-        description: 'Captures and summarizes the user\'s input for a particular screen or section. Use this after the user has answered a question to record their response with a title and summary.',
+        description: 'Captures and summarizes the user\'s input for a particular screen or section. Use this after the user has answered a question to record their response with a title and summary. Use storeKey to persist the summary for display in later screens.',
         parameters: {
           type: 'object',
           properties: {
@@ -103,8 +103,20 @@ export async function createPostWebPQJourney(): Promise<Journey> {
               type: 'string',
               description: 'A short description providing more context about the user\'s response',
             },
+            storeKey: {
+              type: 'string',
+              description: 'Module state key to store the summary (e.g., "aboutYouSummary", "yourWhySummary", "outcomesSummary"). This value can be displayed in screens using {$moduleData.storeKey}',
+            },
+            nextEventId: {
+              type: 'string',
+              description: 'Optional: The ID of the next event to trigger automatically after recording (e.g., "navigate_to_outcomes")',
+            },
+            delay: {
+              type: 'number',
+              description: 'Optional: Delay in seconds before triggering the next event (default: 2)',
+            },
           },
-          required: ['title'],
+          required: ['title', 'summary'],
         },
       },
     ],
