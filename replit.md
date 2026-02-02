@@ -29,7 +29,7 @@ The application is built as a monorepo with a React 19 frontend (Vite) and an Ex
     - App download intent (yes/maybe/no)
     - Open-ended feedback (liked most, improvements, comments)
     - Prolific completion code support for research participants
-*   **Preview Access System:** Administrators can generate temporary, revocable credentials for preview users, facilitating testing and research studies without full registration. Bulk creation and CSV export of credentials are supported.
+*   **Preview Access System:** Administrators can generate temporary, revocable credentials for preview users, facilitating testing and research studies without full registration. Preview credentials are now flow-specific (tied to individual journeys via `journeyId`), accessible through the flow settings when a journey is configured as an external study. Supports bulk creation and CSV export of credentials.
 *   **System Tooling:** Integrates a core `end_call` tool for AI agents to gracefully conclude conversations.
 *   **Flow Composition System:** Enables linking multiple journeys together where data flows between them. Key components:
     - `flowContext`: Persistent key-value store in AgentUIContext that survives journey transitions
