@@ -50,7 +50,7 @@ router.post("/", isAdmin, async (req, res) => {
     const userId = req.user?.id;
 
     if (!journeyId) {
-      return apiResponse.badRequest(res, "journeyId is required");
+      return apiResponse.validationError(res, "journeyId is required");
     }
 
     const username = generateFriendlyUsername();
@@ -90,7 +90,7 @@ router.post("/bulk", isAdmin, async (req, res) => {
     const userId = req.user?.id;
 
     if (!journeyId) {
-      return apiResponse.badRequest(res, "journeyId is required");
+      return apiResponse.validationError(res, "journeyId is required");
     }
 
     const numToCreate = Math.min(Math.max(1, parseInt(count) || 1), 500);
