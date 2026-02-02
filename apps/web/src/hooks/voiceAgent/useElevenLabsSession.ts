@@ -207,20 +207,28 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         console.log('🔗 Dynamic variables set:', Object.keys(options.dynamicVariables));
       }
       
-      // Pass prompt override if provided - THIS IS THE KEY FEATURE
+      // Pass prompt and/or voice overrides if provided
       // The vanilla SDK supports overrides directly in startSession()!
-      if (options.promptOverride) {
-        console.log('📝 Prompt override requested, length:', options.promptOverride.length, 'chars');
-        console.log('📝 First 200 chars:', options.promptOverride.substring(0, 200));
-        
-        (sessionConfig as any).overrides = {
-          agent: {
-            prompt: {
-              prompt: options.promptOverride,
-            },
-          },
-        };
-        elevenLabsLogger.info('Prompt override enabled:', options.promptOverride.length, 'chars');
+      const hasPromptOverride = !!options.promptOverride;
+      const hasVoiceOverride = !!options.elevenLabsVoiceId;
+
+      if (hasPromptOverride || hasVoiceOverride) {
+        const agentOverrides: any = {};
+
+        if (hasPromptOverride) {
+          console.log('📝 Prompt override requested, length:', options.promptOverride!.length, 'chars');
+          console.log('📝 First 200 chars:', options.promptOverride!.substring(0, 200));
+          agentOverrides.prompt = { prompt: options.promptOverride };
+          elevenLabsLogger.info('Prompt override enabled:', options.promptOverride!.length, 'chars');
+        }
+
+        if (hasVoiceOverride) {
+          console.log('🎙️ Voice override requested:', options.elevenLabsVoiceId);
+          agentOverrides.tts = { voiceId: options.elevenLabsVoiceId };
+          elevenLabsLogger.info('Voice override enabled:', options.elevenLabsVoiceId);
+        }
+
+        (sessionConfig as any).overrides = { agent: agentOverrides };
       }
       
       // Pass client tools if provided (wrapped with logging)
@@ -238,6 +246,7 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         hasDynamicVariables: !!(sessionConfig as any).dynamicVariables,
         hasOverrides: !!(sessionConfig as any).overrides,
         overridePromptLength: (sessionConfig as any).overrides?.agent?.prompt?.prompt?.length || 0,
+        overrideVoiceId: (sessionConfig as any).overrides?.agent?.tts?.voiceId || null,
         hasClientTools: !!wrappedTools,
         clientToolNames: wrappedTools ? Object.keys(wrappedTools) : [],
       };
