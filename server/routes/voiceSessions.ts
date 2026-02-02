@@ -1,10 +1,12 @@
 import { Router, Request, Response } from "express";
-import { isAuthenticated } from "../auth";
+import { isAuthenticated, optionalAuthenticated } from "../auth";
 import { storage } from "../storage";
 import { sessionLogger } from "../utils/logger";
 import * as apiResponse from "../utils/response";
 
 const router = Router();
+
+const ANONYMOUS_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 router.get("/", isAuthenticated, async (req: Request, res: Response) => {
   try {
@@ -169,13 +171,9 @@ router.get("/:sessionId", isAuthenticated, async (req: Request, res: Response) =
   }
 });
 
-router.post("/", isAuthenticated, async (req: Request, res: Response) => {
+router.post("/", optionalAuthenticated, async (req: Request, res: Response) => {
   try {
-    const userId = (req.user as any)?.id;
-    if (!userId) {
-      return apiResponse.unauthorized(res);
-    }
-
+    const userId = (req.user as any)?.id || ANONYMOUS_USER_ID;
     const sessionData = req.body;
 
     if (!sessionData.sessionId) {
@@ -215,12 +213,9 @@ router.post("/", isAuthenticated, async (req: Request, res: Response) => {
   }
 });
 
-router.put("/:sessionId/message", isAuthenticated, async (req: Request, res: Response) => {
+router.put("/:sessionId/message", optionalAuthenticated, async (req: Request, res: Response) => {
   try {
-    const userId = (req.user as any)?.id;
-    if (!userId) {
-      return apiResponse.unauthorized(res);
-    }
+    const userId = (req.user as any)?.id || ANONYMOUS_USER_ID;
 
     const { sessionId } = req.params;
     const { message, journey, agent, prolific } = req.body;
@@ -230,7 +225,7 @@ router.put("/:sessionId/message", isAuthenticated, async (req: Request, res: Res
     }
 
     const existingSession = await storage.getSession(sessionId);
-    if (existingSession && existingSession.userId !== userId) {
+    if (existingSession && existingSession.userId !== userId && existingSession.userId !== ANONYMOUS_USER_ID) {
       return apiResponse.forbidden(res);
     }
 

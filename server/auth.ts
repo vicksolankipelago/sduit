@@ -432,6 +432,10 @@ export function isAuthenticated(req: Request, res: Response, next: NextFunction)
   return apiResponse.unauthorized(res);
 }
 
+export function optionalAuthenticated(req: Request, res: Response, next: NextFunction) {
+  return next();
+}
+
 export function isAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated()) {
     return apiResponse.unauthorized(res);

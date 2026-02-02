@@ -1591,17 +1591,15 @@ Important guidelines:
     addLog('info', 'Disconnecting from session...');
 
     // Flush any pending real-time saves first
-    if (user) {
-      try {
-        await sessionSaverRef.current.flush();
-      } catch (error) {
-        console.error('Failed to flush pending saves:', error);
-      }
+    try {
+      await sessionSaverRef.current.flush();
+    } catch (error) {
+      console.error('Failed to flush pending saves:', error);
     }
 
-    // Auto-save complete session if authenticated and has transcript
+    // Auto-save complete session (supports both authenticated and anonymous users)
     let sessionSaved = false;
-    if (user && transcriptItems.length > 0) {
+    if (transcriptItems.length > 0) {
       try {
         const agentConfig = combinedPromptRef.current ? {
           name: currentAgentRef.current,
@@ -1877,9 +1875,9 @@ Important guidelines:
           const fullUserText = userMessageBuffer.current.trim();
           updateTranscriptItem(messageId, { status: 'DONE' });
           currentMessageIdsRef.current.user = undefined;
-          // Queue completed user message for real-time saving
+          // Queue completed user message for real-time saving (supports anonymous sessions)
           // Construct the complete TranscriptItem directly instead of looking up from state
-          if (user && messageId && !queuedItemIdsRef.current.has(messageId)) {
+          if (messageId && !queuedItemIdsRef.current.has(messageId)) {
             queuedItemIdsRef.current.add(messageId);
             const completeUserMessage: TranscriptItem = {
               itemId: messageId,
@@ -1922,9 +1920,9 @@ Important guidelines:
           // Mark message complete + reset buffer
           updateTranscriptItem(messageId, { status: 'DONE' });
           currentMessageIdsRef.current.assistant = undefined;
-          // Queue completed assistant message for real-time saving
+          // Queue completed assistant message for real-time saving (supports anonymous sessions)
           // Construct the complete TranscriptItem directly instead of looking up from state
-          if (user && messageId && !queuedItemIdsRef.current.has(messageId)) {
+          if (messageId && !queuedItemIdsRef.current.has(messageId)) {
             queuedItemIdsRef.current.add(messageId);
             const completeAssistantMessage: TranscriptItem = {
               itemId: messageId,
