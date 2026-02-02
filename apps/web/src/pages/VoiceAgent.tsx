@@ -41,7 +41,7 @@ import { listJourneysForRuntime, loadJourneyForRuntime } from '../services/journ
 import { PQData, substitutePromptVariables, DEFAULT_PQ_DATA } from '../utils/promptTemplates';
 import { useAuth } from '../contexts/AuthContext';
 import { saveSession, DebouncedSessionSaver } from '../services/api/sessionService';
-import { captureProlificParams, storeProlificSession, getProlificSession, handleProlificCompletion, hasProlificParams } from '../utils/prolific';
+import { captureProlificParams, storeProlificSession, getProlificSession, handleProlificCompletion, hasProlificParams, type ProlificOutcome } from '../utils/prolific';
 
 // Mapping of quiz option IDs to readable labels for prompt interpolation
 // These must match the option IDs in the Personalisation Quiz journey
@@ -287,6 +287,8 @@ function VoiceAgentContent() {
 
   // Ref for disconnectFromRealtime - needed for client tools that are registered at hook init time
   const disconnectFromRealtimeRef = useRef<((forceShowFeedback?: boolean) => Promise<void>) | null>(null);
+  // Track Prolific outcome for proper redirect (completed vs screened_out)
+  const prolificOutcomeRef = useRef<ProlificOutcome>('completed');
   // Real-time session saver with debouncing
   const sessionSaverRef = useRef<DebouncedSessionSaver>(
     new DebouncedSessionSaver(500, (error) => {
@@ -2055,12 +2057,16 @@ Important guidelines:
       if (journey?.research?.isExternal && journey?.research?.prolific?.enabled) {
         const prolificSession = getProlificSession();
         if (prolificSession) {
-          console.log('📊 [Prolific] Handling completion for participant:', prolificSession.params.prolificPid);
-          addLog('info', '📊 Redirecting to Prolific completion...');
+          const outcome = prolificOutcomeRef.current;
+          console.log(`📊 [Prolific] Handling ${outcome} for participant:`, prolificSession.params.prolificPid);
+          addLog('info', `📊 Redirecting to Prolific (${outcome})...`);
           handleProlificCompletion({
+            outcome,
             completionCode: journey.research.prolific.completionCode,
-            completionUrl: journey.research.prolific.completionUrl,
+            screenOutCode: journey.research.prolific.screenOutCode,
           });
+          // Reset outcome for next session
+          prolificOutcomeRef.current = 'completed';
         }
       }
     },
@@ -2168,6 +2174,16 @@ Important guidelines:
       }
       return `Transferred to agent: ${agentIdentifier}`;
     },
+
+    // Screen out a Prolific participant (ends call and redirects to screen-out URL)
+    screen_out_participant: async (params: { reason?: string }) => {
+      addLog('tool', `🚫 screen_out_participant: ${params.reason || 'Did not qualify'}`);
+      // Store the outcome so we use the screen-out code on completion
+      prolificOutcomeRef.current = 'screened_out';
+      // End the call with a short delay
+      setTimeout(() => disconnectFromRealtimeRef.current?.(true), 500);
+      return 'Participant screened out';
+    },
   }), [updateModuleState, switchToAgent]); // addLog is stable (regular function)
 
   // ElevenLabs hook with same callbacks - pass clientTools at init time
@@ -2210,12 +2226,16 @@ Important guidelines:
       if (journey?.research?.isExternal && journey?.research?.prolific?.enabled) {
         const prolificSession = getProlificSession();
         if (prolificSession) {
-          console.log('📊 [Prolific] Handling completion for participant:', prolificSession.params.prolificPid);
-          addLog('info', '📊 Redirecting to Prolific completion...');
+          const outcome = prolificOutcomeRef.current;
+          console.log(`📊 [Prolific] Handling ${outcome} for participant:`, prolificSession.params.prolificPid);
+          addLog('info', `📊 Redirecting to Prolific (${outcome})...`);
           handleProlificCompletion({
+            outcome,
             completionCode: journey.research.prolific.completionCode,
-            completionUrl: journey.research.prolific.completionUrl,
+            screenOutCode: journey.research.prolific.screenOutCode,
           });
+          // Reset outcome for next session
+          prolificOutcomeRef.current = 'completed';
         }
       }
     },

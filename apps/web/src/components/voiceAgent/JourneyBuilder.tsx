@@ -1037,11 +1037,34 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                                   }
                                 }
                               })}
-                              placeholder="e.g., ABC123XY"
+                              placeholder="e.g., C1ABC2XY"
                               disabled={disabled || !isAdmin}
                             />
                             <div className="journey-provider-config-hint">
-                              Completion code shown to participants (set in Prolific study)
+                              Code for participants who complete the full study
+                            </div>
+                          </div>
+                          <div className="journey-agent-field">
+                            <label>Screen-Out Code</label>
+                            <input
+                              type="text"
+                              className="journey-provider-config-input"
+                              value={currentJourney.research?.prolific?.screenOutCode || ''}
+                              onChange={(e) => setCurrentJourney({
+                                ...currentJourney,
+                                research: {
+                                  ...currentJourney.research!,
+                                  prolific: {
+                                    ...currentJourney.research?.prolific!,
+                                    screenOutCode: e.target.value
+                                  }
+                                }
+                              })}
+                              placeholder="e.g., S1XYZ2AB"
+                              disabled={disabled || !isAdmin}
+                            />
+                            <div className="journey-provider-config-hint">
+                              Code for participants who are screened out (didn't qualify)
                             </div>
                           </div>
                           <div className="journey-agent-field">

@@ -88,20 +88,58 @@ export function clearProlificSession(): void {
 }
 
 /**
- * Get the completion redirect URL for Prolific
- * This URL redirects the participant back to Prolific with a completion code
+ * Prolific participant outcome types
  */
-export function getProlificCompletionUrl(completionCode: string): string {
+export type ProlificOutcome = 'completed' | 'screened_out';
+
+/**
+ * Get the redirect URL for Prolific based on outcome
+ * All outcomes use the same URL format with different completion codes
+ */
+export function getProlificRedirectUrl(completionCode: string): string {
   return `https://app.prolific.com/submissions/complete?cc=${encodeURIComponent(completionCode)}`;
 }
 
 /**
- * Redirect participant to Prolific completion page
+ * Get the completion redirect URL for Prolific (alias for backwards compatibility)
+ */
+export function getProlificCompletionUrl(completionCode: string): string {
+  return getProlificRedirectUrl(completionCode);
+}
+
+/**
+ * Redirect participant to Prolific with the appropriate completion code
+ * @param outcome - The participant outcome ('completed' or 'screened_out')
+ * @param codes - Object containing completionCode and/or screenOutCode
+ */
+export function redirectToProlific(
+  outcome: ProlificOutcome,
+  codes: { completionCode?: string; screenOutCode?: string }
+): void {
+  const code = outcome === 'screened_out' ? codes.screenOutCode : codes.completionCode;
+
+  if (!code) {
+    console.error(`[Prolific] No ${outcome === 'screened_out' ? 'screen-out' : 'completion'} code configured`);
+    return;
+  }
+
+  const url = getProlificRedirectUrl(code);
+  console.log(`[Prolific] Redirecting (${outcome}):`, url);
+  window.location.href = url;
+}
+
+/**
+ * Redirect participant to Prolific completion page (backwards compatible)
  */
 export function redirectToProlificCompletion(completionCode: string): void {
-  const url = getProlificCompletionUrl(completionCode);
-  console.log('[Prolific] Redirecting to completion:', url);
-  window.location.href = url;
+  redirectToProlific('completed', { completionCode });
+}
+
+/**
+ * Redirect screened-out participant to Prolific
+ */
+export function redirectToProlificScreenOut(screenOutCode: string): void {
+  redirectToProlific('screened_out', { screenOutCode });
 }
 
 /**
@@ -175,23 +213,31 @@ export class ProlificApi {
 }
 
 /**
- * Handle journey completion for Prolific participants
- * This should be called when the journey ends successfully
+ * Handle journey outcome for Prolific participants
+ * Called when the journey ends (completed or screened out)
+ *
+ * @param options.outcome - 'completed' or 'screened_out'
+ * @param options.completionCode - Code for successful completion
+ * @param options.screenOutCode - Code for screened-out participants
+ * @param options.autoApprove - Whether to auto-approve via API
+ * @param options.apiToken - Prolific API token (for auto-approve)
  */
 export async function handleProlificCompletion(options: {
+  outcome?: ProlificOutcome;
   completionCode?: string;
-  completionUrl?: string;
+  screenOutCode?: string;
   autoApprove?: boolean;
   apiToken?: string;
 }): Promise<void> {
   const session = getProlificSession();
 
   if (!session || !session.params.prolificPid) {
-    console.log('[Prolific] No Prolific session found, skipping completion');
+    console.log('[Prolific] No Prolific session found, skipping');
     return;
   }
 
-  console.log('[Prolific] Handling completion for participant:', session.params.prolificPid);
+  const outcome = options.outcome || 'completed';
+  console.log(`[Prolific] Handling ${outcome} for participant:`, session.params.prolificPid);
 
   // If auto-approve is enabled and we have an API token, approve the submission
   if (options.autoApprove && options.apiToken && session.params.sessionId) {
@@ -207,11 +253,20 @@ export async function handleProlificCompletion(options: {
   // Clear the session
   clearProlificSession();
 
-  // Redirect to completion URL if provided
-  if (options.completionUrl) {
-    console.log('[Prolific] Redirecting to custom completion URL:', options.completionUrl);
-    window.location.href = options.completionUrl;
-  } else if (options.completionCode) {
-    redirectToProlificCompletion(options.completionCode);
-  }
+  // Redirect based on outcome
+  redirectToProlific(outcome, {
+    completionCode: options.completionCode,
+    screenOutCode: options.screenOutCode,
+  });
+}
+
+/**
+ * Handle screen-out for Prolific participants
+ * Convenience function for screening out participants
+ */
+export async function handleProlificScreenOut(screenOutCode: string): Promise<void> {
+  return handleProlificCompletion({
+    outcome: 'screened_out',
+    screenOutCode,
+  });
 }

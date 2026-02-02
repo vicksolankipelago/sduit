@@ -736,12 +736,18 @@ export interface AzureConfig {
 /**
  * Prolific Configuration
  * Settings for Prolific research participant integration
+ *
+ * Prolific requires different completion codes for different outcomes:
+ * - completionCode: Participant completed the full study
+ * - screenOutCode: Participant was screened out (didn't qualify)
+ *
+ * All participants must be paid, including screen-outs (min £0.10 / $0.14)
  */
 export interface ProlificConfig {
   enabled: boolean; // Whether Prolific integration is active
   studyId?: string; // Prolific Study ID (for validation)
-  completionCode?: string; // Code shown to participants on completion
-  completionUrl?: string; // URL to redirect participants on completion
+  completionCode?: string; // Code for participants who complete the full study
+  screenOutCode?: string; // Code for participants who are screened out
   autoApprove?: boolean; // Whether to auto-approve submissions via API
 }
 
