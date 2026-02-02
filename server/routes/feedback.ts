@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { isAuthenticated } from "../auth";
+import { isAuthenticated, optionalAuthenticated } from "../auth";
 import { db } from "../db";
 import { feedback, voiceSessions } from "../../shared/schema";
 import { eq, desc } from "drizzle-orm";
@@ -8,12 +8,11 @@ import * as apiResponse from "../utils/response";
 
 const router = Router();
 
-router.post("/", isAuthenticated, async (req: Request, res: Response) => {
+const ANONYMOUS_USER_ID = "00000000-0000-0000-0000-000000000000";
+
+router.post("/", optionalAuthenticated, async (req: Request, res: Response) => {
   try {
-    const userId = (req.user as any)?.id;
-    if (!userId) {
-      return apiResponse.unauthorized(res);
-    }
+    const userId = (req.user as any)?.id || ANONYMOUS_USER_ID;
 
     const { 
       voiceSessionId, 
@@ -74,7 +73,8 @@ router.post("/", isAuthenticated, async (req: Request, res: Response) => {
       return apiResponse.notFound(res, "Voice session");
     }
 
-    if (session.userId !== userId) {
+    // Allow feedback if user owns the session OR if session is anonymous
+    if (session.userId !== userId && session.userId !== ANONYMOUS_USER_ID && userId !== ANONYMOUS_USER_ID) {
       return apiResponse.forbidden(res, "You can only submit feedback for your own sessions");
     }
 
