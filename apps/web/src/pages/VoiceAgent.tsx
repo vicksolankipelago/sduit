@@ -762,6 +762,13 @@ function VoiceAgentContent() {
       console.log('🔧 [TOOL->UI] triggerEvent received:', eventId);
       addLog('tool', `🔧 Tool triggered event: ${eventId}`);
       
+      // Special handling for permissions_screen_event - show notification permission popup
+      if (eventId === 'permissions_screen_event') {
+        addLog('info', '🔔 Notification permission request triggered - showing popup');
+        setShowNotificationPopup(true);
+        return;
+      }
+      
       // Use triggerEventUI from context to actually trigger the event
       if (triggerEventUI) {
         triggerEventUI(eventId);
