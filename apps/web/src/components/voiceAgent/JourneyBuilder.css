@@ -346,11 +346,19 @@
   gap: 1rem;
 }
 
-/* Study URL field for Prolific */
+/* Study URL field for external studies */
 .journey-study-url-field {
-  margin-top: 0.5rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.journey-study-url-field > label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-global-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .journey-study-url-container {
