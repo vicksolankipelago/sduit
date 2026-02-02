@@ -963,6 +963,117 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                 </div>
               </div>
 
+              {/* Research Settings */}
+              <div className="journey-research-settings">
+                <div className="journey-research-settings-header">
+                  <label className="journey-research-settings-label">Research Settings</label>
+                </div>
+                <div className="journey-research-settings-content">
+                  <label className="journey-research-settings-item">
+                    <span>Study Type</span>
+                    <select
+                      className="journey-research-settings-select"
+                      value={currentJourney.research?.isExternal ? 'external' : 'internal'}
+                      onChange={(e) => {
+                        const isExternal = e.target.value === 'external';
+                        setCurrentJourney({
+                          ...currentJourney,
+                          research: {
+                            ...currentJourney.research,
+                            isExternal,
+                            prolific: isExternal ? (currentJourney.research?.prolific || { enabled: false }) : undefined
+                          }
+                        });
+                      }}
+                      disabled={disabled || !isAdmin}
+                    >
+                      <option value="internal">Internal (Team use)</option>
+                      <option value="external">External (Research participants)</option>
+                    </select>
+                  </label>
+
+                  {currentJourney.research?.isExternal && (
+                    <>
+                      <label className="journey-research-settings-item">
+                        <span>Prolific Integration</span>
+                        <select
+                          className="journey-research-settings-select"
+                          value={currentJourney.research?.prolific?.enabled ? 'enabled' : 'disabled'}
+                          onChange={(e) => {
+                            const enabled = e.target.value === 'enabled';
+                            setCurrentJourney({
+                              ...currentJourney,
+                              research: {
+                                ...currentJourney.research!,
+                                prolific: {
+                                  ...currentJourney.research?.prolific,
+                                  enabled
+                                }
+                              }
+                            });
+                          }}
+                          disabled={disabled || !isAdmin}
+                        >
+                          <option value="disabled">Disabled</option>
+                          <option value="enabled">Enabled</option>
+                        </select>
+                      </label>
+
+                      {currentJourney.research?.prolific?.enabled && (
+                        <div className="journey-research-prolific-config">
+                          <div className="journey-agent-field">
+                            <label>Completion Code</label>
+                            <input
+                              type="text"
+                              className="journey-provider-config-input"
+                              value={currentJourney.research?.prolific?.completionCode || ''}
+                              onChange={(e) => setCurrentJourney({
+                                ...currentJourney,
+                                research: {
+                                  ...currentJourney.research!,
+                                  prolific: {
+                                    ...currentJourney.research?.prolific!,
+                                    completionCode: e.target.value
+                                  }
+                                }
+                              })}
+                              placeholder="e.g., ABC123XY"
+                              disabled={disabled || !isAdmin}
+                            />
+                            <div className="journey-provider-config-hint">
+                              Completion code shown to participants (set in Prolific study)
+                            </div>
+                          </div>
+                          <div className="journey-agent-field">
+                            <label>Study ID (Optional)</label>
+                            <input
+                              type="text"
+                              className="journey-provider-config-input"
+                              value={currentJourney.research?.prolific?.studyId || ''}
+                              onChange={(e) => setCurrentJourney({
+                                ...currentJourney,
+                                research: {
+                                  ...currentJourney.research!,
+                                  prolific: {
+                                    ...currentJourney.research?.prolific!,
+                                    studyId: e.target.value
+                                  }
+                                }
+                              })}
+                              placeholder="e.g., 65abc123def456"
+                              disabled={disabled || !isAdmin}
+                            />
+                            <div className="journey-provider-config-hint">
+                              Prolific Study ID for validation
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+
               {/* Agent Selector */}
               <div className="journey-agent-selector">
                 <div className="journey-agent-selector-header">

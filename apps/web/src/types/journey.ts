@@ -734,6 +734,27 @@ export interface AzureConfig {
 }
 
 /**
+ * Prolific Configuration
+ * Settings for Prolific research participant integration
+ */
+export interface ProlificConfig {
+  enabled: boolean; // Whether Prolific integration is active
+  studyId?: string; // Prolific Study ID (for validation)
+  completionCode?: string; // Code shown to participants on completion
+  completionUrl?: string; // URL to redirect participants on completion
+  autoApprove?: boolean; // Whether to auto-approve submissions via API
+}
+
+/**
+ * Research Settings
+ * Configuration for external research studies
+ */
+export interface ResearchSettings {
+  isExternal: boolean; // Whether this is an external research study
+  prolific?: ProlificConfig; // Prolific-specific settings
+}
+
+/**
  * Journey Definition
  * Complete multi-agent conversation flow
  */
@@ -747,6 +768,7 @@ export interface Journey {
   ttsProvider?: TtsProvider; // TTS provider: 'elevenlabs' (default) or 'azure'
   elevenLabsConfig?: ElevenLabsConfig; // ElevenLabs-specific configuration
   azureConfig?: AzureConfig; // Azure-specific configuration
+  research?: ResearchSettings; // Research study settings (Prolific, etc.)
   agents: Agent[];
   startingAgentId: string; // ID of the first agent in the flow
   createdAt: string;

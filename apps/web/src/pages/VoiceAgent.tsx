@@ -41,6 +41,7 @@ import { listJourneysForRuntime, loadJourneyForRuntime } from '../services/journ
 import { PQData, substitutePromptVariables, DEFAULT_PQ_DATA } from '../utils/promptTemplates';
 import { useAuth } from '../contexts/AuthContext';
 import { saveSession, DebouncedSessionSaver } from '../services/api/sessionService';
+import { captureProlificParams, storeProlificSession, getProlificSession, handleProlificCompletion, hasProlificParams } from '../utils/prolific';
 
 // Mapping of quiz option IDs to readable labels for prompt interpolation
 // These must match the option IDs in the Personalisation Quiz journey
@@ -408,6 +409,19 @@ function VoiceAgentContent() {
     loadJourneys();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run only once on mount
+
+  // Capture Prolific parameters if this is an external research journey
+  useEffect(() => {
+    if (currentJourney?.research?.isExternal && currentJourney?.research?.prolific?.enabled) {
+      // Check if we have Prolific params in the URL
+      if (hasProlificParams()) {
+        const params = captureProlificParams();
+        storeProlificSession(currentJourney.id, params);
+        console.log('📊 [Prolific] Session captured for journey:', currentJourney.name, params);
+        addLog('info', `📊 Prolific participant detected: ${params.prolificPid?.substring(0, 8)}...`);
+      }
+    }
+  }, [currentJourney?.id, currentJourney?.research?.isExternal, currentJourney?.research?.prolific?.enabled]);
 
   // Refresh journey when page becomes visible (e.g., returning from Journey Builder)
   useEffect(() => {
@@ -2035,6 +2049,20 @@ Important guidelines:
       // Disconnect both agent and persona (if active)
       console.log('🎬 Conversation complete - disconnecting all sessions');
       disconnectFromRealtime();
+
+      // Handle Prolific completion if this is an external research journey
+      const journey = currentJourneyRef.current;
+      if (journey?.research?.isExternal && journey?.research?.prolific?.enabled) {
+        const prolificSession = getProlificSession();
+        if (prolificSession) {
+          console.log('📊 [Prolific] Handling completion for participant:', prolificSession.params.prolificPid);
+          addLog('info', '📊 Redirecting to Prolific completion...');
+          handleProlificCompletion({
+            completionCode: journey.research.prolific.completionCode,
+            completionUrl: journey.research.prolific.completionUrl,
+          });
+        }
+      }
     },
   });
 
@@ -2176,6 +2204,20 @@ Important guidelines:
     onConversationComplete: () => {
       console.log('🎬 ElevenLabs conversation complete');
       disconnectFromRealtime();
+
+      // Handle Prolific completion if this is an external research journey
+      const journey = currentJourneyRef.current;
+      if (journey?.research?.isExternal && journey?.research?.prolific?.enabled) {
+        const prolificSession = getProlificSession();
+        if (prolificSession) {
+          console.log('📊 [Prolific] Handling completion for participant:', prolificSession.params.prolificPid);
+          addLog('info', '📊 Redirecting to Prolific completion...');
+          handleProlificCompletion({
+            completionCode: journey.research.prolific.completionCode,
+            completionUrl: journey.research.prolific.completionUrl,
+          });
+        }
+      }
     },
     onError: (errorMessage, details) => {
       const timestamp = new Date().toLocaleTimeString();
