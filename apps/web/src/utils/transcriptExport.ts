@@ -33,6 +33,19 @@ export interface SessionExport {
     startingAgentId: string;
     version: string;
   };
+
+  // Voice provider configuration
+  voiceConfig?: {
+    provider: 'elevenlabs' | 'azure' | string;
+    elevenLabs?: {
+      agentId?: string;
+      voiceId?: string;
+      modelId?: string;
+    };
+    azure?: {
+      deploymentName?: string;
+    };
+  };
   agent?: {
     id: string;
     name: string;
@@ -110,6 +123,17 @@ export function createSessionExport(params: {
       id: journey.id,
       name: journey.name,
       voice: journey.voice || 'default',
+    } : undefined,
+    voiceConfig: journey ? {
+      provider: journey.ttsProvider || 'elevenlabs',
+      elevenLabs: journey.elevenLabsConfig ? {
+        agentId: journey.elevenLabsConfig.agentId,
+        voiceId: journey.elevenLabsConfig.voiceId,
+        modelId: journey.elevenLabsConfig.modelId,
+      } : undefined,
+      azure: journey.azureConfig ? {
+        deploymentName: journey.azureConfig.deploymentName,
+      } : undefined,
     } : undefined,
     agent: agentConfig ? {
       id: agentConfig.name,
@@ -252,6 +276,27 @@ export function formatTranscriptForSharing(
   }
   if (sessionExport.agent?.name) {
     lines.push(`Agent: ${sessionExport.agent.name}`);
+  }
+
+  // Voice configuration
+  if (sessionExport.voiceConfig) {
+    lines.push('');
+    lines.push('Voice Configuration:');
+    lines.push(`  Provider: ${sessionExport.voiceConfig.provider}`);
+    if (sessionExport.voiceConfig.elevenLabs) {
+      if (sessionExport.voiceConfig.elevenLabs.agentId) {
+        lines.push(`  ElevenLabs Agent ID: ${sessionExport.voiceConfig.elevenLabs.agentId}`);
+      }
+      if (sessionExport.voiceConfig.elevenLabs.voiceId) {
+        lines.push(`  ElevenLabs Voice ID: ${sessionExport.voiceConfig.elevenLabs.voiceId}`);
+      }
+      if (sessionExport.voiceConfig.elevenLabs.modelId) {
+        lines.push(`  ElevenLabs Model ID: ${sessionExport.voiceConfig.elevenLabs.modelId}`);
+      }
+    }
+    if (sessionExport.voiceConfig.azure?.deploymentName) {
+      lines.push(`  Azure Deployment: ${sessionExport.voiceConfig.azure.deploymentName}`);
+    }
   }
   lines.push('');
   lines.push(divider);
