@@ -660,39 +660,6 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
               <span className={`journey-status-badge ${isPublished ? (hasUnpublishedChanges ? 'has-changes' : 'published') : 'draft'}`}>
                 {isPublished ? (hasUnpublishedChanges ? 'Unpublished Changes' : 'Published') : 'Draft'}
               </span>
-              <label className="journey-voice-toggle" title={currentJourney.voiceEnabled !== false ? 'Voice enabled - users interact via voice' : 'Voice disabled - users interact via buttons'}>
-                <input
-                  type="checkbox"
-                  checked={currentJourney.voiceEnabled !== false}
-                  onChange={(e) => setCurrentJourney({ ...currentJourney, voiceEnabled: e.target.checked })}
-                  disabled={disabled || !isAdmin}
-                />
-                <span className="journey-voice-toggle-slider"></span>
-                <span className="journey-voice-toggle-label">{currentJourney.voiceEnabled !== false ? '🎙️ Voice' : '👆 Buttons'}</span>
-              </label>
-              {currentJourney.voiceEnabled !== false && (
-                <select
-                  className="journey-provider-select"
-                  value={currentJourney.ttsProvider || 'elevenlabs'}
-                  onChange={(e) => {
-                    const provider = e.target.value as TtsProvider;
-                    const defaultVoice = provider === 'elevenlabs' 
-                      ? ELEVENLABS_VOICE_OPTIONS[0].value 
-                      : AZURE_VOICE_OPTIONS[0].value;
-                    setCurrentJourney({ 
-                      ...currentJourney, 
-                      ttsProvider: provider,
-                      voice: defaultVoice,
-                      elevenLabsConfig: provider === 'elevenlabs' ? (currentJourney.elevenLabsConfig || {}) : undefined
-                    });
-                  }}
-                  disabled={disabled || !isAdmin}
-                  title="Select voice provider"
-                >
-                  <option value="azure">Azure OpenAI</option>
-                  <option value="elevenlabs">ElevenLabs</option>
-                </select>
-              )}
             </div>
           )}
         </div>
