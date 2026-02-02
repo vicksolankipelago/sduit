@@ -1057,6 +1057,37 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                               Prolific Study ID for validation
                             </div>
                           </div>
+                          <div className="journey-agent-field journey-study-url-field">
+                            <label>Study URL (for Prolific)</label>
+                            <div className="journey-study-url-container">
+                              <input
+                                type="text"
+                                className="journey-provider-config-input journey-study-url-input"
+                                value={`${window.location.origin}/voice-agent?flow=${currentJourney.id}&PROLIFIC_PID={{%PROLIFIC_PID%}}&SESSION_ID={{%SESSION_ID%}}&STUDY_ID={{%STUDY_ID%}}`}
+                                readOnly
+                              />
+                              <button
+                                type="button"
+                                className="journey-copy-url-btn"
+                                onClick={() => {
+                                  const url = `${window.location.origin}/voice-agent?flow=${currentJourney.id}&PROLIFIC_PID={{%PROLIFIC_PID%}}&SESSION_ID={{%SESSION_ID%}}&STUDY_ID={{%STUDY_ID%}}`;
+                                  navigator.clipboard.writeText(url);
+                                  // Brief visual feedback
+                                  const btn = document.querySelector('.journey-copy-url-btn');
+                                  if (btn) {
+                                    btn.textContent = 'Copied!';
+                                    setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+                                  }
+                                }}
+                                title="Copy URL to clipboard"
+                              >
+                                Copy
+                              </button>
+                            </div>
+                            <div className="journey-provider-config-hint">
+                              Paste this URL into Prolific's "Study URL" field. Prolific will replace the placeholders with actual participant data.
+                            </div>
+                          </div>
                         </div>
                       )}
                     </>

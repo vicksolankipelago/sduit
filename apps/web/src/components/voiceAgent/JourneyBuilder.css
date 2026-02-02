@@ -346,6 +346,43 @@
   gap: 1rem;
 }
 
+/* Study URL field for Prolific */
+.journey-study-url-field {
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.journey-study-url-container {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.journey-study-url-input {
+  flex: 1;
+  font-family: monospace;
+  font-size: 0.75rem;
+  background: var(--background-light);
+  color: var(--text-global-secondary);
+}
+
+.journey-copy-url-btn {
+  padding: 0.625rem 1rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s ease;
+}
+
+.journey-copy-url-btn:hover {
+  background: var(--primary-hover, #0284c7);
+}
+
 .journey-header-actions {
   display: flex;
   gap: 0.5rem;
