@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { Journey, Agent, DEFAULT_SYSTEM_PROMPT, validateJourney, Screen, TtsProvider, ELEVENLABS_VOICE_OPTIONS, AZURE_VOICE_OPTIONS } from '../../types/journey';
@@ -14,6 +14,30 @@ import { TrashIcon, FileTextIcon, EditIcon, RocketIcon, TargetIcon, HistoryIcon,
 import VersionHistory from './VersionHistory';
 import { useAuth } from '../../contexts/AuthContext';
 import './JourneyBuilder.css';
+
+interface PreviewCredential {
+  id: string;
+  username: string;
+  label: string | null;
+  status: 'active' | 'expired' | 'revoked';
+  createdAt: string;
+  expiresAt: string | null;
+  lastUsedAt: string | null;
+}
+
+interface NewCredentialResponse {
+  id: string;
+  username: string;
+  password: string;
+  label: string | null;
+  expiresAt: string | null;
+}
+
+interface BulkCredential {
+  username: string;
+  password: string;
+  label: string | null;
+}
 
 interface JourneyBuilderProps {
   onLaunchJourney: (journey: Journey) => void;
@@ -60,6 +84,23 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const [agentEditorTab, setAgentEditorTab] = useState<'config' | 'tools' | 'screens'>('config');
   const [showScreensJsonView, setShowScreensJsonView] = useState(false);
   const [screensJsonValue, setScreensJsonValue] = useState('');
+
+  // Preview Access state
+  const [previewCredentials, setPreviewCredentials] = useState<PreviewCredential[]>([]);
+  const [isLoadingCredentials, setIsLoadingCredentials] = useState(false);
+  const [showPreviewAccessSection, setShowPreviewAccessSection] = useState(false);
+  const [showCreateCredentialForm, setShowCreateCredentialForm] = useState(false);
+  const [isBulkMode, setIsBulkMode] = useState(false);
+  const [credentialFormLabel, setCredentialFormLabel] = useState('');
+  const [credentialFormExpiresAt, setCredentialFormExpiresAt] = useState('');
+  const [bulkCount, setBulkCount] = useState('10');
+  const [bulkLabelPrefix, setBulkLabelPrefix] = useState('');
+  const [isCreatingCredential, setIsCreatingCredential] = useState(false);
+  const [newCredential, setNewCredential] = useState<NewCredentialResponse | null>(null);
+  const [bulkCredentials, setBulkCredentials] = useState<BulkCredential[]>([]);
+  const [showCredentialModal, setShowCredentialModal] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
     // Load flow based on URL params
@@ -638,6 +679,149 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     setAiGenerationError(null);
   };
 
+  // Preview Access API functions
+  const fetchPreviewCredentials = useCallback(async () => {
+    if (!currentJourney?.id || currentJourney.id.startsWith('new-')) return;
+    
+    setIsLoadingCredentials(true);
+    try {
+      const response = await fetch(`/api/admin/preview-credentials?journeyId=${currentJourney.id}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch credentials');
+      const data = await response.json();
+      setPreviewCredentials(data);
+    } catch (error) {
+      console.error('Error fetching preview credentials:', error);
+    } finally {
+      setIsLoadingCredentials(false);
+    }
+  }, [currentJourney?.id]);
+
+  const handleCreatePreviewCredential = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentJourney?.id || currentJourney.id.startsWith('new-')) {
+      alert('Please save the journey first before creating preview credentials.');
+      return;
+    }
+
+    setIsCreatingCredential(true);
+    try {
+      if (isBulkMode) {
+        const response = await fetch('/api/admin/preview-credentials/bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            journeyId: currentJourney.id,
+            count: parseInt(bulkCount) || 10,
+            labelPrefix: bulkLabelPrefix || undefined,
+            expiresAt: credentialFormExpiresAt || undefined,
+          }),
+        });
+        if (!response.ok) throw new Error('Failed to create credentials');
+        const data = await response.json();
+        setBulkCredentials(data.credentials);
+        setShowBulkModal(true);
+        setShowCreateCredentialForm(false);
+        setBulkCount('10');
+        setBulkLabelPrefix('');
+        setCredentialFormExpiresAt('');
+        fetchPreviewCredentials();
+      } else {
+        const response = await fetch('/api/admin/preview-credentials', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            journeyId: currentJourney.id,
+            label: credentialFormLabel || undefined,
+            expiresAt: credentialFormExpiresAt || undefined,
+          }),
+        });
+        if (!response.ok) throw new Error('Failed to create credential');
+        const data = await response.json();
+        setNewCredential(data);
+        setShowCredentialModal(true);
+        setShowCreateCredentialForm(false);
+        setCredentialFormLabel('');
+        setCredentialFormExpiresAt('');
+        fetchPreviewCredentials();
+      }
+    } catch (error) {
+      console.error('Error creating preview credential:', error);
+      alert('Failed to create credential');
+    } finally {
+      setIsCreatingCredential(false);
+    }
+  };
+
+  const handleRevokeCredential = async (id: string) => {
+    try {
+      const response = await fetch(`/api/admin/preview-credentials/${id}/revoke`, {
+        method: 'PATCH',
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to revoke credential');
+      fetchPreviewCredentials();
+    } catch (error) {
+      console.error('Error revoking credential:', error);
+      alert('Failed to revoke credential');
+    }
+  };
+
+  const handleDeleteCredential = async (id: string) => {
+    try {
+      const response = await fetch(`/api/admin/preview-credentials/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to delete credential');
+      setDeleteConfirmId(null);
+      fetchPreviewCredentials();
+    } catch (error) {
+      console.error('Error deleting credential:', error);
+      alert('Failed to delete credential');
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (error) {
+      console.error('Failed to copy:', error);
+    }
+  };
+
+  const downloadCredentialsCSV = (creds: BulkCredential[]) => {
+    const csvContent = creds.map(c => `${c.username},${c.password}`).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `preview-credentials-${currentJourney?.name?.replace(/[^a-z0-9]/gi, '_') || 'journey'}-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const formatCredentialDate = (dateString: string | null): string => {
+    if (!dateString) return '—';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  // Fetch preview credentials when expanding the section
+  useEffect(() => {
+    if (showPreviewAccessSection && currentJourney?.research?.isExternal) {
+      fetchPreviewCredentials();
+    }
+  }, [showPreviewAccessSection, fetchPreviewCredentials, currentJourney?.research?.isExternal]);
+
   return (
     <div className="journey-builder">
       {/* Top Bar */}
@@ -1109,6 +1293,287 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                   )}
                 </div>
               </div>
+
+              {/* Preview Access - Only show for External studies */}
+              {currentJourney.research?.isExternal && (
+                <div className="journey-preview-access-settings">
+                  <div className="journey-preview-access-header">
+                    <div className="journey-preview-access-header-left">
+                      <label className="journey-preview-access-label">Preview Access</label>
+                      <span className="journey-preview-access-count">
+                        {previewCredentials.filter(c => c.status === 'active').length} active credential(s)
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="journey-preview-access-toggle-btn"
+                      onClick={() => setShowPreviewAccessSection(!showPreviewAccessSection)}
+                      disabled={currentJourney.id.startsWith('new-')}
+                    >
+                      {showPreviewAccessSection ? 'Hide' : 'Manage'}
+                    </button>
+                  </div>
+
+                  {currentJourney.id.startsWith('new-') && (
+                    <div className="journey-preview-access-save-notice">
+                      Save the journey first to manage preview credentials.
+                    </div>
+                  )}
+
+                  {showPreviewAccessSection && !currentJourney.id.startsWith('new-') && (
+                    <div className="journey-preview-access-content">
+                      <div className="journey-preview-access-actions">
+                        <button
+                          type="button"
+                          className="journey-preview-access-create-btn"
+                          onClick={() => setShowCreateCredentialForm(!showCreateCredentialForm)}
+                        >
+                          {showCreateCredentialForm ? 'Cancel' : '+ Create Access'}
+                        </button>
+                      </div>
+
+                      {showCreateCredentialForm && (
+                        <form className="journey-preview-access-form" onSubmit={handleCreatePreviewCredential}>
+                          <div className="journey-preview-access-mode-toggle">
+                            <button
+                              type="button"
+                              className={`journey-preview-mode-btn ${!isBulkMode ? 'active' : ''}`}
+                              onClick={() => setIsBulkMode(false)}
+                            >
+                              Single
+                            </button>
+                            <button
+                              type="button"
+                              className={`journey-preview-mode-btn ${isBulkMode ? 'active' : ''}`}
+                              onClick={() => setIsBulkMode(true)}
+                            >
+                              Bulk
+                            </button>
+                          </div>
+
+                          {isBulkMode ? (
+                            <div className="journey-preview-access-form-row">
+                              <div className="journey-preview-access-form-group">
+                                <label>Number of Credentials</label>
+                                <input
+                                  type="number"
+                                  value={bulkCount}
+                                  onChange={(e) => setBulkCount(e.target.value)}
+                                  min="1"
+                                  max="500"
+                                  placeholder="10"
+                                />
+                              </div>
+                              <div className="journey-preview-access-form-group">
+                                <label>Label Prefix (optional)</label>
+                                <input
+                                  type="text"
+                                  value={bulkLabelPrefix}
+                                  onChange={(e) => setBulkLabelPrefix(e.target.value)}
+                                  placeholder="e.g., Participant"
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="journey-preview-access-form-row">
+                              <div className="journey-preview-access-form-group">
+                                <label>Label (optional)</label>
+                                <input
+                                  type="text"
+                                  value={credentialFormLabel}
+                                  onChange={(e) => setCredentialFormLabel(e.target.value)}
+                                  placeholder="e.g., Test User 1"
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="journey-preview-access-form-row">
+                            <div className="journey-preview-access-form-group">
+                              <label>Expires At (optional)</label>
+                              <input
+                                type="datetime-local"
+                                value={credentialFormExpiresAt}
+                                onChange={(e) => setCredentialFormExpiresAt(e.target.value)}
+                              />
+                            </div>
+                          </div>
+
+                          <button
+                            type="submit"
+                            className="journey-preview-access-submit-btn"
+                            disabled={isCreatingCredential}
+                          >
+                            {isCreatingCredential ? 'Creating...' : (isBulkMode ? `Create ${bulkCount || 10} Credentials` : 'Create Credential')}
+                          </button>
+                        </form>
+                      )}
+
+                      {isLoadingCredentials ? (
+                        <div className="journey-preview-access-loading">Loading credentials...</div>
+                      ) : previewCredentials.length === 0 ? (
+                        <div className="journey-preview-access-empty">
+                          No preview credentials yet. Create one to grant access to preview users.
+                        </div>
+                      ) : (
+                        <div className="journey-preview-access-table-wrapper">
+                          <table className="journey-preview-access-table">
+                            <thead>
+                              <tr>
+                                <th>Username</th>
+                                <th>Label</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {previewCredentials.map((cred) => (
+                                <tr key={cred.id}>
+                                  <td className="journey-preview-username-cell">
+                                    <code>{cred.username}</code>
+                                  </td>
+                                  <td>{cred.label || '—'}</td>
+                                  <td>
+                                    <span className={`journey-preview-status-badge journey-preview-status-${cred.status}`}>
+                                      {cred.status}
+                                    </span>
+                                  </td>
+                                  <td>{formatCredentialDate(cred.createdAt)}</td>
+                                  <td className="journey-preview-actions-cell">
+                                    {deleteConfirmId === cred.id ? (
+                                      <div className="journey-preview-delete-confirm">
+                                        <span>Delete?</span>
+                                        <button
+                                          type="button"
+                                          className="journey-preview-action-btn journey-preview-confirm-btn"
+                                          onClick={() => handleDeleteCredential(cred.id)}
+                                        >
+                                          Yes
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="journey-preview-action-btn journey-preview-cancel-btn"
+                                          onClick={() => setDeleteConfirmId(null)}
+                                        >
+                                          No
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        {cred.status === 'active' && (
+                                          <button
+                                            type="button"
+                                            className="journey-preview-action-btn journey-preview-revoke-btn"
+                                            onClick={() => handleRevokeCredential(cred.id)}
+                                          >
+                                            Revoke
+                                          </button>
+                                        )}
+                                        <button
+                                          type="button"
+                                          className="journey-preview-action-btn journey-preview-delete-btn"
+                                          onClick={() => setDeleteConfirmId(cred.id)}
+                                        >
+                                          Delete
+                                        </button>
+                                      </>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Single Credential Modal */}
+              {showCredentialModal && newCredential && (
+                <div className="journey-preview-modal-overlay" onClick={() => setShowCredentialModal(false)}>
+                  <div className="journey-preview-modal" onClick={(e) => e.stopPropagation()}>
+                    <h3>Credential Created</h3>
+                    <div className="journey-preview-modal-warning">
+                      ⚠️ Copy the password now! It won't be shown again.
+                    </div>
+                    <div className="journey-preview-modal-field">
+                      <label>Username</label>
+                      <div className="journey-preview-modal-value">
+                        <code>{newCredential.username}</code>
+                        <button type="button" onClick={() => copyToClipboard(newCredential.username)}>Copy</button>
+                      </div>
+                    </div>
+                    <div className="journey-preview-modal-field">
+                      <label>Password</label>
+                      <div className="journey-preview-modal-value">
+                        <code>{newCredential.password}</code>
+                        <button type="button" onClick={() => copyToClipboard(newCredential.password)}>Copy</button>
+                      </div>
+                    </div>
+                    {newCredential.label && (
+                      <div className="journey-preview-modal-field">
+                        <label>Label</label>
+                        <span>{newCredential.label}</span>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      className="journey-preview-modal-close-btn"
+                      onClick={() => setShowCredentialModal(false)}
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Bulk Credentials Modal */}
+              {showBulkModal && bulkCredentials.length > 0 && (
+                <div className="journey-preview-modal-overlay" onClick={() => setShowBulkModal(false)}>
+                  <div className="journey-preview-modal journey-preview-bulk-modal" onClick={(e) => e.stopPropagation()}>
+                    <h3>{bulkCredentials.length} Credentials Created</h3>
+                    <div className="journey-preview-modal-warning">
+                      ⚠️ Download or copy these credentials now! Passwords won't be shown again.
+                    </div>
+                    <div className="journey-preview-bulk-actions">
+                      <button
+                        type="button"
+                        className="journey-preview-bulk-action-btn"
+                        onClick={() => downloadCredentialsCSV(bulkCredentials)}
+                      >
+                        Download CSV
+                      </button>
+                      <button
+                        type="button"
+                        className="journey-preview-bulk-action-btn"
+                        onClick={() => {
+                          const csv = bulkCredentials.map(c => `${c.username},${c.password}`).join('\n');
+                          copyToClipboard(csv);
+                        }}
+                      >
+                        Copy All as CSV
+                      </button>
+                    </div>
+                    <div className="journey-preview-bulk-preview">
+                      <p className="journey-preview-bulk-preview-label">Preview (first 5):</p>
+                      <pre className="journey-preview-bulk-preview-content">
+                        {bulkCredentials.slice(0, 5).map(c => `${c.username},${c.password}`).join('\n')}
+                        {bulkCredentials.length > 5 && `\n... and ${bulkCredentials.length - 5} more`}
+                      </pre>
+                    </div>
+                    <button
+                      type="button"
+                      className="journey-preview-modal-close-btn"
+                      onClick={() => setShowBulkModal(false)}
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Agent Selector */}
               <div className="journey-agent-selector">

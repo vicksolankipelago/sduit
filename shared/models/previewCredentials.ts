@@ -1,9 +1,11 @@
 import { sql } from "drizzle-orm";
 import { pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
 import { users } from "./auth";
+import { journeys } from "./journeys";
 
 export const previewCredentials = pgTable("preview_credentials", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  journeyId: varchar("journey_id").references(() => journeys.id, { onDelete: "cascade" }),
   username: varchar("username").unique().notNull(),
   passwordHash: varchar("password_hash").notNull(),
   label: varchar("label"),

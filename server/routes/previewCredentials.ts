@@ -3,7 +3,7 @@ import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
 import { db } from "../db";
 import { previewCredentials } from "../../shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { isAdmin } from "../auth";
 import * as apiResponse from "../utils/response";
 
@@ -46,8 +46,12 @@ function getCredentialStatus(credential: {
 
 router.post("/", isAdmin, async (req, res) => {
   try {
-    const { label, expiresAt } = req.body;
+    const { label, expiresAt, journeyId } = req.body;
     const userId = req.user?.id;
+
+    if (!journeyId) {
+      return apiResponse.badRequest(res, "journeyId is required");
+    }
 
     const username = generateFriendlyUsername();
     const plainPassword = generateSecurePassword();
@@ -60,6 +64,7 @@ router.post("/", isAdmin, async (req, res) => {
         passwordHash,
         label: label || null,
         createdById: userId,
+        journeyId,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
       })
       .returning();
@@ -69,6 +74,7 @@ router.post("/", isAdmin, async (req, res) => {
       username: credential.username,
       password: plainPassword,
       label: credential.label,
+      journeyId: credential.journeyId,
       expiresAt: credential.expiresAt,
       createdAt: credential.createdAt,
     });
@@ -80,8 +86,12 @@ router.post("/", isAdmin, async (req, res) => {
 
 router.post("/bulk", isAdmin, async (req, res) => {
   try {
-    const { count, labelPrefix, expiresAt } = req.body;
+    const { count, labelPrefix, expiresAt, journeyId } = req.body;
     const userId = req.user?.id;
+
+    if (!journeyId) {
+      return apiResponse.badRequest(res, "journeyId is required");
+    }
 
     const numToCreate = Math.min(Math.max(1, parseInt(count) || 1), 500);
     const results: Array<{ username: string; password: string; label: string | null }> = [];
@@ -97,6 +107,7 @@ router.post("/bulk", isAdmin, async (req, res) => {
         passwordHash,
         label,
         createdById: userId,
+        journeyId,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
       });
 
@@ -115,12 +126,21 @@ router.post("/bulk", isAdmin, async (req, res) => {
 
 router.get("/", isAdmin, async (req, res) => {
   try {
-    const credentials = await db.select().from(previewCredentials);
+    const { journeyId } = req.query;
+
+    let query = db.select().from(previewCredentials);
+    
+    if (journeyId && typeof journeyId === 'string') {
+      query = query.where(eq(previewCredentials.journeyId, journeyId)) as typeof query;
+    }
+
+    const credentials = await query;
 
     const result = credentials.map((cred) => ({
       id: cred.id,
       username: cred.username,
       label: cred.label,
+      journeyId: cred.journeyId,
       createdById: cred.createdById,
       createdAt: cred.createdAt,
       expiresAt: cred.expiresAt,
