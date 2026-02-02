@@ -2215,7 +2215,36 @@ Important guidelines:
         setIsTransitioningJourney(false);
       }
     },
-    onTranscript: (role: string, text: string) => {
+    onTranscript: (role: string, text: string, isDone?: boolean) => {
+      const roleKey = role as 'user' | 'assistant';
+      const messageId = `msg_${role}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      
+      // Add message to transcript
+      addTranscriptMessage(messageId, roleKey, text, false);
+      
+      // Mark as done since ElevenLabs sends complete messages
+      if (isDone !== false) {
+        updateTranscriptItem(messageId, { status: 'DONE' });
+        
+        // Queue for real-time saving (supports anonymous sessions)
+        if (!queuedItemIdsRef.current.has(messageId)) {
+          queuedItemIdsRef.current.add(messageId);
+          const completeMessage: TranscriptItem = {
+            itemId: messageId,
+            type: 'MESSAGE',
+            role: roleKey,
+            title: text,
+            expanded: false,
+            timestamp: new Date().toISOString(),
+            createdAtMs: Date.now(),
+            status: 'DONE',
+            isHidden: false,
+          };
+          sessionSaverRef.current.queueMessage(completeMessage);
+        }
+      }
+      
+      // Log message
       if (role === 'user') {
         addLog('info', `User: ${text}`);
       } else {
