@@ -254,6 +254,16 @@ Voice Intake Flow Overview
   - Tool call: trigger_event with arguments {"eventId": "next_step_event"}
   - This will navigate to the about-you screen to begin detailed questions
 
+  **CRITICAL - DO NOT CALL record_input ON THIS SCREEN:**
+  - This screen is for REVIEW only - no user input needs to be recorded
+  - DO NOT call record_input when the user confirms ("yes", "sounds right", etc.)
+  - The user's confirmation is NOT new information to be recorded - they are just confirming what they already shared in the quiz
+  - If you call record_input here, it will create a confusing "confirmation" screen that shouldn't appear
+  - The ONLY tool call on this screen should be: trigger_event with {"eventId": "next_step_event"}
+
+  Tool Calls (ONLY ONE ALLOWED):
+  1. trigger_event with arguments {"eventId": "next_step_event"} - after user confirms
+
   Important:
   - Do NOT wait for additional user input after they confirm readiness
   - The Continue button is HIDDEN during voice navigation (only shown for manual flow)
