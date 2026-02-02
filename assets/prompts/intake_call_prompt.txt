@@ -455,14 +455,21 @@ Voice Intake Flow Overview
   4. Brief acknowledgment ("Great intention!" or similar)
   5. NOW call record_input to save their response:
      - Tool call: record_input with arguments {"title": "Intention", "summary": "[one-line summary]", "storeKey": "weeklyIntention"}
-  6. NOW call trigger_event to navigate:
+  6. NOW call trigger_event to navigate TO THE REWARDS SCREEN:
      - Tool call: trigger_event with arguments {"eventId": "navigate_to_cm_rewards_intro"}
-  7. Continue speaking with a transition to rewards: "Great! Now let me tell you about the rewards you can earn..."
+  7. STOP HERE - DO NOT speak about rewards yet. Wait for the cm-rewards-intro screen to load.
 
   CRITICAL TIMING:
   - You MUST wait for the user to respond before calling ANY tools
   - record_input and trigger_event should ONLY be called AFTER the user has finished speaking
   - MANDATORY: You MUST call BOTH record_input AND trigger_event - never just one
+
+  **CRITICAL - DO NOT SKIP THE REWARDS SCREEN:**
+  - You MUST call trigger_event with {"eventId": "navigate_to_cm_rewards_intro"} - NOT "navigate_to_checkin_commitment"
+  - DO NOT speak the rewards explanation on this screen - that belongs on cm-rewards-intro
+  - DO NOT combine screens or "optimize" by skipping cm-rewards-intro
+  - The user MUST see the visual rewards screen (cm-rewards-intro) before proceeding
+  - If you call navigate_to_checkin_commitment from this screen, you are WRONG - you skipped a screen
 
   CRITICAL - HANDLING "FINISHED" OR "DONE":
   - If the user says "Finished", "Done", "That's it", "That's all", or similar phrases, this means they are DONE WITH THEIR ANSWER, NOT that they want to end the call
@@ -470,12 +477,12 @@ Voice Intake Flow Overview
   - After the user says "Finished" or gives their intention, you MUST STILL:
     1. Call record_input to save their response
     2. Call trigger_event with navigate_to_cm_rewards_intro to go to rewards
-    3. Continue the intake flow with the rewards screen
+    3. Wait for the rewards screen to load before speaking about rewards
   - The intake is NOT complete until you reach the pq-start-programme screen
 
   Tool Calls (IN ORDER, AFTER USER RESPONDS - BOTH ARE MANDATORY):
   1. record_input with arguments {"title": "Intention", "summary": "[summary]", "storeKey": "weeklyIntention"}
-  2. trigger_event with arguments {"eventId": "navigate_to_cm_rewards_intro"}
+  2. trigger_event with arguments {"eventId": "navigate_to_cm_rewards_intro"} ← NOT navigate_to_checkin_commitment!
 
   ---
   SCREEN: cm-rewards-intro
@@ -483,15 +490,19 @@ Voice Intake Flow Overview
   Screen ID: cm-rewards-intro
   Available Events: navigate_to_checkin_commitment
 
+  **THIS IS A MANDATORY SCREEN - THE USER MUST SEE THIS VISUAL SCREEN BEFORE PROCEEDING**
+
   Purpose: Explain rewards while showing rewards screen, then navigate to check-in commitment
 
   UI Display:
   - Title: "Earn rewards as you go"
   - Description of the rewards program with points and gift redemption
-  - Visual elements showing rewards/points concept
+  - Visual elements showing rewards/points concept (animated image)
 
   Context:
-  This screen appears after the user has set their weekly intention. The voice agent explains rewards while the user sees the rewards screen, then navigates to check-in commitment with a delay.
+  This screen appears after the user has set their weekly intention. The voice agent explains rewards while the user SEES the rewards screen visually, then navigates to check-in commitment with a delay.
+  
+  **CRITICAL: You MUST be on this screen (cm-rewards-intro) before speaking about rewards. If you spoke about rewards on the previous screen (intention), you made a mistake.**
 
   PERSONALIZED Rewards Framing:
   Connect rewards to their motivation:
