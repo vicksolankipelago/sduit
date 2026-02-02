@@ -10,7 +10,7 @@ import SystemPromptEditor from './SystemPromptEditor';
 import ToolEditor from './ToolEditor';
 import { ScreenProvider } from '../../contexts/voiceAgent/ScreenContext';
 import ScreenPreview from './ScreenPreview';
-import { TrashIcon, FileTextIcon, EditIcon, RocketIcon, TargetIcon, HistoryIcon, SaveIcon, ToolIcon, SettingsIcon, MoreIcon, DownloadIcon, UploadIcon, LinkIcon, CheckIcon, LoaderIcon } from '../Icons';
+import { TrashIcon, FileTextIcon, EditIcon, RocketIcon, TargetIcon, HistoryIcon, SaveIcon, ToolIcon, SettingsIcon, MoreIcon, DownloadIcon, UploadIcon, LinkIcon, CheckIcon, LoaderIcon, CopyIcon } from '../Icons';
 import VersionHistory from './VersionHistory';
 import { useAuth } from '../../contexts/AuthContext';
 import './JourneyBuilder.css';
@@ -409,8 +409,15 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     }
   };
 
-  // Temporarily unused - can be re-enabled when duplicate button is added to UI
-  void duplicateJourney; // Silence unused import warning
+  const handleDuplicate = async () => {
+    if (!currentJourney) return;
+    
+    const newJourney = await duplicateJourney(currentJourney.id);
+    if (newJourney) {
+      // Navigate to the duplicated journey
+      navigate(`/builder?id=${newJourney.id}`);
+    }
+  };
 
   const handleAddAgent = () => {
     if (!currentJourney) return;
@@ -748,6 +755,15 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                       >
                         <LinkIcon size={14} /> Share Link
                       </button>
+                      {isAdmin && (
+                        <button 
+                          className="journey-more-menu-item" 
+                          onClick={() => { handleDuplicate(); setShowMoreMenu(false); }} 
+                          disabled={disabled}
+                        >
+                          <CopyIcon size={14} /> Duplicate
+                        </button>
+                      )}
                       {isAdmin && (
                         <button 
                           className="journey-more-menu-item" 
