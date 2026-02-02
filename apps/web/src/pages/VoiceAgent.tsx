@@ -25,7 +25,7 @@ import FeedbackSurvey from '../components/voiceAgent/FeedbackSurvey';
 import VoiceControlBar from '../components/voiceAgent/VoiceControlBar';
 import { ErrorBoundary } from '../components/voiceAgent/ErrorBoundary';
 import { useAudioLevel } from '../hooks/voiceAgent/useAudioLevel';
-import { EditIcon, SettingsIcon } from '../components/Icons';
+import { EditIcon, SettingsIcon, CopyIcon } from '../components/Icons';
 
 import { SessionStatus, TranscriptItem } from '../types/voiceAgent';
 import { Journey, JourneyListItem } from '../types/journey';
@@ -37,7 +37,7 @@ import {
   downloadPromptAndTranscript
 } from '../utils/transcriptExport';
 import { JourneyRuntime, getStartingAgentName, setEventTriggerCallback } from '../lib/voiceAgent/journeyRuntime';
-import { listJourneysForRuntime, loadJourneyForRuntime } from '../services/journeyStorage';
+import { listJourneysForRuntime, loadJourneyForRuntime, duplicateJourney } from '../services/journeyStorage';
 import { PQData, substitutePromptVariables, DEFAULT_PQ_DATA } from '../utils/promptTemplates';
 import { useAuth } from '../contexts/AuthContext';
 import { saveSession, DebouncedSessionSaver } from '../services/api/sessionService';
@@ -2590,6 +2590,21 @@ Important guidelines:
                                 title="Edit flow"
                               >
                                 <EditIcon size={14} />
+                              </button>
+                            )}
+                            {isAdmin && (
+                              <button
+                                className="journey-card-duplicate-btn"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const newJourney = await duplicateJourney(journey.id);
+                                  if (newJourney) {
+                                    setAvailableJourneys(await listJourneysForRuntime());
+                                  }
+                                }}
+                                title="Duplicate flow"
+                              >
+                                <CopyIcon size={14} />
                               </button>
                             )}
                             <button
