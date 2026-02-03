@@ -7,6 +7,10 @@
  * 
  * The React useConversation hook only accepts overrides at initialization time,
  * but we need to pass dynamic prompts based on journeys loaded at runtime.
+ * 
+ * Authentication: Uses secure token-based auth via AWS API Gateway.
+ * The token endpoint generates conversation tokens server-side, keeping
+ * the ElevenLabs API key secure.
  */
 
 import { useCallback, useRef, useState, useEffect } from 'react';
@@ -15,6 +19,34 @@ import { SessionStatus } from '../../types/voiceAgent';
 import { logger } from '../../utils/logger';
 
 const elevenLabsLogger = logger;
+
+// AWS API Gateway endpoint for ElevenLabs session tokens
+const ELEVENLABS_TOKEN_ENDPOINT = 'https://un4a8jbuha.execute-api.us-east-2.amazonaws.com/prod/ai-voice-agent/11labs/session';
+
+/**
+ * Fetches a conversation token from the secure AWS endpoint
+ * This keeps the ElevenLabs API key on the server side
+ */
+async function fetchConversationToken(agentId: string): Promise<string> {
+  const url = `${ELEVENLABS_TOKEN_ENDPOINT}/${agentId}`;
+  console.log('🔑 Fetching conversation token from:', url);
+  
+  const response = await fetch(url);
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to fetch conversation token: ${response.status} - ${errorText}`);
+  }
+  
+  const data = await response.json();
+  
+  if (!data.token) {
+    throw new Error('Token endpoint did not return a token');
+  }
+  
+  console.log('🔑 Conversation token received successfully');
+  return data.token;
+}
 
 export interface ElevenLabsSessionCallbacks {
   customPrompts?: Record<string, string>;
@@ -142,10 +174,16 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
     updateStatus('CONNECTING');
 
     try {
-      // Build session config for the vanilla SDK
-      // The vanilla SDK supports overrides directly in startSession()
+      // Fetch conversation token from secure AWS endpoint
+      // This keeps the ElevenLabs API key server-side for security
+      console.log('🔑 Fetching conversation token for agent:', agentId);
+      const conversationToken = await fetchConversationToken(agentId);
+      console.log('🔑 Token fetched successfully, starting session...');
+      
+      // Build session config for the vanilla SDK using conversationToken (private WebRTC mode)
+      // This is more secure than using agentId directly (public mode)
       const sessionConfig: Parameters<typeof Conversation.startSession>[0] = {
-        agentId,
+        conversationToken,
         connectionType: 'webrtc',
         // Callbacks for the vanilla SDK
         onConnect: ({ conversationId }) => {
@@ -239,9 +277,10 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         console.log('🔧 Client tools registered:', Object.keys(wrappedTools));
       }
 
-      // Log config without the full prompt
+      // Log config without the full prompt or token
       const configForLog = {
-        agentId: sessionConfig.agentId,
+        agentId: agentId,
+        hasConversationToken: !!conversationToken,
         connectionType: sessionConfig.connectionType,
         hasDynamicVariables: !!(sessionConfig as any).dynamicVariables,
         hasOverrides: !!(sessionConfig as any).overrides,
@@ -250,8 +289,8 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         hasClientTools: !!wrappedTools,
         clientToolNames: wrappedTools ? Object.keys(wrappedTools) : [],
       };
-      console.log('🔌 Session config (vanilla SDK):', JSON.stringify(configForLog, null, 2));
-      console.log('🚀 About to call Conversation.startSession (vanilla SDK)...');
+      console.log('🔌 Session config (vanilla SDK, token auth):', JSON.stringify(configForLog, null, 2));
+      console.log('🚀 About to call Conversation.startSession with conversationToken...');
 
       // Use the vanilla SDK's Conversation.startSession()
       const conversation = await Conversation.startSession(sessionConfig);
