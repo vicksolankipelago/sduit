@@ -1,0 +1,225 @@
+[05:23:26.884] INFO: Initiating connection with journey: Personalisation Quiz (11Labs)
+
+[05:23:26.884] INFO: Starting agent: newAgent
+
+[05:23:26.884] INFO: 📝 Added 7 quiz answer(s) to prompt context
+
+[05:23:26.884] INFO: 📋 Agent configuration prepared (36940 chars)
+
+[05:23:26.884] INFO: 🎵 Using voice: pNInz6obpgDQGcFmaJgB
+
+[05:23:26.884] INFO: 👥 Journey has 1 agent(s) configured
+
+[05:23:26.884] INFO: 🎙️ Initiating ElevenLabs connection...
+
+[05:23:26.884] INFO: 🔗 Passing 7 dynamic variable(s) to ElevenLabs
+
+[05:23:26.891] INFO: [05:23:26] Connecting to ElevenLabs...
+
+[05:23:29.449] SUCCESS: [05:23:29] Connected to ElevenLabs
+
+[05:23:29.450] SUCCESS: Successfully initiated ElevenLabs connection
+
+[05:23:45.968] INFO: User: All right.
+
+[05:23:47.170] INFO: Assistant: Hi Vick, welcome to Pelago. I'm Navi, your personalized AI assistant. It sounds like you're ready to take action, which is a great place to be. Your goal is to track consumption and discover patterns, driven by relationships, and you want to learn about emotional stability. Does that capture it?
+
+[05:24:51.511] INFO: User: Yeah, it does. Hello. This is really slow. Why isn't this working?
+
+[05:24:51.853] INFO: Assistant: I...
+
+[05:24:56.645] INFO: User: Hello?
+
+[05:24:57.850] INFO: Assistant: I hear you, Vick. I'm sorry for the delay. Great! Here's what will help you most. You'll have access to care coordinators, who are qualified experts providing personalized coaching. You'll also do a quick daily check-in to track progress, as members who do this are five times more likely to succeed. I'd love to learn more about what brought you here.
+
+
+[05:24:57.850] TOOL: ⚡ trigger_event: next_step_event
+
+[05:24:57.851] EVENT: 🔘 Button/Event: "next_step_event" on screen "pq-program-summary"
+{
+  "screensCount": 18
+}
+
+[05:24:57.851] INFO: 🧭 Navigation: "pq-program-summary" → "about-you"
+{
+  "deeplink": "about-you",
+  "screensAvailable": 18,
+  "screenIds": [
+    "pq-intro",
+    "pq-feelings-alcohol",
+    "pq-goal-alcohol",
+    "pq-areas-to-improve",
+    "pq-motivation"
+  ]
+}
+
+[05:24:57.851] SUCCESS: ✅ Navigated: "pq-program-summary" → "about-you"
+
+[05:24:57.851] TOOL: 🔧 Tool triggered event: next_step_event
+
+[05:24:59.422] INFO: Assistant: You're ready to make changes. What's going on in your life right now that's brought you to this point?
+
+[05:25:29.815] INFO: User: I drink about a bottle of wine a week, so I just want to take that with it.
+
+[05:25:30.263] INFO: Assistant: Got it.
+
+
+[05:25:30.268] TOOL: 📝 record_input: about you
+{
+  "summary": "Drinks a bottle of wine weekly and wants to cut back.",
+  "storeKey": "aboutYouSummary",
+  "delay": 0
+}
+
+[05:25:30.269] TOOL: 🔧 Tool recorded: about you = "Drinks a bottle of wine weekly and wants to cut ba..."
+
+[05:25:31.470] TOOL: ⚡ trigger_event: navigate_to_outcomes (delay: 2s)
+
+[05:25:32.672] INFO: Assistant: That makes sense. What would 'drinking less' actually look like for you?
+
+[05:25:33.471] EVENT: 🔘 Button/Event: "navigate_to_outcomes" on screen "about-you"
+{
+  "screensCount": 18
+}
+
+[05:25:33.471] INFO: 🧭 Navigation: "about-you" → "outcomes"
+{
+  "deeplink": "outcomes",
+  "screensAvailable": 18,
+  "screenIds": [
+    "pq-intro",
+    "pq-feelings-alcohol",
+    "pq-goal-alcohol",
+    "pq-areas-to-improve",
+    "pq-motivation"
+  ]
+}
+
+[05:25:33.472] SUCCESS: ✅ Navigated: "about-you" → "outcomes"
+
+[05:25:33.472] TOOL: 🔧 Tool triggered event: navigate_to_outcomes
+
+[05:25:46.378] INFO: User: Just means I wouldn't crave a bottle of wine halfway through the week.
+
+[05:25:46.827] INFO: Assistant: I hear you.
+
+
+[05:25:46.832] TOOL: 📝 record_input: Outcomes
+{
+  "summary": "Wants to stop craving wine mid-week.",
+  "storeKey": "outcomesSummary",
+  "delay": 0
+}
+
+[05:25:46.832] TOOL: 🔧 Tool recorded: Outcomes = "Wants to stop craving wine mid-week...."
+
+[05:25:49.996] TOOL: ⚡ trigger_event: navigate_to_motivation (delay: 2s)
+
+[05:25:51.590] INFO: Assistant: You mentioned relationships matter to you. Tell me more, what's really driving this?
+
+[05:25:51.997] EVENT: 🔘 Button/Event: "navigate_to_motivation" on screen "outcomes"
+{
+  "screensCount": 18
+}
+
+[05:25:51.998] INFO: 🧭 Navigation: "outcomes" → "motivation"
+{
+  "deeplink": "motivation",
+  "screensAvailable": 18,
+  "screenIds": [
+    "pq-intro",
+    "pq-feelings-alcohol",
+    "pq-goal-alcohol",
+    "pq-areas-to-improve",
+    "pq-motivation"
+  ]
+}
+
+[05:25:51.998] SUCCESS: ✅ Navigated: "outcomes" → "motivation"
+
+[05:25:51.998] TOOL: 🔧 Tool triggered event: navigate_to_motivation
+
+[05:26:10.487] INFO: User: Yeah, it's mainly my family and my kids. I just want to be a bit more pleasant.
+
+[05:26:10.866] INFO: Assistant: I hear you.
+
+
+[05:26:10.868] TOOL: 📝 record_input: your why
+{
+  "summary": "Wants to be more pleasant for family and kids.",
+  "storeKey": "yourWhySummary",
+  "delay": 0
+}
+
+[05:26:10.869] TOOL: 🔧 Tool recorded: your why = "Wants to be more pleasant for family and kids...."
+
+[05:26:18.212] TOOL: ⚡ trigger_event: navigate_to_intention (delay: 2s)
+
+[05:26:20.213] EVENT: 🔘 Button/Event: "navigate_to_intention" on screen "motivation"
+{
+  "screensCount": 18
+}
+
+[05:26:20.213] INFO: 🧭 Navigation: "motivation" → "intention"
+{
+  "deeplink": "intention",
+  "screensAvailable": 18,
+  "screenIds": [
+    "pq-intro",
+    "pq-feelings-alcohol",
+    "pq-goal-alcohol",
+    "pq-areas-to-improve",
+    "pq-motivation"
+  ]
+}
+
+[05:26:20.213] SUCCESS: ✅ Navigated: "motivation" → "intention"
+
+[05:26:20.213] TOOL: 🔧 Tool triggered event: navigate_to_intention
+
+[05:26:30.575] INFO: User: The latency is really bad on this, so I think it's because I'm using general flash.
+
+[05:26:31.384] INFO: Assistant: I hear you, Vick, and I appreciate your patience with the connection. Let's set up your focus for this week. What would you like to work on? For example, you could try picking specific days to skip drinking or setting a limit for yourself.
+
+[05:26:54.520] INFO: User: This week I'd like to focus on just, you know, nailing work.
+
+[05:26:54.972] INFO: Assistant: Great intention!
+
+
+[05:26:54.972] TOOL: 📝 record_input: this week
+{
+  "summary": "Focusing on work performance this week.",
+  "storeKey": "weeklyIntention",
+  "delay": 0
+}
+
+[05:26:54.973] TOOL: 🔧 Tool recorded: this week = "Focusing on work performance this week...."
+
+[05:26:59.094] INFO: Assistant: Now, every time you check in, you'll earn points you can redeem for rewards. Members who check in daily are five times more likely to reach their goals.
+
+
+[05:26:59.094] TOOL: ⚡ trigger_event: navigate_to_checkin_commitment (delay: 4s)
+
+[05:27:03.095] EVENT: 🔘 Button/Event: "navigate_to_checkin_commitment" on screen "intention"
+{
+  "screensCount": 18
+}
+
+[05:27:03.095] INFO: 🧭 Navigation: "intention" → "checkin-commitment"
+{
+  "deeplink": "checkin-commitment",
+  "screensAvailable": 18,
+  "screenIds": [
+    "pq-intro",
+    "pq-feelings-alcohol",
+    "pq-goal-alcohol",
+    "pq-areas-to-improve",
+    "pq-motivation"
+  ]
+}
+
+[05:27:03.095] SUCCESS: ✅ Navigated: "intention" → "checkin-commitment"
+
+[05:27:03.095] TOOL: 🔧 Tool triggered event: navigate_to_checkin_commitment
+
+[05:27:03.925] INFO: Assistant: How often would you like to check in this week, every day, a few times, or just once?

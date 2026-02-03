@@ -162,6 +162,7 @@ function VoiceAgentContent() {
     switchToAgent,
     flowContext,
     updateFlowContext,
+    currentScreenId,
   } = useAgentUI();
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -1000,31 +1001,52 @@ function VoiceAgentContent() {
       
       if (currentAgentConfig?.screens) {
         // Screens are already shown at session start, just process the navigation
-        addLog('info', `📱 Processing event "${eventId}" within ${currentAgentConfig.screens.length} screen(s)`);
+        addLog('info', `📱 Processing event "${eventId}" within ${currentAgentConfig.screens.length} screen(s), currentScreen: "${currentScreenId}"`);
         
-        // Find the event in the current screens - check both screen-level and element-level events
+        // CRITICAL: Only look for events on the CURRENT screen, not all screens
+        // This prevents the AI from calling events that don't exist on the current screen
+        // (e.g., calling navigate_to_checkin_commitment from 'intention' screen when it only exists on 'cm-rewards-intro')
+        const currentScreen = currentAgentConfig.screens.find(s => s.id === currentScreenId);
+        
+        if (!currentScreen) {
+          addLog('warning', `⚠️ Current screen "${currentScreenId}" not found in agent screens`);
+          return;
+        }
+        
+        // Find the event in the CURRENT screen only - check both screen-level and element-level events
         let foundEvent = null;
         
-        // First check screen-level events
-        const screenLevelEvents = currentAgentConfig.screens.flatMap(screen => screen.events || []);
-        foundEvent = screenLevelEvents.find(e => e.id === eventId);
+        // First check screen-level events on current screen only
+        if (currentScreen.events) {
+          foundEvent = currentScreen.events.find(e => e.id === eventId);
+        }
         
-        // If not found, check element-level events (in buttons, etc.)
+        // If not found, check element-level events on current screen only
         if (!foundEvent) {
-          for (const screen of currentAgentConfig.screens) {
-            for (const section of screen.sections) {
-              for (const element of section.elements) {
-                if (element.events) {
-                  const elementEvent = element.events.find((e: any) => e.id === eventId);
-                  if (elementEvent) {
-                    foundEvent = elementEvent;
-                    break;
-                  }
+          for (const section of currentScreen.sections) {
+            for (const element of section.elements) {
+              if (element.events) {
+                const elementEvent = element.events.find((e: any) => e.id === eventId);
+                if (elementEvent) {
+                  foundEvent = elementEvent;
+                  break;
                 }
               }
-              if (foundEvent) break;
             }
             if (foundEvent) break;
+          }
+        }
+        
+        // Log if event was not found on current screen (but might exist on other screens)
+        if (!foundEvent) {
+          // Check if event exists on any screen (for better error messaging)
+          const allScreenEvents = currentAgentConfig.screens.flatMap(screen => [
+            ...(screen.events || []),
+            ...screen.sections.flatMap(s => s.elements.flatMap(e => e.events || []))
+          ]);
+          const eventExistsElsewhere = allScreenEvents.find(e => e.id === eventId);
+          if (eventExistsElsewhere) {
+            addLog('error', `❌ Event "${eventId}" exists but NOT on current screen "${currentScreenId}". The AI skipped a navigation step.`);
           }
         }
         
