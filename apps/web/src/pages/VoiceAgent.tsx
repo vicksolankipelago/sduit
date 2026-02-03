@@ -741,6 +741,11 @@ function VoiceAgentContent() {
       const { success, fromScreen, toScreen, availableScreens } = customEvent.detail;
       if (success) {
         addLog('success', `✅ Navigated: "${fromScreen}" → "${toScreen}"`);
+        // CRITICAL FIX: Sync the navigation result back to AgentUIContext
+        // This ensures currentScreenIdRef stays in sync with ScreenContext's navigation
+        if (navigateToScreen && toScreen) {
+          navigateToScreen(toScreen);
+        }
       } else {
         addLog('error', `❌ Navigation failed: screen "${toScreen}" not found`, {
           fromScreen,
@@ -758,7 +763,7 @@ function VoiceAgentContent() {
       window.removeEventListener('screenNavigation', handleNavigation as EventListener);
       window.removeEventListener('screenNavigationResult', handleNavigationResult as EventListener);
     };
-  }, [addLog]);
+  }, [addLog, navigateToScreen]);
 
   // Listen for tool-dispatched events and connect them to screen context functions
   // This bridges the gap between ElevenLabs client tool calls and UI navigation
