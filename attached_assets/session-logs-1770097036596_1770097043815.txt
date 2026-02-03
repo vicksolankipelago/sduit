@@ -1,0 +1,44 @@
+[05:36:26.606] INFO: Initiating connection with journey: Personalisation Quiz (11Labs)
+
+[05:36:26.606] INFO: Starting agent: newAgent
+
+[05:36:26.606] INFO: 📝 Added 7 quiz answer(s) to prompt context
+
+[05:36:26.607] INFO: 📋 Agent configuration prepared (36901 chars)
+
+[05:36:26.607] INFO: 🎵 Using voice: pNInz6obpgDQGcFmaJgB
+
+[05:36:26.607] INFO: 👥 Journey has 1 agent(s) configured
+
+[05:36:26.607] INFO: 🎙️ Initiating ElevenLabs connection...
+
+[05:36:26.607] INFO: 🔗 Passing 7 dynamic variable(s) to ElevenLabs
+
+[05:36:26.608] INFO: [05:36:26] Connecting to ElevenLabs...
+
+[05:36:29.221] SUCCESS: [05:36:29] Connected to ElevenLabs
+
+[05:36:29.221] SUCCESS: Successfully initiated ElevenLabs connection
+
+[05:36:38.257] INFO: User: ...
+
+[05:36:39.178] INFO: Assistant: Hey, just checking in. Are you still there and ready to get started? If so, I’ll give a quick overview and then ask a few questions to personalize your plan.
+
+[05:36:45.335] INFO: User: Okay.
+
+[05:36:46.265] INFO: Assistant: Hi Vick, welcome to Pelago. I’m Navi, here to help navigate your journey. First, we’ll go through a few quick questions to personalize your plan. Are you ready to start?
+
+[05:37:01.251] TOOL: ⚡ trigger_event: navigate_to_program_summary
+
+[05:37:01.251] EVENT: 🔘 Button/Event: "navigate_to_program_summary" on screen "pq-program-summary"
+{
+  "screensCount": 18
+}
+
+[05:37:01.252] TOOL: 🔧 Tool triggered event: navigate_to_program_summary
+
+[05:37:01.254] INFO: User: Yeah, sounds good.
+
+[05:37:05.198] INFO: Assistant: Great. Let’s get started. First let’s review where you are.
+
+Hi, welcome to Pelago. I’m Navi, your personalized assistant. From your quiz: you’re planning to take steps to change very soon, and your goal is to learn more and explore options. You’re motivated by personal growth, and you’d like to learn about emotional stability. Does that sound right?
