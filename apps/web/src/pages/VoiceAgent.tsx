@@ -169,6 +169,7 @@ function VoiceAgentContent() {
 
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const currentAgentRef = useRef<string>('greeter');
+  const currentScreenIdRef = useRef<string | null>(null);
 
   const sdkAudioElement = React.useMemo(() => {
     if (typeof window === 'undefined') return undefined;
@@ -264,6 +265,11 @@ function VoiceAgentContent() {
   
   // Ref to store current journey for event handlers (avoids closure issues)
   const currentJourneyRef = useRef<Journey | null>(null);
+  
+  // Keep currentScreenIdRef in sync with currentScreenId (avoids closure issues in event handlers)
+  useEffect(() => {
+    currentScreenIdRef.current = currentScreenId ?? null;
+  }, [currentScreenId]);
   
   // Ref to store the voice intake navigator journey (for quiz-to-voice transitions)
   const intakeNavigatorJourneyRef = useRef<Journey | null>(null);
@@ -1000,16 +1006,19 @@ function VoiceAgentContent() {
       });
       
       if (currentAgentConfig?.screens) {
+        // Use ref to get the latest currentScreenId (avoids stale closure issues)
+        const activeScreenId = currentScreenIdRef.current;
+        
         // Screens are already shown at session start, just process the navigation
-        addLog('info', `📱 Processing event "${eventId}" within ${currentAgentConfig.screens.length} screen(s), currentScreen: "${currentScreenId}"`);
+        addLog('info', `📱 Processing event "${eventId}" within ${currentAgentConfig.screens.length} screen(s), currentScreen: "${activeScreenId}"`);
         
         // CRITICAL: Only look for events on the CURRENT screen, not all screens
         // This prevents the AI from calling events that don't exist on the current screen
         // (e.g., calling navigate_to_checkin_commitment from 'intention' screen when it only exists on 'cm-rewards-intro')
-        const currentScreen = currentAgentConfig.screens.find(s => s.id === currentScreenId);
+        const currentScreen = currentAgentConfig.screens.find(s => s.id === activeScreenId);
         
         if (!currentScreen) {
-          addLog('warning', `⚠️ Current screen "${currentScreenId}" not found in agent screens`);
+          addLog('warning', `⚠️ Current screen "${activeScreenId}" not found in agent screens`);
           return;
         }
         
@@ -1046,7 +1055,7 @@ function VoiceAgentContent() {
           ]);
           const eventExistsElsewhere = allScreenEvents.find(e => e.id === eventId);
           if (eventExistsElsewhere) {
-            addLog('error', `❌ Event "${eventId}" exists but NOT on current screen "${currentScreenId}". The AI skipped a navigation step.`);
+            addLog('error', `❌ Event "${eventId}" exists but NOT on current screen "${activeScreenId}". The AI skipped a navigation step.`);
           }
         }
         
