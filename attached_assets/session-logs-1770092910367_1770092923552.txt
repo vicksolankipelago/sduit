@@ -1,0 +1,202 @@
+[04:25:06.779] INFO: Initiating connection with journey: PQ + Intake (Internal 11Labs)
+
+[04:25:06.779] INFO: Starting agent: pQIntake
+
+[04:25:06.779] INFO: 📝 Added 7 quiz answer(s) to prompt context
+
+[04:25:06.779] INFO: 📋 Agent configuration prepared (14901 chars)
+
+[04:25:06.779] INFO: 🎵 Using voice: pNInz6obpgDQGcFmaJgB
+
+[04:25:06.779] INFO: 👥 Journey has 1 agent(s) configured
+
+[04:25:06.779] INFO: 🎙️ Initiating ElevenLabs connection...
+
+[04:25:06.779] INFO: 🔗 Passing 7 dynamic variable(s) to ElevenLabs
+
+[04:25:06.780] INFO: [04:25:06] Connecting to ElevenLabs...
+
+[04:25:09.469] SUCCESS: [04:25:09] Connected to ElevenLabs
+
+[04:25:09.469] SUCCESS: Successfully initiated ElevenLabs connection
+
+[04:25:21.609] INFO: User: I was just taking a shower.
+
+[04:25:22.898] INFO: Assistant: No problem at all, Vick. I'm Navi, and I'm here to help navigate your journey whenever you're ready. I've reviewed what you shared in the quiz, and it sounds like you're curious about changing but haven't taken steps yet, with a goal to maintain sobriety. You mentioned being motivated by saving money and wanting to learn about emotional stability. Does that sound right?
+
+[04:25:46.891] TOOL: ⚡ trigger_event: next_step_event
+
+[04:25:46.892] EVENT: 🔘 Button/Event: "next_step_event" on screen "pq-program-summary"
+{
+  "screensCount": 18
+}
+
+[04:25:46.892] INFO: 🧭 Navigation: "pq-program-summary" → "about-you"
+{
+  "deeplink": "about-you",
+  "screensAvailable": 18,
+  "screenIds": [
+    "pq-intro",
+    "pq-feelings-alcohol",
+    "pq-goal-alcohol",
+    "pq-areas-to-improve",
+    "pq-motivation"
+  ]
+}
+
+[04:25:46.892] SUCCESS: ✅ Navigated: "pq-program-summary" → "about-you"
+
+[04:25:46.892] TOOL: 🔧 Tool triggered event: next_step_event
+
+[04:25:46.896] INFO: User: Yeah, sounds right.
+
+[04:25:48.724] INFO: Assistant: Great. What's been on your mind that brought you here, Vick?
+
+[04:25:59.649] TOOL: 📝 record_input: About You
+{
+  "summary": "Wants to cut down because they are drinking too much.",
+  "storeKey": "aboutYouSummary",
+  "delay": 0
+}
+
+[04:25:59.649] TOOL: 🔧 Tool recorded: About You = "Wants to cut down because they are drinking too mu..."
+
+[04:25:59.649] INFO: User: I'm just drinking a little too much. I'm going to cut down on it.
+
+[04:26:01.319] TOOL: ⚡ trigger_event: navigate_to_outcomes
+
+[04:26:01.319] EVENT: 🔘 Button/Event: "navigate_to_outcomes" on screen "about-you"
+{
+  "screensCount": 18
+}
+
+[04:26:01.320] INFO: 🧭 Navigation: "about-you" → "outcomes"
+{
+  "deeplink": "outcomes",
+  "screensAvailable": 18,
+  "screenIds": [
+    "pq-intro",
+    "pq-feelings-alcohol",
+    "pq-goal-alcohol",
+    "pq-areas-to-improve",
+    "pq-motivation"
+  ]
+}
+
+[04:26:01.320] SUCCESS: ✅ Navigated: "about-you" → "outcomes"
+
+[04:26:01.320] TOOL: 🔧 Tool triggered event: navigate_to_outcomes
+
+[04:26:03.125] INFO: Assistant: I hear you. Many people come to Pelago with similar feelings. Since your goal is to maintain sobriety and you're looking to improve by avoiding or eliminating heavy drinking, what specific outcomes are you hoping for by making these changes?
+
+[04:26:24.040] TOOL: 📝 record_input: Outcomes
+{
+  "summary": "Wants to be healthier.",
+  "storeKey": "outcomesSummary",
+  "delay": 0
+}
+
+[04:26:24.041] TOOL: 🔧 Tool recorded: Outcomes = "Wants to be healthier...."
+
+[04:26:24.043] INFO: User: Yeah, just look to be a bit healthier.
+
+[04:26:27.209] INFO: Assistant: Got it. Being healthier is a great outcome to strive for. You also mentioned that saving money is a big motivator for you. Can you tell me a bit more about what saving money means to you in this journey?
+
+[04:26:48.779] TOOL: 📝 record_input: Your Why
+{
+  "summary": "Saving money is one factor among others.",
+  "storeKey": "yourWhySummary",
+  "delay": 0
+}
+
+[04:26:48.779] TOOL: 🔧 Tool recorded: Your Why = "Saving money is one factor among others...."
+
+[04:26:48.783] INFO: User: It's not that much of a motivator, to be honest. It's just one of the factors. Yeah?
+
+[04:26:51.737] INFO: Assistant: I understand. It's good to know all the factors that play a role. Now, let's talk about your focus for the week. What would you like to focus on this week, perhaps related to avoiding or eliminating heavy drinking? For example, you could aim to pick specific days to skip drinking, set a limit per occasion, or recognize when you might be escalating your drinking.
+
+[04:27:21.874] TOOL: 📝 record_input: Intention
+{
+  "summary": "Focus on healthy eating and exercise.",
+  "storeKey": "weeklyIntention",
+  "delay": 0
+}
+
+[04:27:21.875] TOOL: 🔧 Tool recorded: Intention = "Focus on healthy eating and exercise...."
+
+[04:27:21.877] INFO: User: Yeah, it'd be good to just eat healthy and do a bit of exercise.
+
+[04:27:24.746] INFO: Assistant: Got it. Focusing on healthy eating and exercise is a great intention for the week.
+
+Now about rewards...
+
+
+[04:27:24.746] TOOL: ⚡ trigger_event: navigate_to_cm_rewards_intro
+
+[04:27:24.747] EVENT: 🔘 Button/Event: "navigate_to_cm_rewards_intro" on screen "outcomes"
+{
+  "screensCount": 18
+}
+
+[04:27:24.747] TOOL: 🔧 Tool triggered event: navigate_to_cm_rewards_intro
+
+[04:27:26.487] INFO: Assistant: Every time you check in, you'll earn points for rewards. Members who check in daily are five times more likely to reach their goals. How often would you like to check in – every day, a few times, or once?
+
+[04:27:47.362] TOOL: ⚡ trigger_event: select_daily_commitment
+
+[04:27:47.362] EVENT: 🔘 Button/Event: "select_daily_commitment" on screen "outcomes"
+{
+  "screensCount": 18
+}
+
+[04:27:47.363] TOOL: 🔧 Tool triggered event: select_daily_commitment
+
+[04:27:47.364] INFO: User: I'd do this every day.
+
+[04:27:48.927] INFO: Assistant: That's a great commitment, Vick.
+
+
+[04:27:48.929] TOOL: ⚡ trigger_event: navigate_to_notification_setup
+
+[04:27:48.929] EVENT: 🔘 Button/Event: "navigate_to_notification_setup" on screen "outcomes"
+{
+  "screensCount": 18
+}
+
+[04:27:48.929] TOOL: 🔧 Tool triggered event: navigate_to_notification_setup
+
+[04:27:49.959] INFO: Assistant: What time works best for a daily reminder?
+
+[04:28:01.355] TOOL: ⚡ trigger_event: permissions_screen_event
+
+[04:28:01.355] EVENT: 🔘 Button/Event: "permissions_screen_event" on screen "outcomes"
+{
+  "screensCount": 18
+}
+
+[04:28:01.356] TOOL: 🔧 Tool triggered event: permissions_screen_event
+
+[04:28:01.356] INFO: 🔔 Notification permission request triggered - showing popup
+
+[04:28:01.358] INFO: User: 8pm?
+
+[04:28:02.559] INFO: Assistant: We'll remind you at eight p.m. Tap Allow when you see the permission prompt.
+
+[04:28:15.067] INFO: User: ...
+
+[04:28:15.607] INFO: Assistant: Are you still there, Vick? Just making sure you saw the permission prompt on your screen. Once you tap allow, we can move on to review your plan.
+
+[04:28:26.037] INFO: User: I did but you're still on the intention screen even though you've triggered the event.
+
+[04:28:26.616] INFO: Assistant: I apologize for that technical glitch, Vick. Let me get us back on track. 
+
+Since we've set your daily check-in for eight p.m., let's move forward to review your plan. 
+
+[04:28:26.616] TOOL: ⚡ trigger_event: navigate_to_plan_review
+
+[04:28:26.616] EVENT: 🔘 Button/Event: "navigate_to_plan_review" on screen "outcomes"
+{
+  "screensCount": 18
+}
+
+[04:28:26.616] TOOL: 🔧 Tool triggered event: navigate_to_plan_review
