@@ -143,14 +143,6 @@ export default function AgentUIRenderer({ bottomBar, onOpenSettings, onExit, sho
     );
   }
 
-  // No SDUI screen available - show a minimal connecting indicator
-  // This prevents blank page when session is starting but screens aren't loaded yet
-  return (
-    <div className="agent-ui-overlay agent-ui-connecting">
-      <div className="agent-ui-connecting-content">
-        <div className="agent-ui-connecting-spinner"></div>
-        <p>Connecting...</p>
-      </div>
-    </div>
-  );
+  // No SDUI screen available - return null to show the underlying flows page
+  return null;
 }
