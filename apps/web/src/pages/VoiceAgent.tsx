@@ -278,11 +278,31 @@ function VoiceAgentContent() {
   const [showNotificationPopup, setShowNotificationPopup] = useState(false);
   
   // Preview mode state (when accessed via shared link)
+  // Only enable preview mode if there's actually a journey to launch (URL param or localStorage)
   const [isPreviewMode] = useState(() => {
-    return localStorage.getItem('voice-agent-preview-mode') === 'true';
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasUrlJourney = urlParams.get('journey') || urlParams.get('flow');
+    const hasStoredJourney = localStorage.getItem('voice-agent-launch-journey');
+    const hasPreviewMode = localStorage.getItem('voice-agent-preview-mode') === 'true';
+    
+    // Only enter preview mode if we actually have a journey to launch
+    if (hasPreviewMode && !hasUrlJourney && !hasStoredJourney) {
+      // Clean up stale preview mode state
+      console.log('🧹 Clearing stale preview mode (no journey to launch)');
+      localStorage.removeItem('voice-agent-preview-mode');
+      return false;
+    }
+    
+    return hasPreviewMode && (!!hasUrlJourney || !!hasStoredJourney);
   });
   const [previewLoading, setPreviewLoading] = useState(() => {
-    return localStorage.getItem('voice-agent-preview-mode') === 'true';
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasUrlJourney = urlParams.get('journey') || urlParams.get('flow');
+    const hasStoredJourney = localStorage.getItem('voice-agent-launch-journey');
+    const hasPreviewMode = localStorage.getItem('voice-agent-preview-mode') === 'true';
+    
+    // Only show loading if we're actually in preview mode with a journey to launch
+    return hasPreviewMode && (!!hasUrlJourney || !!hasStoredJourney);
   });
   
   // Session tracking for transcript export
