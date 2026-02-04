@@ -366,7 +366,7 @@ export async function listProductionJourneys(): Promise<JourneyListItem[]> {
       id: flow.journeyId,
       name: flow.name,
       description: flow.description,
-      agentCount: 0, // Not available in index
+      agentCount: flow.agentCount || 0,
       updatedAt: flow.publishedAt,
       isPublished: true,
       status: 'published' as const,

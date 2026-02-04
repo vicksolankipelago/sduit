@@ -47,7 +47,7 @@ export class PublishedFlowStorageService {
       },
     });
 
-    await this.updateIndex(flow.journeyId, flow.name, flow.description, flow.publishedAt);
+    await this.updateIndex(flow.journeyId, flow.name, flow.description, flow.publishedAt, flow.agents?.length || 0);
   }
 
   async getPublishedFlow(journeyId: string): Promise<PublishedFlowData | null> {
@@ -86,7 +86,7 @@ export class PublishedFlowStorageService {
     }
   }
 
-  async listPublishedFlows(): Promise<{ journeyId: string; name: string; description: string; publishedAt: string }[]> {
+  async listPublishedFlows(): Promise<{ journeyId: string; name: string; description: string; publishedAt: string; agentCount: number }[]> {
     try {
       const bucket = this.getBucket();
       const indexFile = bucket.file(this.getIndexPath());
@@ -105,12 +105,12 @@ export class PublishedFlowStorageService {
     }
   }
 
-  private async updateIndex(journeyId: string, name: string, description: string, publishedAt: string): Promise<void> {
+  private async updateIndex(journeyId: string, name: string, description: string, publishedAt: string, agentCount: number): Promise<void> {
     try {
       const bucket = this.getBucket();
       const indexFile = bucket.file(this.getIndexPath());
       
-      let index: { flows: { journeyId: string; name: string; description: string; publishedAt: string }[] } = { flows: [] };
+      let index: { flows: { journeyId: string; name: string; description: string; publishedAt: string; agentCount: number }[] } = { flows: [] };
       
       const [exists] = await indexFile.exists();
       if (exists) {
@@ -119,7 +119,7 @@ export class PublishedFlowStorageService {
       }
 
       const existingIdx = index.flows.findIndex(f => f.journeyId === journeyId);
-      const flowEntry = { journeyId, name, description, publishedAt };
+      const flowEntry = { journeyId, name, description, publishedAt, agentCount };
       
       if (existingIdx >= 0) {
         index.flows[existingIdx] = flowEntry;
