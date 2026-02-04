@@ -417,8 +417,12 @@ function VoiceAgentContent() {
             addLog('info', `📋 Journey ready: ${firstJourney.name}`);
           }
         }
+      } catch (error) {
+        console.error('Error loading journeys:', error);
+        addLog('error', `Failed to load journeys: ${error instanceof Error ? error.message : 'Unknown error'}`);
       } finally {
         setJourneysLoading(false);
+        setPreviewLoading(false); // Always clear preview loading on completion
       }
     };
 

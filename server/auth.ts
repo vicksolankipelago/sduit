@@ -53,6 +53,8 @@ export function setupAuth(app: Express) {
     tableName: "sessions",
   });
 
+  const isProduction = process.env.NODE_ENV === "production";
+  
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET!,
     resave: false,
@@ -60,7 +62,8 @@ export function setupAuth(app: Express) {
     store,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isProduction,
+      sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     },
   };
