@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { Journey, Agent, DEFAULT_SYSTEM_PROMPT, validateJourney, Screen, TtsProvider, ELEVENLABS_VOICE_OPTIONS, AZURE_VOICE_OPTIONS } from '../../types/journey';
-import { loadJourney, saveJourney, deleteJourney, duplicateJourney } from '../../services/journeyStorage';
+import { loadJourney, saveJourney, deleteJourney, duplicateJourney, loadProductionJourney } from '../../services/journeyStorage';
 import { publishJourney as publishJourneyApi, unpublishJourney as unpublishJourneyApi, getPublishedJourney } from '../../services/api/journeyService';
 import { SCREEN_TEMPLATES } from '../../lib/voiceAgent/screenTemplates';
 import { generateScreensFromPrompts, suggestionToScreen, ScreenSuggestion } from '../../services/aiScreenGenerator';
@@ -131,7 +131,15 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       // Check if we should load a specific flow for editing
       const editId = searchParams.get('id');
       if (editId) {
-        const journeyToEdit = await loadJourney(editId);
+        // First try loading from user's journeys (database)
+        let journeyToEdit = await loadJourney(editId);
+        
+        // If not found in user journeys, try loading from published flows (for admin editing)
+        if (!journeyToEdit) {
+          console.log(`Journey ${editId} not found in user journeys, trying published flows...`);
+          journeyToEdit = await loadProductionJourney(editId);
+        }
+        
         if (journeyToEdit) {
           setCurrentJourney(journeyToEdit);
           lastSavedJourneyRef.current = JSON.stringify(journeyToEdit);
