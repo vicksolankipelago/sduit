@@ -130,17 +130,22 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       
       // Check if we should load a specific flow for editing
       const editId = searchParams.get('id');
+      console.log(`[JourneyBuilder] Loading flow with id: ${editId}`);
       if (editId) {
         // First try loading from user's journeys (database)
+        console.log(`[JourneyBuilder] Trying to load from user journeys...`);
         let journeyToEdit = await loadJourney(editId);
+        console.log(`[JourneyBuilder] User journey result:`, journeyToEdit ? journeyToEdit.name : 'null');
         
         // If not found in user journeys, try loading from published flows (for admin editing)
         if (!journeyToEdit) {
-          console.log(`Journey ${editId} not found in user journeys, trying published flows...`);
+          console.log(`[JourneyBuilder] Journey ${editId} not found in user journeys, trying published flows...`);
           journeyToEdit = await loadProductionJourney(editId);
+          console.log(`[JourneyBuilder] Production journey result:`, journeyToEdit ? journeyToEdit.name : 'null');
         }
         
         if (journeyToEdit) {
+          console.log(`[JourneyBuilder] Successfully loaded journey: ${journeyToEdit.name}`);
           setCurrentJourney(journeyToEdit);
           lastSavedJourneyRef.current = JSON.stringify(journeyToEdit);
           setSelectedAgentId(journeyToEdit.agents.length > 0 ? journeyToEdit.agents[0].id : null);
@@ -149,9 +154,11 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
           setSearchParams({}, { replace: true });
           return;
         }
+        console.log(`[JourneyBuilder] Failed to load journey ${editId} from any source, redirecting to home`);
       }
       
       // No flow specified - redirect to main flows page
+      console.log(`[JourneyBuilder] No flow to load, redirecting to home`);
       navigate('/');
     };
     
