@@ -277,32 +277,27 @@ function VoiceAgentContent() {
   // Notification permission popup state
   const [showNotificationPopup, setShowNotificationPopup] = useState(false);
   
-  // Preview mode state (when accessed via shared link)
-  // Only enable preview mode if there's actually a journey to launch (URL param or localStorage)
+  // Preview mode state (when accessed via shared link with ?journey=X or ?flow=X)
+  // Only enabled when there's a journey ID in the URL - base URL always shows flows page
   const [isPreviewMode] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const hasUrlJourney = urlParams.get('journey') || urlParams.get('flow');
-    const hasStoredJourney = localStorage.getItem('voice-agent-launch-journey');
-    const hasPreviewMode = localStorage.getItem('voice-agent-preview-mode') === 'true';
     
-    // Only enter preview mode if we actually have a journey to launch
-    if (hasPreviewMode && !hasUrlJourney && !hasStoredJourney) {
-      // Clean up stale preview mode state
-      console.log('🧹 Clearing stale preview mode (no journey to launch)');
+    // Clean up any stale localStorage flags
+    if (!hasUrlJourney) {
       localStorage.removeItem('voice-agent-preview-mode');
-      return false;
+      localStorage.removeItem('voice-agent-launch-journey');
     }
     
-    return hasPreviewMode && (!!hasUrlJourney || !!hasStoredJourney);
+    // Only enable preview mode if URL has journey param
+    return !!hasUrlJourney;
   });
   const [previewLoading, setPreviewLoading] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const hasUrlJourney = urlParams.get('journey') || urlParams.get('flow');
-    const hasStoredJourney = localStorage.getItem('voice-agent-launch-journey');
-    const hasPreviewMode = localStorage.getItem('voice-agent-preview-mode') === 'true';
     
-    // Only show loading if we're actually in preview mode with a journey to launch
-    return hasPreviewMode && (!!hasUrlJourney || !!hasStoredJourney);
+    // Only show loading if URL has journey param
+    return !!hasUrlJourney;
   });
   
   // Session tracking for transcript export
@@ -391,17 +386,18 @@ function VoiceAgentContent() {
         const urlParams = new URLSearchParams(window.location.search);
         const urlJourneyId = urlParams.get('journey') || urlParams.get('flow');
 
-        // Check if there's a journey to auto-launch (URL param takes priority, then localStorage)
-        const launchJourneyId = urlJourneyId || localStorage.getItem('voice-agent-launch-journey');
-        if (launchJourneyId) {
-          if (!urlJourneyId) {
-            localStorage.removeItem('voice-agent-launch-journey'); // Clear localStorage flag (not URL param)
-          }
-          const journeyToLaunch = await loadJourneyForRuntime(launchJourneyId);
+        // Clean up any stale localStorage flags - base URL should always show flows page
+        localStorage.removeItem('voice-agent-launch-journey');
+        localStorage.removeItem('voice-agent-preview-mode');
+
+        // Only auto-launch journeys from URL params (not localStorage)
+        // This ensures base URL always shows the flows page
+        if (urlJourneyId) {
+          const journeyToLaunch = await loadJourneyForRuntime(urlJourneyId);
           if (journeyToLaunch) {
             setCurrentJourney(journeyToLaunch);
             setPreviewLoading(false); // Journey loaded, hide loading overlay
-            addLog('info', `🚀 Launching journey: ${journeyToLaunch.name}${urlJourneyId ? ' (from URL)' : ''}`);
+            addLog('info', `🚀 Launching journey: ${journeyToLaunch.name} (from URL)`);
             
             // Check if this is a voice-enabled journey or non-voice
             const isVoiceJourney = journeyToLaunch.voiceEnabled !== false;
