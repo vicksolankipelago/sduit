@@ -22,7 +22,16 @@ export async function saveUserJourney(journey: Journey): Promise<Journey> {
   if (isNew) {
     return api.post<Journey>('/api/journeys', journey);
   } else {
-    return api.put<Journey>(`/api/journeys/${journey.id}`, journey);
+    try {
+      return await api.put<Journey>(`/api/journeys/${journey.id}`, journey);
+    } catch (error) {
+      // If PUT fails with 404 (journey doesn't exist in DB), create it instead
+      if (error instanceof ApiError && error.status === 404) {
+        console.log('Journey not found in database, creating new one...');
+        return api.post<Journey>('/api/journeys', journey);
+      }
+      throw error;
+    }
   }
 }
 
