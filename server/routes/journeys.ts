@@ -151,6 +151,32 @@ router.put("/:id", isAdmin, async (req: Request, res: Response) => {
       return apiResponse.serverError(res, "Failed to update journey");
     }
 
+    // If journey is published, also update Object Storage
+    if (updated.publishedAt) {
+      try {
+        await publishedFlowStorage.savePublishedFlow({
+          id: updated.id,
+          journeyId: updated.id,
+          name: updated.name,
+          description: updated.description || "",
+          systemPrompt: updated.systemPrompt,
+          voice: updated.voice,
+          voiceEnabled: updated.voiceEnabled ?? true,
+          ttsProvider: (updated as any).ttsProvider || 'elevenlabs',
+          elevenLabsConfig: updated.elevenLabsConfig as { agentId?: string; voiceId?: string } | null,
+          agents: updated.agents as any[],
+          startingAgentId: updated.startingAgentId,
+          version: updated.version,
+          publishedAt: updated.publishedAt.toISOString(),
+          publishedByUserId: userId,
+        });
+        journeyLogger.info(`Updated published journey ${updated.name} in Object Storage`);
+      } catch (storageError) {
+        journeyLogger.warn("Failed to update Object Storage:", storageError);
+        // Continue anyway - database update succeeded
+      }
+    }
+
     return apiResponse.success(res, {
       id: updated.id,
       name: updated.name,
