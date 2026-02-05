@@ -304,6 +304,16 @@ router.delete("/:id", isAdmin, async (req: Request, res: Response) => {
 
     // Admins can delete any journey
     await storage.deleteJourney(req.params.id);
+
+    // Also remove from Object Storage (production) if it was published
+    try {
+      await publishedFlowStorage.deletePublishedFlow(req.params.id);
+      journeyLogger.info(`Deleted journey ${journey.name} from Object Storage`);
+    } catch (storageError) {
+      journeyLogger.warn("Failed to remove from Object Storage:", storageError);
+      // Continue anyway - local delete still succeeded
+    }
+
     return apiResponse.success(res, { deleted: true });
   } catch (error) {
     journeyLogger.error("Error deleting journey:", error);
