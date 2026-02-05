@@ -171,14 +171,14 @@ export async function loadJourney(id: string): Promise<Journey | null> {
   }
 }
 
-export async function saveJourney(journey: Journey): Promise<boolean> {
+export async function saveJourney(journey: Journey): Promise<Journey | null> {
   try {
     journey.updatedAt = new Date().toISOString();
 
     try {
-      await journeyApi.saveUserJourney(journey);
-      console.log(`Saved journey to API: ${journey.name}`);
-      return true;
+      const savedJourney = await journeyApi.saveUserJourney(journey);
+      console.log(`Saved journey to API: ${savedJourney.name} (id: ${savedJourney.id})`);
+      return savedJourney;
     } catch (error) {
       console.error('Failed to save to API, falling back to localStorage:', error);
     }
@@ -202,10 +202,10 @@ export async function saveJourney(journey: Journey): Promise<boolean> {
     }
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(journeys));
-    return true;
+    return journey;
   } catch (error) {
     console.error('Failed to save journey:', error);
-    return false;
+    return null;
   }
 }
 

@@ -215,20 +215,22 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     setIsSaving(true);
     setSaveSuccess(false);
     try {
-      const saved = await saveJourney(currentJourney);
-      if (saved) {
+      const savedJourney = await saveJourney(currentJourney);
+      if (savedJourney) {
+        // Update currentJourney with the saved journey (may have new ID)
+        setCurrentJourney(savedJourney);
         try {
           const channel = new BroadcastChannel('journey-updates');
           channel.postMessage({
             type: 'journey-saved',
-            journeyId: currentJourney.id,
+            journeyId: savedJourney.id,
             timestamp: Date.now(),
           });
           channel.close();
         } catch (e) {
           // BroadcastChannel not supported
         }
-        lastSavedJourneyRef.current = JSON.stringify(currentJourney);
+        lastSavedJourneyRef.current = JSON.stringify(savedJourney);
         setHasUnsavedChanges(false);
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 2000);
@@ -317,17 +319,21 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     try {
       // First save the journey
       console.log('🚀 Saving journey before publish...');
-      const saved = await saveJourney(currentJourney);
-      console.log('🚀 Save result:', saved);
+      const savedJourney = await saveJourney(currentJourney);
+      console.log('🚀 Save result:', savedJourney);
       
-      if (saved) {
-        // Update lastSavedJourneyRef since we just saved
-        lastSavedJourneyRef.current = JSON.stringify(currentJourney);
-        setHasUnsavedChanges(false);
+      if (!savedJourney) {
+        alert('Failed to save journey before publishing');
+        return;
       }
       
-      console.log('🚀 Publishing journey...');
-      const result = await publishJourneyApi(currentJourney.id);
+      // Update currentJourney with the saved journey (may have new ID)
+      setCurrentJourney(savedJourney);
+      lastSavedJourneyRef.current = JSON.stringify(savedJourney);
+      setHasUnsavedChanges(false);
+      
+      console.log('🚀 Publishing journey with ID:', savedJourney.id);
+      const result = await publishJourneyApi(savedJourney.id);
       console.log('🚀 Publish result:', result);
       if (result.success) {
         setIsPublished(true);
