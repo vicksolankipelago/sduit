@@ -27,6 +27,7 @@ export const MobilePreviewPage: React.FC = () => {
     localStorage.setItem('prolific-session-id', sessionId);
   }
 
-  // Use Navigate component for immediate redirect (no useEffect delay)
-  return <Navigate to="/" replace />;
+  // Redirect with journey ID in URL so VoiceAgent auto-launches the journey
+  const redirectUrl = journeyId ? `/?journeyId=${journeyId}` : '/';
+  return <Navigate to={redirectUrl} replace />;
 };
