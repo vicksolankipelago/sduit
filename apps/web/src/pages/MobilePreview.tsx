@@ -28,6 +28,7 @@ export const MobilePreviewPage: React.FC = () => {
   }
 
   // Redirect with journey ID in URL so VoiceAgent auto-launches the journey
-  const redirectUrl = journeyId ? `/?journeyId=${journeyId}` : '/';
+  // VoiceAgent looks for ?journey= or ?flow= params
+  const redirectUrl = journeyId ? `/?journey=${journeyId}` : '/';
   return <Navigate to={redirectUrl} replace />;
 };
