@@ -1,0 +1,257 @@
+[16:37:39.685] INFO: Initiating connection with journey: PQ+Intake (11 Labs)
+
+[16:37:39.685] INFO: Starting agent: newAgent
+
+[16:37:39.685] INFO: 📝 Added 8 quiz answer(s) to prompt context
+
+[16:37:39.689] INFO: 📋 Agent configuration prepared (27061 chars)
+
+[16:37:39.689] INFO: 🎵 Using voice: pNInz6obpgDQGcFmaJgB
+
+[16:37:39.689] INFO: 👥 Journey has 1 agent(s) configured
+
+[16:37:39.689] INFO: 🎙️ Initiating ElevenLabs connection...
+
+[16:37:39.689] INFO: 🔗 Passing 8 dynamic variable(s) to ElevenLabs
+
+[16:37:39.703] INFO: [16:37:39] Connecting to ElevenLabs...
+
+[16:37:43.938] SUCCESS: [16:37:43] Connected to ElevenLabs
+
+[16:37:43.938] SUCCESS: Successfully initiated ElevenLabs connection
+
+[16:37:44.774] INFO: Assistant: Hey! Welcome to Pelago - I'm Navi, and I'm really glad you're here.
+
+[16:37:56.561] INFO: User: ...
+
+[16:37:57.209] INFO: Assistant: I'm here to help navigate your journey with us. We'll go through some quick questions to get to know each other and then work together to set up a plan. Are you ready to start?
+
+[16:38:10.743] TOOL: ⚡ trigger_event: navigate_to_program_summary
+
+[16:38:10.743] EVENT: 🔘 Button/Event: "navigate_to_program_summary" on screen "pq-program-summary"
+{
+  "screensCount": 18
+}
+
+[16:38:10.743] TOOL: 🔧 Tool triggered event: navigate_to_program_summary
+
+[16:38:10.744] INFO: User: Yeah, sounds good.
+
+[16:38:15.233] INFO: Assistant: Great. Let's get started. First let's review where you are. So you're planning to take steps to change very soon, and your goal is to learn more and explore options. You're motivated by personal growth. You'd also like to learn about building healthier habits. Does that sound right?
+
+[16:38:45.933] TOOL: ⚡ trigger_event: next_step_event
+
+[16:38:45.933] EVENT: 🔘 Button/Event: "next_step_event" on screen "pq-program-summary"
+{
+  "screensCount": 18
+}
+
+[16:38:45.933] INFO: 🧭 Navigation: "pq-program-summary" → "about-you"
+{
+  "deeplink": "about-you",
+  "screensAvailable": 18,
+  "screenIds": [
+    "pq-intro",
+    "pq-feelings-alcohol",
+    "pq-goal-alcohol",
+    "pq-areas-to-improve",
+    "pq-motivation"
+  ]
+}
+
+[16:38:45.934] SUCCESS: ✅ Navigated: "pq-program-summary" → "about-you"
+
+[16:38:45.934] TOOL: 🔧 Tool triggered event: next_step_event
+
+[16:38:45.943] INFO: User: Yeah, it does. Yeah, it does.
+
+[16:38:47.583] INFO: Assistant: Great, let me ask you a few more questions to really personalize your program. It sounds like you're ready to make some changes. What's going on that's brought you to this point?
+
+[16:39:13.807] INFO: User: I used to drink quite a lot, but now I've cut down. But I just want to make sure I don't relapse.
+
+[16:39:13.873] INFO: Assistant: Got it.
+
+
+[16:39:13.874] TOOL: 📝 record_input: About you
+{
+  "summary": "User used to drink a lot, cut down, wants to avoid relapse.",
+  "storeKey": "aboutYouSummary",
+  "delay": 0
+}
+
+[16:39:13.874] TOOL: 🔧 Tool recorded: About you = "User used to drink a lot, cut down, wants to avoid..."
+
+[16:39:16.045] TOOL: ⚡ trigger_event: navigate_to_outcomes
+
+[16:39:16.045] EVENT: 🔘 Button/Event: "navigate_to_outcomes" on screen "about-you"
+{
+  "screensCount": 18
+}
+
+[16:39:16.045] INFO: 🧭 Navigation: "about-you" → "outcomes"
+{
+  "deeplink": "outcomes",
+  "screensAvailable": 18,
+  "screenIds": [
+    "pq-intro",
+    "pq-feelings-alcohol",
+    "pq-goal-alcohol",
+    "pq-areas-to-improve",
+    "pq-motivation"
+  ]
+}
+
+[16:39:16.045] SUCCESS: ✅ Navigated: "about-you" → "outcomes"
+
+[16:39:16.045] TOOL: 🔧 Tool triggered event: navigate_to_outcomes
+
+[16:39:20.501] INFO: Assistant: That makes sense. Let's talk about what success looks like for you. You mentioned wanting to focus on when you drink. What would more control over those days and times look like?
+
+[16:39:42.767] INFO: User: Yeah, just avoid triggers and cravings, really. Avoid situations that make me drink.
+
+[16:39:42.882] INFO: Assistant: I hear you.
+
+
+[16:39:42.883] TOOL: 📝 record_input: Outcomes
+{
+  "summary": "Avoid triggers and cravings, and situations that make me drink.",
+  "storeKey": "outcomesSummary",
+  "delay": 0
+}
+
+[16:39:42.883] TOOL: 🔧 Tool recorded: Outcomes = "Avoid triggers and cravings, and situations that m..."
+
+[16:39:43.879] TOOL: ⚡ trigger_event: navigate_to_motivation
+
+[16:39:43.879] EVENT: 🔘 Button/Event: "navigate_to_motivation" on screen "outcomes"
+{
+  "screensCount": 18
+}
+
+[16:39:43.880] INFO: 🧭 Navigation: "outcomes" → "motivation"
+{
+  "deeplink": "motivation",
+  "screensAvailable": 18,
+  "screenIds": [
+    "pq-intro",
+    "pq-feelings-alcohol",
+    "pq-goal-alcohol",
+    "pq-areas-to-improve",
+    "pq-motivation"
+  ]
+}
+
+[16:39:43.880] SUCCESS: ✅ Navigated: "outcomes" → "motivation"
+
+[16:39:43.880] TOOL: 🔧 Tool triggered event: navigate_to_motivation
+
+[16:39:45.202] INFO: Assistant: You mentioned that personal growth is important to you. Tell me more - what's really driving this?
+
+[16:40:01.159] INFO: User: Yeah, just want to be a bit healthier and we need to avoid some of the hangovers and health impacts of drinking.
+
+[16:40:01.242] INFO: Assistant: Makes sense.
+
+
+[16:40:01.246] TOOL: 📝 record_input: Your why
+{
+  "summary": "Be healthier and avoid hangovers and health impacts of drinking.",
+  "storeKey": "yourWhySummary",
+  "delay": 0
+}
+
+[16:40:01.247] TOOL: 🔧 Tool recorded: Your why = "Be healthier and avoid hangovers and health impact..."
+
+[16:40:09.979] TOOL: ⚡ trigger_event: navigate_to_intention
+
+[16:40:09.979] EVENT: 🔘 Button/Event: "navigate_to_intention" on screen "motivation"
+{
+  "screensCount": 18
+}
+
+[16:40:09.979] INFO: 🧭 Navigation: "motivation" → "intention"
+{
+  "deeplink": "intention",
+  "screensAvailable": 18,
+  "screenIds": [
+    "pq-intro",
+    "pq-feelings-alcohol",
+    "pq-goal-alcohol",
+    "pq-areas-to-improve",
+    "pq-motivation"
+  ]
+}
+
+[16:40:09.979] SUCCESS: ✅ Navigated: "motivation" → "intention"
+
+[16:40:09.979] TOOL: 🔧 Tool triggered event: navigate_to_intention
+
+[16:40:12.774] INFO: Assistant: I appreciate you sharing that. Let's set up your focus for this week. What would you like to put a little focus on this week?
+
+[16:40:26.989] INFO: User: Let's try a whole week without drinking.
+
+[16:40:28.609] INFO: Assistant: Great intention! Now, every time you check in, you'll earn points you can redeem for rewards. Members who check in daily are five times more likely to reach their goals.
+
+
+[16:40:28.609] TOOL: ⚡ trigger_event: navigate_to_checkin_commitment (delay: 4s)
+
+[16:40:32.615] EVENT: 🔘 Button/Event: "navigate_to_checkin_commitment" on screen "intention"
+{
+  "screensCount": 18
+}
+
+[16:40:32.615] INFO: 🧭 Navigation: "intention" → "checkin-commitment"
+{
+  "deeplink": "checkin-commitment",
+  "screensAvailable": 18,
+  "screenIds": [
+    "pq-intro",
+    "pq-feelings-alcohol",
+    "pq-goal-alcohol",
+    "pq-areas-to-improve",
+    "pq-motivation"
+  ]
+}
+
+[16:40:32.615] SUCCESS: ✅ Navigated: "intention" → "checkin-commitment"
+
+[16:40:32.615] TOOL: 🔧 Tool triggered event: navigate_to_checkin_commitment
+
+[16:40:34.353] INFO: Assistant: How often would you like to check in this week - every day, a few times, or just once?
+
+[16:40:46.705] TOOL: ⚡ trigger_event: select_daily_commitment
+
+[16:40:46.705] EVENT: 🔘 Button/Event: "select_daily_commitment" on screen "checkin-commitment"
+{
+  "screensCount": 18
+}
+
+[16:40:46.709] TOOL: 🔧 Tool triggered event: select_daily_commitment
+
+[16:40:46.709] INFO: User: Let's do every day.
+
+[16:40:48.590] INFO: Assistant: Great choice.
+
+
+[16:40:48.591] TOOL: ⚡ trigger_event: navigate_to_notification_setup
+
+[16:40:48.591] EVENT: 🔘 Button/Event: "navigate_to_notification_setup" on screen "checkin-commitment"
+{
+  "screensCount": 18
+}
+
+[16:40:48.592] INFO: 🧭 Navigation: "checkin-commitment" → "pq-notification-setup"
+{
+  "deeplink": "pq-notification-setup",
+  "screensAvailable": 18,
+  "screenIds": [
+    "pq-intro",
+    "pq-feelings-alcohol",
+    "pq-goal-alcohol",
+    "pq-areas-to-improve",
+    "pq-motivation"
+  ]
+}
+
+[16:40:48.592] SUCCESS: ✅ Navigated: "checkin-commitment" → "pq-notification-setup"
+
+[16:40:48.592] TOOL: 🔧 Tool triggered event: navigate_to_notification_setup
