@@ -1,0 +1,65 @@
+[11:51:42.387] INFO: Initiating connection with journey: Personalisation Quiz (11Labs)
+
+[11:51:42.387] INFO: Starting agent: newAgent
+
+[11:51:42.387] INFO: 📝 Added 7 quiz answer(s) to prompt context
+
+[11:51:42.387] INFO: 📋 Agent configuration prepared (36981 chars)
+
+[11:51:42.387] INFO: 🎵 Using voice: pNInz6obpgDQGcFmaJgB
+
+[11:51:42.387] INFO: 👥 Journey has 1 agent(s) configured
+
+[11:51:42.387] INFO: 🎙️ Initiating ElevenLabs connection...
+
+[11:51:42.387] INFO: 🔗 Passing 7 dynamic variable(s) to ElevenLabs
+
+[11:51:42.389] INFO: [11:51:42] Connecting to ElevenLabs...
+
+[11:51:46.124] SUCCESS: [11:51:46] Connected to ElevenLabs
+
+[11:51:46.124] SUCCESS: Successfully initiated ElevenLabs connection
+
+[11:51:53.160] TOOL: 📝 record_input: Outcomes
+{
+  "summary": "The user likes the plan.",
+  "storeKey": "outcomesSummary",
+  "delay": 0
+}
+
+[11:51:53.160] TOOL: 🔧 Tool recorded: Outcomes = "The user likes the plan...."
+
+[11:51:53.163] INFO: User: I like.
+
+[11:51:53.822] TOOL: ⚡ trigger_event: navigate_to_motivation (delay: 2s)
+
+[11:51:54.989] INFO: Assistant: You mentioned relationships matters to you. Tell me more - what's really driving this?
+
+[11:51:55.823] EVENT: 🔘 Button/Event: "navigate_to_motivation" on screen "pq-program-summary"
+{
+  "screensCount": 18
+}
+
+[11:51:55.823] TOOL: 🔧 Tool triggered event: navigate_to_motivation
+
+[11:52:04.870] TOOL: 📝 record_input: Your why
+{
+  "summary": "User wants to jump straight into the journey.",
+  "storeKey": "yourWhySummary",
+  "delay": 0
+}
+
+[11:52:04.871] TOOL: 🔧 Tool recorded: Your why = "User wants to jump straight into the journey...."
+
+[11:52:04.871] INFO: User: Just jump straight into the journey.
+
+[11:52:05.622] TOOL: ⚡ trigger_event: navigate_to_intention (delay: 2s)
+
+[11:52:07.111] INFO: Assistant: I appreciate you sharing that. Let's set up your focus for this week. What would you like to focus on this week? Maybe picking specific days to skip drinking, or setting boundaries around when you drink?
+
+[11:52:07.622] EVENT: 🔘 Button/Event: "navigate_to_intention" on screen "pq-program-summary"
+{
+  "screensCount": 18
+}
+
+[11:52:07.622] TOOL: 🔧 Tool triggered event: navigate_to_intention
