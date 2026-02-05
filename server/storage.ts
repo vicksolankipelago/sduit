@@ -67,6 +67,7 @@ export interface IStorage {
   upsertSessionMessage(params: UpsertSessionMessageParams): Promise<VoiceSession>;
   deleteSession(sessionId: string): Promise<boolean>;
   getSessionCount(userId: string): Promise<number>;
+  getAllSessionCount(): Promise<number>;
   getSessionsByJourneyId(journeyId: string, limit?: number): Promise<VoiceSession[]>;
 
   // Global screens
@@ -352,6 +353,11 @@ export class DatabaseStorage implements IStorage {
 
   async getSessionCount(userId: string): Promise<number> {
     const sessions = await db.select().from(voiceSessions).where(eq(voiceSessions.userId, userId));
+    return sessions.length;
+  }
+
+  async getAllSessionCount(): Promise<number> {
+    const sessions = await db.select().from(voiceSessions);
     return sessions.length;
   }
 

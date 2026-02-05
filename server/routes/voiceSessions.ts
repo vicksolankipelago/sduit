@@ -10,13 +10,6 @@ const ANONYMOUS_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 router.get("/", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const userId = (req.user as any)?.id;
-    const userRole = (req.user as any)?.role;
-
-    if (!userId) {
-      return apiResponse.unauthorized(res);
-    }
-
     const limitParam = req.query.limit as string;
     const offsetParam = req.query.offset as string;
     const limit = limitParam ? parseInt(limitParam, 10) : 50;
@@ -26,10 +19,8 @@ router.get("/", isAuthenticated, async (req: Request, res: Response) => {
       return apiResponse.validationError(res, "limit and offset must be non-negative integers");
     }
 
-    // Admins can see all sessions, test users only see their own
-    const sessions = userRole === 'admin'
-      ? await storage.listAllSessions(limit, offset)
-      : await storage.listUserSessions(userId, limit, offset);
+    // All users can see all sessions (transcripts are shared across users)
+    const sessions = await storage.listAllSessions(limit, offset);
 
     const sessionList = sessions.map((s) => ({
       id: s.id,
@@ -51,12 +42,8 @@ router.get("/", isAuthenticated, async (req: Request, res: Response) => {
 
 router.get("/count", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const userId = (req.user as any)?.id;
-    if (!userId) {
-      return apiResponse.unauthorized(res);
-    }
-
-    const count = await storage.getSessionCount(userId);
+    // Count all sessions (transcripts are shared across users)
+    const count = await storage.getAllSessionCount();
     return apiResponse.success(res, { count });
   } catch (error) {
     sessionLogger.error("Error counting sessions:", error);
@@ -101,10 +88,7 @@ router.get("/:sessionId", isAuthenticated, async (req: Request, res: Response) =
       return apiResponse.notFound(res, "Session");
     }
 
-    // Admins can view any session, test users only their own
-    if (userRole !== 'admin' && session.userId !== userId) {
-      return apiResponse.forbidden(res);
-    }
+    // All users can view any session (transcripts are shared across users)
 
     // Fetch full journey config if journeyId exists
     let journeyConfig: any = null;
