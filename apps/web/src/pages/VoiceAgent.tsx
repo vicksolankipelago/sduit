@@ -1196,6 +1196,13 @@ function VoiceAgentContent() {
       }
 
       // Build combined instructions: system + agent + screen prompts
+      console.log('🔍 PROMPT SOURCES:');
+      console.log('  Journey systemPrompt length:', journeyWithPQData.systemPrompt?.length || 0);
+      console.log('  Journey systemPrompt first 200 chars:', journeyWithPQData.systemPrompt?.substring(0, 200));
+      console.log('  Agent prompt length:', startingAgentConfigForConnect.prompt?.length || 0);
+      console.log('  Agent prompt first 200 chars:', startingAgentConfigForConnect.prompt?.substring(0, 200));
+      addLog('info', `🔍 Journey systemPrompt: ${journeyWithPQData.systemPrompt?.length || 0} chars, Agent prompt: ${startingAgentConfigForConnect.prompt?.length || 0} chars`);
+      
       const instructionParts = [
         journeyWithPQData.systemPrompt,
         startingAgentConfigForConnect.prompt,

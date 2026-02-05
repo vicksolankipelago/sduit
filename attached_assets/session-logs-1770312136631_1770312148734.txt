@@ -1,0 +1,40 @@
+[17:20:52.200] INFO: Initiating connection with journey: Selim Non-Linear Intake
+
+[17:20:52.200] INFO: Starting agent: newAgent
+
+[17:20:52.200] INFO: 📝 Added 8 quiz answer(s) to prompt context
+
+[17:20:52.200] INFO: 📋 Agent configuration prepared (17151 chars)
+
+[17:20:52.200] INFO: 🎵 Using voice: pNInz6obpgDQGcFmaJgB
+
+[17:20:52.200] INFO: 👥 Journey has 1 agent(s) configured
+
+[17:20:52.200] INFO: 🎙️ Initiating ElevenLabs connection...
+
+[17:20:52.200] INFO: 🔗 Passing 8 dynamic variable(s) to ElevenLabs
+
+[17:20:52.201] INFO: [17:20:52] Connecting to ElevenLabs...
+
+[17:20:54.993] SUCCESS: [17:20:54] Connected to ElevenLabs
+
+[17:20:54.993] SUCCESS: Successfully initiated ElevenLabs connection
+
+[17:20:57.315] INFO: Assistant: Hey! Welcome to Pelago - I'm Navi, and I'm really glad you're here.
+
+[17:21:39.990] INFO: User: Thank you. Hello? Hello? Hello? Hello? Hello? Hello?
+
+[17:21:41.112] INFO: Assistant: Hi Vick, welcome to Pelago. It's great to have you onboard. I'm Navi, I'm here to help navigate your journey with us. First, we'll go through some quick questions to get to know each other and then work together to setup a plan. Are you ready to start?
+
+[17:22:08.530] TOOL: ⚡ trigger_event: navigate_to_program_summary
+
+[17:22:08.530] EVENT: 🔘 Button/Event: "navigate_to_program_summary" on screen "pq-program-summary"
+{
+  "screensCount": 10
+}
+
+[17:22:08.530] TOOL: 🔧 Tool triggered event: navigate_to_program_summary
+
+[17:22:08.898] INFO: User: Yeah, sounds good.
+
+[17:22:16.037] INFO: Assistant: Great...
