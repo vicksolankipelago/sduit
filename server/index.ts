@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
-import { setupAuth, isAuthenticated } from "./auth";
+import { setupAuth, isAuthenticated, isAdmin } from "./auth";
 import journeysRouter from "./routes/journeys";
 import voiceSessionsRouter from "./routes/voiceSessions";
 import feedbackRouter from "./routes/feedback";
@@ -77,11 +77,11 @@ async function main() {
     }
   });
 
-  // Production DELETE - removes flow directly from Object Storage
+  // Production DELETE - removes flow directly from Object Storage (ADMIN ONLY)
   // This works even when the journey isn't in the local database
-  app.delete("/api/journeys/production/:journeyId", async (req, res) => {
+  app.delete("/api/journeys/production/:journeyId", isAdmin, async (req, res) => {
     try {
-      const { journeyId } = req.params;
+      const journeyId = req.params.journeyId as string;
       
       // First check if flow exists in Object Storage
       const flow = await publishedFlowStorage.getPublishedFlow(journeyId);
@@ -103,11 +103,11 @@ async function main() {
     }
   });
 
-  // Production UPDATE - updates flow directly in Object Storage
+  // Production UPDATE - updates flow directly in Object Storage (ADMIN ONLY)
   // This works even when the journey isn't in the local database
-  app.put("/api/journeys/production/:journeyId", async (req, res) => {
+  app.put("/api/journeys/production/:journeyId", isAdmin, async (req, res) => {
     try {
-      const { journeyId } = req.params;
+      const journeyId = req.params.journeyId as string;
       const updates = req.body;
       
       // Get existing flow from Object Storage
@@ -116,10 +116,20 @@ async function main() {
         return res.status(404).json({ success: false, error: { message: "Flow not found in production" } });
       }
       
-      // Merge updates with existing flow
+      // Only allow updating specific fields to protect data integrity
+      const allowedFields = ['name', 'description', 'systemPrompt', 'voice', 'voiceEnabled', 'ttsProvider', 'elevenLabsConfig', 'agents', 'startingAgentId', 'version'];
+      const safeUpdates: Record<string, any> = {};
+      for (const field of allowedFields) {
+        if (updates[field] !== undefined) {
+          safeUpdates[field] = updates[field];
+        }
+      }
+      
+      // Merge safe updates with existing flow
       const updatedFlow = {
         ...existingFlow,
-        ...updates,
+        ...safeUpdates,
+        // Always preserve these protected fields
         id: existingFlow.id,
         journeyId: existingFlow.journeyId,
         publishedAt: existingFlow.publishedAt,
