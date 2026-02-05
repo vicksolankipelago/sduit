@@ -1200,6 +1200,14 @@ function VoiceAgentContent() {
         journeyWithPQData.systemPrompt,
         startingAgentConfigForConnect.prompt,
       ];
+      
+      // If voice is enabled mid-flow, add instruction to start at the current screen
+      const currentScreenFromContext = effectiveFlowContext?.currentScreen as string | undefined;
+      if (currentScreenFromContext) {
+        const startingScreenInstruction = `\n---\nCRITICAL: STARTING SCREEN\n---\n\nYou are starting on screen "${currentScreenFromContext}". Begin the conversation using the instructions for that specific screen. Do NOT start from the first screen - the user has already completed previous screens.\n`;
+        instructionParts.unshift(startingScreenInstruction);
+        console.log('🎤 Added starting screen instruction:', currentScreenFromContext);
+      }
 
       // Add all screen prompts if agent has screens
       if (startingAgentConfigForConnect.screens && startingAgentConfigForConnect.screenPrompts) {
@@ -1521,10 +1529,16 @@ Important guidelines:
       transformedModuleState.memberName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
     }
     
+    // Get current screen ID to tell agent where we are in the flow
+    const activeScreenId = currentScreenIdRef.current;
+    console.log('🎤 Current screen when enabling voice:', activeScreenId);
+    
     // Merge flow context for data passing (use transformed labels for readable prompts)
+    // Include currentScreen so the agent knows where to start
     const mergedContext = {
       ...(flowContext || {}),
       ...transformedModuleState,
+      ...(activeScreenId ? { currentScreen: activeScreenId } : {}),
     };
     
     // Update flowContext state for consistency
