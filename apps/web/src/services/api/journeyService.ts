@@ -107,3 +107,13 @@ export async function getProductionFlow(journeyId: string): Promise<PublishedJou
     throw error;
   }
 }
+
+// Production management endpoints - delete/update flows directly in Object Storage
+export async function deleteProductionFlow(journeyId: string): Promise<boolean> {
+  await api.delete<{ deleted: boolean }>(`/api/journeys/production/${journeyId}`);
+  return true;
+}
+
+export async function updateProductionFlow(journeyId: string, updates: Partial<Journey>): Promise<Journey> {
+  return api.put<Journey>(`/api/journeys/production/${journeyId}`, updates);
+}

@@ -76,6 +76,66 @@ async function main() {
       res.status(500).json({ message: "Failed to get production flow" });
     }
   });
+
+  // Production DELETE - removes flow directly from Object Storage
+  // This works even when the journey isn't in the local database
+  app.delete("/api/journeys/production/:journeyId", async (req, res) => {
+    try {
+      const { journeyId } = req.params;
+      
+      // First check if flow exists in Object Storage
+      const flow = await publishedFlowStorage.getPublishedFlow(journeyId);
+      if (!flow) {
+        return res.status(404).json({ success: false, error: { message: "Flow not found in production" } });
+      }
+      
+      // Delete from Object Storage
+      const deleted = await publishedFlowStorage.deletePublishedFlow(journeyId);
+      if (!deleted) {
+        return res.status(500).json({ success: false, error: { message: "Failed to delete from production" } });
+      }
+      
+      console.log(`Deleted flow ${flow.name} from production Object Storage`);
+      res.json({ success: true, data: { deleted: true } });
+    } catch (error) {
+      console.error("Error deleting production flow:", error);
+      res.status(500).json({ success: false, error: { message: "Failed to delete production flow" } });
+    }
+  });
+
+  // Production UPDATE - updates flow directly in Object Storage
+  // This works even when the journey isn't in the local database
+  app.put("/api/journeys/production/:journeyId", async (req, res) => {
+    try {
+      const { journeyId } = req.params;
+      const updates = req.body;
+      
+      // Get existing flow from Object Storage
+      const existingFlow = await publishedFlowStorage.getPublishedFlow(journeyId);
+      if (!existingFlow) {
+        return res.status(404).json({ success: false, error: { message: "Flow not found in production" } });
+      }
+      
+      // Merge updates with existing flow
+      const updatedFlow = {
+        ...existingFlow,
+        ...updates,
+        id: existingFlow.id,
+        journeyId: existingFlow.journeyId,
+        publishedAt: existingFlow.publishedAt,
+        publishedByUserId: existingFlow.publishedByUserId,
+      };
+      
+      // Save back to Object Storage
+      await publishedFlowStorage.savePublishedFlow(updatedFlow);
+      
+      console.log(`Updated flow ${updatedFlow.name} in production Object Storage`);
+      res.json({ success: true, data: updatedFlow });
+    } catch (error) {
+      console.error("Error updating production flow:", error);
+      res.status(500).json({ success: false, error: { message: "Failed to update production flow" } });
+    }
+  });
   
   // Public preview endpoint - registered BEFORE authenticated routes
   // This allows the start_journey flow to fetch journey data without auth

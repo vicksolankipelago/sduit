@@ -175,6 +175,20 @@ export async function saveJourney(journey: Journey): Promise<Journey | null> {
   try {
     journey.updatedAt = new Date().toISOString();
 
+    // In production, use the production update endpoint (works with Object Storage directly)
+    const isProd = await isProduction();
+    if (isProd) {
+      try {
+        const updatedJourney = await journeyApi.updateProductionFlow(journey.id, journey);
+        console.log(`[Production] Saved journey to Object Storage: ${updatedJourney.name} (id: ${updatedJourney.id || journey.id})`);
+        return updatedJourney;
+      } catch (error) {
+        console.error('[Production] Failed to save to Object Storage:', error);
+        return null;
+      }
+    }
+
+    // In development, save to database
     try {
       const savedJourney = await journeyApi.saveUserJourney(journey);
       console.log(`Saved journey to API: ${savedJourney.name} (id: ${savedJourney.id})`);
@@ -211,6 +225,20 @@ export async function saveJourney(journey: Journey): Promise<Journey | null> {
 
 export async function deleteJourney(id: string): Promise<boolean> {
   try {
+    // In production, use the production delete endpoint (works with Object Storage directly)
+    const isProd = await isProduction();
+    if (isProd) {
+      try {
+        await journeyApi.deleteProductionFlow(id);
+        console.log(`[Production] Deleted journey from Object Storage: ${id}`);
+        return true;
+      } catch (error) {
+        console.error('[Production] Failed to delete from Object Storage:', error);
+        return false;
+      }
+    }
+    
+    // In development, delete from database first, then try production storage
     try {
       await journeyApi.deleteUserJourney(id);
       console.log(`Deleted journey from API: ${id}`);
