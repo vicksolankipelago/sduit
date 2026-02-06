@@ -33,6 +33,9 @@ interface ElementStyleAccessor {
   loop?: ElementStyleValue;
   autoStart?: ElementStyleValue;
   curve?: ElementStyleValue;
+  speed?: ElementStyleValue;
+  pauseOnHover?: ElementStyleValue;
+  gap?: ElementStyleValue;
 }
 
 // Helper function to safely access style properties
@@ -640,6 +643,28 @@ export const ElementPropertyEditor: React.FC<ElementPropertyEditorProps> = ({
       case 'loadingView':
         return null; // Loading view has no configurable state
 
+      case 'imageCarousel':
+        return (
+          <>
+            <FormField label="Images (JSON)" required>
+              <textarea
+                value={JSON.stringify(element.state.images || [], null, 2)}
+                onChange={(e) => {
+                  try {
+                    const images = JSON.parse(e.target.value);
+                    handleDataChange('images', images);
+                  } catch {
+                    // Invalid JSON
+                  }
+                }}
+                placeholder={`[\n  {\n    "imageUrl": "/images/reward_card_amazon.png",\n    "title": "Amazon",\n    "subtitle": "From 5,000 pts"\n  }\n]`}
+                rows={10}
+                className="json-editor"
+              />
+            </FormField>
+          </>
+        );
+
       case 'animatedComponents':
         // Complex nested structure, keep JSON editor
         return (
@@ -1104,6 +1129,46 @@ export const ElementPropertyEditor: React.FC<ElementPropertyEditorProps> = ({
                 <option value="easeOut">Ease Out</option>
                 <option value="easeInOut">Ease In Out</option>
               </select>
+            </FormField>
+          </>
+        );
+
+      case 'imageCarousel':
+        return (
+          <>
+            <FormField label="Scroll Speed (px/s)">
+              <input
+                type="number"
+                value={getStyleValue(element.style, 'speed', 30)}
+                onChange={(e) => handleStyleChange('speed', parseInt(e.target.value) || 30)}
+                placeholder="30"
+              />
+            </FormField>
+            <FormField label="Card Height (px)">
+              <input
+                type="number"
+                value={getStyleValue(element.style, 'height', 160)}
+                onChange={(e) => handleStyleChange('height', parseInt(e.target.value) || 160)}
+                placeholder="160"
+              />
+            </FormField>
+            <FormField label="Gap (px)">
+              <input
+                type="number"
+                value={getStyleValue(element.style, 'gap', 16)}
+                onChange={(e) => handleStyleChange('gap', parseInt(e.target.value) || 16)}
+                placeholder="16"
+              />
+            </FormField>
+            <FormField label="Pause on Hover">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={getStyleValue(element.style, 'pauseOnHover', true) as boolean}
+                  onChange={(e) => handleStyleChange('pauseOnHover', e.target.checked)}
+                />
+                <span>Pause animation on hover</span>
+              </label>
             </FormField>
           </>
         );

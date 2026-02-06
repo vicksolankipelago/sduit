@@ -30,6 +30,7 @@ import { WeekCheckinSummaryElement } from '../../components/voiceAgent/elements/
 import { AgentMessageCardElement } from '../../components/voiceAgent/elements/AgentMessageCardElement';
 import { OpenQuestionElement } from '../../components/voiceAgent/elements/OpenQuestionElement';
 import { OrbElement } from '../../components/voiceAgent/elements/OrbElement';
+import { ImageCarouselElement } from '../../components/voiceAgent/elements/ImageCarouselElement';
 
 /**
  * Element Registry - Maps element types to React components
@@ -57,6 +58,7 @@ export const ElementRegistry: Record<ElementType, React.ComponentType<any>> = {
   'agentMessageCard': AgentMessageCardElement,
   'openQuestion': OpenQuestionElement,
   'orb': OrbElement,
+  'imageCarousel': ImageCarouselElement,
 };
 
 /**
@@ -320,6 +322,22 @@ export const ElementMetadataRegistry: Record<ElementType, ElementMetadata> = {
       volumeMode: 'auto',
     },
     defaultStyle: { size: 'medium' },
+  },
+  'imageCarousel': {
+    type: 'imageCarousel',
+    displayName: 'Image Carousel',
+    category: 'advanced',
+    icon: '🎠',
+    description: 'Horizontally scrolling image carousel with auto-animation',
+    defaultData: {
+      id: '',
+      images: [
+        { imageUrl: '/images/reward_card_amazon.png', title: 'Amazon', subtitle: 'From 5,000 pts' },
+        { imageUrl: '/images/reward_card_nike.png', title: 'Nike', subtitle: 'From 5,000 pts' },
+        { imageUrl: '/images/reward_card_walmart.png', title: 'Walmart', subtitle: 'From 5,000 pts' },
+      ],
+    },
+    defaultStyle: { speed: 30, height: 160, gap: 16, pauseOnHover: true },
   },
 };
 
