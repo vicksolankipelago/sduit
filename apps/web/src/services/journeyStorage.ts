@@ -174,7 +174,23 @@ export async function loadJourney(id: string): Promise<Journey | null> {
 export async function saveJourney(journey: Journey): Promise<Journey | null> {
   journey.updatedAt = new Date().toISOString();
 
-  // Always save to database first (best effort - may fail in production if journey doesn't exist in DB)
+  const isProd = await isProduction();
+
+  if (isProd) {
+    // In production, Object Storage is the sole source of truth.
+    // We save ONLY to Object Storage - no DB save needed.
+    // Production flows may not exist in the dev database at all, and that's fine.
+    // Voice sessions, the editor, and all runtime loading use Object Storage exclusively.
+    console.log(`[Production] Saving journey to Object Storage: agents count=${journey.agents?.length}, first agent prompt length=${journey.agents?.[0]?.prompt?.length || 0}`);
+    // This will throw on failure - which is intentional in production.
+    // The caller (auto-save / manual save) catches this and shows "Save failed".
+    // This prevents silently losing prompt changes that wouldn't be reflected in voice sessions.
+    const osJourney = await journeyApi.updateProductionFlow(journey.id, journey);
+    console.log(`[Production] Saved to Object Storage successfully: ${osJourney.name} (id: ${osJourney.id || journey.id})`);
+    return journey;
+  }
+
+  // Development mode: save to database, fall back to localStorage
   let savedJourney: Journey | null = null;
   try {
     savedJourney = await journeyApi.saveUserJourney(journey);
@@ -183,23 +199,6 @@ export async function saveJourney(journey: Journey): Promise<Journey | null> {
     console.error('Failed to save to database:', error);
   }
 
-  // In production, Object Storage is the source of truth for voice sessions.
-  // IMPORTANT: Always use the original journey data (not the DB response) for Object Storage updates.
-  // The DB response may be missing fields like ttsProvider, elevenLabsConfig, etc.
-  // The original journey has the most complete and up-to-date data from the editor.
-  const isProd = await isProduction();
-  if (isProd) {
-    console.log(`[Production] Saving journey to Object Storage: agents count=${journey.agents?.length}, first agent prompt length=${journey.agents?.[0]?.prompt?.length || 0}`);
-    // This will throw on failure - which is intentional in production.
-    // The caller (auto-save / manual save) catches this and shows "Save failed".
-    // This prevents silently losing prompt changes that wouldn't be reflected in voice sessions.
-    const osJourney = await journeyApi.updateProductionFlow(journey.id, journey);
-    console.log(`[Production] Saved to Object Storage successfully: ${osJourney.name} (id: ${osJourney.id || journey.id})`);
-    // Return the journey with the latest data from the editor
-    return journey;
-  }
-
-  // Development mode: return DB result or fall back to localStorage
   if (savedJourney) {
     return savedJourney;
   }
