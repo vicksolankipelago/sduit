@@ -263,6 +263,9 @@ function VoiceAgentContent() {
   // Journey transition state - prevents journeys list from showing during flow transitions
   const [isTransitioningJourney, setIsTransitioningJourney] = useState(false);
   
+  // Loading state for when a journey is being loaded after user taps Start
+  const [loadingJourneyId, setLoadingJourneyId] = useState<string | null>(null);
+  
   // Ref to store current journey for event handlers (avoids closure issues)
   const currentJourneyRef = useRef<Journey | null>(null);
   
@@ -585,6 +588,7 @@ function VoiceAgentContent() {
 
     // Set session status to connected (non-voice active)
     setSessionStatus('CONNECTED');
+    setLoadingJourneyId(null);
     setIsNonVoiceMode(true);
     addLog('success', `✅ Non-voice session started`);
   }, [addLog, enableScreenRendering, setAgents]);
@@ -1459,6 +1463,7 @@ Important guidelines:
       // Go back to flows screen on connection error
       setCurrentJourney(null);
       setIsTransitioningJourney(false);
+      setLoadingJourneyId(null);
       setPreviewLoading(false);
     }
   };
@@ -1947,12 +1952,12 @@ Important guidelines:
         addLog('info', 'Connecting to Azure OpenAI...');
       } else if (s === 'CONNECTED') {
         addLog('success', 'Connected to Azure OpenAI WebRTC');
-        // Clear transitioning flag when connection succeeds
         setIsTransitioningJourney(false);
+        setLoadingJourneyId(null);
       } else if (s === 'DISCONNECTED') {
         addLog('info', 'Disconnected from Azure OpenAI');
-        // Also clear transitioning flag on disconnect
         setIsTransitioningJourney(false);
+        setLoadingJourneyId(null);
       }
     },
     onTranscript: (role: string, text: string, isDone?: boolean) => {
@@ -2313,10 +2318,12 @@ Important guidelines:
       } else if (s === 'CONNECTED') {
         addLog('success', `[${timestamp}] Connected to ElevenLabs`);
         setIsTransitioningJourney(false);
+        setLoadingJourneyId(null);
         setConnectionError(null); // Clear any previous errors
       } else if (s === 'DISCONNECTED') {
         addLog('info', `[${timestamp}] Disconnected from ElevenLabs`);
         setIsTransitioningJourney(false);
+        setLoadingJourneyId(null);
       }
     },
     onTranscript: (role: string, text: string, isDone?: boolean) => {
@@ -2471,6 +2478,8 @@ Important guidelines:
       return;
     }
 
+    setLoadingJourneyId(journeyId);
+
     try {
       const journey = await loadJourneyForRuntime(journeyId);
       if (journey) {
@@ -2482,6 +2491,7 @@ Important guidelines:
           const hasPermission = await checkMicrophonePermission();
           if (!hasPermission) {
             addLog('error', 'Microphone access is required to start the journey');
+            setLoadingJourneyId(null);
             return;
           }
         }
@@ -2516,10 +2526,12 @@ Important guidelines:
       } else {
         addLog('error', `Failed to load journey with ID: ${journeyId}`);
         console.error('❌ Journey not found:', journeyId);
+        setLoadingJourneyId(null);
       }
     } catch (error) {
       console.error('❌ Error starting journey:', error);
       addLog('error', `Error starting journey: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setLoadingJourneyId(null);
     }
   }, [sessionStatus, addLog, setCurrentJourney, connectToRealtime, startNonVoiceSession, checkMicrophonePermission]);
 
@@ -2571,8 +2583,8 @@ Important guidelines:
         onSetVoiceEnabled={handleSetVoiceEnabled}
       />
       
-      {/* Header - Show when disconnected and NOT in preview mode or transitioning */}
-      {sessionStatus === 'DISCONNECTED' && !isPreviewMode && !isTransitioningJourney && (
+      {/* Header - Show when disconnected and NOT in preview mode, transitioning, or loading */}
+      {sessionStatus === 'DISCONNECTED' && !isPreviewMode && !isTransitioningJourney && !loadingJourneyId && (
         <div className="voice-agent-header">
           <h2 className="voice-agent-title">Flows</h2>
           {isAdmin && (
@@ -2690,7 +2702,17 @@ Important guidelines:
       {!isPreviewMode && !isTransitioningJourney && (
       <div className="voice-agent-content">
         <div className="voice-agent-session-view">
-          {sessionStatus === 'DISCONNECTED' ? (
+          {sessionStatus === 'DISCONNECTED' && loadingJourneyId ? (
+            <div className="journey-loading-screen">
+              <div className="journey-loading-content">
+                <div className="journey-loading-spinner"></div>
+                <p className="journey-loading-text">Starting flow...</p>
+                <p className="journey-loading-subtext">
+                  {availableJourneys.find(j => j.id === loadingJourneyId)?.name || 'Loading'}
+                </p>
+              </div>
+            </div>
+          ) : sessionStatus === 'DISCONNECTED' ? (
             <div className="journeys-grid-container">
               <div className="journeys-grid">
                 {availableJourneys.map((journey) => {
