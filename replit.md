@@ -48,6 +48,7 @@ The application is built as a monorepo with a React 19 frontend (Vite) and an Ex
 *   **Backend Framework:** Express.js, Node.js
 *   **Authentication:** Passport.js (passport-local)
 *   **Voice AI:** Azure OpenAI Realtime API (WebRTC), ElevenLabs Conversational AI (alternative TTS provider)
+    - **ElevenLabs Override Rules:** Only `prompt` (string) and `voiceId` are supported as SDK overrides. Tools must be configured in the ElevenLabs dashboard, NOT via SDK overrides. The `overrides.agent.prompt` object only accepts `prompt` and `llm` fields — adding unsupported fields (like `tools`) causes silent rejection of the entire override. Client tool handlers are passed separately via `clientTools` at hook initialization.
 *   **AI Generation:** AWS Bedrock (Claude)
 *   **Object Storage:** Used for storing published flows and audio recordings.
 *   **Prolific:** Integration for tracking research study participants via URL parameters (`PROLIFIC_PID`, `STUDY_ID`, `SESSION_ID`).
