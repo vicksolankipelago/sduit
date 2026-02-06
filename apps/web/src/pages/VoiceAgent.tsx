@@ -1444,26 +1444,23 @@ Important guidelines:
           addLog('info', `🔗 Passing ${Object.keys(dynamicVariables).length} dynamic variable(s) to ElevenLabs`);
         }
         
+        addLog('info', `📝 PROMPT OVERRIDE: ${combinedInstructions.length} chars being sent to ElevenLabs`);
+        addLog('info', `📝 Override starts with: "${combinedInstructions.substring(0, 150).replace(/\n/g, ' ')}..."`);
+        addLog('info', `📝 Override JSON size: ${new TextEncoder().encode(JSON.stringify({ agent: { prompt: { prompt: combinedInstructions } } })).length} bytes`);
+        
         await connect({
           audioElement: sdkAudioElement,
-          // Pass microphone stream to ElevenLabs to avoid Safari timeout issues
           customMicStream: microphoneStream,
-          // Pass system prompt explicitly for ElevenLabs
           systemPrompt: journeyWithPQData.systemPrompt,
           agentConfig: journeyAgentConfig,
           allJourneyAgents: allJourneyAgentsMap,
           screens: startingAgentConfigForConnect.screens,
           onEventTrigger: handleEventTrigger,
           onEndCall: handleEndCall,
-          // ElevenLabs-specific options
           elevenLabsAgentId: journeyToUse.elevenLabsConfig?.agentId,
           elevenLabsVoiceId: journeyToUse.elevenLabsConfig?.voiceId,
-          // Pass quiz answers as dynamic variables for {{variable}} substitution
           dynamicVariables: Object.keys(dynamicVariables).length > 0 ? dynamicVariables : undefined,
-          // Override ElevenLabs agent prompt with our combined journey prompt
-          // NOTE: Must enable "System prompt" override in ElevenLabs dashboard Settings → Security
           promptOverride: combinedInstructions,
-          // NOTE: clientTools are passed to useElevenLabsSession hook, not connect()
         });
         console.log('🎙️ connect() completed');
         addLog('success', `Successfully initiated ${currentProviderRef.current === 'elevenlabs' ? 'ElevenLabs' : 'Azure'} connection`);

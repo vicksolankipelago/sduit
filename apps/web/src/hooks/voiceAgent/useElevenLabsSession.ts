@@ -285,7 +285,7 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         hasDynamicVariables: !!(sessionConfig as any).dynamicVariables,
         hasOverrides: !!(sessionConfig as any).overrides,
         overridePromptLength: (sessionConfig as any).overrides?.agent?.prompt?.prompt?.length || 0,
-        overrideVoiceId: (sessionConfig as any).overrides?.agent?.tts?.voiceId || null,
+        overrideVoiceId: (sessionConfig as any).overrides?.tts?.voiceId || null,
         hasClientTools: !!wrappedTools,
         clientToolNames: wrappedTools ? Object.keys(wrappedTools) : [],
       };
