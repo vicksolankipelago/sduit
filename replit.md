@@ -20,7 +20,8 @@ The application is built as a monorepo with a React 19 frontend (Vite) and an Ex
 *   **SDUI Integration:** Designed to incorporate Speech Dialogue User Interface screens within conversational flows, allowing for rich interactive experiences.
 *   **Authentication & Authorization:** Implements email/password authentication via Passport.js with secure session management, password hashing, and role-based access control (Admin/Test roles). A "Terms & Conditions" acceptance mechanism is also integrated.
 *   **Journey Management:** Supports creation, editing, deletion, duplication, and versioning of voice agent journeys. Journeys can be configured as `voiceEnabled` or non-voice.
-*   **Publishing System:** Features a distinct development and production environment separation, with an explicit publishing workflow that stores ready journeys in Object Storage for production deployment.
+*   **Publishing System:** Features a distinct development and production environment separation, with an explicit publishing workflow that stores ready journeys in Object Storage for production deployment. Production editing uses `loadJourneyForRuntime` to ensure editors load from Object Storage (source of truth), not stale database/localStorage data.
+*   **Auto-Save:** Agent editor features debounced auto-save (1.5s delay) for quick iteration. Edits to agent prompts, tools, screens etc. save immediately to Object Storage in production, eliminating the need to manually click Save before testing voice sessions.
 *   **Voice Interaction & Recording:** Manages real-time voice sessions, including recording audio chunks, saving full session transcripts, and providing playback functionality with audio-synced text highlighting.
 *   **Feedback Survey System:** Full-screen multi-step survey after voice sessions collecting:
     - Overall experience rating (1-5 stars)
