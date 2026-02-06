@@ -179,6 +179,7 @@ export async function saveJourney(journey: Journey): Promise<Journey | null> {
     const isProd = await isProduction();
     if (isProd) {
       try {
+        console.log(`[Production] Saving journey: agents count=${journey.agents?.length}, first agent prompt length=${journey.agents?.[0]?.prompt?.length || 0}`);
         const updatedJourney = await journeyApi.updateProductionFlow(journey.id, journey);
         console.log(`[Production] Saved journey to Object Storage: ${updatedJourney.name} (id: ${updatedJourney.id || journey.id})`);
         return updatedJourney;

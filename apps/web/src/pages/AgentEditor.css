@@ -63,7 +63,25 @@
 
 .agent-editor-page-actions {
   display: flex;
+  align-items: center;
   gap: 0.75rem;
+}
+
+.agent-editor-save-status {
+  font-size: var(--font-size-body-2);
+  font-weight: var(--font-weight-medium);
+}
+
+.agent-editor-save-status.saving {
+  color: var(--text-global-secondary);
+}
+
+.agent-editor-save-status.saved {
+  color: var(--alert-success-default, #22c55e);
+}
+
+.agent-editor-save-status.failed {
+  color: var(--alert-error-default, #ef4444);
 }
 
 .agent-editor-save-btn {

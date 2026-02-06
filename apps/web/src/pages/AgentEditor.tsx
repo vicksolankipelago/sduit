@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Agent, Journey } from '../types/journey';
-import { loadJourney, saveJourney } from '../services/journeyStorage';
+import { loadJourneyForRuntime, saveJourney } from '../services/journeyStorage';
 import AgentNodeEditor from '../components/voiceAgent/AgentNodeEditor';
 import { TrashIcon, SaveIcon } from '../components/Icons';
 import './AgentEditor.css';
@@ -13,6 +13,10 @@ export const AgentEditorPage: React.FC = () => {
   const [agent, setAgent] = useState<Agent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveStatusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const journeyId = searchParams.get('journeyId');
   const agentId = searchParams.get('agentId');
@@ -24,7 +28,7 @@ export const AgentEditorPage: React.FC = () => {
         return;
       }
 
-      const loadedJourney = await loadJourney(journeyId);
+      const loadedJourney = await loadJourneyForRuntime(journeyId);
       if (!loadedJourney) {
         navigate('/');
         return;
@@ -39,10 +43,51 @@ export const AgentEditorPage: React.FC = () => {
       setJourney(loadedJourney);
       setAgent(foundAgent);
       setIsLoading(false);
+      setHasLoaded(true);
     };
 
     loadData();
   }, [journeyId, agentId, navigate]);
+
+  useEffect(() => {
+    if (!hasLoaded || !journey) return;
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(async () => {
+      setSaveStatus('saving');
+      try {
+        await saveJourney(journey);
+        setSaveStatus('saved');
+        if (saveStatusTimerRef.current) {
+          clearTimeout(saveStatusTimerRef.current);
+        }
+        saveStatusTimerRef.current = setTimeout(() => setSaveStatus('idle'), 2000);
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+        setSaveStatus('failed');
+      }
+    }, 1500);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [journey, hasLoaded]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      if (saveStatusTimerRef.current) {
+        clearTimeout(saveStatusTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleBack = () => {
     navigate(`/builder?id=${journeyId}`);
@@ -62,14 +107,24 @@ export const AgentEditorPage: React.FC = () => {
 
   const handleSave = async () => {
     if (!journey) return;
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
     
     setIsSaving(true);
+    setSaveStatus('saving');
     try {
       await saveJourney(journey);
-      alert('Agent saved successfully!');
+      setSaveStatus('saved');
+      if (saveStatusTimerRef.current) {
+        clearTimeout(saveStatusTimerRef.current);
+      }
+      saveStatusTimerRef.current = setTimeout(() => setSaveStatus('idle'), 2000);
     } catch (error) {
       console.error('Failed to save:', error);
-      alert('Failed to save agent');
+      setSaveStatus('failed');
     } finally {
       setIsSaving(false);
     }
@@ -122,6 +177,15 @@ export const AgentEditorPage: React.FC = () => {
           </div>
         </div>
         <div className="agent-editor-page-actions">
+          {saveStatus === 'saving' && (
+            <span className="agent-editor-save-status saving">Saving...</span>
+          )}
+          {saveStatus === 'saved' && (
+            <span className="agent-editor-save-status saved">Saved</span>
+          )}
+          {saveStatus === 'failed' && (
+            <span className="agent-editor-save-status failed">Save failed</span>
+          )}
           <button 
             className="agent-editor-save-btn" 
             onClick={handleSave}

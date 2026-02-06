@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { Journey, Agent, DEFAULT_SYSTEM_PROMPT, validateJourney, Screen, TtsProvider, ELEVENLABS_VOICE_OPTIONS, AZURE_VOICE_OPTIONS } from '../../types/journey';
-import { loadJourney, saveJourney, deleteJourney, duplicateJourney, loadProductionJourney } from '../../services/journeyStorage';
+import { loadJourney, loadJourneyForRuntime, saveJourney, deleteJourney, duplicateJourney } from '../../services/journeyStorage';
 import { publishJourney as publishJourneyApi, unpublishJourney as unpublishJourneyApi, getPublishedJourney } from '../../services/api/journeyService';
 import { SCREEN_TEMPLATES } from '../../lib/voiceAgent/screenTemplates';
 import { generateScreensFromPrompts, suggestionToScreen, ScreenSuggestion } from '../../services/aiScreenGenerator';
@@ -132,16 +132,18 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       const editId = searchParams.get('id');
       console.log(`[JourneyBuilder] Loading flow with id: ${editId}`);
       if (editId) {
-        // First try loading from user's journeys (database)
-        console.log(`[JourneyBuilder] Trying to load from user journeys...`);
-        let journeyToEdit = await loadJourney(editId);
-        console.log(`[JourneyBuilder] User journey result:`, journeyToEdit ? journeyToEdit.name : 'null');
+        // Use loadJourneyForRuntime which auto-detects production vs development
+        // In production: loads from Object Storage (source of truth)
+        // In development: loads from database
+        console.log(`[JourneyBuilder] Loading journey via runtime loader (auto-detects source)...`);
+        let journeyToEdit = await loadJourneyForRuntime(editId);
+        console.log(`[JourneyBuilder] Runtime loader result:`, journeyToEdit ? journeyToEdit.name : 'null');
         
-        // If not found in user journeys, try loading from published flows (for admin editing)
+        // Fallback: try loading from user's journeys (database) if runtime loader returned null
         if (!journeyToEdit) {
-          console.log(`[JourneyBuilder] Journey ${editId} not found in user journeys, trying published flows...`);
-          journeyToEdit = await loadProductionJourney(editId);
-          console.log(`[JourneyBuilder] Production journey result:`, journeyToEdit ? journeyToEdit.name : 'null');
+          console.log(`[JourneyBuilder] Runtime loader returned null, trying database fallback...`);
+          journeyToEdit = await loadJourney(editId);
+          console.log(`[JourneyBuilder] Database fallback result:`, journeyToEdit ? journeyToEdit.name : 'null');
         }
         
         if (journeyToEdit) {
