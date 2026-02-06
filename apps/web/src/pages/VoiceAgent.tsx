@@ -353,6 +353,13 @@ function VoiceAgentContent() {
   const prolificOutcomeRef = useRef<ProlificOutcome>('completed');
   // Deduplication guard: tracks recent non-navigation event timestamps to prevent LLM loops
   const recentEventTimestamps = useRef<Map<string, number>>(new Map());
+  // Guardrail: when record_input schedules auto-navigation, block duplicate/conflicting
+  // trigger_event navigation calls until the scheduled navigation has completed.
+  const pendingNavigationRef = useRef<{
+    eventId: string;
+    executeAtMs: number;
+    expiresAtMs: number;
+  } | null>(null);
   // Real-time session saver with debouncing
   const sessionSaverRef = useRef<DebouncedSessionSaver>(
     new DebouncedSessionSaver(500, (error) => {
@@ -403,6 +410,7 @@ function VoiceAgentContent() {
   };
 
   const resetToFlowsScreen = () => {
+    pendingNavigationRef.current = null;
     setSessionStatus('DISCONNECTED');
     setCurrentJourney(null);
     setIsTransitioningJourney(false);
@@ -982,6 +990,7 @@ function VoiceAgentContent() {
 
     // Generate new session ID for this session
     sessionIdRef.current = `session_${Date.now()}`;
+    pendingNavigationRef.current = null;
     
     // Store session info on window for end_call tool access
     (window as any).__voiceSessionId = sessionIdRef.current;
@@ -1761,6 +1770,7 @@ Important guidelines:
   };
 
   const disconnectFromRealtime = async (forceShowFeedback: boolean = false) => {
+    pendingNavigationRef.current = null;
     addLog('info', 'Disconnecting from session...');
 
     // Flush any pending real-time saves first
@@ -2334,6 +2344,25 @@ Important guidelines:
       const requestedEventConfig = activeScreenEvents.find((event: any) => event.id === eventId);
       const isNavigationEvent = eventId.startsWith('navigate_') || isNavigationScreenEvent(requestedEventConfig);
 
+      // If a record_input auto-navigation is pending, ignore extra navigation tool calls.
+      const pendingNavigation = pendingNavigationRef.current;
+      if (
+        isNavigationEvent &&
+        pendingNavigation &&
+        Date.now() <= pendingNavigation.expiresAtMs
+      ) {
+        if (eventId === pendingNavigation.eventId) {
+          addLog('warning', `⚠️ Navigation "${eventId}" ignored: already scheduled by record_input.`);
+          return `Navigation "${eventId}" is already scheduled by record_input. Wait for the screen to change and continue.`;
+        }
+
+        addLog(
+          'warning',
+          `⚠️ Navigation "${eventId}" ignored: "${pendingNavigation.eventId}" is already scheduled by record_input.`
+        );
+        return `Navigation "${pendingNavigation.eventId}" is already scheduled by record_input. Do NOT trigger "${eventId}" now; wait for navigation to complete.`;
+      }
+
       if (activeScreen && !hasEventOnScreen(activeScreen, eventId)) {
         const screenNavigationEvents = activeScreenEvents.filter((event: any) => isNavigationScreenEvent(event));
         const autoRecoveryEvent = screenNavigationEvents.length === 1 ? screenNavigationEvents[0] : null;
@@ -2431,10 +2460,30 @@ Important guidelines:
       // Trigger next event after delay if specified
       if (nextEventId) {
         const delayMs = (delay || 0) * 1000;
+        const nowMs = Date.now();
+        const executeAtMs = nowMs + delayMs;
+        pendingNavigationRef.current = {
+          eventId: nextEventId,
+          executeAtMs,
+          // Keep a short buffer after execute time to absorb duplicate LLM calls.
+          expiresAtMs: executeAtMs + 2000,
+        };
+
         setTimeout(() => {
+          const pending = pendingNavigationRef.current;
+          if (!pending || pending.eventId !== nextEventId || pending.executeAtMs !== executeAtMs) {
+            return;
+          }
           window.dispatchEvent(new CustomEvent('triggerEvent', {
             detail: { eventId: nextEventId, timestamp: Date.now() }
           }));
+          // Keep guard active briefly after dispatch, then clear.
+          setTimeout(() => {
+            const active = pendingNavigationRef.current;
+            if (active && active.eventId === nextEventId && active.executeAtMs === executeAtMs) {
+              pendingNavigationRef.current = null;
+            }
+          }, 2000);
         }, delayMs);
       }
 
