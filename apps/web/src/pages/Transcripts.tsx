@@ -180,13 +180,35 @@ export const TranscriptsPage: React.FC = () => {
 
   const handleDownloadJSON = () => {
     if (currentSession) {
-      downloadSessionExport(currentSession);
+      const exportData = {
+        ...currentSession,
+        notes: sessionNotes.map(n => ({
+          id: n.id,
+          messageIndex: n.messageIndex,
+          userName: n.userName,
+          content: n.content,
+          status: n.status,
+          createdAt: n.createdAt,
+        })),
+      };
+      downloadSessionExport(exportData);
     }
   };
 
   const handleDownloadText = () => {
     if (currentSession) {
-      downloadFormattedTranscript(currentSession);
+      const exportData = {
+        ...currentSession,
+        notes: sessionNotes.map(n => ({
+          id: n.id,
+          messageIndex: n.messageIndex,
+          userName: n.userName,
+          content: n.content,
+          status: n.status,
+          createdAt: n.createdAt,
+        })),
+      };
+      downloadFormattedTranscript(exportData);
     }
   };
 

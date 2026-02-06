@@ -105,6 +105,14 @@ export interface SessionExport {
     message: string;
     details?: any;
   }>;
+  notes?: Array<{
+    id: string;
+    messageIndex: number;
+    userName: string;
+    content: string;
+    status: 'todo' | 'done';
+    createdAt: string;
+  }>;
 }
 
 /**
@@ -130,8 +138,16 @@ export function createSessionExport(params: {
     details?: any;
   }>;
   pqData?: Record<string, any>;
+  notes?: Array<{
+    id: string;
+    messageIndex: number;
+    userName: string;
+    content: string;
+    status: 'todo' | 'done';
+    createdAt: string;
+  }>;
 }): SessionExport {
-  const { sessionId, transcript, events, journey, agentConfig, screens, prolific, flowContext, debugLogs, pqData } = params;
+  const { sessionId, transcript, events, journey, agentConfig, screens, prolific, flowContext, debugLogs, pqData, notes } = params;
 
   const messageTimes = transcript
     .filter(t => t.createdAtMs)
@@ -234,6 +250,7 @@ export function createSessionExport(params: {
       flowContextKeys: flowContext ? Object.keys(flowContext) : undefined,
     } : undefined,
     debugLogs,
+    notes,
   };
 }
 
@@ -328,6 +345,34 @@ export function formatTranscriptForReview(sessionExport: SessionExport): string 
       lines.push(`[${item.timestamp}] 📍 ${item.title}`);
       if (item.data) {
         lines.push(`   Data: ${JSON.stringify(item.data)}`);
+      }
+      lines.push('');
+    }
+  }
+
+  if (sessionExport.notes && sessionExport.notes.length > 0) {
+    lines.push('-'.repeat(80));
+    lines.push('');
+    lines.push('--- REVIEWER NOTES ---');
+    const messageItems = sessionExport.transcript.filter(t => t.type === 'MESSAGE' && t.title);
+    const notesByMessage = new Map<number, typeof sessionExport.notes>();
+    for (const note of sessionExport.notes) {
+      const existing = notesByMessage.get(note.messageIndex) || [];
+      existing.push(note);
+      notesByMessage.set(note.messageIndex, existing);
+    }
+    const sortedIndices = Array.from(notesByMessage.keys()).sort((a, b) => a - b);
+    for (const msgIndex of sortedIndices) {
+      const msgNotes = notesByMessage.get(msgIndex)!;
+      const messageItem = messageItems[msgIndex];
+      if (messageItem?.title) {
+        lines.push('');
+        const role = messageItem.role === 'user' ? 'USER' : 'ASSISTANT';
+        const truncated = messageItem.title.substring(0, 80);
+        lines.push(`  Message ${msgIndex + 1} (${role}): "${truncated}${messageItem.title.length > 80 ? '...' : ''}"`);
+      }
+      for (const note of msgNotes) {
+        lines.push(`  [by ${note.userName}, ${note.status}]: ${note.content}`);
       }
       lines.push('');
     }
@@ -502,6 +547,35 @@ export function formatTranscriptForSharing(
       }
 
       lastRole = undefined;
+    }
+  }
+
+  if (sessionExport.notes && sessionExport.notes.length > 0) {
+    lines.push('');
+    lines.push(divider);
+    lines.push('');
+    lines.push('REVIEWER NOTES');
+    lines.push('');
+    const messageItems = sessionExport.transcript.filter(t => t.type === 'MESSAGE' && t.title);
+    const notesByMessage = new Map<number, typeof sessionExport.notes>();
+    for (const note of sessionExport.notes) {
+      const existing = notesByMessage.get(note.messageIndex) || [];
+      existing.push(note);
+      notesByMessage.set(note.messageIndex, existing);
+    }
+    const sortedIndices = Array.from(notesByMessage.keys()).sort((a, b) => a - b);
+    for (const msgIndex of sortedIndices) {
+      const msgNotes = notesByMessage.get(msgIndex)!;
+      const messageItem = messageItems[msgIndex];
+      if (messageItem?.title) {
+        const role = messageItem.role === 'user' ? 'MEMBER' : 'COACH';
+        const truncated = messageItem.title.substring(0, 80);
+        lines.push(`  Message ${msgIndex + 1} (${role}): "${truncated}${messageItem.title.length > 80 ? '...' : ''}"`);
+      }
+      for (const note of msgNotes) {
+        lines.push(`  [by ${note.userName}, ${note.status}]: ${note.content}`);
+      }
+      lines.push('');
     }
   }
 
