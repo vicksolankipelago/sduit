@@ -237,6 +237,27 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
           elevenLabsLogger.debug('Status changed:', statusData);
           console.log('📊 ElevenLabs status changed:', (statusData as any).status);
         },
+        onDebug: (debugData: any) => {
+          if (debugData?.type === 'conversation_initiation_client_data') {
+            const msg = debugData.message;
+            const hasOverride = !!msg?.conversation_config_override;
+            const overridePromptLen = msg?.conversation_config_override?.agent?.prompt?.prompt?.length || 0;
+            const hasDynVars = !!msg?.dynamic_variables;
+            console.log('🔍 SDK DEBUG: conversation_initiation_client_data sent to ElevenLabs');
+            console.log('🔍 Has conversation_config_override:', hasOverride);
+            console.log('🔍 Override prompt length:', overridePromptLen);
+            console.log('🔍 Has dynamic_variables:', hasDynVars);
+            console.log('🔍 Override keys:', hasOverride ? Object.keys(msg.conversation_config_override) : 'none');
+            if (hasOverride) {
+              const agentOverride = msg.conversation_config_override.agent;
+              console.log('🔍 Agent override keys:', agentOverride ? Object.keys(agentOverride) : 'none');
+              console.log('🔍 Prompt override first 200 chars:', agentOverride?.prompt?.prompt?.substring(0, 200));
+            }
+            elevenLabsLogger.info('🔍 SDK INITIATION DATA: hasOverride=' + hasOverride + ', promptLen=' + overridePromptLen + ', hasDynVars=' + hasDynVars);
+          } else {
+            console.log('🔍 SDK DEBUG:', debugData?.type);
+          }
+        },
       };
       
       // Pass dynamic variables at root level (for {{variable}} substitution in prompts)
