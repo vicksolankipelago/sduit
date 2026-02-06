@@ -93,6 +93,18 @@ export interface SessionExport {
     studyId?: string;
     sessionId?: string;
   };
+
+  flowContext?: Record<string, any>;
+  variableSubstitution?: {
+    pqData?: Record<string, any>;
+    flowContextKeys?: string[];
+  };
+  debugLogs?: Array<{
+    timestamp: string;
+    type: string;
+    message: string;
+    details?: any;
+  }>;
 }
 
 /**
@@ -110,8 +122,16 @@ export function createSessionExport(params: {
     studyId?: string;
     sessionId?: string;
   };
+  flowContext?: Record<string, any>;
+  debugLogs?: Array<{
+    timestamp: string;
+    type: string;
+    message: string;
+    details?: any;
+  }>;
+  pqData?: Record<string, any>;
 }): SessionExport {
-  const { sessionId, transcript, events, journey, agentConfig, screens, prolific } = params;
+  const { sessionId, transcript, events, journey, agentConfig, screens, prolific, flowContext, debugLogs, pqData } = params;
 
   const messageTimes = transcript
     .filter(t => t.createdAtMs)
@@ -208,6 +228,12 @@ export function createSessionExport(params: {
       breadcrumbs: breadcrumbs.length,
     },
     prolific,
+    flowContext,
+    variableSubstitution: (pqData || flowContext) ? {
+      pqData,
+      flowContextKeys: flowContext ? Object.keys(flowContext) : undefined,
+    } : undefined,
+    debugLogs,
   };
 }
 
@@ -278,6 +304,17 @@ export function formatTranscriptForReview(sessionExport: SessionExport): string 
     lines.push('');
   }
 
+  if (sessionExport.flowContext && Object.keys(sessionExport.flowContext).length > 0) {
+    lines.push('--- VARIABLES / FLOW CONTEXT ---');
+    for (const [key, value] of Object.entries(sessionExport.flowContext)) {
+      const displayValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      lines.push(`  ${key}: ${displayValue}`);
+    }
+    lines.push('');
+    lines.push('-'.repeat(80));
+    lines.push('');
+  }
+
   lines.push('--- CONVERSATION ---');
   lines.push('');
 
@@ -294,6 +331,20 @@ export function formatTranscriptForReview(sessionExport: SessionExport): string 
       }
       lines.push('');
     }
+  }
+
+  if (sessionExport.debugLogs && sessionExport.debugLogs.length > 0) {
+    lines.push('-'.repeat(80));
+    lines.push('');
+    lines.push('--- SESSION DEBUG LOGS ---');
+    lines.push('');
+    for (const log of sessionExport.debugLogs) {
+      lines.push(`[${log.timestamp}] ${log.type.toUpperCase()}: ${log.message}`);
+      if (log.details) {
+        lines.push(`   Details: ${JSON.stringify(log.details)}`);
+      }
+    }
+    lines.push('');
   }
 
   lines.push('='.repeat(80));
@@ -379,6 +430,15 @@ export function formatTranscriptForSharing(
       lines.push(`  Azure Deployment: ${sessionExport.voiceConfig.azure.deploymentName}`);
     }
   }
+
+  if (sessionExport.flowContext && Object.keys(sessionExport.flowContext).length > 0) {
+    lines.push('');
+    lines.push('Variables:');
+    for (const [key, value] of Object.entries(sessionExport.flowContext)) {
+      const displayValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      lines.push(`  ${key}: ${displayValue}`);
+    }
+  }
   lines.push('');
   lines.push(divider);
   lines.push('');
@@ -443,6 +503,22 @@ export function formatTranscriptForSharing(
 
       lastRole = undefined;
     }
+  }
+
+  if (sessionExport.debugLogs && sessionExport.debugLogs.length > 0) {
+    lines.push('');
+    lines.push(divider);
+    lines.push('');
+    lines.push('SESSION DEBUG LOGS');
+    lines.push('');
+    for (const log of sessionExport.debugLogs) {
+      const timestamp = includeTimestamps ? `[${log.timestamp}] ` : '';
+      lines.push(`${timestamp}${log.type.toUpperCase()}: ${log.message}`);
+      if (log.details) {
+        lines.push(`   Details: ${JSON.stringify(log.details)}`);
+      }
+    }
+    lines.push('');
   }
 
   // Footer with stats

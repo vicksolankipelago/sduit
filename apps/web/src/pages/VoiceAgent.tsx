@@ -1621,6 +1621,14 @@ Important guidelines:
       journey: currentJourney || undefined,
       agentConfig,
       screens: currentAgent?.screens,
+      flowContext: flowContext || {},
+      debugLogs: sessionLogs.map(log => ({
+        timestamp: log.timestamp instanceof Date ? log.timestamp.toISOString() : String(log.timestamp),
+        type: log.type,
+        message: log.message,
+        details: log.details,
+      })),
+      pqData: pqData,
     });
 
     // Download formatted transcript (human-readable) instead of raw JSON
@@ -1660,6 +1668,14 @@ Important guidelines:
       journey: currentJourney || undefined,
       agentConfig,
       screens: currentAgent?.screens,
+      flowContext: flowContext || {},
+      debugLogs: sessionLogs.map(log => ({
+        timestamp: log.timestamp instanceof Date ? log.timestamp.toISOString() : String(log.timestamp),
+        type: log.type,
+        message: log.message,
+        details: log.details,
+      })),
+      pqData: pqData,
     });
 
     downloadPromptAndTranscript(sessionExport);
@@ -1688,6 +1704,14 @@ Important guidelines:
       journey: currentJourney || undefined,
       agentConfig,
       screens: currentAgent?.screens,
+      flowContext: flowContext || {},
+      debugLogs: sessionLogs.map(log => ({
+        timestamp: log.timestamp instanceof Date ? log.timestamp.toISOString() : String(log.timestamp),
+        type: log.type,
+        message: log.message,
+        details: log.details,
+      })),
+      pqData: pqData,
     });
 
     downloadSessionExport(sessionExport);
@@ -1723,6 +1747,14 @@ Important guidelines:
           journey: currentJourney || undefined,
           screens: currentAgent?.screens,
           agentConfig,
+          flowContext: flowContext || {},
+          debugLogs: sessionLogs.map(log => ({
+            timestamp: log.timestamp instanceof Date ? log.timestamp.toISOString() : String(log.timestamp),
+            type: log.type,
+            message: log.message,
+            details: log.details,
+          })),
+          pqData: pqData,
         });
 
         await saveSession(sessionExport);
@@ -2692,6 +2724,7 @@ Important guidelines:
                 journey={currentJourney}
                 currentAgentName={currentAgentRef.current}
                 combinedPrompt={combinedPromptRef.current}
+                flowContext={flowContext || {}}
               />
             </div>
           </div>
