@@ -1582,18 +1582,31 @@ Important guidelines:
   }, [addLog, flowContext, moduleState, updateFlowContext, user]);
 
   // Export transcript when session ends
+  const getCurrentAgentFromJourney = () => {
+    return currentJourney?.agents?.find(a => a.name === currentAgentRef.current || a.id === currentAgentRef.current);
+  };
+
+  const mapJourneyToolsToAgentTools = (journeyTools: any[]): any[] => {
+    return journeyTools.map(t => ({
+      type: 'function' as const,
+      name: t.name,
+      description: t.description,
+      parameters: t.parameters || { type: 'object', properties: {} },
+    }));
+  };
+
   const exportSessionTranscript = () => {
     if (transcriptItems.length === 0) {
       addLog('warning', 'No transcript to export');
       return;
     }
 
-    // Create agent config with the combined prompt for export
+    const currentAgent = getCurrentAgentFromJourney();
     const agentConfig = combinedPromptRef.current ? {
       name: currentAgentRef.current,
       publicDescription: '',
       instructions: combinedPromptRef.current,
-      tools: [],
+      tools: mapJourneyToolsToAgentTools(currentAgent?.tools || []),
     } : undefined;
 
     const sessionExport = createSessionExport({
@@ -1602,6 +1615,7 @@ Important guidelines:
       events: loggedEvents,
       journey: currentJourney || undefined,
       agentConfig,
+      screens: currentAgent?.screens,
     });
 
     // Download formatted transcript (human-readable) instead of raw JSON
@@ -1626,11 +1640,12 @@ Important guidelines:
       return;
     }
 
+    const currentAgent = getCurrentAgentFromJourney();
     const agentConfig = combinedPromptRef.current ? {
       name: currentAgentRef.current,
       publicDescription: '',
       instructions: combinedPromptRef.current,
-      tools: [],
+      tools: mapJourneyToolsToAgentTools(currentAgent?.tools || []),
     } : undefined;
 
     const sessionExport = createSessionExport({
@@ -1639,6 +1654,7 @@ Important guidelines:
       events: loggedEvents,
       journey: currentJourney || undefined,
       agentConfig,
+      screens: currentAgent?.screens,
     });
 
     downloadPromptAndTranscript(sessionExport);
@@ -1652,11 +1668,12 @@ Important guidelines:
       return;
     }
 
+    const currentAgent = getCurrentAgentFromJourney();
     const agentConfig = combinedPromptRef.current ? {
       name: currentAgentRef.current,
       publicDescription: '',
       instructions: combinedPromptRef.current,
-      tools: [],
+      tools: mapJourneyToolsToAgentTools(currentAgent?.tools || []),
     } : undefined;
 
     const sessionExport = createSessionExport({
@@ -1665,6 +1682,7 @@ Important guidelines:
       events: loggedEvents,
       journey: currentJourney || undefined,
       agentConfig,
+      screens: currentAgent?.screens,
     });
 
     downloadSessionExport(sessionExport);
@@ -1685,11 +1703,12 @@ Important guidelines:
     let sessionSaved = false;
     if (transcriptItems.length > 0) {
       try {
+        const currentAgent = getCurrentAgentFromJourney();
         const agentConfig = combinedPromptRef.current ? {
           name: currentAgentRef.current,
           publicDescription: '',
           instructions: combinedPromptRef.current,
-          tools: [],
+          tools: mapJourneyToolsToAgentTools(currentAgent?.tools || []),
         } : undefined;
 
         const sessionExport = createSessionExport({
@@ -1697,6 +1716,7 @@ Important guidelines:
           transcript: transcriptItems,
           events: loggedEvents,
           journey: currentJourney || undefined,
+          screens: currentAgent?.screens,
           agentConfig,
         });
 
@@ -2655,7 +2675,12 @@ Important guidelines:
                 </div>
               </div>
 
-              <SessionLogViewer logs={sessionLogs} />
+              <SessionLogViewer
+                logs={sessionLogs}
+                journey={currentJourney}
+                currentAgentName={currentAgentRef.current}
+                combinedPrompt={combinedPromptRef.current}
+              />
             </div>
           </div>
         </div>

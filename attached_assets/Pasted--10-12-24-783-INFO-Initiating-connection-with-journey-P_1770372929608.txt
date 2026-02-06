@@ -1,0 +1,102 @@
+[10:12:24.783] INFO: Initiating connection with journey: PQ+Intake (11 Labs)
+
+[10:12:24.783] INFO: Starting agent: newAgent
+
+[10:12:24.783] INFO: 🔍 Journey systemPrompt: 6336 chars, Agent prompt: 10461 chars
+
+[10:12:24.784] INFO: 📝 Added 8 quiz answer(s) to prompt context
+
+[10:12:24.784] INFO: 📋 Agent configuration prepared (27553 chars)
+
+[10:12:24.784] INFO: 🎵 Using voice: pNInz6obpgDQGcFmaJgB
+
+[10:12:24.784] INFO: 👥 Journey has 1 agent(s) configured
+
+[10:12:24.784] INFO: 🎙️ Initiating ElevenLabs connection...
+
+[10:12:24.784] INFO: 🔗 Passing 8 dynamic variable(s) to ElevenLabs
+
+[10:12:24.784] INFO: [10:12:24] Connecting to ElevenLabs...
+
+[10:12:28.514] SUCCESS: [10:12:28] Connected to ElevenLabs
+
+[10:12:28.514] SUCCESS: Successfully initiated ElevenLabs connection
+
+[10:12:29.364] INFO: Assistant: Hey! Welcome to Pelago - I'm Navi, and I'm really glad you're here.
+
+[10:12:39.569] INFO: User: Hey, nice to meet you.
+
+[10:12:40.357] INFO: Assistant: Hi Vick, welcome to Pelago. It's great to have you onboard. I'm Navi, I'm here to help navigate your journey with us. First, we'll go through some quick questions to get to know each other and then work together to setup a plan. Are you ready to start?
+
+[10:12:57.687] INFO: User: Yeah sounds good.
+
+[10:12:57.876] INFO: Assistant: Great. Let's get started. First let's review where you are.
+
+[10:12:57.882] TOOL: ⚡ trigger_event: navigate_to_program_summary
+
+[10:12:57.883] EVENT: 🔘 Button/Event: "navigate_to_program_summary" on screen "pq-program-summary"
+{
+  "screensCount": 18
+}
+
+[10:12:57.883] TOOL: 🔧 Tool triggered event: navigate_to_program_summary
+
+[10:13:01.779] INFO: Assistant: Hi, welcome to Pelago. I'm Navi, your personalized AI assistant. I've reviewed what you shared in the quiz. So you're curious about changing but haven't taken steps yet, and your goal is to track consumption and discover patterns. You're motivated by saving money. You'd also like to learn about emotional stability. Does that sound right?
+
+[10:13:26.401] INFO: User: Yeah it sounds right.
+
+[10:13:26.676] INFO: Assistant: Great, let me ask you a few more questions to really personalize your program. You mentioned you're curious about making changes. What's been on your mind?
+
+[10:13:43.785] INFO: User: I'd just like to cut down a little bit and be a bit healthier.
+
+[10:13:43.785] INFO: Assistant: Got it.
+
+[10:13:43.787] TOOL: 📝 record_input: About you
+{
+  "summary": "User wants to cut down a little bit and be a bit healthier.",
+  "storeKey": "aboutYouSummary",
+  "delay": 0
+}
+
+[10:13:43.787] TOOL: 🔧 Tool recorded: About you = "User wants to cut down a little bit and be a bit h..."
+
+[10:13:45.104] TOOL: ⚡ trigger_event: navigate_to_outcomes (delay: 2s)
+
+[10:13:46.632] INFO: Assistant: That makes sense. Let's talk about what success looks like for you. You mentioned wanting to avoid or eliminate heavy drinking. What does success look like there?
+
+[10:13:47.105] EVENT: 🔘 Button/Event: "navigate_to_outcomes" on screen "pq-program-summary"
+{
+  "screensCount": 18
+}
+
+[10:13:47.105] TOOL: 🔧 Tool triggered event: navigate_to_outcomes
+
+[10:14:06.136] INFO: User: Yeah I just want to kind of knock into the habit of drinking loads at parties and stuff.
+
+[10:14:06.136] INFO: Assistant: I hear you.
+
+[10:14:06.138] TOOL: 📝 record_input: Outcomes
+{
+  "summary": "User wants to avoid drinking too much at parties.",
+  "storeKey": "outcomesSummary",
+  "delay": 0
+}
+
+[10:14:06.138] TOOL: 🔧 Tool recorded: Outcomes = "User wants to avoid drinking too much at parties...."
+
+[10:14:07.737] TOOL: ⚡ trigger_event: navigate_to_motivation (delay: 2s)
+
+[10:14:08.805] INFO: Assistant: You mentioned that saving money is important to you. Tell me more - what's really driving this?
+
+[10:14:09.738] EVENT: 🔘 Button/Event: "navigate_to_motivation" on screen "pq-program-summary"
+{
+  "screensCount": 18
+}
+
+[10:14:09.738] TOOL: 🔧 Tool triggered event: navigate_to_motivation
+
+[10:14:17.830] INFO: User: It doesn't look like you've navigated to the screens correctly.
+
+[10:14:18.586] INFO: Assistant: I apologize for that. It seems I made a mistake in the navigation. I'm still under development and learning to improve. Thank you for pointing that out.
+
+What's making emotional stability important right now?

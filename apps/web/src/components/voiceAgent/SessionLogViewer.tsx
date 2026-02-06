@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import './SessionLogViewer.css';
+import { Journey } from '../../types/journey';
 
 export interface LogEntry {
   timestamp: Date;
@@ -10,9 +11,12 @@ export interface LogEntry {
 
 interface SessionLogViewerProps {
   logs: LogEntry[];
+  journey?: Journey | null;
+  currentAgentName?: string;
+  combinedPrompt?: string;
 }
 
-const SessionLogViewer: React.FC<SessionLogViewerProps> = ({ logs }) => {
+const SessionLogViewer: React.FC<SessionLogViewerProps> = ({ logs, journey, currentAgentName, combinedPrompt }) => {
   const logContainerRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new logs arrive
@@ -80,22 +84,75 @@ const SessionLogViewer: React.FC<SessionLogViewerProps> = ({ logs }) => {
             className="log-action-button"
             onClick={(e) => {
               e.stopPropagation();
-              const blob = new Blob(
-                [logs.map(log => 
+              const sections: string[] = [];
+
+              sections.push('='.repeat(80));
+              sections.push('SESSION DEBUG EXPORT');
+              sections.push(`Exported: ${new Date().toISOString()}`);
+              sections.push('='.repeat(80));
+              sections.push('');
+
+              if (combinedPrompt) {
+                sections.push('--- AGENT PROMPT ---');
+                sections.push(combinedPrompt);
+                sections.push('');
+                sections.push('-'.repeat(80));
+                sections.push('');
+              }
+
+              const currentAgent = journey?.agents?.find(
+                a => a.name === currentAgentName || a.id === currentAgentName
+              );
+
+              if (currentAgent?.tools && currentAgent.tools.length > 0) {
+                sections.push('--- TOOL DEFINITIONS ---');
+                for (const tool of currentAgent.tools) {
+                  sections.push(`Tool: ${tool.name}`);
+                  sections.push(`  Description: ${tool.description}`);
+                  if (tool.parameters) {
+                    sections.push(`  Parameters: ${JSON.stringify(tool.parameters, null, 2)}`);
+                  }
+                  sections.push('');
+                }
+                sections.push('-'.repeat(80));
+                sections.push('');
+              }
+
+              if (currentAgent?.screens && currentAgent.screens.length > 0) {
+                sections.push('--- SCREEN CONFIGURATIONS ---');
+                for (const screen of currentAgent.screens) {
+                  sections.push(`Screen: ${screen.id} (${screen.title || 'untitled'})`);
+                  sections.push(`  Sections: ${JSON.stringify(screen.sections, null, 2)}`);
+                  if (screen.events) {
+                    sections.push(`  Events: ${JSON.stringify(screen.events, null, 2)}`);
+                  }
+                  sections.push('');
+                }
+                sections.push('-'.repeat(80));
+                sections.push('');
+              }
+
+              sections.push('--- SESSION LOGS ---');
+              sections.push('');
+              for (const log of logs) {
+                sections.push(
                   `[${formatTime(log.timestamp)}] ${log.type.toUpperCase()}: ${log.message}${
                     log.details ? '\n' + formatDetails(log.details) : ''
                   }`
-                ).join('\n\n')],
-                { type: 'text/plain' }
-              );
+                );
+                sections.push('');
+              }
+
+              const content = sections.join('\n');
+              const blob = new Blob([content], { type: 'text/plain' });
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a');
               a.href = url;
-              a.download = `session-logs-${Date.now()}.txt`;
+              a.download = `session-debug-${Date.now()}.txt`;
               a.click();
               URL.revokeObjectURL(url);
             }}
-            title="Download logs"
+            title="Download debug export with full context"
           >
             💾 Export
           </button>

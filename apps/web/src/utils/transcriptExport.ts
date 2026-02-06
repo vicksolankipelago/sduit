@@ -5,10 +5,9 @@
  */
 
 import { TranscriptItem, LoggedEvent, AgentConfig } from '../types/voiceAgent';
-import { Journey } from '../types/journey';
+import { Journey, Screen } from '../types/journey';
 
 export interface SessionExport {
-  // Metadata
   sessionId: string;
   exportedAt: string;
   duration: {
@@ -17,7 +16,6 @@ export interface SessionExport {
     totalSeconds: number;
   };
 
-  // Journey/Agent configuration
   journey?: {
     id: string;
     name: string;
@@ -29,12 +27,27 @@ export interface SessionExport {
     description: string;
     systemPrompt: string;
     voice: string | null;
-    agents: any[];
+    agents: Array<{
+      id: string;
+      name: string;
+      prompt: string;
+      tools: Array<{
+        name: string;
+        description: string;
+        parameters?: any;
+      }>;
+      screens?: Array<{
+        id: string;
+        title?: string;
+        sections?: any[];
+        events?: any[];
+      }>;
+      handoffs: string[];
+    }>;
     startingAgentId: string;
     version: string;
   };
 
-  // Voice provider configuration
   voiceConfig?: {
     provider: 'elevenlabs' | 'azure' | string;
     elevenLabs?: {
@@ -53,14 +66,20 @@ export interface SessionExport {
     tools: Array<{
       name: string;
       description: string;
+      parameters?: any;
     }>;
   };
 
-  // Conversation data
+  screens?: Array<{
+    id: string;
+    title?: string;
+    type?: string;
+    components?: any[];
+  }>;
+
   transcript: TranscriptItem[];
   events: LoggedEvent[];
 
-  // Summary stats
   stats: {
     totalMessages: number;
     userMessages: number;
@@ -69,7 +88,6 @@ export interface SessionExport {
     breadcrumbs: number;
   };
 
-  // Prolific study tracking
   prolific?: {
     participantId?: string;
     studyId?: string;
@@ -86,15 +104,15 @@ export function createSessionExport(params: {
   events: LoggedEvent[];
   journey?: Journey;
   agentConfig?: AgentConfig;
+  screens?: Screen[];
   prolific?: {
     participantId?: string;
     studyId?: string;
     sessionId?: string;
   };
 }): SessionExport {
-  const { sessionId, transcript, events, journey, agentConfig, prolific } = params;
+  const { sessionId, transcript, events, journey, agentConfig, screens, prolific } = params;
 
-  // Calculate duration from transcript timestamps
   const messageTimes = transcript
     .filter(t => t.createdAtMs)
     .map(t => t.createdAtMs);
@@ -102,7 +120,6 @@ export function createSessionExport(params: {
   const startMs = messageTimes.length > 0 ? Math.min(...messageTimes) : Date.now();
   const endMs = messageTimes.length > 0 ? Math.max(...messageTimes) : Date.now();
 
-  // Calculate stats - only count completed messages with content
   const messages = transcript.filter(t => t.type === 'MESSAGE' && t.status === 'DONE' && t.title);
   const userMessages = messages.filter(t => t.role === 'user');
   const assistantMessages = messages.filter(t => t.role === 'assistant');
@@ -110,6 +127,40 @@ export function createSessionExport(params: {
   const toolCalls = events.filter(e =>
     e.eventName === 'response.function_call_arguments.done'
   );
+
+  const journeyConfig = journey ? {
+    id: journey.id,
+    name: journey.name,
+    description: journey.description,
+    systemPrompt: journey.systemPrompt,
+    voice: journey.voice || null,
+    agents: journey.agents.map(a => ({
+      id: a.id,
+      name: a.name,
+      prompt: a.prompt,
+      tools: a.tools.map(t => ({
+        name: t.name,
+        description: t.description,
+        parameters: t.parameters,
+      })),
+      screens: a.screens?.map(s => ({
+        id: s.id,
+        title: s.title,
+        sections: s.sections,
+        events: s.events,
+      })),
+      handoffs: a.handoffs,
+    })),
+    startingAgentId: journey.startingAgentId,
+    version: journey.version,
+  } : undefined;
+
+  const exportScreens = screens?.map(s => ({
+    id: s.id,
+    title: s.title,
+    type: 'screen' as const,
+    components: s.sections,
+  }));
 
   return {
     sessionId,
@@ -124,6 +175,7 @@ export function createSessionExport(params: {
       name: journey.name,
       voice: journey.voice || 'default',
     } : undefined,
+    journeyConfig,
     voiceConfig: journey ? {
       provider: journey.ttsProvider || 'elevenlabs',
       elevenLabs: journey.elevenLabsConfig ? {
@@ -142,8 +194,10 @@ export function createSessionExport(params: {
       tools: agentConfig.tools.map(t => ({
         name: t.name,
         description: t.description,
+        parameters: t.parameters,
       })),
     } : undefined,
+    screens: exportScreens,
     transcript,
     events,
     stats: {
@@ -193,6 +247,33 @@ export function formatTranscriptForReview(sessionExport: SessionExport): string 
     lines.push('--- AGENT PROMPT ---');
     lines.push(sessionExport.agent.prompt);
     lines.push('');
+    lines.push('-'.repeat(80));
+    lines.push('');
+  }
+
+  if (sessionExport.agent?.tools && sessionExport.agent.tools.length > 0) {
+    lines.push('--- TOOL DEFINITIONS ---');
+    for (const tool of sessionExport.agent.tools) {
+      lines.push(`Tool: ${tool.name}`);
+      lines.push(`  Description: ${tool.description}`);
+      if (tool.parameters) {
+        lines.push(`  Parameters: ${JSON.stringify(tool.parameters, null, 2)}`);
+      }
+      lines.push('');
+    }
+    lines.push('-'.repeat(80));
+    lines.push('');
+  }
+
+  if (sessionExport.screens && sessionExport.screens.length > 0) {
+    lines.push('--- SCREEN CONFIGURATIONS ---');
+    for (const screen of sessionExport.screens) {
+      lines.push(`Screen: ${screen.id} (${screen.title || 'untitled'})`);
+      if (screen.components) {
+        lines.push(`  Components: ${JSON.stringify(screen.components, null, 2)}`);
+      }
+      lines.push('');
+    }
     lines.push('-'.repeat(80));
     lines.push('');
   }
