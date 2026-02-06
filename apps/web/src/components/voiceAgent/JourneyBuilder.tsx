@@ -75,6 +75,12 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const lastSavedJourneyRef = useRef<string | null>(null);
   
+  // Auto-save state
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoSaveStatusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
+  const hasInitialLoadRef = useRef(false);
+  
   // Publishing state
   const [isPublished, setIsPublished] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -152,6 +158,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
           lastSavedJourneyRef.current = JSON.stringify(journeyToEdit);
           setSelectedAgentId(journeyToEdit.agents.length > 0 ? journeyToEdit.agents[0].id : null);
           setIsLoading(false);
+          hasInitialLoadRef.current = true;
           // Clear the query param
           setSearchParams({}, { replace: true });
           return;
@@ -184,6 +191,65 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     }
   }, [currentJourney]);
 
+  // Auto-save: debounced save after each edit (1.5s delay)
+  useEffect(() => {
+    if (!hasInitialLoadRef.current || !currentJourney) return;
+    if (currentJourney.id.startsWith('new-')) return;
+
+    const currentJson = JSON.stringify(currentJourney);
+    if (currentJson === lastSavedJourneyRef.current) return;
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    autoSaveTimerRef.current = setTimeout(async () => {
+      setAutoSaveStatus('saving');
+      try {
+        console.log('[AutoSave] Saving journey...');
+        const savedJourney = await saveJourney(currentJourney);
+        if (savedJourney) {
+          lastSavedJourneyRef.current = JSON.stringify(savedJourney);
+          setHasUnsavedChanges(false);
+          setAutoSaveStatus('saved');
+          console.log('[AutoSave] Journey saved successfully');
+          try {
+            const channel = new BroadcastChannel('journey-updates');
+            channel.postMessage({
+              type: 'journey-saved',
+              journeyId: savedJourney.id,
+              timestamp: Date.now(),
+            });
+            channel.close();
+          } catch (e) {}
+          if (autoSaveStatusTimerRef.current) {
+            clearTimeout(autoSaveStatusTimerRef.current);
+          }
+          autoSaveStatusTimerRef.current = setTimeout(() => setAutoSaveStatus('idle'), 2000);
+        } else {
+          setAutoSaveStatus('failed');
+        }
+      } catch (error) {
+        console.error('[AutoSave] Failed:', error);
+        setAutoSaveStatus('failed');
+      }
+    }, 1500);
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [currentJourney]);
+
+  // Cleanup auto-save timers on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+      if (autoSaveStatusTimerRef.current) clearTimeout(autoSaveStatusTimerRef.current);
+    };
+  }, []);
+
   const handleCreateNewJourney = () => {
     const newJourney: Journey = {
       id: `new-${uuidv4()}`,
@@ -206,6 +272,11 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const handleSaveJourney = async () => {
     if (!currentJourney || isSaving) return;
 
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+
     const errors = validateJourney(currentJourney);
     setValidationErrors(errors);
 
@@ -216,6 +287,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
 
     setIsSaving(true);
     setSaveSuccess(false);
+    setAutoSaveStatus('idle');
     try {
       const savedJourney = await saveJourney(currentJourney);
       if (savedJourney) {
@@ -516,7 +588,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     });
   };
 
-  const handleLaunch = () => {
+  const handleLaunch = async () => {
     if (!currentJourney) return;
 
     const errors = validateJourney(currentJourney);
@@ -524,6 +596,24 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       alert(`Cannot launch: ${errors.length} validation error(s). Please fix them first.`);
       setValidationErrors(errors);
       return;
+    }
+
+    if (hasUnsavedChanges && !currentJourney.id.startsWith('new-')) {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+      try {
+        console.log('[Launch] Saving journey before launch...');
+        const savedJourney = await saveJourney(currentJourney);
+        if (savedJourney) {
+          lastSavedJourneyRef.current = JSON.stringify(savedJourney);
+          setHasUnsavedChanges(false);
+          console.log('[Launch] Journey saved successfully before launch');
+        }
+      } catch (error) {
+        console.error('[Launch] Failed to save before launch:', error);
+      }
     }
 
     onLaunchJourney(currentJourney);
@@ -881,22 +971,29 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
           {currentJourney && (
             <>
               {isAdmin && (
-                <button 
-                  className={`journey-action-btn ${hasUnsavedChanges ? 'has-changes' : ''} ${isSaving ? 'saving' : ''} ${saveSuccess ? 'success' : ''}`} 
-                  onClick={handleSaveJourney}
-                  disabled={disabled || isSaving}
-                  title={hasUnsavedChanges ? 'You have unsaved changes' : 'Save flow'}
-                >
-                  {isSaving ? (
-                    <><LoaderIcon size={14} /> Saving...</>
-                  ) : saveSuccess ? (
-                    <><CheckIcon size={14} /> Saved!</>
-                  ) : hasUnsavedChanges ? (
-                    <><SaveIcon size={14} /> Save*</>
-                  ) : (
-                    <><SaveIcon size={14} /> Save</>
+                <>
+                  {autoSaveStatus !== 'idle' && (
+                    <span className={`journey-autosave-status ${autoSaveStatus}`}>
+                      {autoSaveStatus === 'saving' ? 'Saving...' : autoSaveStatus === 'saved' ? 'Saved' : 'Save failed'}
+                    </span>
                   )}
-                </button>
+                  <button 
+                    className={`journey-action-btn ${hasUnsavedChanges ? 'has-changes' : ''} ${isSaving ? 'saving' : ''} ${saveSuccess ? 'success' : ''}`} 
+                    onClick={handleSaveJourney}
+                    disabled={disabled || isSaving}
+                    title={hasUnsavedChanges ? 'You have unsaved changes' : 'Save flow'}
+                  >
+                    {isSaving ? (
+                      <><LoaderIcon size={14} /> Saving...</>
+                    ) : saveSuccess ? (
+                      <><CheckIcon size={14} /> Saved!</>
+                    ) : hasUnsavedChanges ? (
+                      <><SaveIcon size={14} /> Save*</>
+                    ) : (
+                      <><SaveIcon size={14} /> Save</>
+                    )}
+                  </button>
+                </>
               )}
               {isAdmin && (isPublished ? (
                 <button 

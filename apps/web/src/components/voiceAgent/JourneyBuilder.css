@@ -865,6 +865,25 @@
   align-items: center;
 }
 
+.journey-autosave-status {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.journey-autosave-status.saving {
+  color: #6b7280;
+}
+
+.journey-autosave-status.saved {
+  color: #059669;
+}
+
+.journey-autosave-status.failed {
+  color: #dc2626;
+}
+
 .journey-more-menu-container {
   position: relative;
 }
