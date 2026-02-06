@@ -89,9 +89,9 @@ export const TranscriptsPage: React.FC = () => {
       
       // Fetch note counts for all sessions
       if (data.length > 0) {
-        const sessionIds = data.map(s => s.sessionId);
+        const dbIds = data.map(s => s.id);
         try {
-          const counts = await getNoteCounts(sessionIds);
+          const counts = await getNoteCounts(dbIds);
           setNoteCounts(counts);
         } catch (noteErr) {
           console.error('Failed to load note counts:', noteErr);
@@ -753,11 +753,11 @@ export const TranscriptsPage: React.FC = () => {
                   )}
                 </div>
                 <div className="transcripts-list-item-meta">
-                  <div className="transcripts-list-item-comment-badge" data-has-comments={(noteCounts[session.sessionId] ?? 0) > 0}>
+                  <div className="transcripts-list-item-comment-badge" data-has-comments={(noteCounts[session.id] ?? 0) > 0}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                     </svg>
-                    <span>{noteCounts[session.sessionId] ?? 0}</span>
+                    <span>{noteCounts[session.id] ?? 0}</span>
                   </div>
                   <span className="transcripts-list-item-stats">
                     {(sessionMetrics[session.id]?.messageCount ?? session.messageCount)} messages • {formatDuration(session.durationSeconds)}
