@@ -194,6 +194,9 @@ router.get("/journey/:journeyId", async (req: Request, res: Response) => {
       return apiResponse.notFound(res, "Journey");
     }
 
+    // Inject system tools into agents so mobile app can register client tool handlers
+    const agentsWithTools = injectSystemTools(journey.agents);
+
     // Return mobile-optimized journey format
     return apiResponse.success(res, {
       id: journey.journeyId,
@@ -203,7 +206,7 @@ router.get("/journey/:journeyId", async (req: Request, res: Response) => {
       voice: journey.voice,
       ttsProvider: journey.ttsProvider || 'elevenlabs',
       elevenLabsConfig: journey.elevenLabsConfig,
-      agents: journey.agents,
+      agents: agentsWithTools,
       startingAgentId: journey.startingAgentId,
       version: journey.version,
       publishedAt: journey.publishedAt,
@@ -267,6 +270,9 @@ router.post("/journey/:journeyId/configure", async (req: Request, res: Response)
     // Apply variable substitution to prompts
     const substitutedJourney = substituteVariables(journey, variables);
 
+    // Inject system tools into agents so mobile app can register client tool handlers
+    const agentsWithTools = injectSystemTools(substitutedJourney.agents);
+
     mobileLogger.info(
       `Configured journey ${journeyId} with ${Object.keys(variables).length} variables`
     );
@@ -277,7 +283,7 @@ router.post("/journey/:journeyId/configure", async (req: Request, res: Response)
       description: substitutedJourney.description,
       systemPrompt: substitutedJourney.systemPrompt,
       voice: substitutedJourney.voice,
-      agents: substitutedJourney.agents,
+      agents: agentsWithTools,
       startingAgentId: substitutedJourney.startingAgentId,
       version: substitutedJourney.version,
       publishedAt: substitutedJourney.publishedAt,
@@ -348,8 +354,8 @@ router.get("/journey/:journeyId/module/:agentId", async (req: Request, res: Resp
       return apiResponse.notFound(res, "Journey");
     }
 
-    // Find the requested agent
-    const agents = journey.agents || [];
+    // Find the requested agent and inject system tools
+    const agents = injectSystemTools(journey.agents || []);
     const agent = agents.find((a: any) => a.id === agentId);
 
     if (!agent) {
@@ -425,7 +431,7 @@ router.get("/journey/:journeyId/modules", async (req: Request, res: Response) =>
       return apiResponse.notFound(res, "Journey");
     }
 
-    const agents = journey.agents || [];
+    const agents = injectSystemTools(journey.agents || []);
     const modules = agents.map((agent: any) => ({
       module: normalizeAgentToModule(agent),
       screenPrompts: agent.screenPrompts || {},
@@ -472,6 +478,157 @@ router.get("/health", (_req: Request, res: Response) => {
 // ============================================================================
 // Helper Functions
 // ============================================================================
+
+/**
+ * System tool definitions that are automatically available to all voice agents.
+ *
+ * In the web app, these tools are added at runtime:
+ * - Azure path: journeyRuntime.ts adds them programmatically
+ * - ElevenLabs path: VoiceAgent.tsx hardcodes them as elevenLabsClientTools
+ *
+ * But they are NOT stored in the journey's agent.tools[] array, so when served
+ * to mobile apps, we need to inject them here to ensure the iOS app can register
+ * the correct client tool handlers with the ElevenLabs SDK.
+ */
+const SYSTEM_TOOLS = [
+  {
+    id: "system_trigger_event",
+    name: "trigger_event",
+    description: "Trigger a screen event to navigate to the next screen or perform a UI action. Use the eventId that matches the current screen's available events.",
+    parameters: {
+      type: "object" as const,
+      properties: {
+        eventId: {
+          type: "string",
+          description: "The event ID to trigger (must match a registered event on the current screen)"
+        },
+        delay: {
+          type: "number",
+          description: "Optional delay in seconds before triggering the event"
+        }
+      },
+      required: ["eventId"],
+      additionalProperties: false,
+    }
+  },
+  {
+    id: "system_record_input",
+    name: "record_input",
+    description: "Record the user's spoken response. Use after the user answers a question to save their input.",
+    parameters: {
+      type: "object" as const,
+      properties: {
+        title: {
+          type: "string",
+          description: "Title/label for the recorded input"
+        },
+        summary: {
+          type: "string",
+          description: "One-line summary of the user's response"
+        },
+        description: {
+          type: "string",
+          description: "Detailed description of the user's response"
+        },
+        storeKey: {
+          type: "string",
+          description: "Key to store the summary in module state (e.g., 'aboutYouSummary', 'outcomesSummary')"
+        },
+        nextEventId: {
+          type: "string",
+          description: "Optional event ID to trigger after recording (combines record + navigate)"
+        },
+        delay: {
+          type: "number",
+          description: "Optional delay in seconds before triggering the nextEventId"
+        }
+      },
+      required: ["title"],
+      additionalProperties: false,
+    }
+  },
+  {
+    id: "system_end_call",
+    name: "end_call",
+    description: "End the voice call and disconnect the session.",
+    parameters: {
+      type: "object" as const,
+      properties: {
+        reason: {
+          type: "string",
+          description: "Reason for ending the call"
+        },
+        delaySeconds: {
+          type: "number",
+          description: "Optional delay in seconds before disconnecting"
+        }
+      },
+      required: [],
+      additionalProperties: false,
+    }
+  },
+  {
+    id: "system_set_reminder_time",
+    name: "set_reminder_time",
+    description: "Save the user's preferred daily reminder time. Pass the time exactly as the user said it - the system converts to UTC automatically.",
+    parameters: {
+      type: "object" as const,
+      properties: {
+        time: {
+          type: "string",
+          description: "The reminder time as the user said it (e.g., '8 PM', '9 AM', '20:00')"
+        }
+      },
+      required: ["time"],
+      additionalProperties: false,
+    }
+  },
+  {
+    id: "system_set_checkin_frequency",
+    name: "set_checkin_frequency",
+    description: "DEPRECATED: Check-in frequency is now saved automatically by the select_*_commitment events. This is a no-op kept for backward compatibility.",
+    parameters: {
+      type: "object" as const,
+      properties: {
+        days: {
+          type: "number",
+          description: "Number of days per week to check in (7=daily, 4=few times, 1=once)"
+        }
+      },
+      required: ["days"],
+      additionalProperties: false,
+    }
+  },
+];
+
+/**
+ * Injects system tool definitions into each agent's tools array.
+ * System tools (trigger_event, record_input, etc.) are added at runtime in the
+ * web app but not stored in the journey data. This function ensures the mobile
+ * app receives the tool schemas so it can register client tool handlers.
+ *
+ * Only injects tools that aren't already present (by name) to avoid duplicates.
+ */
+function injectSystemTools(agents: any[]): any[] {
+  if (!agents || !Array.isArray(agents)) return agents;
+
+  return agents.map((agent: any) => {
+    const existingToolNames = new Set(
+      (agent.tools || []).map((t: any) => t.name)
+    );
+
+    const toolsToAdd = SYSTEM_TOOLS.filter(
+      (st) => !existingToolNames.has(st.name)
+    );
+
+    if (toolsToAdd.length === 0) return agent;
+
+    return {
+      ...agent,
+      tools: [...(agent.tools || []), ...toolsToAdd],
+    };
+  });
+}
 
 /**
  * Substitutes {{variable}} placeholders in journey prompts with provided values.
