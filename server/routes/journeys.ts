@@ -184,6 +184,8 @@ router.put("/:id", isAdmin, async (req: Request, res: Response) => {
       systemPrompt: updated.systemPrompt,
       voice: updated.voice,
       voiceEnabled: updated.voiceEnabled ?? true,
+      ttsProvider: (updated as any).ttsProvider || 'elevenlabs',
+      elevenLabsConfig: updated.elevenLabsConfig,
       agents: updated.agents,
       startingAgentId: updated.startingAgentId,
       createdAt: updated.createdAt,
