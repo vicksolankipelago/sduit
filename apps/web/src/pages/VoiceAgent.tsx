@@ -88,7 +88,9 @@ const QUIZ_OPTION_LABELS: Record<string, string> = {
 
 // Parse a user-spoken time string into UTC HH:MM format using browser timezone
 function parseLocalTimeToUTC(timeStr: string): string {
+  if (!timeStr || typeof timeStr !== 'string') return timeStr || '21:00'; // fallback to 9 PM UTC
   const normalized = timeStr.trim().toLowerCase();
+  if (!normalized) return '21:00'; // fallback if empty after trim
 
   const vagueMap: Record<string, [number, number]> = {
     'morning': [9, 0], 'afternoon': [14, 0], 'evening': [18, 0],
@@ -2553,22 +2555,39 @@ Important guidelines:
     },
 
     // Save preferred reminder time (converts to UTC)
-    set_reminder_time: async (params: { time: string }) => {
-      const userTime = params.time;
-      const utcTime = parseLocalTimeToUTC(userTime);
-      addLog('tool', `⏰ set_reminder_time: "${userTime}" → UTC "${utcTime}"`);
+    set_reminder_time: async (params: any) => {
+      try {
+        // Defensive: extract time from various param shapes the LLM might send
+        const userTime = typeof params === 'string' ? params
+          : params?.time ?? params?.reminder_time ?? params?.reminderTime ?? String(params);
+        
+        addLog('tool', `⏰ set_reminder_time called with params: ${JSON.stringify(params)}`);
 
-      // Dispatch event for ScreenProvider
-      window.dispatchEvent(new CustomEvent('recordInput', {
-        detail: { title: 'Reminder time', summary: utcTime, description: `User said: ${userTime}, UTC: ${utcTime}`, storeKey: 'reminderTime', timestamp: Date.now() }
-      }));
+        if (!userTime || userTime === 'undefined' || userTime === 'null') {
+          addLog('tool', `⚠️ set_reminder_time: no valid time provided, params were: ${JSON.stringify(params)}`);
+          return 'Error: no time value received. Please ask the user again for their preferred reminder time and call set_reminder_time with the time parameter.';
+        }
 
-      // Update module state directly
-      if (updateModuleState) {
-        updateModuleState({ reminderTime: utcTime });
+        const utcTime = parseLocalTimeToUTC(userTime);
+        addLog('tool', `⏰ set_reminder_time: "${userTime}" → UTC "${utcTime}"`);
+
+        // Dispatch event for ScreenProvider
+        window.dispatchEvent(new CustomEvent('recordInput', {
+          detail: { title: 'Reminder time', summary: utcTime, description: `User said: ${userTime}, UTC: ${utcTime}`, storeKey: 'reminderTime', timestamp: Date.now() }
+        }));
+
+        // Update module state directly
+        if (updateModuleState) {
+          updateModuleState({ reminderTime: utcTime });
+        }
+
+        return `Reminder time saved: ${userTime} (UTC: ${utcTime})`;
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        addLog('tool', `❌ set_reminder_time error: ${errMsg}, params: ${JSON.stringify(params)}`);
+        console.error('set_reminder_time handler error:', error, 'params:', params);
+        return `Error saving reminder time: ${errMsg}. Please try again with a time like "9 PM" or "8 AM".`;
       }
-
-      return `Reminder time saved: ${userTime} (UTC: ${utcTime})`;
     },
 
     // Navigate to a specific screen
