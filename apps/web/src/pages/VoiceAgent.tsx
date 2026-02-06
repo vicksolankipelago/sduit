@@ -343,6 +343,8 @@ function VoiceAgentContent() {
   const disconnectFromRealtimeRef = useRef<((forceShowFeedback?: boolean) => Promise<void>) | null>(null);
   // Track Prolific outcome for proper redirect (completed vs screened_out)
   const prolificOutcomeRef = useRef<ProlificOutcome>('completed');
+  // Deduplication guard: tracks recent non-navigation event timestamps to prevent LLM loops
+  const recentEventTimestamps = useRef<Map<string, number>>(new Map());
   // Real-time session saver with debouncing
   const sessionSaverRef = useRef<DebouncedSessionSaver>(
     new DebouncedSessionSaver(500, (error) => {
@@ -2264,6 +2266,20 @@ Important guidelines:
     trigger_event: async (params: { eventId: string; delay?: number }) => {
       const { eventId, delay = 0 } = params;
       const delayMs = delay * 1000;
+
+      // Deduplication guard: prevent the same non-navigation event from firing
+      // multiple times within a 2-second window (prevents LLM looping)
+      const isNavigationEvent = eventId.startsWith('navigate_');
+      if (!isNavigationEvent) {
+        const now = Date.now();
+        const lastFired = recentEventTimestamps.current.get(eventId);
+        if (lastFired && now - lastFired < 2000) {
+          addLog('tool', `⚡ trigger_event: ${eventId} BLOCKED (duplicate within 2s)`);
+          return `Event "${eventId}" was already triggered. Do NOT call this again. Proceed to the next required action.`;
+        }
+        recentEventTimestamps.current.set(eventId, now);
+      }
+
       addLog('tool', `⚡ trigger_event: ${eventId}${delay ? ` (delay: ${delay}s)` : ''}`);
 
       // Dispatch event after delay (if specified)
@@ -2279,7 +2295,14 @@ Important guidelines:
         }));
       }
 
-      return `Event triggered: ${eventId}${delay ? ` (after ${delay}s)` : ''}`;
+      // Return a more informative result based on event type to guide the LLM
+      if (eventId.startsWith('select_')) {
+        return `Selection "${eventId}" saved successfully. Do NOT repeat this call. Proceed to the next action (navigation).`;
+      }
+      if (isNavigationEvent) {
+        return `Navigation "${eventId}" triggered. Screen is now changing. Continue speaking to the user about the new screen.`;
+      }
+      return `Event "${eventId}" triggered successfully.${delay ? ` (after ${delay}s delay)` : ''} Proceed to the next step.`;
     },
 
     // Record user input to screen state
@@ -2328,22 +2351,15 @@ Important guidelines:
       return 'Call ending';
     },
 
-    // Save check-in frequency as integer days per week
+    // DEPRECATED: Check-in frequency is now saved automatically by the select_*_commitment events.
+    // This handler is kept as a safe no-op in case the LLM still tries to call it
+    // (e.g., from a stale tool schema on the ElevenLabs dashboard).
     set_checkin_frequency: async (params: { days: number }) => {
       const days = Math.round(Number(params.days));
-      addLog('tool', `📊 set_checkin_frequency: ${days} days/week`);
-
-      // Dispatch event for ScreenProvider
-      window.dispatchEvent(new CustomEvent('recordInput', {
-        detail: { title: 'Check-in frequency', summary: String(days), description: `${days} days per week`, storeKey: 'checkinFrequency', timestamp: Date.now() }
-      }));
-
-      // Update module state directly
-      if (updateModuleState) {
-        updateModuleState({ checkinFrequency: String(days) });
-      }
-
-      return `Check-in frequency saved: ${days} days per week`;
+      addLog('tool', `📊 set_checkin_frequency: ${days} days/week (DEPRECATED - already saved by selection event)`);
+      // No-op: frequency is now set by the select_daily/few_times/once_commitment events
+      // in the screen JSON stateUpdate actions. No need to duplicate the write.
+      return `Check-in frequency already saved by selection event. Do NOT call this tool again. Proceed to the next step.`;
     },
 
     // Save preferred reminder time (converts to UTC)

@@ -1427,17 +1427,6 @@
               }
             },
             {
-              "type": "animatedImage",
-              "state": {
-                "id": "rewards_animation",
-                "lottieName": "SBSanimation"
-              },
-              "style": {
-                "width": 200,
-                "height": 200
-              }
-            },
-            {
               "type": "textBlock",
               "state": {
                 "id": "rewards_title",
@@ -1456,7 +1445,7 @@
               },
               "style": {
                 "width": null,
-                "height": 16,
+                "height": 8,
                 "direction": "vertical",
                 "isFlexible": false
               }
@@ -1471,6 +1460,35 @@
                 "color": "secondary",
                 "style": "body2",
                 "alignment": "center"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "carousel_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 24,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "imageCarousel",
+              "state": {
+                "id": "rewards_carousel",
+                "images": [
+                  { "imageUrl": "/images/reward_card_amazon.png", "title": "Amazon", "subtitle": "From 5,000 pts" },
+                  { "imageUrl": "/images/reward_card_nike.png", "title": "Nike", "subtitle": "From 5,000 pts" },
+                  { "imageUrl": "/images/reward_card_walmart.png", "title": "Walmart", "subtitle": "From 5,000 pts" }
+                ]
+              },
+              "style": {
+                "speed": 30,
+                "height": 160,
+                "gap": 16,
+                "pauseOnHover": true
               }
             },
             {
@@ -1516,7 +1534,8 @@
               "type": "stateUpdate",
               "scope": "module",
               "updates": {
-                "checkinCommitment": "Every day"
+                "checkinCommitment": "Every day",
+                "checkinFrequency": "7"
               }
             }
           ],
@@ -1539,7 +1558,8 @@
               "type": "stateUpdate",
               "scope": "module",
               "updates": {
-                "checkinCommitment": "A few times"
+                "checkinCommitment": "A few times",
+                "checkinFrequency": "4"
               }
             }
           ],
@@ -1562,7 +1582,8 @@
               "type": "stateUpdate",
               "scope": "module",
               "updates": {
-                "checkinCommitment": "Once"
+                "checkinCommitment": "Once",
+                "checkinFrequency": "1"
               }
             }
           ],
@@ -2215,7 +2236,7 @@
     "motivation": "Ask about motivation. After response → record_input({\"title\": \"Your why\", \"summary\": \"[summary]\", \"storeKey\": \"yourWhySummary\", \"nextEventId\": \"navigate_to_intention\", \"delay\": 2})",
     "intention": "Ask weekly intention. After response: 1) record_input({\"title\": \"Intention\", \"summary\": \"[summary]\", \"storeKey\": \"weeklyIntention\", \"nextEventId\": \"navigate_to_cm_rewards_intro\", \"delay\": 0}) 2) Explain rewards 3) trigger_event({\"eventId\": \"navigate_to_checkin_commitment\", \"delay\": 4}) 4) Ask check-in frequency",
     "cm-rewards-intro": "Transitional screen. Navigation already triggered by intention screen. Continue speaking about rewards naturally. Only call navigate_to_checkin_commitment if stuck >5s.",
-    "checkin-commitment": "THREE calls required: 1) Selection: trigger_event select_daily/few_times/once_commitment 2) Save frequency: set_checkin_frequency({\"days\": 7|4|1}) 3) Navigation: trigger_event({\"eventId\": \"navigate_to_notification_setup\"}) THEN ask about reminder time.",
+    "checkin-commitment": "TWO calls required: 1) Selection: trigger_event select_daily/few_times/once_commitment (this also saves the frequency automatically) 2) Navigation: trigger_event({\"eventId\": \"navigate_to_notification_setup\"}) THEN ask about reminder time. Do NOT call set_checkin_frequency - it is handled by the selection event.",
     "pq-notification-setup": "Ask preferred time → set_reminder_time({\"time\": \"[as user said it]\"}) (auto-converts to UTC) → trigger_event({\"eventId\": \"permissions_screen_event\"}) → Wait for ack → trigger_event({\"eventId\": \"navigate_to_plan_review\"})",
     "pq-plan-review": "Brief plan summary referencing moduleData. After confirmation → trigger_event({\"eventId\": \"navigate_to_completion\"})",
     "pq-start-programme": "Closing message → trigger_event({\"eventId\": \"complete_intake_flow\"}) → end_call({\"reason\": \"journey completed\"})"

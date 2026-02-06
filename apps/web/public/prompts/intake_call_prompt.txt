@@ -555,37 +555,33 @@ Voice Intake Flow Overview
   Context:
   This screen appears after the user has seen the rewards introduction. The voice agent helps them commit to a check-in frequency that feels achievable and supportive of their goals.
 
-  **CRITICAL: This screen requires THREE function calls - one for selection, one to save the frequency, and one for navigation. You MUST call ALL THREE.**
+  **CRITICAL: This screen requires exactly TWO function calls - one for selection and one for navigation. The selection event automatically saves the check-in frequency.**
 
   Instructions:
   1. Listen for the user's selection (they may say "daily", "every day", "a few times", "3-4 times", "once", etc.)
   2. Acknowledge their choice briefly (e.g., "Great choice")
-  3. **FIRST FUNCTION CALL (REQUIRED):** Emit trigger_event to select the option visually:
+  3. **FIRST FUNCTION CALL (REQUIRED):** Emit trigger_event to select the option visually AND save the frequency:
      - "Every day", "daily", "each day" → trigger_event with arguments {"eventId": "select_daily_commitment"}
      - "A few times", "few times", "3-4 times" → trigger_event with arguments {"eventId": "select_few_times_commitment"}
      - "Once", "one time", "just once" → trigger_event with arguments {"eventId": "select_once_commitment"}
-  4. **SECOND FUNCTION CALL (REQUIRED):** Save the check-in frequency as an integer (days per week):
-     - "Every day" / "daily" → set_checkin_frequency with arguments {"days": 7}
-     - "A few times" → set_checkin_frequency with arguments {"days": 4}
-     - "Once" → set_checkin_frequency with arguments {"days": 1}
-  5. Brief pause (2 seconds) to let the visual selection register
-  6. Personalized affirmation based on their stage:
-     - If {{feelings_alcohol}} includes "recently cut down": "Great. Checking in [frequency] will help you keep that momentum going."
-     - If {{feelings_alcohol}} includes "curious": "Great. Checking in [frequency] is a low-pressure way to start building awareness."
-     - Default: "Great. Checking in [frequency] will help you stay on track."
-  7. **THIRD FUNCTION CALL (REQUIRED - DO NOT SKIP):** Emit trigger_event with arguments {"eventId": "navigate_to_notification_setup"}
-  8. **ONLY AFTER calling navigate_to_notification_setup**, continue speaking: "What time works best for you to receive a daily reminder?"
+     (The selection event automatically saves the check-in frequency - do NOT call set_checkin_frequency separately)
+  4. Personalized affirmation based on their stage:
+     - If {{feelings_alcohol}} includes "recently cut down": "Checking in [frequency] will help you keep that momentum going."
+     - If {{feelings_alcohol}} includes "curious": "Checking in [frequency] is a low-pressure way to start building awareness."
+     - Default: "Checking in [frequency] will help you stay on track."
+  5. **SECOND FUNCTION CALL (REQUIRED - DO NOT SKIP):** Emit trigger_event with arguments {"eventId": "navigate_to_notification_setup"}
+  6. **ONLY AFTER calling navigate_to_notification_setup**, continue speaking: "What time works best for you to receive a daily reminder?"
 
   **CRITICAL WARNING:**
+  - Do NOT call set_checkin_frequency - the selection event handles this automatically
+  - Do NOT call the same selection event more than once - call it ONCE, then move to navigation
   - You MUST call navigate_to_notification_setup BEFORE asking about reminder time
   - Do NOT mention notifications or reminders until AFTER the navigation call is made
   - The navigation call changes the screen - without it, you're still on the wrong screen
-  - If you skip the navigation call, the notification screen will never appear
 
-  Tool Calls (ALL THREE ARE MANDATORY):
+  Tool Calls (BOTH ARE MANDATORY - call them in this exact order):
   1. Selection: trigger_event with arguments {"eventId": "select_daily_commitment" | "select_few_times_commitment" | "select_once_commitment"}
-  2. Save frequency: set_checkin_frequency with arguments {"days": 7} (or 4, or 1)
-  3. Navigation: trigger_event with arguments {"eventId": "navigate_to_notification_setup"}
+  2. Navigation: trigger_event with arguments {"eventId": "navigate_to_notification_setup"}
 
   ---
   SCREEN: pq-notification-setup
