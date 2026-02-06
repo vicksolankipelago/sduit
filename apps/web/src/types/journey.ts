@@ -60,7 +60,8 @@ export type ElementType =
   | 'weekCheckinSummary'
   | 'agentMessageCard'
   | 'openQuestion'
-  | 'orb';
+  | 'orb'
+  | 'imageCarousel';
 
 /**
  * Event Type - All supported event types
@@ -629,6 +630,29 @@ export interface OrbElementStyle {
   /** Container background color */
   backgroundColor?: string;
 }
+
+/**
+ * Image Carousel Element
+ */
+export interface ImageCarouselData {
+  id: string;
+  images: ImageCarouselItem[];
+}
+
+export interface ImageCarouselItem {
+  imageUrl: string;
+  title: string;
+  subtitle?: string;
+}
+
+export interface ImageCarouselElementStyle {
+  speed?: number;
+  height?: number;
+  gap?: number;
+  pauseOnHover?: boolean;
+}
+
+export type ImageCarouselElementState = ImageCarouselData;
 
 // ============================================================================
 // TYPE ALIASES FOR BACKWARDS COMPATIBILITY

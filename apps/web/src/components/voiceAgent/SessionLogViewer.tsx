@@ -14,9 +14,10 @@ interface SessionLogViewerProps {
   journey?: Journey | null;
   currentAgentName?: string;
   combinedPrompt?: string;
+  flowContext?: Record<string, any>;
 }
 
-const SessionLogViewer: React.FC<SessionLogViewerProps> = ({ logs, journey, currentAgentName, combinedPrompt }) => {
+const SessionLogViewer: React.FC<SessionLogViewerProps> = ({ logs, journey, currentAgentName, combinedPrompt, flowContext }) => {
   const logContainerRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new logs arrive
@@ -128,6 +129,17 @@ const SessionLogViewer: React.FC<SessionLogViewerProps> = ({ logs, journey, curr
                   }
                   sections.push('');
                 }
+                sections.push('-'.repeat(80));
+                sections.push('');
+              }
+
+              if (flowContext && Object.keys(flowContext).length > 0) {
+                sections.push('--- VARIABLES / FLOW CONTEXT ---');
+                for (const [key, value] of Object.entries(flowContext)) {
+                  const displayValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+                  sections.push(`  ${key}: ${displayValue}`);
+                }
+                sections.push('');
                 sections.push('-'.repeat(80));
                 sections.push('');
               }

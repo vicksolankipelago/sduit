@@ -387,10 +387,20 @@ function VoiceAgentContent() {
     };
     setSessionLogs(prev => [...prev, logEntry]);
     
-    // Also log to console with appropriate styling
     const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 
                  type === 'agent' ? '🤖' : type === 'tool' ? '🔧' : type === 'event' ? '📢' : 'ℹ️';
     console.log(`${icon} [${type.toUpperCase()}] ${message}`, details || '');
+  };
+
+  const resetToFlowsScreen = () => {
+    setSessionStatus('DISCONNECTED');
+    setCurrentJourney(null);
+    setIsTransitioningJourney(false);
+    setLoadingJourneyId(null);
+    setPreviewLoading(false);
+    setIsNonVoiceMode(false);
+    setHasScreensVisible(false);
+    disableScreenRendering?.();
   };
 
   // Load default journeys on first mount
@@ -741,7 +751,7 @@ function VoiceAgentContent() {
           } catch (error) {
             console.error('🔗 Failed to start journey:', error);
             addLog('error', `Failed to start journey: ${error}`);
-            setIsTransitioningJourney(false); // Clear flag on error
+            resetToFlowsScreen();
           }
         };
         
@@ -937,7 +947,7 @@ function VoiceAgentContent() {
       console.error('🎤 MICROPHONE PERMISSION DENIED:', error);
       setMicPermissionError(true);
       addLog('error', `Microphone access denied: ${error}`);
-      setIsTransitioningJourney(false);
+      resetToFlowsScreen();
       return;
     }
 
@@ -988,7 +998,7 @@ function VoiceAgentContent() {
       const errorMsg = 'ElevenLabs Agent ID is not configured. Please add the Agent ID in the flow settings under "ElevenLabs Configuration".';
       addLog('error', errorMsg);
       setConnectionError(errorMsg);
-      setIsTransitioningJourney(false);
+      resetToFlowsScreen();
       return;
     }
 
@@ -1284,7 +1294,7 @@ function VoiceAgentContent() {
         console.error(`🔴 PROMPT TOO LARGE! ${promptBytes} bytes exceeds ${MAX_PROMPT_BYTES} byte limit`);
         addLog('error', `Prompt too large (${(promptBytes / 1024).toFixed(1)} KB) - WebRTC limit is ~60KB. Reduce screen prompts or agent instructions.`);
         setConnectionError(`Prompt is too large (${(promptBytes / 1024).toFixed(1)} KB). Please reduce the size of your screen prompts or agent instructions. WebRTC has a ~60KB limit.`);
-        setIsTransitioningJourney(false);
+        resetToFlowsScreen();
         return;
       }
 
@@ -1487,13 +1497,7 @@ Important guidelines:
     } catch (err: any) {
       console.error("Error connecting to Azure OpenAI:", err);
       addLog('error', 'Failed to connect to Azure OpenAI', { error: err.message });
-      setSessionStatus("DISCONNECTED");
-      
-      // Go back to flows screen on connection error
-      setCurrentJourney(null);
-      setIsTransitioningJourney(false);
-      setLoadingJourneyId(null);
-      setPreviewLoading(false);
+      resetToFlowsScreen();
     }
   };
 
@@ -1531,6 +1535,7 @@ Important guidelines:
     if (!journey) {
       console.error('🎤 ERROR: No journey in currentJourneyRef!');
       addLog('error', 'No journey found - cannot enable voice');
+      resetToFlowsScreen();
       return;
     }
 
@@ -1540,12 +1545,14 @@ Important guidelines:
       console.error('🎤 Journey elevenLabsConfig:', JSON.stringify(journey.elevenLabsConfig));
       addLog('error', 'ElevenLabs Agent ID not configured - please add it in Journey Builder settings');
       setConnectionError('ElevenLabs Agent ID is not configured. Please add it in the flow settings.');
+      resetToFlowsScreen();
       return;
     }
     
     if (!connectToRealtimeRef.current) {
       console.error('🎤 ERROR: connectToRealtimeRef.current is null!');
       addLog('error', 'Voice connection function not available');
+      resetToFlowsScreen();
       return;
     }
     
@@ -1650,6 +1657,14 @@ Important guidelines:
       journey: currentJourney || undefined,
       agentConfig,
       screens: currentAgent?.screens,
+      flowContext: flowContext || {},
+      debugLogs: sessionLogs.map(log => ({
+        timestamp: log.timestamp instanceof Date ? log.timestamp.toISOString() : String(log.timestamp),
+        type: log.type,
+        message: log.message,
+        details: log.details,
+      })),
+      pqData: pqData,
     });
 
     // Download formatted transcript (human-readable) instead of raw JSON
@@ -1689,6 +1704,14 @@ Important guidelines:
       journey: currentJourney || undefined,
       agentConfig,
       screens: currentAgent?.screens,
+      flowContext: flowContext || {},
+      debugLogs: sessionLogs.map(log => ({
+        timestamp: log.timestamp instanceof Date ? log.timestamp.toISOString() : String(log.timestamp),
+        type: log.type,
+        message: log.message,
+        details: log.details,
+      })),
+      pqData: pqData,
     });
 
     downloadPromptAndTranscript(sessionExport);
@@ -1717,6 +1740,14 @@ Important guidelines:
       journey: currentJourney || undefined,
       agentConfig,
       screens: currentAgent?.screens,
+      flowContext: flowContext || {},
+      debugLogs: sessionLogs.map(log => ({
+        timestamp: log.timestamp instanceof Date ? log.timestamp.toISOString() : String(log.timestamp),
+        type: log.type,
+        message: log.message,
+        details: log.details,
+      })),
+      pqData: pqData,
     });
 
     downloadSessionExport(sessionExport);
@@ -1752,6 +1783,14 @@ Important guidelines:
           journey: currentJourney || undefined,
           screens: currentAgent?.screens,
           agentConfig,
+          flowContext: flowContext || {},
+          debugLogs: sessionLogs.map(log => ({
+            timestamp: log.timestamp instanceof Date ? log.timestamp.toISOString() : String(log.timestamp),
+            type: log.type,
+            message: log.message,
+            details: log.details,
+          })),
+          pqData: pqData,
         });
 
         await saveSession(sessionExport);
@@ -2758,6 +2797,7 @@ Important guidelines:
                 journey={currentJourney}
                 currentAgentName={currentAgentRef.current}
                 combinedPrompt={combinedPromptRef.current}
+                flowContext={flowContext || {}}
               />
             </div>
           </div>

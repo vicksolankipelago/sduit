@@ -93,6 +93,26 @@ export interface SessionExport {
     studyId?: string;
     sessionId?: string;
   };
+
+  flowContext?: Record<string, any>;
+  variableSubstitution?: {
+    pqData?: Record<string, any>;
+    flowContextKeys?: string[];
+  };
+  debugLogs?: Array<{
+    timestamp: string;
+    type: string;
+    message: string;
+    details?: any;
+  }>;
+  notes?: Array<{
+    id: string;
+    messageIndex: number;
+    userName: string;
+    content: string;
+    status: 'todo' | 'done';
+    createdAt: string;
+  }>;
 }
 
 /**
@@ -110,8 +130,24 @@ export function createSessionExport(params: {
     studyId?: string;
     sessionId?: string;
   };
+  flowContext?: Record<string, any>;
+  debugLogs?: Array<{
+    timestamp: string;
+    type: string;
+    message: string;
+    details?: any;
+  }>;
+  pqData?: Record<string, any>;
+  notes?: Array<{
+    id: string;
+    messageIndex: number;
+    userName: string;
+    content: string;
+    status: 'todo' | 'done';
+    createdAt: string;
+  }>;
 }): SessionExport {
-  const { sessionId, transcript, events, journey, agentConfig, screens, prolific } = params;
+  const { sessionId, transcript, events, journey, agentConfig, screens, prolific, flowContext, debugLogs, pqData, notes } = params;
 
   const messageTimes = transcript
     .filter(t => t.createdAtMs)
@@ -208,6 +244,13 @@ export function createSessionExport(params: {
       breadcrumbs: breadcrumbs.length,
     },
     prolific,
+    flowContext,
+    variableSubstitution: (pqData || flowContext) ? {
+      pqData,
+      flowContextKeys: flowContext ? Object.keys(flowContext) : undefined,
+    } : undefined,
+    debugLogs,
+    notes,
   };
 }
 
@@ -278,6 +321,17 @@ export function formatTranscriptForReview(sessionExport: SessionExport): string 
     lines.push('');
   }
 
+  if (sessionExport.flowContext && Object.keys(sessionExport.flowContext).length > 0) {
+    lines.push('--- VARIABLES / FLOW CONTEXT ---');
+    for (const [key, value] of Object.entries(sessionExport.flowContext)) {
+      const displayValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      lines.push(`  ${key}: ${displayValue}`);
+    }
+    lines.push('');
+    lines.push('-'.repeat(80));
+    lines.push('');
+  }
+
   lines.push('--- CONVERSATION ---');
   lines.push('');
 
@@ -294,6 +348,48 @@ export function formatTranscriptForReview(sessionExport: SessionExport): string 
       }
       lines.push('');
     }
+  }
+
+  if (sessionExport.notes && sessionExport.notes.length > 0) {
+    lines.push('-'.repeat(80));
+    lines.push('');
+    lines.push('--- REVIEWER NOTES ---');
+    const messageItems = sessionExport.transcript.filter(t => t.type === 'MESSAGE' && t.title);
+    const notesByMessage = new Map<number, typeof sessionExport.notes>();
+    for (const note of sessionExport.notes) {
+      const existing = notesByMessage.get(note.messageIndex) || [];
+      existing.push(note);
+      notesByMessage.set(note.messageIndex, existing);
+    }
+    const sortedIndices = Array.from(notesByMessage.keys()).sort((a, b) => a - b);
+    for (const msgIndex of sortedIndices) {
+      const msgNotes = notesByMessage.get(msgIndex)!;
+      const messageItem = messageItems[msgIndex];
+      if (messageItem?.title) {
+        lines.push('');
+        const role = messageItem.role === 'user' ? 'USER' : 'ASSISTANT';
+        const truncated = messageItem.title.substring(0, 80);
+        lines.push(`  Message ${msgIndex + 1} (${role}): "${truncated}${messageItem.title.length > 80 ? '...' : ''}"`);
+      }
+      for (const note of msgNotes) {
+        lines.push(`  [by ${note.userName}, ${note.status}]: ${note.content}`);
+      }
+      lines.push('');
+    }
+  }
+
+  if (sessionExport.debugLogs && sessionExport.debugLogs.length > 0) {
+    lines.push('-'.repeat(80));
+    lines.push('');
+    lines.push('--- SESSION DEBUG LOGS ---');
+    lines.push('');
+    for (const log of sessionExport.debugLogs) {
+      lines.push(`[${log.timestamp}] ${log.type.toUpperCase()}: ${log.message}`);
+      if (log.details) {
+        lines.push(`   Details: ${JSON.stringify(log.details)}`);
+      }
+    }
+    lines.push('');
   }
 
   lines.push('='.repeat(80));
@@ -379,6 +475,15 @@ export function formatTranscriptForSharing(
       lines.push(`  Azure Deployment: ${sessionExport.voiceConfig.azure.deploymentName}`);
     }
   }
+
+  if (sessionExport.flowContext && Object.keys(sessionExport.flowContext).length > 0) {
+    lines.push('');
+    lines.push('Variables:');
+    for (const [key, value] of Object.entries(sessionExport.flowContext)) {
+      const displayValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      lines.push(`  ${key}: ${displayValue}`);
+    }
+  }
   lines.push('');
   lines.push(divider);
   lines.push('');
@@ -443,6 +548,51 @@ export function formatTranscriptForSharing(
 
       lastRole = undefined;
     }
+  }
+
+  if (sessionExport.notes && sessionExport.notes.length > 0) {
+    lines.push('');
+    lines.push(divider);
+    lines.push('');
+    lines.push('REVIEWER NOTES');
+    lines.push('');
+    const messageItems = sessionExport.transcript.filter(t => t.type === 'MESSAGE' && t.title);
+    const notesByMessage = new Map<number, typeof sessionExport.notes>();
+    for (const note of sessionExport.notes) {
+      const existing = notesByMessage.get(note.messageIndex) || [];
+      existing.push(note);
+      notesByMessage.set(note.messageIndex, existing);
+    }
+    const sortedIndices = Array.from(notesByMessage.keys()).sort((a, b) => a - b);
+    for (const msgIndex of sortedIndices) {
+      const msgNotes = notesByMessage.get(msgIndex)!;
+      const messageItem = messageItems[msgIndex];
+      if (messageItem?.title) {
+        const role = messageItem.role === 'user' ? 'MEMBER' : 'COACH';
+        const truncated = messageItem.title.substring(0, 80);
+        lines.push(`  Message ${msgIndex + 1} (${role}): "${truncated}${messageItem.title.length > 80 ? '...' : ''}"`);
+      }
+      for (const note of msgNotes) {
+        lines.push(`  [by ${note.userName}, ${note.status}]: ${note.content}`);
+      }
+      lines.push('');
+    }
+  }
+
+  if (sessionExport.debugLogs && sessionExport.debugLogs.length > 0) {
+    lines.push('');
+    lines.push(divider);
+    lines.push('');
+    lines.push('SESSION DEBUG LOGS');
+    lines.push('');
+    for (const log of sessionExport.debugLogs) {
+      const timestamp = includeTimestamps ? `[${log.timestamp}] ` : '';
+      lines.push(`${timestamp}${log.type.toUpperCase()}: ${log.message}`);
+      if (log.details) {
+        lines.push(`   Details: ${JSON.stringify(log.details)}`);
+      }
+    }
+    lines.push('');
   }
 
   // Footer with stats
