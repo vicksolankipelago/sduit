@@ -187,14 +187,13 @@ export async function saveJourney(journey: Journey): Promise<Journey | null> {
     // In production, also save to Object Storage so it's immediately available
     const isProd = await isProduction();
     if (isProd) {
+      const journeyToSave = savedJourney || journey;
       try {
-        const journeyToSave = savedJourney || journey;
         console.log(`[Production] Saving journey to Object Storage: agents count=${journeyToSave.agents?.length}, first agent prompt length=${journeyToSave.agents?.[0]?.prompt?.length || 0}`);
         const osJourney = await journeyApi.updateProductionFlow(journeyToSave.id, journeyToSave);
         console.log(`[Production] Saved to Object Storage: ${osJourney.name} (id: ${osJourney.id || journeyToSave.id})`);
-        return savedJourney || osJourney;
       } catch (error) {
-        console.error('[Production] Failed to save to Object Storage:', error);
+        console.warn('[Production] Object Storage save skipped (flow may not be published yet):', (error as any)?.message || error);
       }
     }
 

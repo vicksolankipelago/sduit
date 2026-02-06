@@ -75,10 +75,10 @@ router.post("/", isAdmin, async (req: Request, res: Response) => {
       return apiResponse.unauthorized(res);
     }
 
-    const { name, description, systemPrompt, voice, voiceEnabled, ttsProvider, elevenLabsConfig, agents, startingAgentId, version } = req.body;
+    const { id: clientId, name, description, systemPrompt, voice, voiceEnabled, ttsProvider, elevenLabsConfig, agents, startingAgentId, version } = req.body;
 
     const journey = await storage.createJourney({
-      id: uuidv4(),
+      id: clientId && !clientId.startsWith('new-') ? clientId : uuidv4(),
       userId,
       name: name || "New Journey",
       description: description || "",
