@@ -98,14 +98,6 @@ export interface ElevenLabsConnectOptions {
   dynamicVariables?: Record<string, string>;
   // Override the agent's system prompt (must be enabled in ElevenLabs dashboard Security settings)
   promptOverride?: string;
-  // Override the agent's tools (passed as overrides.agent.prompt.tools to ElevenLabs)
-  // These are tool SCHEMAS telling the LLM what tools are available
-  toolOverrides?: Array<{
-    type: 'client';
-    name: string;
-    description: string;
-    parameters: Record<string, unknown>;
-  }>;
 }
 
 export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {}) {
@@ -254,12 +246,11 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         console.log('🔗 Dynamic variables set:', Object.keys(options.dynamicVariables));
       }
       
-      // Pass prompt, voice, and/or tool overrides if provided
+      // Pass prompt and/or voice overrides if provided
       // The vanilla SDK supports overrides directly in startSession()!
       const overrides = buildElevenLabsOverrides({
         promptOverride: options.promptOverride,
         elevenLabsVoiceId: options.elevenLabsVoiceId,
-        toolOverrides: options.toolOverrides,
       });
 
       if (overrides) {
@@ -268,11 +259,6 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
           console.log('📝 First 200 chars:', options.promptOverride.substring(0, 200));
           elevenLabsLogger.info('Prompt override enabled:', options.promptOverride.length, 'chars');
         }
-        if (options.toolOverrides && options.toolOverrides.length > 0) {
-          console.log('🔧 Tool overrides requested:', options.toolOverrides.length, 'tools');
-          console.log('🔧 Tool names:', options.toolOverrides.map(t => t.name).join(', '));
-          elevenLabsLogger.info('Tool overrides enabled:', options.toolOverrides.length, 'tools');
-        }
         if (options.elevenLabsVoiceId) {
           console.log('🎙️ Voice override requested:', options.elevenLabsVoiceId);
           elevenLabsLogger.info('Voice override enabled:', options.elevenLabsVoiceId);
@@ -280,6 +266,7 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
 
         (sessionConfig as any).overrides = overrides;
         console.log('📋 Final overrides structure:', JSON.stringify(overrides, (key, value) => key === 'prompt' && typeof value === 'string' && value.length > 100 ? value.substring(0, 100) + '...' : value, 2));
+        elevenLabsLogger.info('🔄 OVERRIDE SENT TO ELEVENLABS - prompt length:', options.promptOverride?.length, 'chars');
       }
       
       // Pass client tools if provided (wrapped with logging)
@@ -298,8 +285,6 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         hasDynamicVariables: !!(sessionConfig as any).dynamicVariables,
         hasOverrides: !!(sessionConfig as any).overrides,
         overridePromptLength: (sessionConfig as any).overrides?.agent?.prompt?.prompt?.length || 0,
-        overrideToolCount: (sessionConfig as any).overrides?.agent?.prompt?.tools?.length || 0,
-        overrideToolNames: ((sessionConfig as any).overrides?.agent?.prompt?.tools || []).map((t: any) => t.name),
         overrideVoiceId: (sessionConfig as any).overrides?.agent?.tts?.voiceId || null,
         hasClientTools: !!wrappedTools,
         clientToolNames: wrappedTools ? Object.keys(wrappedTools) : [],

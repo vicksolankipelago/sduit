@@ -42,19 +42,16 @@ describe('buildElevenLabsOverrides', () => {
   it('produces the exact structure expected by ElevenLabs SDK', () => {
     const prompt = 'System prompt content here';
     const voiceId = 'voice-abc';
-    const tools = [{ name: 'end_call', description: 'End the call' }];
 
     const result = buildElevenLabsOverrides({
       promptOverride: prompt,
       elevenLabsVoiceId: voiceId,
-      toolOverrides: tools,
     });
 
     expect(result).toEqual({
       agent: {
         prompt: {
           prompt: prompt,
-          tools: tools,
         },
       },
       tts: {
@@ -63,7 +60,7 @@ describe('buildElevenLabsOverrides', () => {
     });
   });
 
-  it('handles prompt-only override (no voice, no tools)', () => {
+  it('handles prompt-only override (no voice)', () => {
     const result = buildElevenLabsOverrides({
       promptOverride: 'only a prompt',
     });
@@ -78,7 +75,7 @@ describe('buildElevenLabsOverrides', () => {
     expect(result!.tts).toBeUndefined();
   });
 
-  it('handles voice-only override (no prompt, no tools)', () => {
+  it('handles voice-only override (no prompt)', () => {
     const result = buildElevenLabsOverrides({
       elevenLabsVoiceId: 'voice-only',
     });
@@ -91,36 +88,11 @@ describe('buildElevenLabsOverrides', () => {
     });
   });
 
-  it('handles tool-only override (no prompt, no voice)', () => {
-    const tools = [{ name: 'end_call', description: 'End the call' }];
-    const result = buildElevenLabsOverrides({
-      toolOverrides: tools,
-    });
-
-    expect(result).toEqual({
-      agent: {
-        prompt: {
-          tools: tools,
-        },
-      },
-    });
-  });
-
   it('handles large prompt without truncation', () => {
     const largePrompt = 'A'.repeat(50000);
     const result = buildElevenLabsOverrides({ promptOverride: largePrompt });
 
     expect(result!.agent!.prompt!.prompt).toBe(largePrompt);
     expect(result!.agent!.prompt!.prompt!.length).toBe(50000);
-  });
-
-  it('ignores empty tool array', () => {
-    const result = buildElevenLabsOverrides({
-      promptOverride: 'test',
-      toolOverrides: [],
-    });
-
-    expect(result!.agent!.prompt!.tools).toBeUndefined();
-    expect(result!.agent!.prompt!.prompt).toBe('test');
   });
 });
