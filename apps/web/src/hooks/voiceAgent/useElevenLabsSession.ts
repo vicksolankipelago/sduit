@@ -17,6 +17,7 @@ import { useCallback, useRef, useState, useEffect } from 'react';
 import { Conversation } from '@elevenlabs/client';
 import { SessionStatus } from '../../types/voiceAgent';
 import { logger } from '../../utils/logger';
+import { buildElevenLabsOverrides } from './buildElevenLabsOverrides';
 
 const elevenLabsLogger = logger;
 
@@ -255,39 +256,25 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
       
       // Pass prompt, voice, and/or tool overrides if provided
       // The vanilla SDK supports overrides directly in startSession()!
-      const hasPromptOverride = !!options.promptOverride;
-      const hasVoiceOverride = !!options.elevenLabsVoiceId;
-      const hasToolOverrides = !!options.toolOverrides && options.toolOverrides.length > 0;
+      const overrides = buildElevenLabsOverrides({
+        promptOverride: options.promptOverride,
+        elevenLabsVoiceId: options.elevenLabsVoiceId,
+        toolOverrides: options.toolOverrides,
+      });
 
-      if (hasPromptOverride || hasVoiceOverride || hasToolOverrides) {
-        const overrides: any = {};
-        const agentOverrides: any = {};
-
-        if (hasPromptOverride || hasToolOverrides) {
-          const promptOverride: any = {};
-
-          if (hasPromptOverride) {
-            console.log('📝 Prompt override requested, length:', options.promptOverride!.length, 'chars');
-            console.log('📝 First 200 chars:', options.promptOverride!.substring(0, 200));
-            promptOverride.prompt = options.promptOverride;
-            elevenLabsLogger.info('Prompt override enabled:', options.promptOverride!.length, 'chars');
-          }
-
-          if (hasToolOverrides) {
-            promptOverride.tools = options.toolOverrides;
-            console.log('🔧 Tool overrides requested:', options.toolOverrides!.length, 'tools');
-            console.log('🔧 Tool names:', options.toolOverrides!.map(t => t.name).join(', '));
-            elevenLabsLogger.info('Tool overrides enabled:', options.toolOverrides!.length, 'tools');
-          }
-
-          agentOverrides.prompt = promptOverride;
+      if (overrides) {
+        if (options.promptOverride) {
+          console.log('📝 Prompt override requested, length:', options.promptOverride.length, 'chars');
+          console.log('📝 First 200 chars:', options.promptOverride.substring(0, 200));
+          elevenLabsLogger.info('Prompt override enabled:', options.promptOverride.length, 'chars');
         }
-
-        overrides.agent = agentOverrides;
-
-        if (hasVoiceOverride) {
+        if (options.toolOverrides && options.toolOverrides.length > 0) {
+          console.log('🔧 Tool overrides requested:', options.toolOverrides.length, 'tools');
+          console.log('🔧 Tool names:', options.toolOverrides.map(t => t.name).join(', '));
+          elevenLabsLogger.info('Tool overrides enabled:', options.toolOverrides.length, 'tools');
+        }
+        if (options.elevenLabsVoiceId) {
           console.log('🎙️ Voice override requested:', options.elevenLabsVoiceId);
-          overrides.tts = { voiceId: options.elevenLabsVoiceId };
           elevenLabsLogger.info('Voice override enabled:', options.elevenLabsVoiceId);
         }
 
