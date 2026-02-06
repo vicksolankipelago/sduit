@@ -175,36 +175,41 @@ export async function saveJourney(journey: Journey): Promise<Journey | null> {
   try {
     journey.updatedAt = new Date().toISOString();
 
-    // In production, use the production update endpoint (works with Object Storage directly)
+    // Always save to database first
+    let savedJourney: Journey | null = null;
+    try {
+      savedJourney = await journeyApi.saveUserJourney(journey);
+      console.log(`Saved journey to database: ${savedJourney.name} (id: ${savedJourney.id})`);
+    } catch (error) {
+      console.error('Failed to save to database:', error);
+    }
+
+    // In production, also save to Object Storage so it's immediately available
     const isProd = await isProduction();
     if (isProd) {
       try {
-        console.log(`[Production] Saving journey: agents count=${journey.agents?.length}, first agent prompt length=${journey.agents?.[0]?.prompt?.length || 0}`);
-        const updatedJourney = await journeyApi.updateProductionFlow(journey.id, journey);
-        console.log(`[Production] Saved journey to Object Storage: ${updatedJourney.name} (id: ${updatedJourney.id || journey.id})`);
-        return updatedJourney;
+        const journeyToSave = savedJourney || journey;
+        console.log(`[Production] Saving journey to Object Storage: agents count=${journeyToSave.agents?.length}, first agent prompt length=${journeyToSave.agents?.[0]?.prompt?.length || 0}`);
+        const osJourney = await journeyApi.updateProductionFlow(journeyToSave.id, journeyToSave);
+        console.log(`[Production] Saved to Object Storage: ${osJourney.name} (id: ${osJourney.id || journeyToSave.id})`);
+        return savedJourney || osJourney;
       } catch (error) {
         console.error('[Production] Failed to save to Object Storage:', error);
-        return null;
       }
     }
 
-    // In development, save to database
-    try {
-      const savedJourney = await journeyApi.saveUserJourney(journey);
-      console.log(`Saved journey to API: ${savedJourney.name} (id: ${savedJourney.id})`);
+    if (savedJourney) {
       return savedJourney;
-    } catch (error) {
-      console.error('Failed to save to API, falling back to localStorage:', error);
     }
 
+    // Fallback to localStorage if database save failed
     const data = localStorage.getItem(STORAGE_KEY);
     let journeys: Journey[] = data ? JSON.parse(data) : [];
     const existingIndex = journeys.findIndex((j) => j.id === journey.id);
 
     if (existingIndex >= 0) {
       journeys[existingIndex] = journey;
-      console.log(`Updated journey: ${journey.name}`);
+      console.log(`Updated journey in localStorage: ${journey.name}`);
     } else {
       if (!journey.id) {
         journey.id = uuidv4();
@@ -213,7 +218,7 @@ export async function saveJourney(journey: Journey): Promise<Journey | null> {
         journey.createdAt = new Date().toISOString();
       }
       journeys.push(journey);
-      console.log(`Created journey: ${journey.name}`);
+      console.log(`Created journey in localStorage: ${journey.name}`);
     }
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(journeys));
