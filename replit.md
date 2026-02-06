@@ -38,6 +38,7 @@ The application is built as a monorepo with a React 19 frontend (Vite) and an Ex
     - `{{key}}` prompt interpolation: Prompts can reference values from flowContext (e.g., `{{feelings_alcohol}}`, `{{goal_alcohol}}`), which are replaced at runtime
     - **Quiz Option ID Transformation**: Quiz answers are stored as option IDs (e.g., `drink_less`, `physical_health`) and automatically transformed to readable labels via `QUIZ_OPTION_LABELS` mapping before being passed to prompts and ElevenLabs dynamic variables
     - Supports both flat keys and nested dotted paths for flexible data referencing
+*   **Image Carousel Element:** A new screen builder element (`imageCarousel`) that displays images in a continuously animated horizontal scroll. Configurable properties include scroll speed (px/s), card height, gap between cards, and pause-on-hover behavior. Images are defined as an array of `{ imageUrl, title, subtitle? }` objects. Uses CSS keyframe animation with duplicated content for seamless infinite looping.
 *   **UI/UX:** The frontend is built with React 19 and Vite, focusing on an intuitive flow builder experience. Navigation is role-specific, and all emojis have been replaced with professional SVG icons. Agent editor functionality is directly embedded within the journey page for streamlined workflow.
 
 ## External Dependencies
