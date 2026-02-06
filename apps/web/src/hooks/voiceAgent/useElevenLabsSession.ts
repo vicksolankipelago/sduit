@@ -260,6 +260,7 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
       const hasToolOverrides = !!options.toolOverrides && options.toolOverrides.length > 0;
 
       if (hasPromptOverride || hasVoiceOverride || hasToolOverrides) {
+        const overrides: any = {};
         const agentOverrides: any = {};
 
         if (hasPromptOverride || hasToolOverrides) {
@@ -282,13 +283,16 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
           agentOverrides.prompt = promptOverride;
         }
 
+        overrides.agent = agentOverrides;
+
         if (hasVoiceOverride) {
           console.log('🎙️ Voice override requested:', options.elevenLabsVoiceId);
-          agentOverrides.tts = { voiceId: options.elevenLabsVoiceId };
+          overrides.tts = { voiceId: options.elevenLabsVoiceId };
           elevenLabsLogger.info('Voice override enabled:', options.elevenLabsVoiceId);
         }
 
-        (sessionConfig as any).overrides = { agent: agentOverrides };
+        (sessionConfig as any).overrides = overrides;
+        console.log('📋 Final overrides structure:', JSON.stringify(overrides, (key, value) => key === 'prompt' && typeof value === 'string' && value.length > 100 ? value.substring(0, 100) + '...' : value, 2));
       }
       
       // Pass client tools if provided (wrapped with logging)
