@@ -1969,12 +1969,339 @@
   padding-top: 16px;
 }
 
+.journey-ai-flow-editor-modal {
+  max-width: 980px;
+}
+
+.journey-ai-flow-intro {
+  padding: 0.875rem 1rem;
+  border-radius: 8px;
+  background: var(--background-mist-blue);
+}
+
+.journey-ai-flow-intro p {
+  margin: 0;
+  color: var(--text-global-secondary);
+  line-height: 1.5;
+}
+
+.journey-ai-flow-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.journey-ai-flow-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.journey-ai-flow-field > label,
+.journey-ai-flow-field > span {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-global-primary);
+}
+
+.journey-ai-flow-field select {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: var(--border-input);
+  border-radius: 8px;
+  background: var(--background-light);
+  color: var(--text-global-primary);
+}
+
+.journey-ai-flow-field select:focus {
+  outline: none;
+  border-color: var(--primary-cta-default);
+  box-shadow: 0 0 0 3px rgba(33, 38, 51, 0.08);
+}
+
+.journey-ai-flow-empty {
+  margin: 0;
+  color: var(--text-global-secondary);
+  font-size: 0.875rem;
+}
+
+.journey-ai-flow-screen-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.journey-ai-flow-screen-actions span {
+  font-size: 0.75rem;
+  color: var(--text-global-secondary);
+}
+
+.journey-ai-flow-secondary-btn {
+  padding: 0.375rem 0.625rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--background-light-card);
+  color: var(--text-global-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.journey-ai-flow-secondary-btn:hover {
+  background: var(--background-action-hover);
+  color: var(--text-global-primary);
+}
+
+.journey-ai-flow-screen-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.journey-ai-flow-screen-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.5rem 0.625rem;
+  background: var(--background-light);
+}
+
+.journey-ai-flow-screen-option strong {
+  display: block;
+  color: var(--text-global-primary);
+  font-size: 0.75rem;
+}
+
+.journey-ai-flow-screen-option small {
+  display: block;
+  color: var(--text-global-secondary);
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.journey-ai-flow-error {
+  padding: 0.75rem 0.875rem;
+  border-radius: 8px;
+  background: var(--background-error);
+  color: var(--alert-error-default);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.journey-ai-proposal-preview {
+  margin-top: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem;
+  background: var(--background-light-card);
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.journey-ai-proposal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.journey-ai-proposal-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-global-primary);
+}
+
+.journey-ai-proposal-header p {
+  margin: 0.35rem 0 0 0;
+  color: var(--text-global-secondary);
+  font-size: 0.875rem;
+}
+
+.journey-ai-proposal-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.journey-ai-proposal-status.ready {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.journey-ai-proposal-status.blocked {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.journey-ai-proposal-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  color: var(--text-global-secondary);
+  font-size: 0.75rem;
+}
+
+.journey-ai-proposal-paths {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.journey-ai-proposal-paths code {
+  background: var(--background-light);
+  border-radius: 9999px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-link-primary-default);
+}
+
+.journey-ai-proposal-validation {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.journey-ai-proposal-validation h5 {
+  margin: 0 0 0.35rem 0;
+  font-size: 0.8125rem;
+  color: var(--text-global-primary);
+}
+
+.journey-ai-proposal-validation ul {
+  margin: 0;
+  padding-left: 1rem;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.journey-ai-proposal-validation li {
+  font-size: 0.75rem;
+  color: var(--text-global-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.journey-ai-proposal-validation li code {
+  color: var(--text-link-primary-default);
+}
+
+.journey-ai-proposal-diff {
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.journey-ai-proposal-diff-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.journey-ai-proposal-diff-stats > div {
+  background: var(--background-light);
+  border-radius: 8px;
+  padding: 0.625rem 0.75rem;
+}
+
+.journey-ai-proposal-diff-stats span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-global-secondary);
+}
+
+.journey-ai-proposal-diff-stats strong {
+  font-size: 0.875rem;
+  color: var(--text-global-primary);
+}
+
+.journey-ai-proposal-prompt-diff h5,
+.journey-ai-proposal-screen-diff h5 {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-global-primary);
+}
+
+.journey-ai-proposal-agent-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.625rem;
+}
+
+.journey-ai-proposal-agent-prompt > span {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-global-secondary);
+}
+
+.journey-ai-proposal-prompt-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.journey-ai-proposal-prompt-columns textarea {
+  width: 100%;
+  min-height: 92px;
+  resize: vertical;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.625rem;
+  background: var(--background-light);
+  color: var(--text-global-secondary);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.journey-ai-proposal-screen-diff {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.journey-ai-proposal-screen-card {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.625rem 0.75rem;
+  background: var(--background-light);
+}
+
+.journey-ai-proposal-screen-card-title {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text-global-primary);
+  margin-bottom: 0.35rem;
+}
+
+.journey-ai-proposal-screen-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.875rem;
+  font-size: 0.75rem;
+  color: var(--text-global-secondary);
+}
+
 .journey-ai-cancel-btn {
   padding: 10px 20px;
   background: var(--background-light);
   color: var(--text-global-secondary);
   border: none;
   border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1994,6 +2321,10 @@
   color: var(--text-button-primary);
   border: none;
   border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
   font-family: inherit;
   font-size: 14px;
   font-weight: 600;
@@ -2279,6 +2610,18 @@
   .journey-ai-modal {
     width: 95%;
     max-height: 90vh;
+  }
+
+  .journey-ai-flow-controls,
+  .journey-ai-flow-screen-grid,
+  .journey-ai-proposal-validation,
+  .journey-ai-proposal-diff-stats,
+  .journey-ai-proposal-prompt-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .journey-ai-proposal-header {
+    flex-direction: column;
   }
 
   .journey-ai-suggestion {

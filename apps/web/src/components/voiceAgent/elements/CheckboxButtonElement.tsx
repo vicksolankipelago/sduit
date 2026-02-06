@@ -33,6 +33,22 @@ export const CheckboxButtonElement: React.FC<CheckboxButtonElementProps> = ({
 }) => {
   const [isSelected, setIsSelected] = useState(data.isSelected || false);
 
+  const emitUiResponse = (selected: boolean) => {
+    if (typeof window === 'undefined') return;
+    const title = data.title || data.id || 'option';
+    window.dispatchEvent(new CustomEvent('uiUserResponse', {
+      detail: {
+        text: selected ? `I selected ${title}` : `I unselected ${title}`,
+        source: 'checkboxButton',
+        metadata: {
+          elementId: data.id,
+          title,
+          selected,
+        },
+      },
+    }));
+  };
+
   // Sync with external state changes
   useEffect(() => {
     setIsSelected(data.isSelected || false);
@@ -41,6 +57,7 @@ export const CheckboxButtonElement: React.FC<CheckboxButtonElementProps> = ({
   const handleToggle = () => {
     const newValue = !isSelected;
     setIsSelected(newValue);
+    emitUiResponse(newValue);
 
     // CRITICAL: Notify parent to update screenState.selectedOptions array
     // This ensures stateUpdate actions can read selections via {$screenState.selectedOptions}
@@ -77,4 +94,3 @@ export const CheckboxButtonElement: React.FC<CheckboxButtonElementProps> = ({
 };
 
 export default CheckboxButtonElement;
-

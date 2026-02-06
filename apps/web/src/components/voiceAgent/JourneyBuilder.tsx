@@ -1,16 +1,51 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
-import { Journey, Agent, DEFAULT_SYSTEM_PROMPT, validateJourney, Screen, TtsProvider, ELEVENLABS_VOICE_OPTIONS, AZURE_VOICE_OPTIONS } from '../../types/journey';
+import {
+  Journey,
+  Agent,
+  DEFAULT_SYSTEM_PROMPT,
+  validateJourney,
+  Screen,
+  TtsProvider,
+  ELEVENLABS_VOICE_OPTIONS,
+  AZURE_VOICE_OPTIONS,
+  JourneyAiProposalScope,
+  JourneyAiProposalResponse,
+} from '../../types/journey';
 import { loadJourney, loadJourneyForRuntime, saveJourney, deleteJourney, duplicateJourney } from '../../services/journeyStorage';
-import { publishJourney as publishJourneyApi, unpublishJourney as unpublishJourneyApi, getPublishedJourney } from '../../services/api/journeyService';
+import {
+  publishJourney as publishJourneyApi,
+  unpublishJourney as unpublishJourneyApi,
+  getPublishedJourney,
+  createJourneyAiProposal,
+  applyJourneyAiProposal,
+} from '../../services/api/journeyService';
 import { SCREEN_TEMPLATES } from '../../lib/voiceAgent/screenTemplates';
 import { generateScreensFromPrompts, suggestionToScreen, ScreenSuggestion } from '../../services/aiScreenGenerator';
 import SystemPromptEditor from './SystemPromptEditor';
 import ToolEditor from './ToolEditor';
 import { ScreenProvider } from '../../contexts/voiceAgent/ScreenContext';
 import ScreenPreview from './ScreenPreview';
-import { TrashIcon, FileTextIcon, EditIcon, RocketIcon, TargetIcon, HistoryIcon, SaveIcon, ToolIcon, SettingsIcon, MoreIcon, DownloadIcon, UploadIcon, LinkIcon, CheckIcon, LoaderIcon, CopyIcon } from '../Icons';
+import {
+  TrashIcon,
+  FileTextIcon,
+  EditIcon,
+  RocketIcon,
+  TargetIcon,
+  HistoryIcon,
+  SaveIcon,
+  ToolIcon,
+  SettingsIcon,
+  MoreIcon,
+  DownloadIcon,
+  UploadIcon,
+  LinkIcon,
+  CheckIcon,
+  LoaderIcon,
+  CopyIcon,
+  ZapIcon,
+} from '../Icons';
 import VersionHistory from './VersionHistory';
 import { useAuth } from '../../contexts/AuthContext';
 import './JourneyBuilder.css';
@@ -44,6 +79,137 @@ interface JourneyBuilderProps {
   disabled?: boolean;
 }
 
+interface AgentPromptDiff {
+  agentId: string;
+  agentName: string;
+  before: string;
+  after: string;
+}
+
+interface AgentScreenChange {
+  agentId: string;
+  agentName: string;
+  addedScreenIds: string[];
+  removedScreenIds: string[];
+  updatedScreenIds: string[];
+  screenPromptsChanged: boolean;
+  beforeScreenPromptCount: number;
+  afterScreenPromptCount: number;
+}
+
+interface JourneyProposalDiffSummary {
+  systemPromptChanged: boolean;
+  systemPromptBefore: string;
+  systemPromptAfter: string;
+  agentPromptDiffs: AgentPromptDiff[];
+  agentScreenChanges: AgentScreenChange[];
+}
+
+const JOURNEY_AI_SCOPE_OPTIONS: Array<{ value: JourneyAiProposalScope; label: string }> = [
+  { value: 'journey', label: 'Entire flow' },
+  { value: 'agent', label: 'Agent prompts + config' },
+  { value: 'screens', label: 'Agent screens only' },
+];
+
+function formatDateTime(value: string): string {
+  return new Date(value).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function normalizeJourneyFromDraft(draft: Journey): Journey {
+  return {
+    id: draft.id,
+    name: draft.name || 'Untitled Flow',
+    description: draft.description || '',
+    systemPrompt: draft.systemPrompt || '',
+    voice: draft.voice || undefined,
+    voiceEnabled: draft.voiceEnabled ?? true,
+    ttsProvider: draft.ttsProvider,
+    elevenLabsConfig: draft.elevenLabsConfig,
+    azureConfig: draft.azureConfig,
+    research: draft.research,
+    agents: Array.isArray(draft.agents) ? (draft.agents as Agent[]) : [],
+    startingAgentId: draft.startingAgentId || '',
+    createdAt: draft.createdAt || new Date().toISOString(),
+    updatedAt: draft.updatedAt || new Date().toISOString(),
+    version: draft.version || '1.0.0',
+    customVariables: draft.customVariables,
+  };
+}
+
+function summarizeJourneyProposalDiff(currentJourney: Journey, proposedJourneyDraft: Journey): JourneyProposalDiffSummary {
+  const proposedJourney = normalizeJourneyFromDraft(proposedJourneyDraft);
+  const currentAgentsById = new Map(currentJourney.agents.map((agent) => [agent.id, agent]));
+  const proposedAgentsById = new Map(proposedJourney.agents.map((agent) => [agent.id, agent]));
+
+  const allAgentIds = new Set<string>([
+    ...currentAgentsById.keys(),
+    ...proposedAgentsById.keys(),
+  ]);
+
+  const agentPromptDiffs: AgentPromptDiff[] = [];
+  const agentScreenChanges: AgentScreenChange[] = [];
+
+  allAgentIds.forEach((agentId) => {
+    const beforeAgent = currentAgentsById.get(agentId);
+    const afterAgent = proposedAgentsById.get(agentId);
+    const agentName = afterAgent?.name || beforeAgent?.name || agentId;
+
+    if ((beforeAgent?.prompt || '') !== (afterAgent?.prompt || '')) {
+      agentPromptDiffs.push({
+        agentId,
+        agentName,
+        before: beforeAgent?.prompt || '',
+        after: afterAgent?.prompt || '',
+      });
+    }
+
+    const beforeScreens = (Array.isArray(beforeAgent?.screens) ? beforeAgent?.screens : []) as Screen[];
+    const afterScreens = (Array.isArray(afterAgent?.screens) ? afterAgent?.screens : []) as Screen[];
+    const beforeScreenIds = new Set(beforeScreens.map((screen) => screen.id));
+    const afterScreenIds = new Set(afterScreens.map((screen) => screen.id));
+
+    const addedScreenIds = Array.from(afterScreenIds).filter((screenId) => !beforeScreenIds.has(screenId));
+    const removedScreenIds = Array.from(beforeScreenIds).filter((screenId) => !afterScreenIds.has(screenId));
+    const updatedScreenIds = Array.from(afterScreenIds).filter((screenId) => {
+      if (!beforeScreenIds.has(screenId)) return false;
+      const beforeScreen = beforeScreens.find((screen) => screen.id === screenId);
+      const afterScreen = afterScreens.find((screen) => screen.id === screenId);
+      return JSON.stringify(beforeScreen) !== JSON.stringify(afterScreen);
+    });
+
+    const beforeScreenPrompts = beforeAgent?.screenPrompts || {};
+    const afterScreenPrompts = afterAgent?.screenPrompts || {};
+    const screenPromptsChanged = JSON.stringify(beforeScreenPrompts) !== JSON.stringify(afterScreenPrompts);
+
+    if (addedScreenIds.length > 0 || removedScreenIds.length > 0 || updatedScreenIds.length > 0 || screenPromptsChanged) {
+      agentScreenChanges.push({
+        agentId,
+        agentName,
+        addedScreenIds,
+        removedScreenIds,
+        updatedScreenIds,
+        screenPromptsChanged,
+        beforeScreenPromptCount: Object.keys(beforeScreenPrompts).length,
+        afterScreenPromptCount: Object.keys(afterScreenPrompts).length,
+      });
+    }
+  });
+
+  return {
+    systemPromptChanged: currentJourney.systemPrompt !== proposedJourney.systemPrompt,
+    systemPromptBefore: currentJourney.systemPrompt || '',
+    systemPromptAfter: proposedJourney.systemPrompt || '',
+    agentPromptDiffs,
+    agentScreenChanges,
+  };
+}
+
 const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   onLaunchJourney,
   disabled = false,
@@ -68,6 +234,18 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [showAiFlowEditModal, setShowAiFlowEditModal] = useState(false);
+  const [aiFlowScope, setAiFlowScope] = useState<JourneyAiProposalScope>('journey');
+  const [aiFlowRequest, setAiFlowRequest] = useState('');
+  const [aiFlowFeedback, setAiFlowFeedback] = useState('');
+  const [aiFlowTargetAgentId, setAiFlowTargetAgentId] = useState('');
+  const [aiFlowTargetScreenIds, setAiFlowTargetScreenIds] = useState<string[]>([]);
+  const [aiFlowProposal, setAiFlowProposal] = useState<JourneyAiProposalResponse | null>(null);
+  const [isCreatingAiFlowProposal, setIsCreatingAiFlowProposal] = useState(false);
+  const [aiFlowProposalError, setAiFlowProposalError] = useState<string | null>(null);
+  const [isApplyingAiFlowProposal, setIsApplyingAiFlowProposal] = useState(false);
+  const [aiFlowApplyError, setAiFlowApplyError] = useState<string | null>(null);
+  const [aiFlowChangeNotes, setAiFlowChangeNotes] = useState('');
   
   // Save state
   const [isSaving, setIsSaving] = useState(false);
@@ -327,6 +505,19 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     }
   };
 
+  const toPublishComparable = (journeyLike: any) => JSON.stringify({
+    name: journeyLike?.name || '',
+    description: journeyLike?.description || '',
+    systemPrompt: journeyLike?.systemPrompt || '',
+    voice: journeyLike?.voice || null,
+    voiceEnabled: journeyLike?.voiceEnabled ?? true,
+    ttsProvider: journeyLike?.ttsProvider || 'elevenlabs',
+    elevenLabsConfig: journeyLike?.elevenLabsConfig || null,
+    agents: journeyLike?.agents || [],
+    startingAgentId: journeyLike?.startingAgentId || '',
+    version: journeyLike?.version || '1.0.0',
+  });
+
   // Check publish status when journey loads
   useEffect(() => {
     const checkPublishStatus = async () => {
@@ -335,20 +526,8 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
           const published = await getPublishedJourney(currentJourney.id);
           setIsPublished(!!published);
           if (published) {
-            const journeyJson = JSON.stringify({
-              name: currentJourney.name,
-              description: currentJourney.description,
-              systemPrompt: currentJourney.systemPrompt,
-              agents: currentJourney.agents,
-              startingAgentId: currentJourney.startingAgentId,
-            });
-            const publishedJson = JSON.stringify({
-              name: published.name,
-              description: published.description,
-              systemPrompt: published.systemPrompt,
-              agents: published.agents,
-              startingAgentId: published.startingAgentId,
-            });
+            const journeyJson = toPublishComparable(currentJourney);
+            const publishedJson = toPublishComparable(published);
             setHasUnpublishedChanges(journeyJson !== publishedJson);
           } else {
             setHasUnpublishedChanges(false);
@@ -625,6 +804,151 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
 
   const selectedAgent = currentJourney?.agents.find(a => a.id === selectedAgentId) || null;
   const availableHandoffTargets = currentJourney?.agents.filter(a => a.id !== selectedAgentId) || [];
+  const aiFlowTargetAgent =
+    currentJourney?.agents.find((agent) => agent.id === aiFlowTargetAgentId) || null;
+  const aiFlowTargetAgentScreens = aiFlowTargetAgent?.screens || [];
+
+  const aiProposalDiffSummary = useMemo(() => {
+    if (!currentJourney || !aiFlowProposal) return null;
+    return summarizeJourneyProposalDiff(
+      currentJourney,
+      aiFlowProposal.updatedJourneyDraft as Journey
+    );
+  }, [currentJourney, aiFlowProposal]);
+
+  const handleOpenAiFlowEditor = () => {
+    if (!currentJourney) return;
+    if (currentJourney.id.startsWith('new-')) {
+      alert('Save this flow first, then run AI flow editing.');
+      return;
+    }
+    setShowAiFlowEditModal(true);
+    setAiFlowProposal(null);
+    setAiFlowProposalError(null);
+    setAiFlowApplyError(null);
+    setAiFlowTargetScreenIds([]);
+    setAiFlowTargetAgentId(selectedAgentId || currentJourney.agents[0]?.id || '');
+    if (!aiFlowRequest.trim()) {
+      setAiFlowRequest('Update prompts and screens to improve flow consistency and clarity.');
+    }
+  };
+
+  const handleCloseAiFlowEditor = () => {
+    setShowAiFlowEditModal(false);
+    setAiFlowProposalError(null);
+    setAiFlowApplyError(null);
+  };
+
+  const handleToggleAiFlowScreen = (screenId: string) => {
+    setAiFlowTargetScreenIds((previous) =>
+      previous.includes(screenId)
+        ? previous.filter((id) => id !== screenId)
+        : [...previous, screenId]
+    );
+  };
+
+  const handleGenerateAiFlowProposal = async () => {
+    if (!currentJourney || isCreatingAiFlowProposal) return;
+
+    const trimmedRequest = aiFlowRequest.trim();
+    if (!trimmedRequest) {
+      setAiFlowProposalError('Add a change request before generating a proposal.');
+      return;
+    }
+
+    if ((aiFlowScope === 'agent' || aiFlowScope === 'screens') && !aiFlowTargetAgentId) {
+      setAiFlowProposalError('Select an agent for agent/screen scoped edits.');
+      return;
+    }
+
+    if (currentJourney.id.startsWith('new-')) {
+      setAiFlowProposalError('Save this flow first before requesting AI edits.');
+      return;
+    }
+
+    setIsCreatingAiFlowProposal(true);
+    setAiFlowProposalError(null);
+    setAiFlowApplyError(null);
+    try {
+      const proposal = await createJourneyAiProposal(currentJourney.id, {
+        request: trimmedRequest,
+        scope: aiFlowScope,
+        agentId: aiFlowScope === 'journey' ? undefined : aiFlowTargetAgentId,
+        screenIds:
+          aiFlowScope === 'screens' && aiFlowTargetScreenIds.length > 0
+            ? aiFlowTargetScreenIds
+            : undefined,
+        feedback: aiFlowFeedback.trim() || undefined,
+      });
+      setAiFlowProposal(proposal);
+    } catch (error) {
+      setAiFlowProposal(null);
+      const message = error instanceof Error ? error.message : 'Failed to create AI proposal';
+      setAiFlowProposalError(message);
+    } finally {
+      setIsCreatingAiFlowProposal(false);
+    }
+  };
+
+  const handleApplyAiFlowProposal = async () => {
+    if (!currentJourney || !aiFlowProposal || isApplyingAiFlowProposal) return;
+
+    setIsApplyingAiFlowProposal(true);
+    setAiFlowApplyError(null);
+    try {
+      const applyResult = await applyJourneyAiProposal(
+        currentJourney.id,
+        aiFlowProposal.proposalId,
+        { changeNotes: aiFlowChangeNotes.trim() || undefined }
+      );
+      const normalizedJourney = normalizeJourneyFromDraft(applyResult.journey as Journey);
+
+      setCurrentJourney(normalizedJourney);
+      lastSavedJourneyRef.current = JSON.stringify(normalizedJourney);
+      setHasUnsavedChanges(false);
+      setAutoSaveStatus('idle');
+      setAiFlowProposal(null);
+      setAiFlowChangeNotes('');
+      setAiFlowFeedback('');
+      setShowAiFlowEditModal(false);
+
+      if (selectedAgentId && !normalizedJourney.agents.some((agent) => agent.id === selectedAgentId)) {
+        setSelectedAgentId(normalizedJourney.agents[0]?.id || null);
+      }
+      alert('AI proposal applied successfully.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to apply AI proposal';
+      setAiFlowApplyError(message);
+    } finally {
+      setIsApplyingAiFlowProposal(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!showAiFlowEditModal) return;
+    if (aiFlowScope === 'journey') {
+      setAiFlowTargetScreenIds([]);
+      return;
+    }
+    if (!aiFlowTargetAgentId) {
+      setAiFlowTargetAgentId(selectedAgentId || currentJourney?.agents[0]?.id || '');
+    }
+  }, [showAiFlowEditModal, aiFlowScope, aiFlowTargetAgentId, selectedAgentId, currentJourney?.agents]);
+
+  useEffect(() => {
+    if (aiFlowScope !== 'screens') {
+      setAiFlowTargetScreenIds([]);
+      return;
+    }
+    if (!aiFlowTargetAgentScreens.length) {
+      setAiFlowTargetScreenIds([]);
+      return;
+    }
+    const validScreenIds = new Set(aiFlowTargetAgentScreens.map((screen) => screen.id));
+    setAiFlowTargetScreenIds((previous) =>
+      previous.filter((screenId) => validScreenIds.has(screenId))
+    );
+  }, [aiFlowScope, aiFlowTargetAgentId, aiFlowTargetAgentScreens]);
 
   // Sync JSON value when selected agent or screens change
   useEffect(() => {
@@ -1045,6 +1369,15 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                       >
                         <HistoryIcon size={14} /> History
                       </button>
+                      {isAdmin && (
+                        <button
+                          className="journey-more-menu-item"
+                          onClick={() => { handleOpenAiFlowEditor(); setShowMoreMenu(false); }}
+                          disabled={disabled}
+                        >
+                          <ZapIcon size={14} /> AI Flow Edit
+                        </button>
+                      )}
                       <button 
                         className="journey-more-menu-item" 
                         onClick={() => { handleExport(); setShowMoreMenu(false); }} 
@@ -1911,14 +2244,24 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                               </button>
                             </div>
                             {isAdmin && !showScreensJsonView && (
-                              <button
-                                className="journey-agent-add-screen-btn"
-                                onClick={() => handleAddScreen()}
-                                disabled={disabled}
-                                type="button"
-                              >
-                                + Add Screen
-                              </button>
+                              <>
+                                <button
+                                  className="journey-ai-generate-btn"
+                                  onClick={() => setShowAICustomizeModal(true)}
+                                  disabled={disabled || isGeneratingScreens}
+                                  type="button"
+                                >
+                                  ✨ AI Suggest
+                                </button>
+                                <button
+                                  className="journey-agent-add-screen-btn"
+                                  onClick={() => handleAddScreen()}
+                                  disabled={disabled}
+                                  type="button"
+                                >
+                                  + Add Screen
+                                </button>
+                              </>
                             )}
                           </div>
                         </div>
@@ -2029,6 +2372,315 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
 
       </div>
 
+
+      {/* AI Flow Edit Modal */}
+      {showAiFlowEditModal && currentJourney && (
+        <div className="journey-ai-modal-overlay" onClick={handleCloseAiFlowEditor}>
+          <div className="journey-ai-modal journey-ai-flow-editor-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="journey-ai-modal-header">
+              <h3>AI Flow Editor</h3>
+              <button onClick={handleCloseAiFlowEditor} className="journey-modal-close-btn">✕</button>
+            </div>
+
+            <div className="journey-ai-modal-content">
+              <div className="journey-ai-flow-intro">
+                <p>
+                  Generate a draft proposal first, preview prompt/screen changes, then apply only when the draft looks correct.
+                  Use feedback to rerun the proposal until it matches your intent.
+                </p>
+              </div>
+
+              <div className="journey-ai-flow-field">
+                <label htmlFor="journey-ai-flow-request">Requested update</label>
+                <textarea
+                  id="journey-ai-flow-request"
+                  className="journey-ai-instructions-input"
+                  value={aiFlowRequest}
+                  onChange={(e) => setAiFlowRequest(e.target.value)}
+                  placeholder="Example: tighten the intake prompts, add a consent screen, and align screen prompts to every new screen."
+                  rows={4}
+                />
+              </div>
+
+              <div className="journey-ai-flow-controls">
+                <label className="journey-ai-flow-field">
+                  <span>Scope</span>
+                  <select
+                    value={aiFlowScope}
+                    onChange={(e) => setAiFlowScope(e.target.value as JourneyAiProposalScope)}
+                  >
+                    {JOURNEY_AI_SCOPE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {(aiFlowScope === 'agent' || aiFlowScope === 'screens') && (
+                  <label className="journey-ai-flow-field">
+                    <span>Target Agent</span>
+                    <select
+                      value={aiFlowTargetAgentId}
+                      onChange={(e) => setAiFlowTargetAgentId(e.target.value)}
+                    >
+                      <option value="">Select an agent...</option>
+                      {currentJourney.agents.map((agent) => (
+                        <option key={agent.id} value={agent.id}>
+                          {agent.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+              </div>
+
+              {aiFlowScope === 'screens' && (
+                <div className="journey-ai-flow-field">
+                  <label>Target Screens (optional)</label>
+                  {!aiFlowTargetAgent ? (
+                    <p className="journey-ai-flow-empty">Select an agent to choose screens.</p>
+                  ) : aiFlowTargetAgentScreens.length === 0 ? (
+                    <p className="journey-ai-flow-empty">This agent has no screens yet. Ask AI to create them.</p>
+                  ) : (
+                    <>
+                      <div className="journey-ai-flow-screen-actions">
+                        <button
+                          type="button"
+                          className="journey-ai-flow-secondary-btn"
+                          onClick={() => setAiFlowTargetScreenIds([])}
+                        >
+                          Use All Screens
+                        </button>
+                        <span>
+                          {aiFlowTargetScreenIds.length === 0
+                            ? 'All screens included'
+                            : `${aiFlowTargetScreenIds.length} selected`}
+                        </span>
+                      </div>
+                      <div className="journey-ai-flow-screen-grid">
+                        {aiFlowTargetAgentScreens.map((screen) => (
+                          <label key={screen.id} className="journey-ai-flow-screen-option">
+                            <input
+                              type="checkbox"
+                              checked={aiFlowTargetScreenIds.includes(screen.id)}
+                              onChange={() => handleToggleAiFlowScreen(screen.id)}
+                            />
+                            <span>
+                              <strong>{screen.id}</strong>
+                              <small>{screen.title}</small>
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              <div className="journey-ai-flow-field">
+                <label htmlFor="journey-ai-flow-feedback">Feedback for retry (optional)</label>
+                <textarea
+                  id="journey-ai-flow-feedback"
+                  className="journey-ai-instructions-input"
+                  value={aiFlowFeedback}
+                  onChange={(e) => setAiFlowFeedback(e.target.value)}
+                  placeholder="Example: keep existing screen IDs and do not alter tool-call event names."
+                  rows={3}
+                />
+              </div>
+
+              {aiFlowProposalError && (
+                <div className="journey-ai-flow-error">
+                  {aiFlowProposalError}
+                </div>
+              )}
+
+              <div className="journey-ai-customize-actions">
+                <button
+                  className="journey-ai-cancel-btn"
+                  onClick={handleCloseAiFlowEditor}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="journey-ai-generate-btn"
+                  onClick={handleGenerateAiFlowProposal}
+                  disabled={isCreatingAiFlowProposal}
+                >
+                  {isCreatingAiFlowProposal ? (
+                    <><LoaderIcon size={14} className="spin-animation" /> Generating...</>
+                  ) : aiFlowProposal ? (
+                    'Regenerate Proposal'
+                  ) : (
+                    'Generate Proposal'
+                  )}
+                </button>
+              </div>
+
+              {aiFlowProposal && (
+                <div className="journey-ai-proposal-preview">
+                  <div className="journey-ai-proposal-header">
+                    <div>
+                      <h4>Proposal Preview</h4>
+                      <p>{aiFlowProposal.summary}</p>
+                    </div>
+                    <span className={`journey-ai-proposal-status ${aiFlowProposal.isReadyToApply ? 'ready' : 'blocked'}`}>
+                      {aiFlowProposal.isReadyToApply ? 'Ready to apply' : 'Needs fixes'}
+                    </span>
+                  </div>
+
+                  <div className="journey-ai-proposal-meta">
+                    <span>Scope: <strong>{aiFlowProposal.scope}</strong></span>
+                    <span>Created: <strong>{formatDateTime(aiFlowProposal.createdAt)}</strong></span>
+                    <span>Expires: <strong>{formatDateTime(aiFlowProposal.expiresAt)}</strong></span>
+                  </div>
+
+                  {aiFlowProposal.changedPaths.length > 0 && (
+                    <div className="journey-ai-proposal-paths">
+                      {aiFlowProposal.changedPaths.map((path) => (
+                        <code key={path}>{path}</code>
+                      ))}
+                    </div>
+                  )}
+
+                  {(aiFlowProposal.validation.errors.length > 0 || aiFlowProposal.validation.warnings.length > 0) && (
+                    <div className="journey-ai-proposal-validation">
+                      {aiFlowProposal.validation.errors.length > 0 && (
+                        <div>
+                          <h5>Validation Errors ({aiFlowProposal.validation.errors.length})</h5>
+                          <ul>
+                            {aiFlowProposal.validation.errors.map((issue, index) => (
+                              <li key={`${issue.path}-${index}`}>
+                                <code>{issue.path}</code> - {issue.message}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {aiFlowProposal.validation.warnings.length > 0 && (
+                        <div>
+                          <h5>Warnings ({aiFlowProposal.validation.warnings.length})</h5>
+                          <ul>
+                            {aiFlowProposal.validation.warnings.map((issue, index) => (
+                              <li key={`${issue.path}-${index}`}>
+                                <code>{issue.path}</code> - {issue.message}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {aiProposalDiffSummary && (
+                    <div className="journey-ai-proposal-diff">
+                      <div className="journey-ai-proposal-diff-stats">
+                        <div>
+                          <span>System Prompt</span>
+                          <strong>{aiProposalDiffSummary.systemPromptChanged ? 'Updated' : 'No change'}</strong>
+                        </div>
+                        <div>
+                          <span>Agent Prompts</span>
+                          <strong>{aiProposalDiffSummary.agentPromptDiffs.length} changed</strong>
+                        </div>
+                        <div>
+                          <span>Screen Groups</span>
+                          <strong>{aiProposalDiffSummary.agentScreenChanges.length} changed</strong>
+                        </div>
+                      </div>
+
+                      {aiProposalDiffSummary.systemPromptChanged && (
+                        <div className="journey-ai-proposal-prompt-diff">
+                          <h5>System Prompt Diff</h5>
+                          <div className="journey-ai-proposal-prompt-columns">
+                            <textarea value={aiProposalDiffSummary.systemPromptBefore} readOnly />
+                            <textarea value={aiProposalDiffSummary.systemPromptAfter} readOnly />
+                          </div>
+                        </div>
+                      )}
+
+                      {aiProposalDiffSummary.agentPromptDiffs.length > 0 && (
+                        <div className="journey-ai-proposal-prompt-diff">
+                          <h5>Agent Prompt Diffs</h5>
+                          {aiProposalDiffSummary.agentPromptDiffs.map((promptDiff) => (
+                            <div key={promptDiff.agentId} className="journey-ai-proposal-agent-prompt">
+                              <span>{promptDiff.agentName}</span>
+                              <div className="journey-ai-proposal-prompt-columns">
+                                <textarea value={promptDiff.before} readOnly />
+                                <textarea value={promptDiff.after} readOnly />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {aiProposalDiffSummary.agentScreenChanges.length > 0 && (
+                        <div className="journey-ai-proposal-screen-diff">
+                          <h5>Screen + Screen Prompt Changes</h5>
+                          {aiProposalDiffSummary.agentScreenChanges.map((screenChange) => (
+                            <div key={screenChange.agentId} className="journey-ai-proposal-screen-card">
+                              <span className="journey-ai-proposal-screen-card-title">{screenChange.agentName}</span>
+                              <div className="journey-ai-proposal-screen-card-meta">
+                                <span>Added: {screenChange.addedScreenIds.length}</span>
+                                <span>Removed: {screenChange.removedScreenIds.length}</span>
+                                <span>Updated: {screenChange.updatedScreenIds.length}</span>
+                                {screenChange.screenPromptsChanged && (
+                                  <span>
+                                    Screen Prompts: {screenChange.beforeScreenPromptCount} to {screenChange.afterScreenPromptCount}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="journey-ai-flow-field">
+                    <label htmlFor="journey-ai-change-notes">Change Notes (optional)</label>
+                    <textarea
+                      id="journey-ai-change-notes"
+                      className="journey-ai-instructions-input"
+                      value={aiFlowChangeNotes}
+                      onChange={(e) => setAiFlowChangeNotes(e.target.value)}
+                      placeholder="Optional note stored in version history, e.g. AI: refined prompts + updated intake screens."
+                      rows={2}
+                    />
+                  </div>
+
+                  {aiFlowApplyError && (
+                    <div className="journey-ai-flow-error">
+                      {aiFlowApplyError}
+                    </div>
+                  )}
+
+                  <div className="journey-ai-customize-actions">
+                    <button
+                      className="journey-ai-cancel-btn"
+                      onClick={() => setAiFlowProposal(null)}
+                    >
+                      Discard Proposal
+                    </button>
+                    <button
+                      className="journey-ai-generate-btn"
+                      onClick={handleApplyAiFlowProposal}
+                      disabled={!aiFlowProposal.isReadyToApply || isApplyingAiFlowProposal}
+                    >
+                      {isApplyingAiFlowProposal ? (
+                        <><LoaderIcon size={14} className="spin-animation" /> Applying...</>
+                      ) : (
+                        'Apply Proposal'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* AI Customization Modal */}
       {showAICustomizeModal && (
@@ -2222,4 +2874,3 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
 };
 
 export default JourneyBuilder;
-

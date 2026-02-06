@@ -18,9 +18,26 @@ export const ImageCheckboxButtonElement: React.FC<ImageCheckboxButtonElementProp
 }) => {
   const [isSelected, setIsSelected] = useState(data.isSelected || false);
 
+  const emitUiResponse = (selected: boolean) => {
+    if (typeof window === 'undefined') return;
+    const title = data.title || data.id || 'option';
+    window.dispatchEvent(new CustomEvent('uiUserResponse', {
+      detail: {
+        text: selected ? `I selected ${title}` : `I unselected ${title}`,
+        source: 'imageCheckboxButton',
+        metadata: {
+          elementId: data.id,
+          title,
+          selected,
+        },
+      },
+    }));
+  };
+
   const handleToggle = () => {
     const newValue = !isSelected;
     setIsSelected(newValue);
+    emitUiResponse(newValue);
 
     const event = events?.find(e => e.type === 'onSelected');
     if (event && onEventTrigger) {
@@ -62,4 +79,3 @@ export const ImageCheckboxButtonElement: React.FC<ImageCheckboxButtonElementProp
 };
 
 export default ImageCheckboxButtonElement;
-

@@ -808,6 +808,85 @@ export interface Journey {
 }
 
 /**
+ * AI Proposal Scope
+ * Defines what area the AI should edit in a proposal-only workflow
+ */
+export type JourneyAiProposalScope = 'journey' | 'agent' | 'screens';
+
+/**
+ * AI Proposal Request
+ * Payload for generating a draft proposal without saving changes
+ */
+export interface JourneyAiProposalRequest {
+  request: string;
+  scope?: JourneyAiProposalScope;
+  agentId?: string;
+  screenIds?: string[];
+  feedback?: string;
+}
+
+/**
+ * AI Proposal Validation Issue
+ * Returned by server-side draft validation gate
+ */
+export interface JourneyAiProposalValidationIssue {
+  code: string;
+  path: string;
+  message: string;
+}
+
+/**
+ * Journey Draft Shape used in AI proposals
+ */
+export interface JourneyDraftPreview extends Journey {
+  status?: 'draft' | 'published';
+  isPublished?: boolean;
+  publishedAt?: string | null;
+}
+
+/**
+ * AI Proposal Response
+ * Proposal-only response containing draft + validation, no persistence
+ */
+export interface JourneyAiProposalResponse {
+  proposalId: string;
+  scope: JourneyAiProposalScope;
+  summary: string;
+  changedPaths: string[];
+  validation: {
+    errors: JourneyAiProposalValidationIssue[];
+    warnings: JourneyAiProposalValidationIssue[];
+  };
+  isReadyToApply: boolean;
+  updatedJourneyDraft: JourneyDraftPreview;
+  createdAt: string;
+  expiresAt: string;
+}
+
+/**
+ * AI Proposal Apply Request
+ * Optional change notes override when applying a proposal
+ */
+export interface JourneyAiProposalApplyRequest {
+  changeNotes?: string;
+}
+
+/**
+ * AI Proposal Apply Response
+ * Result of persisting a validated proposal into journey storage
+ */
+export interface JourneyAiProposalApplyResponse {
+  proposalId: string;
+  appliedAt: string;
+  changeNotes: string;
+  validation: {
+    errors: JourneyAiProposalValidationIssue[];
+    warnings: JourneyAiProposalValidationIssue[];
+  };
+  journey: JourneyDraftPreview;
+}
+
+/**
  * Journey List Item
  * Lightweight representation for journey lists
  */
@@ -1065,4 +1144,3 @@ export function validateJourney(journey: Journey): JourneyValidationError[] {
 
   return errors;
 }
-

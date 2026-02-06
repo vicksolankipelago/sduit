@@ -117,6 +117,12 @@ function parseLocalTimeToUTC(timeStr: string): string {
   return `${String(localDate.getUTCHours()).padStart(2, '0')}:${String(localDate.getUTCMinutes()).padStart(2, '0')}`;
 }
 
+function normalizeAgentNameForRuntime(name: string): string {
+  return name
+    .replace(/[^a-zA-Z0-9]+(.)/g, (_, char) => char.toUpperCase())
+    .replace(/^(.)/, (char) => char.toLowerCase());
+}
+
 // Transform quiz module state option IDs to readable labels
 // Handles both single-select strings and multi-select arrays/JSON strings
 function transformQuizAnswersToLabels(moduleState: Record<string, any>): Record<string, any> {
@@ -304,7 +310,7 @@ function VoiceAgentContent() {
   useEffect(() => {
     currentScreenIdRef.current = currentScreenId ?? null;
   }, [currentScreenId]);
-  
+
   // Ref to store the voice intake navigator journey (for quiz-to-voice transitions)
   const intakeNavigatorJourneyRef = useRef<Journey | null>(null);
   
@@ -1084,9 +1090,8 @@ function VoiceAgentContent() {
         // Screens are already shown at session start, just process the navigation
         addLog('info', `📱 Processing event "${eventId}" within ${currentAgentConfig.screens.length} screen(s), currentScreen: "${activeScreenId}"`);
         
-        // CRITICAL: Only look for events on the CURRENT screen, not all screens
-        // This prevents the AI from calling events that don't exist on the current screen
-        // (e.g., calling navigate_to_checkin_commitment from 'intention' screen when it only exists on 'cm-rewards-intro')
+        // CRITICAL: Only look for events on the CURRENT screen, not all screens.
+        // This prevents tool calls for events that are not valid in the active screen context.
         const currentScreen = currentAgentConfig.screens.find(s => s.id === activeScreenId);
         
         if (!currentScreen) {
@@ -2264,11 +2269,106 @@ Important guidelines:
     // Supports optional delay in seconds before triggering
     trigger_event: async (params: { eventId: string; delay?: number }) => {
       const { eventId, delay = 0 } = params;
-      const delayMs = delay * 1000;
+
+      const dispatchTriggerEvent = (id: string, delaySeconds = 0, extra: Record<string, any> = {}) => {
+        const trigger = () => {
+          window.dispatchEvent(new CustomEvent('triggerEvent', {
+            detail: { eventId: id, timestamp: Date.now(), ...extra }
+          }));
+        };
+        if (delaySeconds > 0) {
+          setTimeout(trigger, delaySeconds * 1000);
+        } else {
+          trigger();
+        }
+      };
+
+      const getScreenEvents = (screen: any): any[] => {
+        if (!screen) return [];
+        const allEvents = [
+          ...(screen.events || []),
+          ...(screen.sections || []).flatMap((section: any) =>
+            (section.elements || []).flatMap((element: any) => element.events || [])
+          ),
+        ].filter((event: any) => event && typeof event.id === 'string');
+
+        const dedupedById = new Map<string, any>();
+        for (const event of allEvents) {
+          if (!dedupedById.has(event.id)) {
+            dedupedById.set(event.id, event);
+          }
+        }
+        return Array.from(dedupedById.values());
+      };
+
+      const hasEventOnScreen = (screen: any, targetEventId: string): boolean => {
+        return getScreenEvents(screen).some((event: any) => event.id === targetEventId);
+      };
+
+      const isNavigationScreenEvent = (event: any): boolean => {
+        if (!event) return false;
+        if (typeof event.id === 'string' && event.id.startsWith('navigate_')) return true;
+        return (event.action || []).some((action: any) => action?.type === 'navigation' && typeof action?.deeplink === 'string');
+      };
+
+      const getNavigationTargetFromEvent = (event: any): string | undefined => {
+        const navAction = (event?.action || []).find((action: any) => action?.type === 'navigation' && typeof action?.deeplink === 'string');
+        return navAction?.deeplink;
+      };
+
+      const getActiveAgentScreens = (): any[] => {
+        const journey = currentJourneyRef.current;
+        if (!journey?.agents?.length) return [];
+        const runtimeAgentName = currentAgentRef.current;
+        const activeAgent =
+          journey.agents.find(a => normalizeAgentNameForRuntime(a.name) === runtimeAgentName) ||
+          journey.agents.find(a => a.id === journey.startingAgentId) ||
+          journey.agents[0];
+        return activeAgent?.screens || [];
+      };
+
+      const activeScreenId = currentScreenIdRef.current || undefined;
+      const activeScreens = getActiveAgentScreens();
+      const activeScreen = activeScreens.find((screen: any) => screen.id === activeScreenId);
+      const activeScreenEvents = activeScreen ? getScreenEvents(activeScreen) : [];
+      const requestedEventConfig = activeScreenEvents.find((event: any) => event.id === eventId);
+      const isNavigationEvent = eventId.startsWith('navigate_') || isNavigationScreenEvent(requestedEventConfig);
+
+      if (activeScreen && !hasEventOnScreen(activeScreen, eventId)) {
+        const screenNavigationEvents = activeScreenEvents.filter((event: any) => isNavigationScreenEvent(event));
+        const autoRecoveryEvent = screenNavigationEvents.length === 1 ? screenNavigationEvents[0] : null;
+
+        if (autoRecoveryEvent && autoRecoveryEvent.id !== eventId) {
+          addLog('warning', `⚠️ Guardrail: "${eventId}" is not available on "${activeScreen.id}". Triggering "${autoRecoveryEvent.id}" first.`);
+          dispatchTriggerEvent(autoRecoveryEvent.id, 0, { autoRecovery: true, reason: 'invalid_event_for_screen' });
+
+          const navigationTargetScreenId = getNavigationTargetFromEvent(autoRecoveryEvent);
+          const navigationTargetScreen = navigationTargetScreenId
+            ? activeScreens.find((screen: any) => screen.id === navigationTargetScreenId)
+            : null;
+
+          if (navigationTargetScreen && hasEventOnScreen(navigationTargetScreen, eventId)) {
+            dispatchTriggerEvent(eventId, 0.9, {
+              autoRecovery: true,
+              reason: 'replay_after_recovery_navigation',
+              recoveryEventId: autoRecoveryEvent.id,
+            });
+            return `Guardrail applied: "${eventId}" is not available on "${activeScreen.id}". Triggered "${autoRecoveryEvent.id}" and replayed "${eventId}" on "${navigationTargetScreen.id}".`;
+          }
+
+          return `Guardrail applied: "${eventId}" is not available on "${activeScreen.id}". Triggered "${autoRecoveryEvent.id}" first.`;
+        }
+
+        const availableEventIds = activeScreenEvents.map((event: any) => event.id);
+        addLog('warning', `⚠️ Guardrail blocked invalid event "${eventId}" on screen "${activeScreen.id}".`, { availableEvents: availableEventIds });
+        if (availableEventIds.length > 0) {
+          return `Invalid event "${eventId}" for current screen "${activeScreen.id}". Available events: ${availableEventIds.join(', ')}.`;
+        }
+        return `Invalid event "${eventId}" for current screen "${activeScreen.id}".`;
+      }
 
       // Deduplication guard: prevent the same non-navigation event from firing
       // multiple times within a 2-second window (prevents LLM looping)
-      const isNavigationEvent = eventId.startsWith('navigate_');
       if (!isNavigationEvent) {
         const now = Date.now();
         const lastFired = recentEventTimestamps.current.get(eventId);
@@ -2281,18 +2381,7 @@ Important guidelines:
 
       addLog('tool', `⚡ trigger_event: ${eventId}${delay ? ` (delay: ${delay}s)` : ''}`);
 
-      // Dispatch event after delay (if specified)
-      if (delayMs > 0) {
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('triggerEvent', {
-            detail: { eventId, timestamp: Date.now() }
-          }));
-        }, delayMs);
-      } else {
-        window.dispatchEvent(new CustomEvent('triggerEvent', {
-          detail: { eventId, timestamp: Date.now() }
-        }));
-      }
+      dispatchTriggerEvent(eventId, delay);
 
       // Return a more informative result based on event type to guide the LLM
       if (eventId.startsWith('select_')) {
@@ -2322,9 +2411,21 @@ Important guidelines:
         detail: { title, summary, description, timestamp: Date.now(), storeKey }
       }));
 
-      // Update module state if storeKey provided
-      if (storeKey && summary && updateModuleState) {
-        updateModuleState({ [storeKey]: summary });
+      if (updateModuleState) {
+        const moduleUpdates: Record<string, any> = {};
+        if (storeKey && summary) {
+          moduleUpdates[storeKey] = summary;
+          // Keep legacy and canonical weekly focus keys synchronized.
+          if (storeKey === 'weeklyIntention') {
+            moduleUpdates.weeklyFocus = summary;
+          } else if (storeKey === 'weeklyFocus') {
+            moduleUpdates.weeklyIntention = summary;
+          }
+        }
+
+        if (Object.keys(moduleUpdates).length > 0) {
+          updateModuleState(moduleUpdates);
+        }
       }
 
       // Trigger next event after delay if specified
@@ -2337,7 +2438,59 @@ Important guidelines:
         }, delayMs);
       }
 
-      return `Recorded: ${title}`;
+      return {
+        saved: true,
+        title,
+        summary,
+        storeKey: storeKey || null,
+        message: `Recorded: ${title}`,
+      };
+    },
+
+    // Save structured goals as an explicit array
+    set_goals: async (params: { goals?: string[] | string }) => {
+      const rawGoals = params?.goals;
+      const goalsInput = Array.isArray(rawGoals)
+        ? rawGoals
+        : typeof rawGoals === 'string'
+          ? rawGoals.split(/[;,]/)
+          : [];
+
+      const goals = goalsInput
+        .map(goal => (typeof goal === 'string' ? goal.trim() : ''))
+        .filter(Boolean)
+        .filter((goal, index, arr) => arr.findIndex(g => g.toLowerCase() === goal.toLowerCase()) === index);
+
+      if (goals.length === 0) {
+        addLog('warning', '⚠️ set_goals called without usable goals');
+        return {
+          saved: false,
+          goals: [],
+          message: 'No goals were saved. Provide goals as an array of strings.',
+        };
+      }
+
+      addLog('tool', `🎯 set_goals: ${goals.join(' | ')}`);
+
+      window.dispatchEvent(new CustomEvent('recordInput', {
+        detail: {
+          title: 'Goals',
+          summary: goals.join('; '),
+          description: `Captured ${goals.length} goal(s)`,
+          storeKey: 'goals',
+          timestamp: Date.now(),
+        }
+      }));
+
+      if (updateModuleState) {
+        updateModuleState({ goals });
+      }
+
+      return {
+        saved: true,
+        goals,
+        message: `Saved ${goals.length} goal(s).`,
+      };
     },
 
     // End the call and show feedback
@@ -2351,14 +2504,44 @@ Important guidelines:
     },
 
     // DEPRECATED: Check-in frequency is now saved automatically by the select_*_commitment events.
-    // This handler is kept as a safe no-op in case the LLM still tries to call it
-    // (e.g., from a stale tool schema on the ElevenLabs dashboard).
+    // This handler remains supported for spoken-only capture and legacy agents.
     set_checkin_frequency: async (params: { days: number }) => {
-      const days = Math.round(Number(params.days));
-      addLog('tool', `📊 set_checkin_frequency: ${days} days/week (DEPRECATED - already saved by selection event)`);
-      // No-op: frequency is now set by the select_daily/few_times/once_commitment events
-      // in the screen JSON stateUpdate actions. No need to duplicate the write.
-      return `Check-in frequency already saved by selection event. Do NOT call this tool again. Proceed to the next step.`;
+      const parsed = Number(params.days);
+      if (!Number.isFinite(parsed)) {
+        return {
+          saved: false,
+          message: 'Invalid frequency value. Please provide an integer number of days per week (1-7).',
+        };
+      }
+
+      const days = Math.max(1, Math.min(7, Math.round(parsed)));
+      const checkinCommitment = days >= 6 ? 'Every day' : days >= 3 ? 'A few times' : 'Once';
+
+      addLog('tool', `📊 set_checkin_frequency: ${days} day(s)/week`);
+
+      window.dispatchEvent(new CustomEvent('recordInput', {
+        detail: {
+          title: 'Check-in commitment',
+          summary: String(days),
+          description: `${checkinCommitment} (${days} days per week)`,
+          storeKey: 'checkinFrequencyDays',
+          timestamp: Date.now(),
+        }
+      }));
+
+      if (updateModuleState) {
+        updateModuleState({
+          checkinFrequencyDays: days,
+          checkinCommitment,
+        });
+      }
+
+      return {
+        saved: true,
+        checkinFrequencyDays: days,
+        checkinCommitment,
+        message: `Check-in frequency saved: ${days} days per week`,
+      };
     },
 
     // Save preferred reminder time (converts to UTC)
@@ -2372,7 +2555,10 @@ Important guidelines:
 
         if (!userTime || userTime === 'undefined' || userTime === 'null') {
           addLog('tool', `⚠️ set_reminder_time: no valid time provided, params were: ${JSON.stringify(params)}`);
-          return 'Error: no time value received. Please ask the user again for their preferred reminder time and call set_reminder_time with the time parameter.';
+          return {
+            saved: false,
+            message: 'Error: no time value received. Please ask the user again for their preferred reminder time and call set_reminder_time with the time parameter.',
+          };
         }
 
         const utcTime = parseLocalTimeToUTC(userTime);
@@ -2385,15 +2571,26 @@ Important guidelines:
 
         // Update module state directly
         if (updateModuleState) {
-          updateModuleState({ reminderTime: utcTime });
+          updateModuleState({
+            reminderTime: utcTime,
+            notificationTime: utcTime,
+          });
         }
 
-        return `Reminder time saved: ${userTime} (UTC: ${utcTime})`;
+        return {
+          saved: true,
+          notificationTimeLocal: userTime,
+          notificationTimeUtc: utcTime,
+          message: `Reminder time saved: ${userTime} (UTC: ${utcTime})`,
+        };
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         addLog('tool', `❌ set_reminder_time error: ${errMsg}, params: ${JSON.stringify(params)}`);
         console.error('set_reminder_time handler error:', error, 'params:', params);
-        return `Error saving reminder time: ${errMsg}. Please try again with a time like "9 PM" or "8 AM".`;
+        return {
+          saved: false,
+          message: `Error saving reminder time: ${errMsg}. Please try again with a time like "9 PM" or "8 AM".`,
+        };
       }
     },
 
@@ -2442,6 +2639,8 @@ Important guidelines:
     connect: connectElevenLabs,
     disconnect: disconnectElevenLabs,
     setMicMuted: setMicMutedElevenLabs,
+    sendUserMessage: sendUserMessageElevenLabs,
+    sendContextualUpdate: sendContextualUpdateElevenLabs,
   } = useElevenLabsSession({
     customPrompts,
     clientTools: elevenLabsClientTools,
@@ -2547,6 +2746,45 @@ Important guidelines:
       }
     },
   }); // clientTools already passed in callbacks object above
+
+  const sendUiResponseToSession = useCallback((text: string, metadata?: Record<string, unknown>) => {
+    const trimmed = text?.trim();
+    if (!trimmed) return;
+    if (sessionStatus !== 'CONNECTED') return;
+    if (currentProviderRef.current !== 'elevenlabs') return;
+
+    try {
+      sendUserMessageElevenLabs?.(trimmed);
+      if (metadata && sendContextualUpdateElevenLabs) {
+        sendContextualUpdateElevenLabs(JSON.stringify({
+          type: 'ui_response',
+          ...metadata,
+        }));
+      }
+      addLog('info', `🗨️ UI response forwarded to session: ${trimmed}`);
+    } catch (error) {
+      console.error('Failed to send UI response to ElevenLabs session:', error);
+      addLog('warning', `Failed to forward UI response: ${trimmed}`);
+    }
+  }, [addLog, sendContextualUpdateElevenLabs, sendUserMessageElevenLabs, sessionStatus]);
+
+  useEffect(() => {
+    const handleUiUserResponse = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const text = customEvent.detail?.text;
+      if (typeof text !== 'string' || !text.trim()) return;
+
+      sendUiResponseToSession(text, {
+        source: customEvent.detail?.source || 'ui',
+        metadata: customEvent.detail?.metadata || {},
+      });
+    };
+
+    window.addEventListener('uiUserResponse', handleUiUserResponse as EventListener);
+    return () => {
+      window.removeEventListener('uiUserResponse', handleUiUserResponse as EventListener);
+    };
+  }, [sendUiResponseToSession]);
 
   // Provider-aware wrapper functions
   const connect = useCallback(async (options: any) => {
@@ -2710,11 +2948,19 @@ Important guidelines:
         onNotificationAllow={() => {
           setShowNotificationPopup(false);
           updateModuleState?.({ notificationsEnabled: true });
+          sendUiResponseToSession('I allowed notifications', {
+            source: 'notification_permission',
+            allowed: true,
+          });
           console.log('🔔 Notifications enabled');
         }}
         onNotificationDeny={() => {
           setShowNotificationPopup(false);
           updateModuleState?.({ notificationsEnabled: false });
+          sendUiResponseToSession("I don't want notifications", {
+            source: 'notification_permission',
+            allowed: false,
+          });
           console.log('🔔 Notifications denied');
         }}
         onSetVoiceEnabled={handleSetVoiceEnabled}

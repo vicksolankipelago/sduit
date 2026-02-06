@@ -28,6 +28,22 @@ export const ToggleCardElement: React.FC<ToggleCardElementProps> = ({
 }) => {
   const [isToggled, setIsToggled] = useState(data.isToggled);
 
+  const emitUiResponse = (toggled: boolean) => {
+    if (typeof window === 'undefined') return;
+    const title = data.title || data.id || 'toggle';
+    window.dispatchEvent(new CustomEvent('uiUserResponse', {
+      detail: {
+        text: toggled ? `Turned on ${title}` : `Turned off ${title}`,
+        source: 'toggleCard',
+        metadata: {
+          elementId: data.id,
+          title,
+          toggled,
+        },
+      },
+    }));
+  };
+
   // Sync with external state changes
   useEffect(() => {
     setIsToggled(data.isToggled);
@@ -36,6 +52,7 @@ export const ToggleCardElement: React.FC<ToggleCardElementProps> = ({
   const handleToggle = () => {
     const newValue = !isToggled;
     setIsToggled(newValue);
+    emitUiResponse(newValue);
 
     // Trigger appropriate event
     const eventType = newValue ? 'onToggleOn' : 'onToggleOff';
@@ -111,4 +128,3 @@ export const ToggleCardElement: React.FC<ToggleCardElementProps> = ({
 };
 
 export default ToggleCardElement;
-

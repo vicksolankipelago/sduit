@@ -3,10 +3,60 @@ import { isAuthenticated, isAdmin } from "../auth";
 import { storage } from "../storage";
 import { v4 as uuidv4 } from "uuid";
 import { publishedFlowStorage } from "../services/publishedFlowStorage";
+import {
+  generateJourneyAiProposal,
+  JourneyAiProposalScope,
+} from "../services/journeyAiProposal";
+import { journeyAiProposalStore } from "../services/journeyAiProposalStore";
+import { validateJourneyDraft } from "../services/journeyDraftValidator";
 import { journeyLogger } from "../utils/logger";
 import * as apiResponse from "../utils/response";
 
 const router = Router();
+const AI_PROPOSAL_SCOPES = new Set<JourneyAiProposalScope>(["journey", "agent", "screens"]);
+
+function toIsoString(value: unknown): string | null {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "string") return value;
+  return null;
+}
+
+function toJourneyApiShape(journey: any) {
+  return {
+    id: journey?.id,
+    name: journey?.name || "",
+    description: journey?.description || "",
+    systemPrompt: journey?.systemPrompt || "",
+    voice: journey?.voice ?? null,
+    voiceEnabled: journey?.voiceEnabled ?? true,
+    ttsProvider: journey?.ttsProvider || "elevenlabs",
+    elevenLabsConfig: journey?.elevenLabsConfig || null,
+    agents: Array.isArray(journey?.agents) ? journey.agents : [],
+    startingAgentId: journey?.startingAgentId || "",
+    createdAt: toIsoString(journey?.createdAt),
+    updatedAt: toIsoString(journey?.updatedAt),
+    version: journey?.version || "1.0.0",
+    status: journey?.status || "draft",
+    isPublished: journey?.isPublished || false,
+    publishedAt: toIsoString(journey?.publishedAt),
+  };
+}
+
+function toJourneyUpdatePayload(journeyDraft: any) {
+  return {
+    name: journeyDraft?.name || "Untitled Journey",
+    description: journeyDraft?.description || "",
+    systemPrompt: journeyDraft?.systemPrompt || "",
+    voice: journeyDraft?.voice ?? null,
+    voiceEnabled: journeyDraft?.voiceEnabled ?? true,
+    ttsProvider: journeyDraft?.ttsProvider || "elevenlabs",
+    elevenLabsConfig: journeyDraft?.elevenLabsConfig || null,
+    agents: Array.isArray(journeyDraft?.agents) ? journeyDraft.agents : [],
+    startingAgentId: journeyDraft?.startingAgentId || "",
+    version: journeyDraft?.version || "1.0.0",
+  };
+}
 
 // NOTE: Public preview endpoint /preview/:id is registered in server/index.ts
 // BEFORE the authenticated journeysRouter to bypass authentication.
@@ -65,6 +115,234 @@ router.get("/:id", isAuthenticated, async (req: Request, res: Response) => {
   } catch (error) {
     journeyLogger.error("Error loading journey:", error);
     return apiResponse.serverError(res, "Failed to load journey");
+  }
+});
+
+router.post("/:id/ai/proposals", isAdmin, async (req: Request, res: Response) => {
+  try {
+    const journeyId = String(req.params.id);
+    const journey = await storage.getJourney(journeyId);
+
+    if (!journey) {
+      return apiResponse.notFound(res, "Journey");
+    }
+
+    const requestText = typeof req.body?.request === "string" ? req.body.request.trim() : "";
+    if (!requestText) {
+      return apiResponse.validationError(res, "request is required and must be a non-empty string");
+    }
+
+    const rawScope = typeof req.body?.scope === "string" ? req.body.scope.trim() : "journey";
+    if (!AI_PROPOSAL_SCOPES.has(rawScope as JourneyAiProposalScope)) {
+      return apiResponse.validationError(
+        res,
+        "scope must be one of: journey, agent, screens"
+      );
+    }
+    const scope = rawScope as JourneyAiProposalScope;
+
+    const agentId =
+      typeof req.body?.agentId === "string" && req.body.agentId.trim()
+        ? req.body.agentId.trim()
+        : undefined;
+    const screenIds =
+      Array.isArray(req.body?.screenIds) && req.body.screenIds.length > 0
+        ? req.body.screenIds
+            .map((id: unknown) => (typeof id === "string" ? id.trim() : ""))
+            .filter((id: string) => Boolean(id))
+        : undefined;
+    const feedback =
+      typeof req.body?.feedback === "string" && req.body.feedback.trim()
+        ? req.body.feedback.trim()
+        : undefined;
+
+    if ((scope === "agent" || scope === "screens") && !agentId) {
+      return apiResponse.validationError(
+        res,
+        "agentId is required when scope is agent or screens"
+      );
+    }
+
+    const journeyAgents = Array.isArray(journey.agents) ? (journey.agents as any[]) : [];
+    const targetAgent = agentId
+      ? journeyAgents.find((agent) => agent?.id === agentId)
+      : undefined;
+
+    if (agentId && !targetAgent) {
+      return apiResponse.validationError(res, `agentId "${agentId}" was not found in this journey`);
+    }
+
+    if (scope === "screens" && screenIds && screenIds.length > 0) {
+      const targetScreens = Array.isArray(targetAgent?.screens) ? targetAgent.screens : [];
+      const availableScreenIds = new Set(
+        targetScreens
+          .map((screen: any) => (typeof screen?.id === "string" ? screen.id.trim() : ""))
+          .filter(Boolean)
+      );
+      const unknownScreenIds = screenIds.filter((screenId: string) => !availableScreenIds.has(screenId));
+      if (unknownScreenIds.length > 0) {
+        return apiResponse.validationError(
+          res,
+          `Unknown screenIds for agent "${agentId}": ${unknownScreenIds.join(", ")}`
+        );
+      }
+    }
+
+    const proposalId = uuidv4();
+    const proposal = await generateJourneyAiProposal({
+      request: requestText,
+      scope,
+      agentId,
+      screenIds,
+      feedback,
+      journey: toJourneyApiShape(journey),
+    });
+
+    const normalizedDraft = toJourneyApiShape(proposal.updatedJourneyDraft);
+    const validation = validateJourneyDraft(normalizedDraft);
+    const userId = (req.user as any)?.id || "";
+    const storedProposal = journeyAiProposalStore.saveProposal({
+      proposalId,
+      journeyId,
+      createdByUserId: userId,
+      scope,
+      summary: proposal.summary,
+      changedPaths: proposal.changedPaths,
+      updatedJourneyDraft: normalizedDraft,
+    });
+
+    return apiResponse.success(res, {
+      proposalId,
+      scope,
+      summary: proposal.summary,
+      changedPaths: proposal.changedPaths,
+      validation: {
+        errors: validation.errors,
+        warnings: validation.warnings,
+      },
+      isReadyToApply: validation.isValid,
+      updatedJourneyDraft: normalizedDraft,
+      createdAt: storedProposal.createdAt,
+      expiresAt: storedProposal.expiresAt,
+    });
+  } catch (error) {
+    journeyLogger.error("Error generating AI proposal:", error);
+    return apiResponse.serverError(
+      res,
+      "Failed to generate AI proposal",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+});
+
+router.post("/:id/ai/proposals/:proposalId/apply", isAdmin, async (req: Request, res: Response) => {
+  try {
+    const journeyId = String(req.params.id);
+    const proposalId = String(req.params.proposalId);
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return apiResponse.unauthorized(res);
+    }
+
+    const journey = await storage.getJourney(journeyId);
+    if (!journey) {
+      return apiResponse.notFound(res, "Journey");
+    }
+
+    const proposal = journeyAiProposalStore.getProposal(proposalId);
+    if (!proposal) {
+      return apiResponse.notFound(res, "AI proposal");
+    }
+
+    if (proposal.journeyId !== journeyId) {
+      return apiResponse.validationError(
+        res,
+        `Proposal "${proposal.proposalId}" does not belong to journey "${journeyId}"`
+      );
+    }
+
+    if (proposal.createdByUserId && proposal.createdByUserId !== userId) {
+      return apiResponse.forbidden(res, "This AI proposal was created by a different admin user");
+    }
+
+    if (proposal.appliedAt) {
+      return apiResponse.validationError(
+        res,
+        `Proposal "${proposal.proposalId}" has already been applied`
+      );
+    }
+
+    const validation = validateJourneyDraft(proposal.updatedJourneyDraft);
+    if (!validation.isValid) {
+      return apiResponse.validationError(res, "AI proposal failed validation checks", {
+        errors: validation.errors,
+        warnings: validation.warnings,
+      });
+    }
+
+    const normalizedDraft = toJourneyApiShape(proposal.updatedJourneyDraft);
+    const updates = toJourneyUpdatePayload(normalizedDraft);
+    const requestedChangeNotes =
+      typeof req.body?.changeNotes === "string" ? req.body.changeNotes.trim() : "";
+    const changeNotes =
+      requestedChangeNotes || `AI: ${proposal.summary || "Applied AI proposal"}`;
+
+    const updated = await storage.updateJourney(journeyId, updates, userId, changeNotes);
+    if (!updated) {
+      return apiResponse.serverError(res, "Failed to apply AI proposal");
+    }
+
+    // If journey is published, also update Object Storage
+    if (updated.publishedAt) {
+      try {
+        await publishedFlowStorage.savePublishedFlow({
+          id: updated.id,
+          journeyId: updated.id,
+          name: updated.name,
+          description: updated.description || "",
+          systemPrompt: updated.systemPrompt,
+          voice: updated.voice,
+          voiceEnabled: updated.voiceEnabled ?? true,
+          ttsProvider: (updated as any).ttsProvider || "elevenlabs",
+          elevenLabsConfig: updated.elevenLabsConfig as { agentId?: string; voiceId?: string } | null,
+          agents: updated.agents as any[],
+          startingAgentId: updated.startingAgentId,
+          version: updated.version,
+          publishedAt: updated.publishedAt.toISOString(),
+          publishedByUserId: userId,
+        });
+        journeyLogger.info(`Updated published journey ${updated.name} after applying AI proposal`);
+      } catch (storageError) {
+        journeyLogger.error(
+          "Failed to update Object Storage for published journey after AI apply:",
+          storageError
+        );
+        return apiResponse.serverError(
+          res,
+          "Applied draft changes but failed to sync published flow to production storage"
+        );
+      }
+    }
+
+    const markedProposal = journeyAiProposalStore.markApplied(proposal.proposalId);
+
+    return apiResponse.success(res, {
+      proposalId: proposal.proposalId,
+      appliedAt: markedProposal?.appliedAt || new Date().toISOString(),
+      changeNotes,
+      validation: {
+        errors: validation.errors,
+        warnings: validation.warnings,
+      },
+      journey: toJourneyApiShape(updated),
+    });
+  } catch (error) {
+    journeyLogger.error("Error applying AI proposal:", error);
+    return apiResponse.serverError(
+      res,
+      "Failed to apply AI proposal",
+      error instanceof Error ? error.message : String(error)
+    );
   }
 });
 
@@ -172,8 +450,8 @@ router.put("/:id", isAdmin, async (req: Request, res: Response) => {
         });
         journeyLogger.info(`Updated published journey ${updated.name} in Object Storage`);
       } catch (storageError) {
-        journeyLogger.warn("Failed to update Object Storage:", storageError);
-        // Continue anyway - database update succeeded
+        journeyLogger.error("Failed to update Object Storage for published journey:", storageError);
+        return apiResponse.serverError(res, "Saved draft update but failed to sync published flow to production storage");
       }
     }
 
@@ -330,17 +608,18 @@ router.delete("/:id", isAdmin, async (req: Request, res: Response) => {
       return apiResponse.notFound(res, "Journey");
     }
 
+    // If published, delete production artifact first to avoid DB/Object Storage drift
+    if (journey.isPublished || journey.publishedAt) {
+      const deletedFromStorage = await publishedFlowStorage.deletePublishedFlow(req.params.id);
+      if (!deletedFromStorage) {
+        journeyLogger.error(`Failed to delete published flow for ${journey.name} from Object Storage`);
+        return apiResponse.serverError(res, "Failed to delete published flow from production storage");
+      }
+      journeyLogger.info(`Deleted journey ${journey.name} from Object Storage`);
+    }
+
     // Admins can delete any journey
     await storage.deleteJourney(req.params.id);
-
-    // Also remove from Object Storage (production) if it was published
-    try {
-      await publishedFlowStorage.deletePublishedFlow(req.params.id);
-      journeyLogger.info(`Deleted journey ${journey.name} from Object Storage`);
-    } catch (storageError) {
-      journeyLogger.warn("Failed to remove from Object Storage:", storageError);
-      // Continue anyway - local delete still succeeded
-    }
 
     return apiResponse.success(res, { deleted: true });
   } catch (error) {
@@ -390,8 +669,14 @@ router.post("/:id/publish", isAdmin, async (req: Request, res: Response) => {
       });
       journeyLogger.info(`Published journey ${journey.name} to Object Storage for production`);
     } catch (storageError) {
-      journeyLogger.warn("Failed to save to Object Storage:", storageError);
-      // Continue anyway - local publish still succeeded
+      journeyLogger.error("Failed to save to Object Storage during publish:", storageError);
+      // Roll back local published state if production snapshot failed
+      try {
+        await storage.unpublishJourney(req.params.id);
+      } catch (rollbackError) {
+        journeyLogger.error("Failed to roll back local publish state after Object Storage failure:", rollbackError);
+      }
+      return apiResponse.serverError(res, "Failed to publish journey to production storage");
     }
 
     return apiResponse.success(res, {
@@ -418,15 +703,15 @@ router.post("/:id/unpublish", isAdmin, async (req: Request, res: Response) => {
       return apiResponse.notFound(res, "Journey");
     }
 
-    await storage.unpublishJourney(req.params.id);
-
-    // Also remove from Object Storage
-    try {
-      await publishedFlowStorage.deletePublishedFlow(req.params.id);
-      journeyLogger.info(`Unpublished journey ${journey.name} from Object Storage`);
-    } catch (storageError) {
-      journeyLogger.warn("Failed to remove from Object Storage:", storageError);
+    // Remove from production storage first; if this fails, keep DB published state unchanged.
+    const deletedFromStorage = await publishedFlowStorage.deletePublishedFlow(req.params.id);
+    if (!deletedFromStorage) {
+      journeyLogger.error(`Failed to remove ${journey.name} from Object Storage during unpublish`);
+      return apiResponse.serverError(res, "Failed to unpublish from production storage");
     }
+    journeyLogger.info(`Unpublished journey ${journey.name} from Object Storage`);
+
+    await storage.unpublishJourney(req.params.id);
 
     return apiResponse.success(res, { success: true });
   } catch (error) {
@@ -452,6 +737,8 @@ router.get("/:id/published", isAuthenticated, async (req: Request, res: Response
       systemPrompt: published.systemPrompt,
       voice: published.voice,
       voiceEnabled: (published as any).voiceEnabled ?? true,
+      ttsProvider: published.ttsProvider || 'elevenlabs',
+      elevenLabsConfig: published.elevenLabsConfig,
       agents: published.agents,
       startingAgentId: published.startingAgentId,
       version: published.version,

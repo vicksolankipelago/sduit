@@ -1,4 +1,12 @@
-import { Journey, JourneyListItem, PublishedJourney } from '../../types/journey';
+import {
+  Journey,
+  JourneyAiProposalApplyRequest,
+  JourneyAiProposalApplyResponse,
+  JourneyAiProposalRequest,
+  JourneyAiProposalResponse,
+  JourneyListItem,
+  PublishedJourney,
+} from '../../types/journey';
 import { api, ApiError } from './apiClient';
 
 export async function listUserJourneys(): Promise<JourneyListItem[]> {
@@ -89,6 +97,24 @@ export async function listPublishedJourneys(): Promise<{ id: string; journeyId: 
 
 export async function getEnvironment(): Promise<{ isProduction: boolean; environment: string }> {
   return api.get('/api/journeys/environment');
+}
+
+export async function createJourneyAiProposal(
+  journeyId: string,
+  request: JourneyAiProposalRequest
+): Promise<JourneyAiProposalResponse> {
+  return api.post<JourneyAiProposalResponse>(`/api/journeys/${journeyId}/ai/proposals`, request);
+}
+
+export async function applyJourneyAiProposal(
+  journeyId: string,
+  proposalId: string,
+  request: JourneyAiProposalApplyRequest = {}
+): Promise<JourneyAiProposalApplyResponse> {
+  return api.post<JourneyAiProposalApplyResponse>(
+    `/api/journeys/${journeyId}/ai/proposals/${proposalId}/apply`,
+    request
+  );
 }
 
 // Production endpoints - fetch from Object Storage (shared between dev and prod databases)

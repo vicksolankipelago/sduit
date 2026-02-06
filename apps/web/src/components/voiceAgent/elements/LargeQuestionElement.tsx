@@ -70,6 +70,26 @@ export const LargeQuestionElement: React.FC<LargeQuestionElementProps> = ({
 }) => {
   // Check if this is a multi-select question
   const isMultiSelect = (data as any).allowsMultiSelection === true;
+
+  // Get title from either data.title or data.header.title (iOS structure)
+  const getTitle = () => {
+    if (data.title) return data.title;
+    if ((data as any).header?.title) return (data as any).header.title;
+    return '';
+  };
+
+  const emitUiResponse = (text: string, metadata: Record<string, any>) => {
+    if (typeof window === 'undefined') return;
+    const trimmed = text?.trim();
+    if (!trimmed) return;
+    window.dispatchEvent(new CustomEvent('uiUserResponse', {
+      detail: {
+        text: trimmed,
+        source: 'largeQuestion',
+        metadata,
+      },
+    }));
+  };
   
   // Single select state
   const [selectedId, setSelectedId] = useState(data.selectedOptionId);
@@ -80,18 +100,32 @@ export const LargeQuestionElement: React.FC<LargeQuestionElementProps> = ({
   );
 
   const handleSelect = (optionId: string) => {
+    const selectedOption = data.options.find(option => option.id === optionId);
+    const questionTitle = getTitle();
+
     if (isMultiSelect) {
       // Multi-select: toggle the option in the array
       setSelectedIds(prev => {
-        const newSelections = prev.includes(optionId)
-          ? prev.filter(id => id !== optionId)
-          : [...prev, optionId];
+        const wasSelected = prev.includes(optionId);
+        const newSelections = wasSelected ? prev.filter(id => id !== optionId) : [...prev, optionId];
         
         // CRITICAL: Notify parent to update screenState.selectedOptions
         // This ensures stateUpdate actions can read the selections via {$screenState.selectedOptions}
         if (onMultiSelectionChange) {
           onMultiSelectionChange(newSelections);
         }
+
+        emitUiResponse(
+          wasSelected ? `I removed ${selectedOption?.title || optionId}` : `I selected ${selectedOption?.title || optionId}`,
+          {
+            elementId: data.id,
+            question: questionTitle || undefined,
+            optionId,
+            optionTitle: selectedOption?.title || optionId,
+            isSelected: !wasSelected,
+            selectedOptions: newSelections,
+          }
+        );
         
         console.log(`📝 LargeQuestion (multi): toggled ${optionId}, selections:`, newSelections);
         return newSelections;
@@ -105,6 +139,13 @@ export const LargeQuestionElement: React.FC<LargeQuestionElementProps> = ({
       if (onSelectionChange) {
         onSelectionChange(optionId);
       }
+
+      emitUiResponse(selectedOption?.title || optionId, {
+        elementId: data.id,
+        question: questionTitle || undefined,
+        optionId,
+        optionTitle: selectedOption?.title || optionId,
+      });
     }
     
     const event = events?.find(e => e.type === 'onSelected');
@@ -129,13 +170,6 @@ export const LargeQuestionElement: React.FC<LargeQuestionElementProps> = ({
   // Helper to check if an option is selected
   const isSelected = (optionId: string): boolean => {
     return isMultiSelect ? selectedIds.includes(optionId) : selectedId === optionId;
-  };
-
-  // Get title from either data.title or data.header.title (iOS structure)
-  const getTitle = () => {
-    if (data.title) return data.title;
-    if ((data as any).header?.title) return (data as any).header.title;
-    return '';
   };
 
   return (
@@ -187,4 +221,3 @@ export const LargeQuestionElement: React.FC<LargeQuestionElementProps> = ({
 };
 
 export default LargeQuestionElement;
-

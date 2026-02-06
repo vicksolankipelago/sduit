@@ -1,0 +1,4 @@
+interface:
+  display_name: "SDUI Flow Assistant"
+  short_description: "Generate and revise SDUI flows with safe apply/rollback"
+  default_prompt: "Use $sduit-sdui-flow-assistant to create or update a complete SDUI flow with aligned screen prompts, preview checks, and rollback safety."
