@@ -211,6 +211,12 @@ export class JourneyRuntime {
     // Add end_call tool to all agents
     realtimeTools.push(this.createEndCallTool(agentName) as any);
 
+    // Add set_checkin_frequency tool - captures check-in commitment as days per week
+    realtimeTools.push(this.createSetCheckinFrequencyTool(agentName) as any);
+
+    // Add set_reminder_time tool - captures preferred reminder time in UTC
+    realtimeTools.push(this.createSetReminderTimeTool(agentName) as any);
+
     // Add setVoiceEnabled tool to all agents - enables/disables voice mode
     realtimeTools.push(this.createSetVoiceEnabledTool(agentName) as any);
 
@@ -533,6 +539,92 @@ export class JourneyRuntime {
   }
 
   /**
+   * Create the set_checkin_frequency tool for capturing check-in commitment
+   */
+  private createSetCheckinFrequencyTool(agentName: string) {
+    const runtime = this;
+
+    interface SetCheckinFrequencyParams {
+      days: number;
+    }
+
+    return (tool as any)({
+      name: 'set_checkin_frequency',
+      description: 'Save the member\'s chosen check-in frequency as an integer number of days per week. Call this after the user selects their check-in commitment (e.g., every day = 7, a few times = 4, once = 1).',
+      parameters: {
+        type: 'object' as const,
+        properties: {
+          days: {
+            type: 'number',
+            description: 'Number of days per week the member wants to check in (e.g., 7 for daily, 4 for a few times, 1 for once)',
+          },
+        },
+        required: ['days'] as const,
+        additionalProperties: false as const,
+      },
+      strict: true,
+      execute: async (input: SetCheckinFrequencyParams) => {
+        const { days } = input;
+        const daysInt = Math.round(days);
+
+        toolLogger.debug(`set_checkin_frequency called by agent ${agentName}: days=${daysInt}`);
+
+        // Store via record_input callback with dedicated storeKey
+        if (runtime.recordInputCallback) {
+          runtime.recordInputCallback('Check-in frequency', String(daysInt), `${daysInt} days per week`, 'checkinFrequency');
+        }
+
+        return `Check-in frequency saved: ${daysInt} days per week`;
+      },
+    });
+  }
+
+  /**
+   * Create the set_reminder_time tool for capturing preferred reminder time
+   */
+  private createSetReminderTimeTool(agentName: string) {
+    const runtime = this;
+
+    interface SetReminderTimeParams {
+      time: string;
+    }
+
+    return (tool as any)({
+      name: 'set_reminder_time',
+      description: 'Save the member\'s preferred daily reminder time. Pass the time the user stated (e.g., "8 PM", "9:00 AM", "20:00"). The system will convert it to UTC automatically based on the member\'s timezone.',
+      parameters: {
+        type: 'object' as const,
+        properties: {
+          time: {
+            type: 'string',
+            description: 'The time the user wants their daily reminder, as they stated it (e.g., "8 PM", "9 AM", "20:00", "morning", "evening")',
+          },
+        },
+        required: ['time'] as const,
+        additionalProperties: false as const,
+      },
+      strict: true,
+      execute: async (input: SetReminderTimeParams) => {
+        const { time } = input;
+
+        toolLogger.debug(`set_reminder_time called by agent ${agentName}: time=${time}`);
+
+        // Parse the user's stated time and convert to UTC
+        const utcTime = parseTimeToUTC(time);
+
+        toolLogger.debug(`Parsed reminder time: local="${time}" → utc="${utcTime}"`);
+
+        // Store via record_input callback with dedicated storeKey
+        if (runtime.recordInputCallback) {
+          runtime.recordInputCallback('Reminder time', utcTime, `User said: ${time}, stored as UTC: ${utcTime}`, 'reminderTime');
+        }
+
+        return `Reminder time saved: ${time} (UTC: ${utcTime})`;
+      },
+    });
+  }
+
+  /**
    * Create the setVoiceEnabled tool for enabling/disabling voice mode
    */
   private createSetVoiceEnabledTool(agentName: string) {
@@ -678,6 +770,64 @@ function toCamelCase(str: string): string {
   return str
     .replace(/[^a-zA-Z0-9]+(.)/g, (_, char) => char.toUpperCase())
     .replace(/^(.)/, char => char.toLowerCase());
+}
+
+/**
+ * Helper: Parse a user-spoken time string into UTC HH:MM format
+ * Uses the browser's local timezone to convert.
+ * Examples: "8 PM" → "20:00" (in UTC, adjusted for timezone)
+ *           "9 AM" → "09:00" (in UTC, adjusted for timezone)
+ *           "20:00" → already 24h, converts to UTC
+ *           "morning" → "09:00" (default), "evening" → "18:00" (default)
+ */
+function parseTimeToUTC(timeStr: string): string {
+  const normalized = timeStr.trim().toLowerCase();
+
+  // Handle vague time words
+  const vagueMap: Record<string, [number, number]> = {
+    'morning': [9, 0],
+    'afternoon': [14, 0],
+    'evening': [18, 0],
+    'night': [21, 0],
+    'noon': [12, 0],
+    'midday': [12, 0],
+    'midnight': [0, 0],
+  };
+
+  let localHours: number;
+  let localMinutes: number;
+
+  if (vagueMap[normalized]) {
+    [localHours, localMinutes] = vagueMap[normalized];
+  } else {
+    // Try to parse time patterns: "8 PM", "8:30 PM", "8pm", "20:00", "8:00", "8 p.m."
+    const timePattern = /(\d{1,2})(?::(\d{2}))?\s*([ap]\.?m\.?)?/i;
+    const match = normalized.match(timePattern);
+
+    if (!match) {
+      // Can't parse - store as-is and let the backend handle it
+      return timeStr;
+    }
+
+    localHours = parseInt(match[1], 10);
+    localMinutes = match[2] ? parseInt(match[2], 10) : 0;
+    const period = match[3]?.replace(/\./g, '').toLowerCase();
+
+    // Convert 12h to 24h format
+    if (period === 'pm' && localHours < 12) {
+      localHours += 12;
+    } else if (period === 'am' && localHours === 12) {
+      localHours = 0;
+    }
+  }
+
+  // Create a Date object set to today at the local time, then extract UTC hours/minutes
+  const now = new Date();
+  const localDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), localHours, localMinutes, 0);
+  const utcHours = localDate.getUTCHours();
+  const utcMinutes = localDate.getUTCMinutes();
+
+  return `${String(utcHours).padStart(2, '0')}:${String(utcMinutes).padStart(2, '0')}`;
 }
 
 /**

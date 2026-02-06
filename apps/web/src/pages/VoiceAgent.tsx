@@ -86,6 +86,35 @@ const QUIZ_OPTION_LABELS: Record<string, string> = {
   'diet_nutrition': 'diet and nutrition',
 };
 
+// Parse a user-spoken time string into UTC HH:MM format using browser timezone
+function parseLocalTimeToUTC(timeStr: string): string {
+  const normalized = timeStr.trim().toLowerCase();
+
+  const vagueMap: Record<string, [number, number]> = {
+    'morning': [9, 0], 'afternoon': [14, 0], 'evening': [18, 0],
+    'night': [21, 0], 'noon': [12, 0], 'midday': [12, 0], 'midnight': [0, 0],
+  };
+
+  let localHours: number;
+  let localMinutes: number;
+
+  if (vagueMap[normalized]) {
+    [localHours, localMinutes] = vagueMap[normalized];
+  } else {
+    const match = normalized.match(/(\d{1,2})(?::(\d{2}))?\s*([ap]\.?m\.?)?/i);
+    if (!match) return timeStr;
+    localHours = parseInt(match[1], 10);
+    localMinutes = match[2] ? parseInt(match[2], 10) : 0;
+    const period = match[3]?.replace(/\./g, '').toLowerCase();
+    if (period === 'pm' && localHours < 12) localHours += 12;
+    else if (period === 'am' && localHours === 12) localHours = 0;
+  }
+
+  const now = new Date();
+  const localDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), localHours, localMinutes, 0);
+  return `${String(localDate.getUTCHours()).padStart(2, '0')}:${String(localDate.getUTCMinutes()).padStart(2, '0')}`;
+}
+
 // Transform quiz module state option IDs to readable labels
 // Handles both single-select strings and multi-select arrays/JSON strings
 function transformQuizAnswersToLabels(moduleState: Record<string, any>): Record<string, any> {
@@ -2258,6 +2287,43 @@ Important guidelines:
       // Use ref to call the actual disconnect function (avoids circular dependency)
       setTimeout(() => disconnectFromRealtimeRef.current?.(true), delayMs);
       return 'Call ending';
+    },
+
+    // Save check-in frequency as integer days per week
+    set_checkin_frequency: async (params: { days: number }) => {
+      const days = Math.round(Number(params.days));
+      addLog('tool', `📊 set_checkin_frequency: ${days} days/week`);
+
+      // Dispatch event for ScreenProvider
+      window.dispatchEvent(new CustomEvent('recordInput', {
+        detail: { title: 'Check-in frequency', summary: String(days), description: `${days} days per week`, storeKey: 'checkinFrequency', timestamp: Date.now() }
+      }));
+
+      // Update module state directly
+      if (updateModuleState) {
+        updateModuleState({ checkinFrequency: String(days) });
+      }
+
+      return `Check-in frequency saved: ${days} days per week`;
+    },
+
+    // Save preferred reminder time (converts to UTC)
+    set_reminder_time: async (params: { time: string }) => {
+      const userTime = params.time;
+      const utcTime = parseLocalTimeToUTC(userTime);
+      addLog('tool', `⏰ set_reminder_time: "${userTime}" → UTC "${utcTime}"`);
+
+      // Dispatch event for ScreenProvider
+      window.dispatchEvent(new CustomEvent('recordInput', {
+        detail: { title: 'Reminder time', summary: utcTime, description: `User said: ${userTime}, UTC: ${utcTime}`, storeKey: 'reminderTime', timestamp: Date.now() }
+      }));
+
+      // Update module state directly
+      if (updateModuleState) {
+        updateModuleState({ reminderTime: utcTime });
+      }
+
+      return `Reminder time saved: ${userTime} (UTC: ${utcTime})`;
     },
 
     // Navigate to a specific screen

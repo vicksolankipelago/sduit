@@ -422,6 +422,45 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                   // Tell Azure to continue the response
                   dataChannel.send(JSON.stringify({ type: 'response.create' }));
                 }
+                // Execute set_checkin_frequency tool for saving check-in days
+                else if (name === 'set_checkin_frequency' && args.days !== undefined) {
+                  const days = Math.round(Number(args.days));
+                  voiceAgentLogger.debug(`Setting check-in frequency: ${days} days/week`);
+                  
+                  // Dispatch as recordInput event so ScreenContext picks it up
+                  window.dispatchEvent(new CustomEvent('recordInput', {
+                    detail: { title: 'Check-in frequency', summary: String(days), description: `${days} days per week`, storeKey: 'checkinFrequency', timestamp: Date.now() }
+                  }));
+                  
+                  const result = `Check-in frequency saved: ${days} days per week`;
+                  callbacks.onToolCall?.(name, args, result);
+                  
+                  dataChannel.send(JSON.stringify({
+                    type: 'conversation.item.create',
+                    item: { type: 'function_call_output', call_id, output: JSON.stringify({ success: true, message: result }) }
+                  }));
+                  dataChannel.send(JSON.stringify({ type: 'response.create' }));
+                }
+                // Execute set_reminder_time tool for saving preferred reminder time in UTC
+                else if (name === 'set_reminder_time' && args.time) {
+                  const userTime = args.time as string;
+                  const utcTime = parseLocalTimeToUTC(userTime);
+                  voiceAgentLogger.debug(`Setting reminder time: "${userTime}" → UTC "${utcTime}"`);
+                  
+                  // Dispatch as recordInput event so ScreenContext picks it up
+                  window.dispatchEvent(new CustomEvent('recordInput', {
+                    detail: { title: 'Reminder time', summary: utcTime, description: `User said: ${userTime}, UTC: ${utcTime}`, storeKey: 'reminderTime', timestamp: Date.now() }
+                  }));
+                  
+                  const result = `Reminder time saved: ${userTime} (UTC: ${utcTime})`;
+                  callbacks.onToolCall?.(name, args, result);
+                  
+                  dataChannel.send(JSON.stringify({
+                    type: 'conversation.item.create',
+                    item: { type: 'function_call_output', call_id, output: JSON.stringify({ success: true, message: result }) }
+                  }));
+                  dataChannel.send(JSON.stringify({ type: 'response.create' }));
+                }
                 // Execute end_call system tool for ending the session
                 else if (name === 'end_call') {
                   const { reason } = args;
@@ -854,5 +893,49 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
     sendMessage,
     setMicMuted,
   };
+}
+
+/**
+ * Parse a user-spoken time string into UTC HH:MM format.
+ * Uses the browser's local timezone for conversion.
+ */
+function parseLocalTimeToUTC(timeStr: string): string {
+  const normalized = timeStr.trim().toLowerCase();
+
+  const vagueMap: Record<string, [number, number]> = {
+    'morning': [9, 0],
+    'afternoon': [14, 0],
+    'evening': [18, 0],
+    'night': [21, 0],
+    'noon': [12, 0],
+    'midday': [12, 0],
+    'midnight': [0, 0],
+  };
+
+  let localHours: number;
+  let localMinutes: number;
+
+  if (vagueMap[normalized]) {
+    [localHours, localMinutes] = vagueMap[normalized];
+  } else {
+    const timePattern = /(\d{1,2})(?::(\d{2}))?\s*([ap]\.?m\.?)?/i;
+    const match = normalized.match(timePattern);
+
+    if (!match) return timeStr; // Can't parse - return as-is
+
+    localHours = parseInt(match[1], 10);
+    localMinutes = match[2] ? parseInt(match[2], 10) : 0;
+    const period = match[3]?.replace(/\./g, '').toLowerCase();
+
+    if (period === 'pm' && localHours < 12) localHours += 12;
+    else if (period === 'am' && localHours === 12) localHours = 0;
+  }
+
+  const now = new Date();
+  const localDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), localHours, localMinutes, 0);
+  const utcHours = localDate.getUTCHours();
+  const utcMinutes = localDate.getUTCMinutes();
+
+  return `${String(utcHours).padStart(2, '0')}:${String(utcMinutes).padStart(2, '0')}`;
 }
 
