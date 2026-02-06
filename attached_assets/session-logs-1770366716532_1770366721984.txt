@@ -1,0 +1,27 @@
+[08:31:33.609] INFO: Initiating connection with journey: Selim Non-Linear Intake
+
+[08:31:33.609] INFO: Starting agent: newAgent
+
+[08:31:33.609] INFO: 📝 Added 8 quiz answer(s) to prompt context
+
+[08:31:33.609] INFO: 📋 Agent configuration prepared (19721 chars)
+
+[08:31:33.609] INFO: 🎵 Using voice: pNInz6obpgDQGcFmaJgB
+
+[08:31:33.609] INFO: 👥 Journey has 1 agent(s) configured
+
+[08:31:33.609] INFO: 🎙️ Initiating ElevenLabs connection...
+
+[08:31:33.609] INFO: 🔗 Passing 8 dynamic variable(s) to ElevenLabs
+
+[08:31:33.610] INFO: [08:31:33] Connecting to ElevenLabs...
+
+[08:31:37.430] SUCCESS: [08:31:37] Connected to ElevenLabs
+
+[08:31:37.430] SUCCESS: Successfully initiated ElevenLabs connection
+
+[08:31:38.252] INFO: Assistant: Hey! Welcome to Pelago - I'm Navi, and I'm really glad you're here.
+
+[08:31:46.497] INFO: User: Hey.
+
+[08:31:47.328] INFO: Assistant: Hi Vick, welcome to Pelago. It's great to have you onboard. I'm Navi, I'm here to help navigate your journey with us. First, we'll go through some quick questions to get to know each other and then work together to setup a plan. Are you ready to start?
