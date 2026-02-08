@@ -2388,10 +2388,23 @@ Important guidelines:
     },
     onToolCall: (toolName, args, result) => {
       // Check if result contains an internal error (for session log display only)
-      const isError = typeof result === 'string' && result.includes('[INTERNAL ERROR:');
+      const resultObject = result && typeof result === 'object' && !Array.isArray(result)
+        ? result as Record<string, unknown>
+        : null;
+      const isError =
+        (typeof result === 'string' && result.includes('[INTERNAL ERROR:')) ||
+        (resultObject?.saved === false) ||
+        (resultObject?.error === true);
       const logType = isError ? 'error' : 'tool';
       
       addLog(logType, `Tool executed: ${toolName}`, { args, result });
+      logServerEvent({
+        type: 'client_tool_call',
+        tool_name: toolName,
+        parameters: args || {},
+        result: resultObject || result,
+        is_error: isError,
+      });
       
       // Handle record_input tool specifically - update screen state
       if (toolName === 'record_input' && args.title) {
@@ -2746,32 +2759,153 @@ Important guidelines:
     // Stores:
     //   goalTitles  – string[] for the checklistCard element (matches {$moduleData.goalTitles})
     //   memberGoals – full goal objects for backend/analytics
-    set_goals: async (params: { goals?: any[] | string }) => {
-      const rawGoals = params?.goals;
+    set_goals: async (params: { goals?: any[] | string } | any[] | string) => {
+      const parseJsonIfPossible = (value: unknown): unknown => {
+        if (typeof value !== 'string') return value;
+        const trimmed = value.trim();
+        if (!trimmed) return value;
+        try {
+          return JSON.parse(trimmed);
+        } catch {
+          return value;
+        }
+      };
 
-      // Normalise into structured goal objects
+      const toPreview = (value: unknown): string => {
+        try {
+          if (typeof value === 'string') return value.slice(0, 200);
+          return JSON.stringify(value).slice(0, 200);
+        } catch {
+          return String(value).slice(0, 200);
+        }
+      };
+
+      const normalizeCategories = (value: unknown): string[] => {
+        const allowed = new Set([
+          'health',
+          'relationships',
+          'emotional_wellbeing',
+          'financial',
+          'habits',
+          'personal_growth',
+          'mindfulness',
+          'other',
+        ]);
+
+        const candidates = Array.isArray(value)
+          ? value
+          : typeof value === 'string'
+            ? (() => {
+                const parsed = parseJsonIfPossible(value);
+                if (Array.isArray(parsed)) return parsed;
+                return value.split(/[;,|]/);
+              })()
+            : [];
+
+        const normalized: string[] = [];
+        for (const entry of candidates) {
+          if (typeof entry !== 'string') continue;
+          const raw = entry.trim().toLowerCase();
+          if (!raw) continue;
+          const category = raw.replace(/\s+/g, '_');
+          normalized.push(allowed.has(category) ? category : 'other');
+        }
+        return Array.from(new Set(normalized));
+      };
+
+      const normalizeGoalText = (value: unknown): string => {
+        if (typeof value === 'string') return value.trim();
+        if (!value || typeof value !== 'object') return '';
+
+        const record = value as Record<string, unknown>;
+        const nested =
+          record.value ??
+          record.text ??
+          record.label ??
+          record.goal;
+        return typeof nested === 'string' ? nested.trim() : '';
+      };
+
+      const normalizeGoalsInput = (value: unknown): unknown => {
+        let parsed = parseJsonIfPossible(value);
+        if (!parsed || typeof parsed !== 'object') return parsed;
+        if (Array.isArray(parsed)) return parsed;
+
+        const record = parsed as Record<string, unknown>;
+        if ('goals' in record) {
+          return parseJsonIfPossible(record.goals);
+        }
+
+        // Accept objects keyed by numeric indices: {"0": {...}, "1": {...}}
+        const keys = Object.keys(record);
+        if (keys.length > 0 && keys.every((key) => /^\d+$/.test(key))) {
+          return keys
+            .sort((a, b) => Number(a) - Number(b))
+            .map((key) => record[key]);
+        }
+
+        return parsed;
+      };
+
+      // Normalise into structured goal objects.
       interface GoalObject { goal: string; categories: string[]; progress: number; }
       const goalObjects: GoalObject[] = [];
 
-      if (Array.isArray(rawGoals)) {
-        for (const item of rawGoals) {
-          if (typeof item === 'object' && item !== null && typeof item.goal === 'string') {
-            // Structured format: { goal, categories, progress }
-            goalObjects.push({
-              goal: item.goal.trim(),
-              categories: Array.isArray(item.categories) ? item.categories : [],
-              progress: typeof item.progress === 'number' ? item.progress : 0,
-            });
-          } else if (typeof item === 'string' && item.trim()) {
-            // Legacy string format
-            goalObjects.push({ goal: item.trim(), categories: [], progress: 0 });
-          }
+      const pushGoalObject = (item: unknown) => {
+        if (typeof item === 'string' && item.trim()) {
+          goalObjects.push({ goal: item.trim(), categories: [], progress: 0 });
+          return;
         }
-      } else if (typeof rawGoals === 'string' && rawGoals.trim()) {
-        // Single string or delimited list
-        rawGoals.split(/[;,]/).filter(Boolean).forEach(g => {
-          goalObjects.push({ goal: g.trim(), categories: [], progress: 0 });
+        if (!item || typeof item !== 'object') return;
+
+        const record = item as Record<string, unknown>;
+        const goalText = normalizeGoalText(
+          record.goal ?? record.title ?? record.name ?? record.outcome ?? record.text
+        );
+        if (!goalText) return;
+
+        const progressValue =
+          typeof record.progress === 'number'
+            ? record.progress
+            : typeof record.progress === 'string'
+              ? Number(record.progress)
+              : 0;
+        const progress = Number.isFinite(progressValue)
+          ? Math.max(0, Math.min(100, Math.round(progressValue)))
+          : 0;
+
+        goalObjects.push({
+          goal: goalText,
+          categories: normalizeCategories(record.categories),
+          progress,
         });
+      };
+
+      let rawGoals: unknown = normalizeGoalsInput(params);
+      if (
+        rawGoals &&
+        typeof rawGoals === 'object' &&
+        !Array.isArray(rawGoals) &&
+        'goals' in (rawGoals as Record<string, unknown>)
+      ) {
+        rawGoals = normalizeGoalsInput((rawGoals as Record<string, unknown>).goals);
+      }
+
+      if (Array.isArray(rawGoals)) {
+        rawGoals.forEach(pushGoalObject);
+      } else if (typeof rawGoals === 'string' && rawGoals.trim()) {
+        const parsed = normalizeGoalsInput(rawGoals);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(pushGoalObject);
+        } else {
+          rawGoals
+            .split(/[;\n]/)
+            .map((goal) => goal.trim())
+            .filter(Boolean)
+            .forEach((goal) => pushGoalObject(goal));
+        }
+      } else {
+        pushGoalObject(rawGoals);
       }
 
       // Deduplicate by goal text (case-insensitive)
@@ -2784,11 +2918,13 @@ Important guidelines:
       });
 
       if (uniqueGoals.length === 0) {
-        addLog('warning', '⚠️ set_goals called without usable goals');
+        addLog('warning', '⚠️ set_goals called without usable goals', {
+          paramsPreview: toPreview(params),
+        });
         return {
           saved: false,
           goals: [],
-          message: 'No goals were saved. Provide goals as an array of goal objects.',
+          message: 'No goals were saved. Provide goals as an array, JSON array string, or { goals: [...] }.',
         };
       }
 
@@ -2826,14 +2962,54 @@ Important guidelines:
     // Capture the member's weekly focus and optionally link it to a goal.
     // Stores weeklyFocus, weeklyFocusGoal, and weeklyFocusCaption in module state.
     // The quoteCard element reads these via {$moduleData.weeklyFocus} and {$moduleData.weeklyFocusCaption}.
-    capture_weekly_focus: async (params: { focus?: string; relatedGoal?: string }) => {
-      const focus = params?.focus?.trim();
+    capture_weekly_focus: async (params: { focus?: string; relatedGoal?: string } | string) => {
+      const parseJsonIfPossible = (value: unknown): unknown => {
+        if (typeof value !== 'string') return value;
+        const trimmed = value.trim();
+        if (!trimmed) return value;
+        try {
+          return JSON.parse(trimmed);
+        } catch {
+          return value;
+        }
+      };
+
+      const toPreview = (value: unknown): string => {
+        try {
+          if (typeof value === 'string') return value.slice(0, 200);
+          return JSON.stringify(value).slice(0, 200);
+        } catch {
+          return String(value).slice(0, 200);
+        }
+      };
+
+      let payload: unknown = parseJsonIfPossible(params);
+      if (typeof payload === 'string') {
+        payload = { focus: payload };
+      }
+
+      const payloadObject = (payload && typeof payload === 'object' && !Array.isArray(payload))
+        ? payload as Record<string, unknown>
+        : {};
+
+      const focus =
+        (typeof payloadObject.focus === 'string' ? payloadObject.focus : '')
+          .trim() ||
+        (typeof payloadObject.weeklyFocus === 'string' ? payloadObject.weeklyFocus : '')
+          .trim();
       if (!focus) {
-        addLog('warning', '⚠️ capture_weekly_focus called without focus text');
+        addLog('warning', '⚠️ capture_weekly_focus called without focus text', {
+          paramsPreview: toPreview(params),
+        });
         return { saved: false, message: 'No focus text provided.' };
       }
 
-      const relatedGoal = params.relatedGoal?.trim() || null;
+      const relatedGoal =
+        (typeof payloadObject.relatedGoal === 'string' ? payloadObject.relatedGoal : '')
+          .trim() ||
+        (typeof payloadObject.related_goal === 'string' ? payloadObject.related_goal : '')
+          .trim() ||
+        null;
 
       // Generate date caption
       const now = new Date();
