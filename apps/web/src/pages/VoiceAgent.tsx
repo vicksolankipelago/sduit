@@ -2590,51 +2590,127 @@ Important guidelines:
       };
     },
 
-    // Save structured goals as an explicit array
-    set_goals: async (params: { goals?: string[] | string }) => {
+    // Save structured goals with categories and progress tracking.
+    // Accepts either the new structured format (array of {goal, categories, progress} objects)
+    // or legacy format (array of strings) for backward compatibility.
+    // Stores:
+    //   goalTitles  – string[] for the checklistCard element (matches {$moduleData.goalTitles})
+    //   memberGoals – full goal objects for backend/analytics
+    set_goals: async (params: { goals?: any[] | string }) => {
       const rawGoals = params?.goals;
-      const goalsInput = Array.isArray(rawGoals)
-        ? rawGoals
-        : typeof rawGoals === 'string'
-          ? rawGoals.split(/[;,]/)
-          : [];
 
-      const goals = goalsInput
-        .map(goal => (typeof goal === 'string' ? goal.trim() : ''))
-        .filter(Boolean)
-        .filter((goal, index, arr) => arr.findIndex(g => g.toLowerCase() === goal.toLowerCase()) === index);
+      // Normalise into structured goal objects
+      interface GoalObject { goal: string; categories: string[]; progress: number; }
+      const goalObjects: GoalObject[] = [];
 
-      if (goals.length === 0) {
+      if (Array.isArray(rawGoals)) {
+        for (const item of rawGoals) {
+          if (typeof item === 'object' && item !== null && typeof item.goal === 'string') {
+            // Structured format: { goal, categories, progress }
+            goalObjects.push({
+              goal: item.goal.trim(),
+              categories: Array.isArray(item.categories) ? item.categories : [],
+              progress: typeof item.progress === 'number' ? item.progress : 0,
+            });
+          } else if (typeof item === 'string' && item.trim()) {
+            // Legacy string format
+            goalObjects.push({ goal: item.trim(), categories: [], progress: 0 });
+          }
+        }
+      } else if (typeof rawGoals === 'string' && rawGoals.trim()) {
+        // Single string or delimited list
+        rawGoals.split(/[;,]/).filter(Boolean).forEach(g => {
+          goalObjects.push({ goal: g.trim(), categories: [], progress: 0 });
+        });
+      }
+
+      // Deduplicate by goal text (case-insensitive)
+      const seen = new Set<string>();
+      const uniqueGoals = goalObjects.filter(g => {
+        const key = g.goal.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      if (uniqueGoals.length === 0) {
         addLog('warning', '⚠️ set_goals called without usable goals');
         return {
           saved: false,
           goals: [],
-          message: 'No goals were saved. Provide goals as an array of strings.',
+          message: 'No goals were saved. Provide goals as an array of goal objects.',
         };
       }
 
-      addLog('tool', `🎯 set_goals: ${goals.join(' | ')}`);
+      const goalTitles = uniqueGoals.map(g => g.goal);
+      addLog('tool', `🎯 set_goals: ${goalTitles.join(' | ')}`);
 
+      // Dispatch recordInput for logging/persistence
       window.dispatchEvent(new CustomEvent('recordInput', {
         detail: {
           title: 'Goals',
-          summary: goals.join('; '),
-          description: `Captured ${goals.length} goal(s)`,
+          summary: goalTitles.join('; '),
+          description: `Captured ${uniqueGoals.length} goal(s)`,
           storeKey: 'goals',
           timestamp: Date.now(),
         }
       }));
 
+      // Store both goalTitles (string[] for checklistCard) and memberGoals (full objects)
+      // in module state — matches iOS stateManager.updateModuleState pattern
       if (updateModuleState) {
         updateModuleState({
-          goals,
+          goalTitles,
+          memberGoals: uniqueGoals,
         });
       }
 
       return {
         saved: true,
-        goals,
-        message: `Saved ${goals.length} goal(s).`,
+        goals: uniqueGoals,
+        goalTitles,
+        message: `Saved ${uniqueGoals.length} goal(s).`,
+      };
+    },
+
+    // Capture the member's weekly focus and optionally link it to a goal.
+    // Stores weeklyFocus, weeklyFocusGoal, and weeklyFocusCaption in module state.
+    // The quoteCard element reads these via {$moduleData.weeklyFocus} and {$moduleData.weeklyFocusCaption}.
+    capture_weekly_focus: async (params: { focus?: string; relatedGoal?: string }) => {
+      const focus = params?.focus?.trim();
+      if (!focus) {
+        addLog('warning', '⚠️ capture_weekly_focus called without focus text');
+        return { saved: false, message: 'No focus text provided.' };
+      }
+
+      const relatedGoal = params.relatedGoal?.trim() || null;
+
+      // Generate date caption
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+      const caption = `– My focus set on ${dateStr}`;
+
+      addLog('tool', `🎯 capture_weekly_focus: "${focus}"${relatedGoal ? ` (goal: ${relatedGoal})` : ''}`);
+
+      // Store in module state — matches iOS stateManager.updateModuleState pattern
+      const stateUpdates: Record<string, any> = {
+        weeklyFocus: `\u201C${focus}\u201D`,
+        weeklyFocusCaption: caption,
+      };
+      if (relatedGoal) {
+        stateUpdates.weeklyFocusGoal = relatedGoal;
+      }
+
+      if (updateModuleState) {
+        updateModuleState(stateUpdates);
+      }
+
+      return {
+        saved: true,
+        weeklyFocus: focus,
+        weeklyFocusCaption: caption,
+        ...(relatedGoal ? { weeklyFocusGoal: relatedGoal } : {}),
+        message: `Weekly focus saved: "${focus}"`,
       };
     },
 

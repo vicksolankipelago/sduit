@@ -114,8 +114,55 @@ interface RawAgent {
 }
 
 // ============================================================================
+// Constants
+// ============================================================================
+
+/**
+ * Base URL prefix for navigation deeplinks.
+ * iOS expects full deeplink URLs (e.g., "https://links.pelagohealth.com/onboarding/about-you")
+ * while the journey builder uses plain screen IDs (e.g., "about-you").
+ * This prefix is prepended to plain screen IDs during normalization.
+ */
+const DEEPLINK_BASE_URL = "https://links.pelagohealth.com/onboarding/";
+
+// ============================================================================
 // Normalization Functions
 // ============================================================================
+
+/**
+ * Normalize a navigation deeplink to a full URL.
+ * If the deeplink is already a full URL (starts with http/https), it is returned as-is.
+ * Otherwise, the base URL prefix is prepended.
+ */
+function normalizeDeeplink(deeplink: string): string {
+  if (!deeplink) return deeplink;
+  if (deeplink.startsWith("http://") || deeplink.startsWith("https://")) {
+    return deeplink;
+  }
+  return `${DEEPLINK_BASE_URL}${deeplink}`;
+}
+
+/**
+ * Normalize action deeplinks in an array of event actions.
+ * Finds navigation actions and prefixes their deeplinks with the base URL.
+ */
+function normalizeActions(actions: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+  if (!actions || !Array.isArray(actions)) return actions;
+  return actions.map((action) => {
+    if (action.type === "navigation" && typeof action.deeplink === "string") {
+      return { ...action, deeplink: normalizeDeeplink(action.deeplink as string) };
+    }
+    // Recursively normalize nested actions (onSuccess, onError in serviceCall)
+    const normalized = { ...action };
+    if (Array.isArray(normalized.onSuccess)) {
+      normalized.onSuccess = normalizeActions(normalized.onSuccess as Array<Record<string, unknown>>);
+    }
+    if (Array.isArray(normalized.onError)) {
+      normalized.onError = normalizeActions(normalized.onError as Array<Record<string, unknown>>);
+    }
+    return normalized;
+  });
+}
 
 /**
  * Normalize event conditions to always be an array
@@ -140,7 +187,7 @@ function normalizeEvent(event: RawScreenEvent): IOSScreenEvent {
     id: event.id,
     type: event.type,
     conditions: normalizeConditions(event.conditions),
-    action: event.action || [],
+    action: normalizeActions(event.action || []),
     ...(event.analyticsName && { analyticsName: event.analyticsName }),
     ...(event.delay !== undefined && { delay: event.delay }),
   };

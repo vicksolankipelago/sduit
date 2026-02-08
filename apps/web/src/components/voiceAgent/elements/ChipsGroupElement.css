@@ -1,0 +1,47 @@
+.chips-group-element {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 8px;
+  padding: 8px 0;
+}
+
+.chips-group-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 100px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+  background: #ffffff;
+  border: 1px solid #E0E0E0;
+}
+
+.chips-group-chip:hover:not(.chips-group-chip-disabled) {
+  border-color: #BDBDBD;
+}
+
+.chips-group-chip-selected {
+  border: 2px solid #212633;
+  padding: 9px 11px; /* Compensate for thicker border */
+}
+
+.chips-group-chip-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.chips-group-chip-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.chips-group-chip-label {
+  color: #212633;
+  white-space: nowrap;
+}

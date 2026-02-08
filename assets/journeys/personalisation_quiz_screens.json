@@ -117,7 +117,7 @@
               "events": [
                 {
                   "id": "navigate_to_feelings",
-                  "type": "onTap",
+                  "type": "onSelected",
                   "action": [
                     {
                       "type": "navigation",
@@ -240,7 +240,7 @@
               "events": [
                 {
                   "id": "navigate_to_goal",
-                  "type": "onTap",
+                  "type": "onSelected",
                   "action": [
                     {
                       "type": "stateUpdate",
@@ -374,7 +374,7 @@
               "events": [
                 {
                   "id": "navigate_to_areas",
-                  "type": "onTap",
+                  "type": "onSelected",
                   "action": [
                     {
                       "type": "stateUpdate",
@@ -504,7 +504,7 @@
               "events": [
                 {
                   "id": "navigate_to_pq_motivation",
-                  "type": "onTap",
+                  "type": "onSelected",
                   "action": [
                     {
                       "type": "stateUpdate",
@@ -642,7 +642,7 @@
               "events": [
                 {
                   "id": "navigate_to_learning",
-                  "type": "onTap",
+                  "type": "onSelected",
                   "action": [
                     {
                       "type": "stateUpdate",
@@ -800,7 +800,7 @@
               "events": [
                 {
                   "id": "navigate_to_setting_up",
-                  "type": "onTap",
+                  "type": "onSelected",
                   "action": [
                     {
                       "type": "stateUpdate",
@@ -947,7 +947,7 @@
               "events": [
                 {
                   "id": "navigate_to_completion",
-                  "type": "onTap",
+                  "type": "onSelected",
                   "action": [
                     {
                       "type": "navigation",
@@ -1069,13 +1069,13 @@
               "events": [
                 {
                   "id": "navigate_to_program_summary",
-                  "type": "onTap",
+                  "type": "onSelected",
                   "action": [
                     {
-                      "tool": "setVoiceEnabled",
-                      "type": "toolCall",
-                      "params": {
-                        "enabled": true
+                      "type": "stateUpdate",
+                      "scope": "module",
+                      "updates": {
+                        "voiceNavigationEnabled": true
                       }
                     },
                     {
@@ -1671,7 +1671,24 @@
         {
           "id": "permissions_screen_event",
           "type": "custom",
-          "action": [],
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "screen",
+              "updates": {
+                "notificationsEnabled": true
+              }
+            },
+            {
+              "type": "serviceCall",
+              "serviceName": "pushNotificationService",
+              "functionName": "requestPermissions",
+              "responseMapping": {
+                "stateKey": "notificationPermissions",
+                "scope": "screen"
+              }
+            }
+          ],
           "conditions": []
         },
         {

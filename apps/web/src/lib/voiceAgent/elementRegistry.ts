@@ -31,6 +31,7 @@ import { AgentMessageCardElement } from '../../components/voiceAgent/elements/Ag
 import { OpenQuestionElement } from '../../components/voiceAgent/elements/OpenQuestionElement';
 import { OrbElement } from '../../components/voiceAgent/elements/OrbElement';
 import { ImageCarouselElement } from '../../components/voiceAgent/elements/ImageCarouselElement';
+import { ChipsGroupElement } from '../../components/voiceAgent/elements/ChipsGroupElement';
 
 /**
  * Element Registry - Maps element types to React components
@@ -59,6 +60,7 @@ export const ElementRegistry: Record<ElementType, React.ComponentType<any>> = {
   'openQuestion': OpenQuestionElement,
   'orb': OrbElement,
   'imageCarousel': ImageCarouselElement,
+  'chipsGroup': ChipsGroupElement,
 };
 
 /**
@@ -205,7 +207,7 @@ export const ElementMetadataRegistry: Record<ElementType, ElementMetadata> = {
     category: 'card',
     icon: '💬',
     description: 'Quote card with optional image',
-    defaultData: { id: '', message: 'Quote message', jobTitle: 'Author' },
+    defaultData: { id: '', message: 'Quote message', caption: 'Author' },
   },
   'largeQuestion': {
     type: 'largeQuestion',
@@ -338,6 +340,19 @@ export const ElementMetadataRegistry: Record<ElementType, ElementMetadata> = {
       ],
     },
     defaultStyle: { speed: 30, height: 160, gap: 16, pauseOnHover: true },
+  },
+  'chipsGroup': {
+    type: 'chipsGroup',
+    displayName: 'Chips Group',
+    category: 'interactive',
+    icon: '🏷️',
+    description: 'Multi-select chip cloud with configurable max selection',
+    defaultData: {
+      id: '',
+      options: ['Option 1', 'Option 2', 'Option 3', 'Option 4', 'Option 5'],
+      maxSelection: 5,
+    },
+    defaultStyle: {},
   },
 };
 

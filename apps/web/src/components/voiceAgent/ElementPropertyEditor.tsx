@@ -187,6 +187,29 @@ export const ElementPropertyEditor: React.FC<ElementPropertyEditorProps> = ({
           </>
         );
 
+      case 'chipsGroup':
+        return (
+          <>
+            <FormField label="Options" required>
+              <textarea
+                value={(element.state.options as string[] || []).join('\n')}
+                onChange={(e) => handleDataChange('options', e.target.value.split('\n').filter(Boolean))}
+                placeholder="One option per line"
+                rows={6}
+              />
+            </FormField>
+            <FormField label="Max Selection" required>
+              <input
+                type="number"
+                value={element.state.maxSelection as number || 5}
+                onChange={(e) => handleDataChange('maxSelection', parseInt(e.target.value) || 1)}
+                placeholder="5"
+                min={1}
+              />
+            </FormField>
+          </>
+        );
+
       case 'toggleCard':
         return (
           <>
@@ -238,11 +261,11 @@ export const ElementPropertyEditor: React.FC<ElementPropertyEditorProps> = ({
                 rows={4}
               />
             </FormField>
-            <FormField label="Job Title / Author">
+            <FormField label="Caption">
               <input
                 type="text"
-                value={element.state.jobTitle as string || ''}
-                onChange={(e) => handleDataChange('jobTitle', e.target.value)}
+                value={(element.state.caption ?? element.state.jobTitle) as string || ''}
+                onChange={(e) => handleDataChange('caption', e.target.value)}
                 placeholder="e.g., Dr. Smith, Care Team Lead"
               />
             </FormField>

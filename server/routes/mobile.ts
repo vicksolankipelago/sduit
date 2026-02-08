@@ -518,6 +518,11 @@ const SYSTEM_TOOLS = [
     parameters: {
       type: "object" as const,
       properties: {
+        type: {
+          type: "string",
+          description: "Type of input being captured: 'text' (open response), 'goals' (list of goals), 'intention' (weekly focus)",
+          enum: ["text", "goals", "intention"],
+        },
         title: {
           type: "string",
           description: "Title/label for the recorded input"
@@ -528,11 +533,11 @@ const SYSTEM_TOOLS = [
         },
         description: {
           type: "string",
-          description: "Detailed description of the user's response"
+          description: "Detailed description of the user's response (2-3 sentences)"
         },
         storeKey: {
           type: "string",
-          description: "Key to store the summary in module state (e.g., 'aboutYouSummary', 'outcomesSummary')"
+          description: "Base key for module state storage (stores summary at {key}Summary, description at {key}Description)"
         },
         nextEventId: {
           type: "string",
@@ -580,6 +585,61 @@ const SYSTEM_TOOLS = [
         }
       },
       required: ["time"],
+      additionalProperties: false,
+    }
+  },
+  {
+    id: "system_set_goals",
+    name: "set_goals",
+    description: "Save a structured list of the user's goals with categories and progress tracking. Call this after the user shares their desired outcomes. This populates the goals checklist card on the outcomes screen.",
+    parameters: {
+      type: "object" as const,
+      properties: {
+        goals: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              goal: {
+                type: "string",
+                description: "A concise description of the goal in the member's own words"
+              },
+              categories: {
+                type: "array",
+                items: { type: "string" },
+                description: "Categories this goal falls into. Valid: health, relationships, emotional_wellbeing, financial, habits, personal_growth, mindfulness"
+              },
+              progress: {
+                type: "number",
+                description: "Progress percentage 0-100. Always 0 at intake."
+              }
+            },
+            required: ["goal", "categories", "progress"],
+          },
+          description: "Array of goal objects with goal text, categories, and progress"
+        }
+      },
+      required: ["goals"],
+      additionalProperties: false,
+    }
+  },
+  {
+    id: "system_capture_weekly_focus",
+    name: "capture_weekly_focus",
+    description: "Capture the member's weekly focus and optionally link it to one of their goals. Stores weeklyFocus, weeklyFocusGoal, and weeklyFocusCaption in module state. The quote card element on the weekly-focus screen reads these values to display the focus.",
+    parameters: {
+      type: "object" as const,
+      properties: {
+        focus: {
+          type: "string",
+          description: "The member's weekly focus in their own words"
+        },
+        relatedGoal: {
+          type: "string",
+          description: "The goal this focus relates to, if relevant. Should match one of the goals from set_goals."
+        }
+      },
+      required: ["focus"],
       additionalProperties: false,
     }
   },

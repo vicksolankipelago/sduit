@@ -117,7 +117,7 @@
               "events": [
                 {
                   "id": "navigate_to_feelings",
-                  "type": "onTap",
+                  "type": "onSelected",
                   "action": [
                     {
                       "type": "navigation",
@@ -240,7 +240,7 @@
               "events": [
                 {
                   "id": "navigate_to_goal",
-                  "type": "onTap",
+                  "type": "onSelected",
                   "action": [
                     {
                       "type": "stateUpdate",
@@ -374,7 +374,7 @@
               "events": [
                 {
                   "id": "navigate_to_areas",
-                  "type": "onTap",
+                  "type": "onSelected",
                   "action": [
                     {
                       "type": "stateUpdate",
@@ -504,7 +504,7 @@
               "events": [
                 {
                   "id": "navigate_to_pq_motivation",
-                  "type": "onTap",
+                  "type": "onSelected",
                   "action": [
                     {
                       "type": "stateUpdate",
@@ -642,7 +642,7 @@
               "events": [
                 {
                   "id": "navigate_to_learning",
-                  "type": "onTap",
+                  "type": "onSelected",
                   "action": [
                     {
                       "type": "stateUpdate",
@@ -800,7 +800,7 @@
               "events": [
                 {
                   "id": "navigate_to_setting_up",
-                  "type": "onTap",
+                  "type": "onSelected",
                   "action": [
                     {
                       "type": "stateUpdate",
@@ -947,7 +947,7 @@
               "events": [
                 {
                   "id": "navigate_to_completion",
-                  "type": "onTap",
+                  "type": "onSelected",
                   "action": [
                     {
                       "type": "navigation",
@@ -1069,13 +1069,13 @@
               "events": [
                 {
                   "id": "navigate_to_program_summary",
-                  "type": "onTap",
+                  "type": "onSelected",
                   "action": [
                     {
-                      "tool": "setVoiceEnabled",
-                      "type": "toolCall",
-                      "params": {
-                        "enabled": true
+                      "type": "stateUpdate",
+                      "scope": "module",
+                      "updates": {
+                        "voiceNavigationEnabled": true
                       }
                     },
                     {
@@ -1258,7 +1258,7 @@
               "style": {},
               "events": [
                 {
-                  "id": "navigate_to_motivation",
+                  "id": "navigate_to_voice_motivation",
                   "type": "custom",
                   "action": [
                     {
@@ -1267,6 +1267,56 @@
                     }
                   ],
                   "conditions": []
+                }
+              ]
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "goals_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 24,
+                "direction": "vertical",
+                "isFlexible": false
+              },
+              "conditions": [
+                {
+                  "rules": {
+                    "and": [
+                      { "!=": [{ "var": "goals" }, null] },
+                      { "!=": [{ "var": "goals" }, ""] }
+                    ]
+                  },
+                  "state": {
+                    "goals": "{$moduleData.goalTitles}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "checklistCard",
+              "state": {
+                "id": "goals_checklist",
+                "title": "Your goals",
+                "itemTitles": "{$moduleData.goalTitles}"
+              },
+              "style": {
+                "backgroundColor": "backgroundLightMintGreen",
+                "cornerRadius": 16
+              },
+              "conditions": [
+                {
+                  "rules": {
+                    "and": [
+                      { "!=": [{ "var": "goals" }, null] },
+                      { "!=": [{ "var": "goals" }, ""] }
+                    ]
+                  },
+                  "state": {
+                    "goals": "{$moduleData.goalTitles}"
+                  }
                 }
               ]
             }
@@ -1283,12 +1333,12 @@
       "title": null,
       "events": [
         {
-          "id": "navigate_to_intention",
+          "id": "navigate_to_weekly_focus",
           "type": "custom",
           "action": [
             {
               "type": "navigation",
-              "deeplink": "intention"
+              "deeplink": "weekly-focus"
             }
           ],
           "conditions": []
@@ -1309,12 +1359,12 @@
               "style": {},
               "events": [
                 {
-                  "id": "navigate_to_intention",
+                  "id": "navigate_to_weekly_focus",
                   "type": "custom",
                   "action": [
                     {
                       "type": "navigation",
-                      "deeplink": "intention"
+                      "deeplink": "weekly-focus"
                     }
                   ],
                   "conditions": []
@@ -1330,7 +1380,7 @@
       "hidesBackButton": true
     },
     {
-      "id": "intention",
+      "id": "weekly-focus",
       "title": null,
       "events": [
         {
@@ -1343,17 +1393,6 @@
             }
           ],
           "conditions": []
-        },
-        {
-          "id": "navigate_to_checkin_commitment",
-          "type": "custom",
-          "action": [
-            {
-              "type": "navigation",
-              "deeplink": "checkin-commitment"
-            }
-          ],
-          "conditions": []
         }
       ],
       "sections": [
@@ -1363,10 +1402,22 @@
           "layout": "stack",
           "elements": [
             {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            },
+            {
               "type": "openQuestion",
               "state": {
-                "id": "intention_question",
-                "question": "What would you like to put a little focus on this week?"
+                "id": "weekly_focus_question",
+                "question": "What would you like to focus on this week?"
               },
               "style": {},
               "events": [
@@ -1380,6 +1431,42 @@
                     }
                   ],
                   "conditions": []
+                }
+              ],
+              "conditions": [
+                {
+                  "rules": {
+                    "or": [
+                      { "==": [{ "var": "focus" }, null] },
+                      { "==": [{ "var": "focus" }, ""] }
+                    ]
+                  },
+                  "state": {
+                    "focus": "{$moduleData.weeklyFocus}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "quoteCard",
+              "state": {
+                "id": "weekly_focus_quote",
+                "message": "{$moduleData.weeklyFocus}"
+              },
+              "style": {
+                "imageName": null
+              },
+              "conditions": [
+                {
+                  "rules": {
+                    "and": [
+                      { "!=": [{ "var": "focus" }, null] },
+                      { "!=": [{ "var": "focus" }, ""] }
+                    ]
+                  },
+                  "state": {
+                    "focus": "{$moduleData.weeklyFocus}"
+                  }
                 }
               ]
             }
@@ -1670,7 +1757,24 @@
         {
           "id": "permissions_screen_event",
           "type": "custom",
-          "action": [],
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "screen",
+              "updates": {
+                "notificationsEnabled": true
+              }
+            },
+            {
+              "type": "serviceCall",
+              "serviceName": "pushNotificationService",
+              "functionName": "requestPermissions",
+              "responseMapping": {
+                "stateKey": "notificationPermissions",
+                "scope": "screen"
+              }
+            }
+          ],
           "conditions": []
         },
         {
@@ -2208,11 +2312,11 @@
     }
   ],
   "screenPrompts": {
-    "outcomes": "Screen ID: outcomes\nAvailable Events: navigate_to_voice_motivation\n\nPurpose: Understand desired outcomes\n\nQuestion:\n\"What would you like to achieve with Pelago?\"\n\nAfter response:\n1. Brief acknowledgment\n2. Call: set_goals with arguments {\"goals\": [\"[goal 1]\", \"[goal 2]\"]}\n3. Call: record_input with arguments {\"title\": \"Outcomes\", \"summary\": \"[one-line summary]\", \"storeKey\": \"outcomesSummary\", \"nextEventId\": \"navigate_to_voice_motivation\", \"delay\": 3}\n4. Wait for navigation (3 seconds). Do NOT call trigger_event separately.\n5. Continue on the next screen: \"What's motivating you to make this change?\"",
+    "outcomes": "Screen ID: outcomes\nAvailable Events: navigate_to_voice_motivation\n\nPurpose: Understand desired outcomes, capture structured goals, and display them as a checklist on the same screen\n\nUI: Open question + conditional checklist card (appears after set_goals is called)\n\nAfter response:\n1. Brief acknowledgment\n2. Call: set_goals with arguments {\"goals\": [{\"goal\": \"[goal text]\", \"categories\": [\"[category]\"], \"progress\": 0}, ...]}\n   Valid categories: health, relationships, emotional_wellbeing, financial, habits, personal_growth, mindfulness\n   This populates the checklist card on screen automatically.\n3. Briefly read back goals: \"Here's what I've captured - [goals]. Does that look right?\"\n4. Wait for confirmation. If user wants changes, call set_goals again.\n5. After confirmation, call: trigger_event with arguments {\"eventId\": \"navigate_to_voice_motivation\"}\n6. Transition: \"You mentioned that {{motivation}} is important to you. Tell me more about that.\"\n\nNo record_input needed — set_goals stores all goal data in module state.",
     "pq-intro": "Screen ID: pq-intro\nAvailable Events: navigate_to_program_summary (button tap)\n\nPurpose: Welcome screen where user taps \"Start\" to enable microphone and begin voice session\n\nUI Display:\n- Title: \"Welcome to Pelago\"\n- Description: \"Let's get you set up with a personalized plan\"\n- Pelago Boat animation\n- \"Start\" button at bottom\n\nBehavior:\n- This is a CTA-only screen (no voice interaction)\n- When user taps \"Start\", the button automatically:\n  1. Enables voice/microphone\n  2. Navigates directly to pq-program-summary\n- Voice agent only activates AFTER user taps Start\n\nNo voice interaction needed on this screen.",
     "about-you": "Screen ID: about-you\nAvailable Events: navigate_to_outcomes\n\nPurpose: Understand what brings them here\n\nQuestion:\n\"Tell me a bit about what brings you to Pelago today.\"\n\nAfter response:\n1. Brief acknowledgment (\"Thanks for sharing\" or similar)\n2. Call: record_input with arguments {\"title\": \"About you\", \"summary\": \"[one-line summary]\", \"storeKey\": \"aboutYouSummary\", \"nextEventId\": \"navigate_to_outcomes\", \"delay\": 3}\n3. Wait for navigation (3 seconds). Do NOT call trigger_event separately.\n4. Continue on the next screen: \"What outcomes are you hoping to achieve?\"",
-    "intention": "Screen ID: intention\nAvailable Events: navigate_to_cm_rewards_intro\n\nPurpose: Set weekly intention, then navigate to rewards screen\n\nAfter user responds:\n1. Brief acknowledgment\n2. Call: record_input with arguments {\"title\": \"Intention\", \"summary\": \"[one-line summary]\", \"storeKey\": \"weeklyFocus\", \"nextEventId\": \"navigate_to_cm_rewards_intro\", \"delay\": 3}\n3. Wait for navigation (3 seconds). Do NOT call trigger_event separately.\n4. STOP - DO NOT speak about rewards on this screen. Wait for cm-rewards-intro to load.\n\n**CRITICAL:** Do NOT skip the rewards screen. Do NOT call navigate_to_checkin_commitment from this screen.",
-    "motivation": "Screen ID: motivation\nAvailable Events: navigate_to_intention\n\nPurpose: Understand their motivation\n\nQuestion:\n\"What's motivating you to make this change?\"\n\nAfter response:\n1. Brief acknowledgment\n2. Call: record_input with arguments {\"title\": \"Your why\", \"summary\": \"[one-line summary]\", \"storeKey\": \"yourWhySummary\", \"nextEventId\": \"navigate_to_intention\", \"delay\": 3}\n3. Wait for navigation (3 seconds). Do NOT call trigger_event separately.\n4. Continue on the next screen: \"Now let's set a focus for this week. What would you like to work on?\"",
+    "weekly-focus": "Screen ID: weekly-focus\nAvailable Events: navigate_to_cm_rewards_intro\n\nPurpose: Capture weekly focus/intention and display as a quote card, then transition to rewards\n\nUI: Open question (visible when weeklyFocus not set) + quote card (visible after capture_weekly_focus)\n\nAfter user responds:\n1. Brief acknowledgment\n2. Call: capture_weekly_focus with arguments {\"focus\": \"[their focus]\", \"relatedGoal\": \"[matching goal or omit]\"}\n   This hides the open question and shows the quote card.\n3. Call: record_input with arguments {\"title\": \"Weekly Focus\", \"summary\": \"[one-line summary]\", \"storeKey\": \"weeklyFocus\", \"nextEventId\": \"navigate_to_cm_rewards_intro\", \"delay\": 3}\n4. STOP - DO NOT speak about rewards on this screen. Wait for cm-rewards-intro to load.\n\n**CRITICAL:** Do NOT skip the rewards screen. Do NOT call navigate_to_checkin_commitment from this screen.",
+    "motivation": "Screen ID: motivation\nAvailable Events: navigate_to_weekly_focus\n\nPurpose: Understand their motivation\n\nQuestion:\n\"What's motivating you to make this change?\"\n\nAfter response:\n1. Brief acknowledgment\n2. Call: record_input with arguments {\"title\": \"Your why\", \"summary\": \"[one-line summary]\", \"storeKey\": \"yourWhySummary\", \"nextEventId\": \"navigate_to_weekly_focus\", \"delay\": 3}\n3. Wait for navigation (3 seconds). Do NOT call trigger_event separately.\n4. Continue on the next screen: \"Now let's set a focus for this week. What would you like to work on?\"",
     "pq-completion": "Screen ID: pq-completion\nAvailable Events: navigate_to_program_summary\n\nPurpose: Voice agent welcome screen where the intake conversation begins\n\nUI Display:\n- Title: \"Ready to chat?\"\n- Description: \"You'll be asked to enable your microphone to talk to your assistant\"\n- Pelago Island animation\n\nOpening Statement:\n\"Hi {{memberName}}, welcome to Pelago. It's great to have you onboard. I'm Navi, I'm here to help navigate your journey with us. First, we'll go through some quick questions to get to know each other and then work together to setup a plan. Are you ready to start?\"\n\nWait for user confirmation.\n\nThen continue: \"Great. Let's get started. First let's review where you are.\"\n\nThen IMMEDIATELY trigger navigation to program summary.\n\nInstructions:\n1. Deliver the opening statement\n2. Wait for user confirmation to \"Are you ready to start?\"\n3. After confirmation, say: \"Great. Let's get started. First let's review where you are.\"\n4. IMMEDIATELY trigger: trigger_event with arguments {\"eventId\": \"navigate_to_program_summary\"}\n5. This navigates to pq-program-summary\n\nNavigation:\nAfter saying \"First let's review where you are\", IMMEDIATELY trigger:\n- Event ID: navigate_to_program_summary\n- Tool call: trigger_event with arguments {\"eventId\": \"navigate_to_program_summary\"}",
     "pq-plan-review": "Screen ID: pq-plan-review\nAvailable Events: navigate_to_completion\n\nPurpose: Quick plan summary\n\nScript:\n\"Here's your plan: You're focusing on [intention], checking in [frequency]. Your motivation is [motivation]. Does this look good?\"\n\nBehavior:\n- Keep summary brief - hit the key points only\n- After confirmation, say: \"Perfect, let's get you started.\"\n- Call: trigger_event with arguments {\"eventId\": \"navigate_to_completion\"}",
     "cm-rewards-intro": "Screen ID: cm-rewards-intro\nAvailable Events: navigate_to_checkin_commitment\n\nPurpose: Explain rewards briefly, then navigate to check-in commitment\n\nBehavior:\n1. Say: \"Every time you check in, you'll earn points you can redeem for rewards. Members who check in daily are 5 times more likely to reach their goals. Let's set up your check-in schedule.\"\n2. Call: trigger_event with arguments {\"eventId\": \"navigate_to_checkin_commitment\", \"delay\": 1}\n3. STOP SPEAKING. Do NOT ask the check-in question here.\n\nCRITICAL: The check-in question belongs on the NEXT screen (checkin-commitment). Do NOT ask it here.",

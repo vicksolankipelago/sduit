@@ -217,6 +217,12 @@ export class JourneyRuntime {
     // Add set_reminder_time tool - captures preferred reminder time in UTC
     realtimeTools.push(this.createSetReminderTimeTool(agentName) as any);
 
+    // Add set_goals tool - captures structured goals with categories and progress
+    realtimeTools.push(this.createSetGoalsTool(agentName) as any);
+
+    // Add capture_weekly_focus tool - captures weekly focus linked to a goal
+    realtimeTools.push(this.createCaptureWeeklyFocusTool(agentName) as any);
+
     // Add setVoiceEnabled tool to all agents - enables/disables voice mode
     realtimeTools.push(this.createSetVoiceEnabledTool(agentName) as any);
 
@@ -620,6 +626,176 @@ export class JourneyRuntime {
         }
 
         return `Reminder time saved: ${time} (UTC: ${utcTime})`;
+      },
+    });
+  }
+
+  /**
+   * Create the set_goals tool for capturing structured goals with categories and progress.
+   * Stores goalTitles (string[]) and memberGoals (full objects) in module state via
+   * a moduleStateUpdate window event — matching iOS stateManager.updateModuleState.
+   */
+  private createSetGoalsTool(agentName: string) {
+    const runtime = this;
+
+    interface GoalInput {
+      goal: string;
+      categories?: string[];
+      progress?: number;
+    }
+
+    interface SetGoalsParams {
+      goals: GoalInput[];
+    }
+
+    return (tool as any)({
+      name: 'set_goals',
+      description: 'Save a structured list of the user\'s goals with categories and progress tracking. Call this after the user shares their desired outcomes. Each goal should include: goal (string), categories (string[]), progress (number 0-100, always 0 at intake).',
+      parameters: {
+        type: 'object' as const,
+        properties: {
+          goals: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                goal: {
+                  type: 'string',
+                  description: 'A concise description of the goal in the member\'s own words',
+                },
+                categories: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Categories: health, relationships, emotional_wellbeing, financial, habits, personal_growth, mindfulness',
+                },
+                progress: {
+                  type: 'number',
+                  description: 'Progress percentage 0-100. Always 0 at intake.',
+                },
+              },
+              required: ['goal', 'categories', 'progress'],
+            },
+            description: 'Array of goal objects with goal text, categories, and progress',
+          },
+        },
+        required: ['goals'] as const,
+        additionalProperties: false as const,
+      },
+      strict: true,
+      execute: async (input: SetGoalsParams) => {
+        const { goals: rawGoals } = input;
+
+        // Normalise and deduplicate
+        const seen = new Set<string>();
+        const uniqueGoals = (rawGoals || [])
+          .filter((g): g is GoalInput => typeof g?.goal === 'string' && g.goal.trim().length > 0)
+          .map(g => ({
+            goal: g.goal.trim(),
+            categories: Array.isArray(g.categories) ? g.categories : [],
+            progress: typeof g.progress === 'number' ? g.progress : 0,
+          }))
+          .filter(g => {
+            const key = g.goal.toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+
+        if (uniqueGoals.length === 0) {
+          toolLogger.debug(`set_goals called by agent ${agentName} with no usable goals`);
+          return 'No goals were saved. Provide goals as an array of goal objects.';
+        }
+
+        const goalTitles = uniqueGoals.map(g => g.goal);
+        toolLogger.debug(`set_goals called by agent ${agentName}: ${goalTitles.join(' | ')}`);
+
+        // Store via record_input callback for logging
+        if (runtime.recordInputCallback) {
+          runtime.recordInputCallback('Goals', goalTitles.join('; '), `Captured ${uniqueGoals.length} goal(s)`, 'goals');
+        }
+
+        // Dispatch moduleStateUpdate to store native arrays in module state
+        // ScreenContext listens for this event and calls updateModuleState
+        window.dispatchEvent(new CustomEvent('moduleStateUpdate', {
+          detail: {
+            goalTitles,
+            memberGoals: uniqueGoals,
+          },
+        }));
+
+        return `Saved ${uniqueGoals.length} goal(s): ${goalTitles.join(', ')}`;
+      },
+    });
+  }
+
+  /**
+   * Create the capture_weekly_focus tool for capturing the member's weekly focus
+   * and optionally linking it to one of their goals.
+   * Stores weeklyFocus, weeklyFocusGoal, and weeklyFocusCaption in module state
+   * via a moduleStateUpdate window event — matching iOS stateManager.updateModuleState.
+   */
+  private createCaptureWeeklyFocusTool(agentName: string) {
+    const runtime = this;
+
+    interface CaptureWeeklyFocusParams {
+      focus: string;
+      relatedGoal?: string;
+    }
+
+    return (tool as any)({
+      name: 'capture_weekly_focus',
+      description: 'Capture the member\'s weekly focus and optionally link it to one of their goals. Stores the focus text, related goal, and a date caption in module state for display in a quote card.',
+      parameters: {
+        type: 'object' as const,
+        properties: {
+          focus: {
+            type: 'string',
+            description: 'The member\'s weekly focus in their own words',
+          },
+          relatedGoal: {
+            type: 'string',
+            description: 'The goal this focus relates to, if relevant. Should match one of the goals from set_goals.',
+          },
+        },
+        required: ['focus'] as const,
+        additionalProperties: false as const,
+      },
+      strict: true,
+      execute: async (input: CaptureWeeklyFocusParams) => {
+        const focus = input.focus?.trim();
+        if (!focus) {
+          toolLogger.debug(`capture_weekly_focus called by agent ${agentName} with no focus text`);
+          return 'No focus text provided.';
+        }
+
+        const relatedGoal = input.relatedGoal?.trim() || null;
+
+        // Generate date caption
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+        const caption = `\u2013 My focus set on ${dateStr}`;
+
+        toolLogger.debug(`capture_weekly_focus called by agent ${agentName}: "${focus}"${relatedGoal ? ` (goal: ${relatedGoal})` : ''}`);
+
+        // Store via record_input callback for logging
+        if (runtime.recordInputCallback) {
+          runtime.recordInputCallback('Weekly Focus', focus, relatedGoal ? `Related goal: ${relatedGoal}` : 'No related goal', 'weeklyFocus');
+        }
+
+        // Dispatch moduleStateUpdate to store in module state
+        const stateUpdates: Record<string, any> = {
+          weeklyFocus: `\u201C${focus}\u201D`,
+          weeklyFocusCaption: caption,
+        };
+        if (relatedGoal) {
+          stateUpdates.weeklyFocusGoal = relatedGoal;
+        }
+
+        window.dispatchEvent(new CustomEvent('moduleStateUpdate', {
+          detail: stateUpdates,
+        }));
+
+        return `Weekly focus saved: "${focus}"${relatedGoal ? ` (related to goal: ${relatedGoal})` : ''}`;
       },
     });
   }

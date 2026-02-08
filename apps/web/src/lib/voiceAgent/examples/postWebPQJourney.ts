@@ -483,7 +483,7 @@ function createPostWebPQScreens(): Screen[] {
               state: {
                 id: 'empty_appointment_quote',
                 message: '"Our care team is here to give guidance based on your unique goals, whenever you are ready!"',
-                jobTitle: 'Juliette, Pelago VP Care Team',
+                caption: 'Juliette, Pelago VP Care Team',
               },
               style: {
                 imageName: null,

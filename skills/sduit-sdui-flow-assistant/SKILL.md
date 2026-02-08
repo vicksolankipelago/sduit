@@ -24,6 +24,10 @@ Read these files first:
 - `server/routes/journeys.ts`
 - `server/storage.ts`
 
+For iOS compatibility rules and the complete SDUI data contract, load:
+
+- `SDUI_PROTOCOL.md` **(REQUIRED — defines the iOS data contract)**
+
 For architecture details and rollout strategy, load:
 
 - `references/sduit-flow-architecture.md`
@@ -44,6 +48,12 @@ For architecture details and rollout strategy, load:
 
 ## Guardrails
 
+- **Follow `SDUI_PROTOCOL.md`** — it defines the complete iOS data contract.
+- Element data goes under `"state"` (not `"data"`). Every `state` must include `"id"`.
+- State references MUST use braces: `"{$moduleData.key}"`.
+- Event `conditions` must always be present (use `[]` for no conditions).
+- Arrays in module state must be native arrays, never comma-joined strings.
+- Only use element types listed in `SDUI_PROTOCOL.md`. Made-up types crash iOS.
 - Keep `screenPrompts` keys aligned with `agent.screens[].id`.
 - Keep `trigger_event` references aligned with real event IDs defined on screens/elements.
 - Keep navigation actions pointing to valid targets (`next-screen`, `prev-screen`, or real screen IDs/URLs).

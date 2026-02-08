@@ -6,6 +6,22 @@ A Flow Builder for designing and testing voice agent experiences with real-time 
 
 This project provides a comprehensive platform for designing, testing, and deploying interactive voice agent experiences. It enables users to create conversational flows, integrate SDUI (Speech Dialogue User Interface) screens, and simulate real-time voice interactions. The system supports both voice-enabled and non-voice (button-based) journeys, catering to diverse interactive application needs, from complex voice assistants to interactive quizzes. The platform aims to streamline the development of dynamic and engaging user experiences through intuitive flow building and robust testing capabilities, including features for research studies and preview access management.
 
+## CRITICAL: SDUI Protocol Compliance
+
+**Before modifying any journey JSON, screen definitions, element structures, tool definitions,
+state management, or condition logic, you MUST read and follow `SDUI_PROTOCOL.md` in the
+project root.** That document defines the exact data contract with the iOS mobile app.
+Violations will cause parsing failures, blank screens, or silent data loss on iOS.
+
+Key rules (see `SDUI_PROTOCOL.md` for full details):
+- Element data goes in `"state"` (not `"data"`). Every `state` must include `"id"`.
+- State references MUST use braces: `"{$moduleData.key}"`, never `"$moduleData.key"`.
+- Conditions use JSON Logic. Condition `state` values resolve references to native types.
+- Arrays must be stored as native arrays, never comma-joined strings.
+- Only use element types listed in the protocol. Made-up types crash iOS.
+- Event `conditions` field must always be present (use `[]` for no conditions).
+- Prompt event IDs must exactly match JSON event IDs.
+
 ## User Preferences
 
 I prefer clear, concise summaries of features and architecture. When making changes, prioritize modularity and maintainability. For new features, please outline the proposed API changes and user interface implications before implementation. I appreciate detailed explanations of complex technical decisions.

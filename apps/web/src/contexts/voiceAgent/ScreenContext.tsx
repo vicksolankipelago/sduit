@@ -27,6 +27,7 @@ export interface ScreenContextState {
   navigateToScreen: (screenId: string, screens: Screen[]) => void;
   goBack: (screens: Screen[]) => void;
   interpolateString: (template: string) => string;
+  resolveStateReference: (template: string) => any | undefined;
   evaluateConditions: (conditions?: any[]) => boolean;
 }
 
@@ -147,6 +148,30 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
   }, [updateScreenState, updateModuleState]);
 
   /**
+   * Resolve a pure state reference to its native value (array, object, etc).
+   * Matches iOS ResolvableValue<T> behaviour: if the entire string is a single
+   * braced reference like "{$moduleData.goalTitles}", return the raw value from
+   * state rather than stringifying it. Returns undefined if not a pure reference.
+   */
+  const resolveStateReference = useCallback((template: string): any | undefined => {
+    // Must be a single braced reference occupying the entire string
+    const pureRefPattern = /^\{(\$(?:moduleData|screenData|screenState)\.([^}]+))\}$/;
+    const match = template.match(pureRefPattern);
+    if (!match) return undefined;
+
+    const fullRef = match[1]; // e.g. "$moduleData.goalTitles"
+    const key = match[2]?.trim();
+    if (!key) return undefined;
+
+    if (fullRef.startsWith('$moduleData.')) {
+      return getNestedValue(moduleStateRef.current, key);
+    } else if (fullRef.startsWith('$screenData.') || fullRef.startsWith('$screenState.')) {
+      return getNestedValue(screenStateRef.current, key);
+    }
+    return undefined;
+  }, []);
+
+  /**
    * Interpolate template strings like {$moduleData.key}, {$screenData.key}, or {$screenState.key}
    * CRITICAL: Uses refs instead of state to avoid race conditions with async React state updates
    */
@@ -212,13 +237,24 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
         if (!condition.rules || !condition.state) continue;
 
         // Resolve state variables using refs for immediate access
+        // Matches iOS EventStateManager.resolveVariable: strips braces first, then checks prefix
         const resolvedState: Record<string, any> = {};
         for (const [key, valuePath] of Object.entries(condition.state)) {
-          if (typeof valuePath === 'string' && valuePath.startsWith('$moduleData.')) {
-            const path = valuePath.substring('$moduleData.'.length);
+          if (typeof valuePath !== 'string') {
+            resolvedState[key] = valuePath;
+            continue;
+          }
+          // Strip braces if present — iOS format is "{$moduleData.key}" with braces
+          const cleaned = (valuePath.startsWith('{') && valuePath.endsWith('}'))
+            ? valuePath.slice(1, -1)
+            : valuePath;
+          
+          if (cleaned.startsWith('$moduleData.')) {
+            const path = cleaned.substring('$moduleData.'.length);
             resolvedState[key] = getNestedValue(moduleStateRef.current, path);
-          } else if (typeof valuePath === 'string' && valuePath.startsWith('$screenData.')) {
-            const path = valuePath.substring('$screenData.'.length);
+          } else if (cleaned.startsWith('$screenData.') || cleaned.startsWith('$state.')) {
+            const prefix = cleaned.startsWith('$screenData.') ? '$screenData.' : '$state.';
+            const path = cleaned.substring(prefix.length);
             resolvedState[key] = getNestedValue(screenStateRef.current, path);
           } else {
             resolvedState[key] = valuePath;
@@ -512,6 +548,26 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
     });
   }, []);
 
+  // Listen for moduleStateUpdate events from voice agent tools (Azure/OpenAI journeyRuntime)
+  // Allows tools that store non-string data (arrays, objects) to update module state directly,
+  // matching iOS's stateManager.updateModuleState pattern.
+  React.useEffect(() => {
+    const handleModuleStateUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const updates = customEvent.detail;
+      if (updates && typeof updates === 'object') {
+        console.log('📦 ScreenContext: Received moduleStateUpdate', Object.keys(updates));
+        updateModuleState(updates);
+      }
+    };
+
+    window.addEventListener('moduleStateUpdate', handleModuleStateUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener('moduleStateUpdate', handleModuleStateUpdate as EventListener);
+    };
+  }, [updateModuleState]);
+
   // Listen for trigger_event events from voice agent tools (ElevenLabs)
   // This allows the agent to navigate screens via tool calls
   React.useEffect(() => {
@@ -549,6 +605,7 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
     navigateToScreen,
     goBack,
     interpolateString,
+    resolveStateReference,
     evaluateConditions,
   };
 

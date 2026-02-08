@@ -61,7 +61,8 @@ export type ElementType =
   | 'agentMessageCard'
   | 'openQuestion'
   | 'orb'
-  | 'imageCarousel';
+  | 'imageCarousel'
+  | 'chipsGroup';
 
 /**
  * Event Type - All supported event types
@@ -74,7 +75,6 @@ export type EventType =
   | 'onAppear'
   | 'onDisappear'
   | 'onSelected'
-  | 'onTap'
   | 'onToggle'
   | 'onToggleOn'
   | 'onToggleOff'
@@ -385,6 +385,9 @@ export interface CareCallElementStyle {
 export interface QuoteCardData {
   id: string;
   message: string;
+  /** Caption text shown below the quote (e.g. author name, date attribution) */
+  caption?: string;
+  /** @deprecated Use caption instead */
   jobTitle?: string;
 }
 
@@ -653,6 +656,20 @@ export interface ImageCarouselElementStyle {
 }
 
 export type ImageCarouselElementState = ImageCarouselData;
+
+/**
+ * Chips Group Element
+ * Multi-select chip cloud with configurable max selection
+ */
+export interface ChipsGroupData {
+  id: string;
+  options: string[];
+  maxSelection: number;
+}
+
+export interface ChipsGroupElementStyle {
+  // No special styles — ChipsLayout handles its own styling
+}
 
 // ============================================================================
 // TYPE ALIASES FOR BACKWARDS COMPATIBILITY

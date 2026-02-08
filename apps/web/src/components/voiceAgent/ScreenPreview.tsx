@@ -26,6 +26,7 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
     currentScreen,
     triggerEvent: contextTriggerEvent,
     interpolateString,
+    resolveStateReference,
     evaluateConditions,
     goBack,
     navigationStack,
@@ -41,8 +42,21 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
   const triggerEvent = useCallback((eventId: string, eventData?: Record<string, any>) => {
     contextTriggerEvent(eventId, allScreens, eventData);
   }, [contextTriggerEvent, allScreens]);
+  /**
+   * Resolve interpolations in element state data.
+   * Matches iOS ResolvableValue<T> behaviour:
+   *  - If a string is a pure state reference (e.g. "{$moduleData.goalTitles}"),
+   *    return the native value (array, object, etc.) instead of stringifying it.
+   *  - Otherwise fall back to string interpolation.
+   */
   const resolveInterpolations = useCallback((value: AnyCodable): AnyCodable => {
     if (typeof value === 'string') {
+      // Try native resolution first (returns arrays/objects as-is)
+      const nativeValue = resolveStateReference(value);
+      if (nativeValue !== undefined) {
+        return nativeValue;
+      }
+      // Fall back to string interpolation
       return interpolateString(value);
     }
 
@@ -59,7 +73,7 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
     }
 
     return value;
-  }, [interpolateString]);
+  }, [interpolateString, resolveStateReference]);
 
   // Filter elements based on conditions
   const filterElements = (elements: ElementConfig[]): ElementConfig[] => {
@@ -161,7 +175,7 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
             }
             onSelectionChange={element.type === 'largeQuestion' ? handleSingleSelectChange : undefined}
             onMultiSelectionChange={element.type === 'largeQuestion' ? handleMultiSelectionChange : undefined}
-            onMultiSelectToggle={element.type === 'checkboxButton' ? handleMultiSelectToggle : undefined}
+            onMultiSelectToggle={(element.type === 'checkboxButton' || element.type === 'chipsGroup') ? handleMultiSelectToggle : undefined}
           />
         </ElementErrorBoundary>
         {isSelected && editable && (

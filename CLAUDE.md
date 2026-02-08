@@ -41,6 +41,17 @@ This project uses JIRA ticket-based commits:
 
 Use `/commit` skill to create properly formatted commits.
 
+## SDUI Protocol
+
+**`SDUI_PROTOCOL.md`** in the project root defines the complete data contract with the iOS app.
+Read it before modifying journey JSON, element structures, tool definitions, state management,
+conditions, or prompt–screen references. Key invariants:
+- Element data uses `"state"` key (not `"data"`), must include `"id"`
+- State references require braces: `"{$moduleData.key}"`
+- Conditions use JSON Logic with resolved native types
+- Only use element types defined in the protocol
+- Event `conditions` must always be present (`[]` if empty)
+
 ## Skills
 
 - `/commit` - Create a JIRA-formatted git commit
