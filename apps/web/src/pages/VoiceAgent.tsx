@@ -123,6 +123,56 @@ function normalizeAgentNameForRuntime(name: string): string {
     .replace(/^(.)/, (char) => char.toLowerCase());
 }
 
+const MIN_RECORD_INPUT_POPUP_MS = 3000;
+const RECENT_RECORD_INPUT_WINDOW_MS = 15000;
+
+function normalizeRecordInputTitle(title: string): string {
+  return title.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function toCamelCaseKey(input: string): string {
+  const parts = normalizeRecordInputTitle(input).split(' ').filter(Boolean);
+  if (parts.length === 0) return '';
+  return parts
+    .map((part, index) => (index === 0 ? part : part[0].toUpperCase() + part.slice(1)))
+    .join('');
+}
+
+function deriveRecordInputModuleUpdates(params: {
+  title?: string;
+  summary?: string;
+  storeKey?: string;
+}): Record<string, string> {
+  const summary = typeof params.summary === 'string' ? params.summary.trim() : '';
+  if (!summary) return {};
+
+  const updates: Record<string, string> = {};
+  const storeKey = typeof params.storeKey === 'string' ? params.storeKey.trim() : '';
+  const normalizedTitle = normalizeRecordInputTitle(typeof params.title === 'string' ? params.title : '');
+
+  const setUpdate = (key: string) => {
+    if (key && !updates[key]) {
+      updates[key] = summary;
+    }
+  };
+
+  if (storeKey) {
+    setUpdate(storeKey);
+  }
+
+  if (normalizedTitle) {
+    const titleKey = toCamelCaseKey(normalizedTitle);
+    if (titleKey) {
+      setUpdate(titleKey);
+      if (!titleKey.endsWith('Summary')) {
+        setUpdate(`${titleKey}Summary`);
+      }
+    }
+  }
+
+  return updates;
+}
+
 // Transform quiz module state option IDs to readable labels
 // Handles both single-select strings and multi-select arrays/JSON strings
 function transformQuizAnswersToLabels(moduleState: Record<string, any>): Record<string, any> {
@@ -360,6 +410,11 @@ function VoiceAgentContent() {
     executeAtMs: number;
     expiresAtMs: number;
   } | null>(null);
+  const lastRecordInputRef = useRef<{
+    atMs: number;
+    title: string;
+    summary: string;
+  } | null>(null);
   // Real-time session saver with debouncing
   const sessionSaverRef = useRef<DebouncedSessionSaver>(
     new DebouncedSessionSaver(500, (error) => {
@@ -411,6 +466,7 @@ function VoiceAgentContent() {
 
   const resetToFlowsScreen = () => {
     pendingNavigationRef.current = null;
+    lastRecordInputRef.current = null;
     setSessionStatus('DISCONNECTED');
     setCurrentJourney(null);
     setIsTransitioningJourney(false);
@@ -821,6 +877,7 @@ function VoiceAgentContent() {
       const customEvent = event as CustomEvent;
       const { success, fromScreen, toScreen, availableScreens } = customEvent.detail;
       if (success) {
+        pendingNavigationRef.current = null;
         addLog('success', `✅ Navigated: "${fromScreen}" → "${toScreen}"`);
         // CRITICAL FIX: Sync the navigation result back to AgentUIContext
         // This ensures currentScreenIdRef stays in sync with ScreenContext's navigation
@@ -991,6 +1048,7 @@ function VoiceAgentContent() {
     // Generate new session ID for this session
     sessionIdRef.current = `session_${Date.now()}`;
     pendingNavigationRef.current = null;
+    lastRecordInputRef.current = null;
     
     // Store session info on window for end_call tool access
     (window as any).__voiceSessionId = sessionIdRef.current;
@@ -1771,6 +1829,7 @@ Important guidelines:
 
   const disconnectFromRealtime = async (forceShowFeedback: boolean = false) => {
     pendingNavigationRef.current = null;
+    lastRecordInputRef.current = null;
     addLog('info', 'Disconnecting from session...');
 
     // Flush any pending real-time saves first
@@ -2190,6 +2249,12 @@ Important guidelines:
       // Handle record_input tool specifically - update screen state
       if (toolName === 'record_input' && args.title) {
         const { title, summary = '', description = '', storeKey } = args;
+        const canonicalUpdates = deriveRecordInputModuleUpdates({ title, summary, storeKey });
+        lastRecordInputRef.current = {
+          atMs: Date.now(),
+          title: String(title),
+          summary: String(summary),
+        };
         addLog('info', `📝 Recording input - Title: ${title}, Summary: ${summary}`);
         
         // Dispatch a custom event that ScreenProvider can listen to
@@ -2205,10 +2270,10 @@ Important guidelines:
         });
         window.dispatchEvent(event);
         
-        // Also update the global module state in AgentUIContext to ensure persistence
-        if (storeKey && summary && updateModuleState) {
-          updateModuleState({ [storeKey]: summary });
-          addLog('info', `✅ Updated persistent module state: ${storeKey}`);
+        // Also update persistent module state in AgentUIContext to ensure summary cards render.
+        if (updateModuleState && Object.keys(canonicalUpdates).length > 0) {
+          updateModuleState(canonicalUpdates);
+          addLog('info', `✅ Updated persistent module state`, { keys: Object.keys(canonicalUpdates) });
         }
         
         addLog('info', `✅ Recorded input dispatched to screen state`);
@@ -2279,6 +2344,7 @@ Important guidelines:
     // Supports optional delay in seconds before triggering
     trigger_event: async (params: { eventId: string; delay?: number }) => {
       const { eventId, delay = 0 } = params;
+      let resolvedDelay = Number.isFinite(delay) ? Math.max(0, delay) : 0;
 
       const dispatchTriggerEvent = (id: string, delaySeconds = 0, extra: Record<string, any> = {}) => {
         const trigger = () => {
@@ -2408,9 +2474,26 @@ Important guidelines:
         recentEventTimestamps.current.set(eventId, now);
       }
 
-      addLog('tool', `⚡ trigger_event: ${eventId}${delay ? ` (delay: ${delay}s)` : ''}`);
+      if (isNavigationEvent && lastRecordInputRef.current) {
+        const elapsedMs = Date.now() - lastRecordInputRef.current.atMs;
+        if (elapsedMs >= 0 && elapsedMs <= RECENT_RECORD_INPUT_WINDOW_MS) {
+          const remainingHoldMs = MIN_RECORD_INPUT_POPUP_MS - elapsedMs;
+          if (remainingHoldMs > 0) {
+            const minimumDelaySeconds = Number((remainingHoldMs / 1000).toFixed(1));
+            if (resolvedDelay < minimumDelaySeconds) {
+              resolvedDelay = minimumDelaySeconds;
+              addLog(
+                'info',
+                `⏳ Holding navigation "${eventId}" for ${minimumDelaySeconds}s so the recorded answer stays visible.`
+              );
+            }
+          }
+        }
+      }
 
-      dispatchTriggerEvent(eventId, delay);
+      addLog('tool', `⚡ trigger_event: ${eventId}${resolvedDelay ? ` (delay: ${resolvedDelay}s)` : ''}`);
+
+      dispatchTriggerEvent(eventId, resolvedDelay);
 
       // Return a more informative result based on event type to guide the LLM
       if (eventId.startsWith('select_')) {
@@ -2419,7 +2502,7 @@ Important guidelines:
       if (isNavigationEvent) {
         return `Navigation "${eventId}" triggered. Screen is now changing. Continue speaking to the user about the new screen.`;
       }
-      return `Event "${eventId}" triggered successfully.${delay ? ` (after ${delay}s delay)` : ''} Proceed to the next step.`;
+      return `Event "${eventId}" triggered successfully.${resolvedDelay ? ` (after ${resolvedDelay}s delay)` : ''} Proceed to the next step.`;
     },
 
     // Record user input to screen state
@@ -2433,17 +2516,20 @@ Important guidelines:
       delay?: number;
     }) => {
       const { title, summary = '', description = '', storeKey, nextEventId, delay = 0 } = params;
+      const canonicalUpdates = deriveRecordInputModuleUpdates({ title, summary, storeKey });
+      const recordedAtMs = Date.now();
+      lastRecordInputRef.current = { atMs: recordedAtMs, title, summary };
       addLog('tool', `📝 record_input: ${title}`, { summary, storeKey, nextEventId, delay });
 
       // Dispatch event for ScreenProvider
       window.dispatchEvent(new CustomEvent('recordInput', {
-        detail: { title, summary, description, timestamp: Date.now(), storeKey }
+        detail: { title, summary, description, timestamp: recordedAtMs, storeKey }
       }));
 
       if (updateModuleState) {
         const moduleUpdates: Record<string, any> = {};
-        if (storeKey && summary) {
-          moduleUpdates[storeKey] = summary;
+        if (Object.keys(canonicalUpdates).length > 0) {
+          Object.assign(moduleUpdates, canonicalUpdates);
           // Keep legacy and canonical weekly focus keys synchronized.
           if (storeKey === 'weeklyIntention') {
             moduleUpdates.weeklyFocus = summary;
@@ -2459,9 +2545,17 @@ Important guidelines:
 
       // Trigger next event after delay if specified
       if (nextEventId) {
-        const delayMs = (delay || 0) * 1000;
-        const nowMs = Date.now();
+        const requestedDelayMs = Math.max(0, (delay || 0) * 1000);
+        const minimumDelayMs = nextEventId.startsWith('navigate_') ? MIN_RECORD_INPUT_POPUP_MS : 0;
+        const delayMs = Math.max(requestedDelayMs, minimumDelayMs);
+        const nowMs = recordedAtMs;
         const executeAtMs = nowMs + delayMs;
+        if (delayMs > requestedDelayMs && minimumDelayMs > 0) {
+          addLog(
+            'info',
+            `⏳ Delaying "${nextEventId}" by ${Math.round(delayMs / 1000)}s so the answer summary stays visible.`
+          );
+        }
         pendingNavigationRef.current = {
           eventId: nextEventId,
           executeAtMs,
@@ -2532,7 +2626,9 @@ Important guidelines:
       }));
 
       if (updateModuleState) {
-        updateModuleState({ goals });
+        updateModuleState({
+          goals,
+        });
       }
 
       return {

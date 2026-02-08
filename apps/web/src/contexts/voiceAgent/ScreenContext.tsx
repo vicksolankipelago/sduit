@@ -133,8 +133,9 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
         recordedInputTimestamp: Date.now(),
       });
       
-      if (storeKey && summary) {
-        updateModuleState({ [storeKey]: summary });
+      const moduleUpdates = deriveRecordInputModuleUpdates(title, summary, storeKey);
+      if (Object.keys(moduleUpdates).length > 0) {
+        updateModuleState(moduleUpdates);
       }
     };
     
@@ -569,6 +570,53 @@ export const useScreenContext = (): ScreenContextState => {
   return context;
 };
 
+function normalizeRecordInputTitle(title: string): string {
+  return title.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function toCamelCaseKey(input: string): string {
+  const parts = normalizeRecordInputTitle(input).split(' ').filter(Boolean);
+  if (parts.length === 0) return '';
+  return parts
+    .map((part, index) => (index === 0 ? part : part[0].toUpperCase() + part.slice(1)))
+    .join('');
+}
+
+function deriveRecordInputModuleUpdates(
+  title: unknown,
+  summary: unknown,
+  storeKey: unknown
+): Record<string, AnyCodable> {
+  const summaryText = typeof summary === 'string' ? summary.trim() : '';
+  if (!summaryText) return {};
+
+  const updates: Record<string, AnyCodable> = {};
+  const safeStoreKey = typeof storeKey === 'string' ? storeKey.trim() : '';
+  const normalizedTitle = normalizeRecordInputTitle(typeof title === 'string' ? title : '');
+
+  const setUpdate = (key: string) => {
+    if (key && updates[key] === undefined) {
+      updates[key] = summaryText;
+    }
+  };
+
+  if (safeStoreKey) {
+    setUpdate(safeStoreKey);
+  }
+
+  if (normalizedTitle) {
+    const titleKey = toCamelCaseKey(normalizedTitle);
+    if (titleKey) {
+      setUpdate(titleKey);
+      if (!titleKey.endsWith('Summary')) {
+        setUpdate(`${titleKey}Summary`);
+      }
+    }
+  }
+
+  return updates;
+}
+
 /**
  * Helper: Get nested value from object using dot notation
  */
@@ -601,4 +649,3 @@ function extractScreenIdFromDeeplink(deeplink: string): string | null {
     return deeplink;
   }
 }
-
