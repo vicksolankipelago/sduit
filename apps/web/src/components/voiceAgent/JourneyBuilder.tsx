@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import {
   Journey,
@@ -798,10 +798,6 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     onLaunchJourney(currentJourney);
   };
 
-  const handleBackToList = () => {
-    navigate('/');
-  };
-
   const selectedAgent = currentJourney?.agents.find(a => a.id === selectedAgentId) || null;
   const availableHandoffTargets = currentJourney?.agents.filter(a => a.id !== selectedAgentId) || [];
   const aiFlowTargetAgent =
@@ -1265,15 +1261,14 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       <div className="journey-builder-header">
         <div className="journey-header-left">
           {viewMode === 'detail' && (
-            <button
+            <Link
+              to="/"
               className="journey-back-btn"
-              onClick={handleBackToList}
-              type="button"
               aria-label="Back to flows"
               title="Back to flows"
             >
               ←
-            </button>
+            </Link>
           )}
           {viewMode === 'detail' && currentJourney && (
             <div className="journey-current-name">
