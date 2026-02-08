@@ -237,6 +237,34 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
           elevenLabsLogger.debug('Status changed:', statusData);
           console.log('📊 ElevenLabs status changed:', (statusData as any).status);
         },
+        onAgentToolRequest: (request) => {
+          elevenLabsLogger.info('Agent tool request:', request);
+          console.log('🧰 ElevenLabs agent_tool_request:', request);
+          callbacksRef.current.onEvent?.({
+            type: 'agent_tool_request',
+            ...request,
+          });
+        },
+        onAgentToolResponse: (response) => {
+          elevenLabsLogger.info('Agent tool response:', response);
+          console.log('🧰 ElevenLabs agent_tool_response:', response);
+          callbacksRef.current.onEvent?.({
+            type: 'agent_tool_response',
+            ...response,
+          });
+        },
+        onUnhandledClientToolCall: (toolCall) => {
+          elevenLabsLogger.error('Unhandled client tool call:', toolCall);
+          console.error('🔴 ElevenLabs unhandled_client_tool_call:', toolCall);
+          callbacksRef.current.onEvent?.({
+            type: 'unhandled_client_tool_call',
+            ...toolCall,
+          });
+          callbacksRef.current.onError?.(
+            `Unhandled client tool call: ${toolCall.tool_name}`,
+            toolCall
+          );
+        },
         onDebug: (debugData: any) => {
           if (debugData?.type === 'conversation_initiation_client_data') {
             const msg = debugData.message;

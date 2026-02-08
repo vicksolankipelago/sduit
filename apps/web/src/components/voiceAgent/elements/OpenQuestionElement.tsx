@@ -130,20 +130,16 @@ export const OpenQuestionElement: React.FC<OpenQuestionElementProps> = ({
       setRecordedSummary(summary);
       setRecordedDescription(description || null);
 
-      // Animate to summary state
+      // Animate and show summary immediately so captured input appears without UI lag.
       setQuestionMinimized(true);
-      
-      // After a brief delay, show the summary
-      setTimeout(() => {
-        const now = Date.now();
-        summaryShownAtRef.current = now;
-        setShowSummary(true);
-        
-        console.log('📝 OpenQuestionElement: Summary shown at', now);
-        
-        // Navigation is now controlled by the voice agent calling trigger_event with a delay parameter
-        // We no longer trigger navigation automatically from the component
-      }, 300);
+      const now = Date.now();
+      summaryShownAtRef.current = now;
+      setShowSummary(true);
+
+      console.log('📝 OpenQuestionElement: Summary shown at', now);
+
+      // Navigation is controlled by the voice agent via trigger_event/record_input delays.
+      // This component should only handle immediate visual state updates.
     }
 
 
@@ -177,4 +173,3 @@ export const OpenQuestionElement: React.FC<OpenQuestionElementProps> = ({
 };
 
 export default OpenQuestionElement;
-

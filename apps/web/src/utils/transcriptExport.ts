@@ -79,6 +79,15 @@ export interface SessionExport {
 
   transcript: TranscriptItem[];
   events: LoggedEvent[];
+  toolCalls?: Array<{
+    callId: string;
+    name: string;
+    args: Record<string, any>;
+    provider: 'azure' | 'elevenlabs' | 'unknown';
+    status: 'requested' | 'called' | 'not_called' | 'error' | 'completed' | 'unknown';
+    isError: boolean;
+    sourceEventNames: string[];
+  }>;
 
   stats: {
     totalMessages: number;
@@ -113,6 +122,214 @@ export interface SessionExport {
     status: 'todo' | 'done';
     createdAt: string;
   }>;
+}
+
+type ProviderToolCall = {
+  callId: string;
+  name: string;
+  args: Record<string, any>;
+  provider: 'azure' | 'elevenlabs' | 'unknown';
+  status: 'requested' | 'called' | 'not_called' | 'error' | 'completed' | 'unknown';
+  isError: boolean;
+  sourceEventNames: string[];
+};
+
+type ExportDebugLog = {
+  timestamp: string;
+  type: string;
+  message: string;
+  details?: any;
+};
+
+function safeParseArguments(rawArgs: unknown): Record<string, any> {
+  if (!rawArgs) return {};
+  if (typeof rawArgs === 'object' && !Array.isArray(rawArgs)) {
+    return rawArgs as Record<string, any>;
+  }
+  if (typeof rawArgs === 'string') {
+    try {
+      const parsed = JSON.parse(rawArgs);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as Record<string, any>;
+      }
+    } catch {
+      return { raw: rawArgs };
+    }
+  }
+  return { raw: rawArgs };
+}
+
+function getToolCallId(event: LoggedEvent, ...candidates: Array<unknown>): string {
+  for (const candidate of candidates) {
+    if (candidate !== undefined && candidate !== null && String(candidate).trim().length > 0) {
+      return String(candidate);
+    }
+  }
+  return String(event.id);
+}
+
+function extractToolCallsFromEvents(events: LoggedEvent[]): ProviderToolCall[] {
+  const callMap = new Map<string, ProviderToolCall>();
+
+  const upsert = (call: Partial<ProviderToolCall> & { callId: string; name: string; sourceEventName: string }) => {
+    const existing = callMap.get(call.callId);
+    const mergedSourceNames = new Set<string>(existing?.sourceEventNames || []);
+    mergedSourceNames.add(call.sourceEventName);
+
+    const next: ProviderToolCall = {
+      callId: call.callId,
+      name: call.name || existing?.name || 'unknown_tool',
+      args: call.args || existing?.args || {},
+      provider: call.provider || existing?.provider || 'unknown',
+      status: call.status || existing?.status || 'unknown',
+      isError: call.isError ?? existing?.isError ?? false,
+      sourceEventNames: Array.from(mergedSourceNames),
+    };
+
+    callMap.set(call.callId, next);
+  };
+
+  for (const event of events) {
+    const eventName = event.eventName;
+    const data = event.eventData || {};
+
+    if (eventName === 'response.function_call_arguments.done') {
+      const callId = getToolCallId(event, data.call_id, data.tool_call_id);
+      upsert({
+        callId,
+        name: data.name || data.tool_name || 'unknown_tool',
+        args: safeParseArguments(data.arguments),
+        provider: 'azure',
+        status: 'completed',
+        sourceEventName: eventName,
+      });
+      continue;
+    }
+
+    if (eventName === 'response.output_item.done' && data?.item?.type === 'function_call') {
+      const item = data.item;
+      const callId = getToolCallId(event, item.call_id, item.tool_call_id, item.id);
+      upsert({
+        callId,
+        name: item.name || item.tool_name || 'unknown_tool',
+        args: safeParseArguments(item.arguments),
+        provider: 'azure',
+        status: 'completed',
+        sourceEventName: eventName,
+      });
+      continue;
+    }
+
+    if (eventName === 'agent_tool_request') {
+      const callId = getToolCallId(event, data.tool_call_id);
+      upsert({
+        callId,
+        name: data.tool_name || 'unknown_tool',
+        args: safeParseArguments(data.parameters),
+        provider: 'elevenlabs',
+        status: 'requested',
+        sourceEventName: eventName,
+      });
+      continue;
+    }
+
+    if (eventName === 'agent_tool_response') {
+      const callId = getToolCallId(event, data.tool_call_id);
+      upsert({
+        callId,
+        name: data.tool_name || 'unknown_tool',
+        provider: 'elevenlabs',
+        status: data.is_error ? 'error' : data.is_called ? 'called' : 'not_called',
+        isError: Boolean(data.is_error),
+        sourceEventName: eventName,
+      });
+      continue;
+    }
+
+    if (eventName === 'unhandled_client_tool_call') {
+      const callId = getToolCallId(event, data.tool_call_id);
+      upsert({
+        callId,
+        name: data.tool_name || 'unknown_tool',
+        args: safeParseArguments(data.parameters),
+        provider: 'elevenlabs',
+        status: 'error',
+        isError: true,
+        sourceEventName: eventName,
+      });
+      continue;
+    }
+
+    if (eventName === 'client_tool_call') {
+      const toolPayload = data.client_tool_call && typeof data.client_tool_call === 'object'
+        ? data.client_tool_call
+        : data;
+      const callId = getToolCallId(event, toolPayload.tool_call_id);
+      upsert({
+        callId,
+        name: toolPayload.tool_name || 'unknown_tool',
+        args: safeParseArguments(toolPayload.parameters),
+        provider: 'elevenlabs',
+        status: 'requested',
+        sourceEventName: eventName,
+      });
+    }
+  }
+
+  return Array.from(callMap.values());
+}
+
+function extractToolCallsFromDebugLogs(debugLogs?: ExportDebugLog[]): ProviderToolCall[] {
+  if (!debugLogs || debugLogs.length === 0) return [];
+
+  const toolNames = [
+    'trigger_event',
+    'record_input',
+    'set_goals',
+    'capture_weekly_focus',
+    'set_reminder_time',
+    'set_checkin_frequency',
+    'end_call',
+    'navigate_to_screen',
+    'switch_agent',
+    'transfer_to_agent',
+    'screen_out_participant',
+  ];
+
+  const extracted: ProviderToolCall[] = [];
+  for (let index = 0; index < debugLogs.length; index += 1) {
+    const log = debugLogs[index];
+    if (log.type !== 'tool') continue;
+
+    const message = log.message || '';
+    const normalizedMessage = message.toLowerCase();
+    let matchedToolName: string | undefined;
+
+    const explicitToolMatch = message.match(/Tool executed:\s*([a-zA-Z0-9_]+)/);
+    if (explicitToolMatch?.[1]) {
+      matchedToolName = explicitToolMatch[1];
+    }
+
+    if (!matchedToolName) {
+      matchedToolName = toolNames.find((toolName) => normalizedMessage.includes(toolName));
+    }
+
+    if (!matchedToolName) continue;
+
+    extracted.push({
+      callId: `debug-${index}-${matchedToolName}`,
+      name: matchedToolName,
+      args: log.details && typeof log.details === 'object' && !Array.isArray(log.details)
+        ? log.details
+        : {},
+      provider: 'unknown',
+      status: normalizedMessage.includes('error') ? 'error' : 'completed',
+      isError: normalizedMessage.includes('error'),
+      sourceEventNames: ['debug_log_tool'],
+    });
+  }
+
+  return extracted;
 }
 
 /**
@@ -160,9 +377,10 @@ export function createSessionExport(params: {
   const userMessages = messages.filter(t => t.role === 'user');
   const assistantMessages = messages.filter(t => t.role === 'assistant');
   const breadcrumbs = transcript.filter(t => t.type === 'BREADCRUMB');
-  const toolCalls = events.filter(e =>
-    e.eventName === 'response.function_call_arguments.done'
-  );
+  const toolCallsFromEvents = extractToolCallsFromEvents(events);
+  const toolCalls = toolCallsFromEvents.length > 0
+    ? toolCallsFromEvents
+    : extractToolCallsFromDebugLogs(debugLogs);
 
   const journeyConfig = journey ? {
     id: journey.id,
@@ -236,6 +454,7 @@ export function createSessionExport(params: {
     screens: exportScreens,
     transcript,
     events,
+    toolCalls,
     stats: {
       totalMessages: messages.length,
       userMessages: userMessages.length,
@@ -488,19 +707,9 @@ export function formatTranscriptForSharing(
   lines.push(divider);
   lines.push('');
 
-  // Build a map of tool calls from events for richer tool call display
-  const toolCallMap = new Map<string, { name: string; args: any; result?: any }>();
-  for (const event of sessionExport.events) {
-    if (event.eventName === 'response.function_call_arguments.done') {
-      const data = event.eventData;
-      if (data.name && data.call_id) {
-        toolCallMap.set(data.call_id, {
-          name: data.name,
-          args: data.arguments ? JSON.parse(data.arguments) : {},
-        });
-      }
-    }
-  }
+  const extractedToolCalls = sessionExport.toolCalls && sessionExport.toolCalls.length > 0
+    ? sessionExport.toolCalls
+    : extractToolCallsFromEvents(sessionExport.events);
 
   // Process transcript items
   let lastRole: string | undefined;
@@ -593,6 +802,23 @@ export function formatTranscriptForSharing(
       }
     }
     lines.push('');
+  }
+
+  if (includeToolCalls && extractedToolCalls.length > 0) {
+    lines.push('');
+    lines.push(divider);
+    lines.push('');
+    lines.push('TOOL CALLS');
+    lines.push('');
+    for (const call of extractedToolCalls) {
+      const providerLabel = call.provider ? ` [${call.provider}]` : '';
+      const statusLabel = call.status ? ` (${call.status})` : '';
+      lines.push(formatToolCall(`${call.name}${providerLabel}${statusLabel}`, call.args || {}));
+      if (call.sourceEventNames?.length) {
+        lines.push(`    Source events: ${call.sourceEventNames.join(', ')}`);
+      }
+      lines.push('');
+    }
   }
 
   // Footer with stats

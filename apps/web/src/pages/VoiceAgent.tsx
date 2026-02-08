@@ -123,8 +123,32 @@ function normalizeAgentNameForRuntime(name: string): string {
     .replace(/^(.)/, (char) => char.toLowerCase());
 }
 
-const MIN_RECORD_INPUT_POPUP_MS = 3000;
+const RECORD_INPUT_DISPLAY_MS = 3000;
 const RECENT_RECORD_INPUT_WINDOW_MS = 15000;
+const PROMPT_TOOL_NAME_CANDIDATES = [
+  'trigger_event',
+  'record_input',
+  'set_goals',
+  'capture_weekly_focus',
+  'set_reminder_time',
+  'set_checkin_frequency',
+  'end_call',
+  'navigate_to_screen',
+  'switch_agent',
+  'transfer_to_agent',
+  'screen_out_participant',
+];
+
+function promptReferencesTool(prompt: string, toolName: string): boolean {
+  const escapedToolName = toolName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const toolPattern = new RegExp(`\\b${escapedToolName}\\s*\\(`, 'i');
+  return toolPattern.test(prompt);
+}
+
+function getPromptReferencedToolNames(prompt: string, candidates: string[]): string[] {
+  if (!prompt || !candidates.length) return [];
+  return candidates.filter((toolName) => promptReferencesTool(prompt, toolName));
+}
 
 function normalizeRecordInputTitle(title: string): string {
   return title.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -257,6 +281,8 @@ function VoiceAgentContent() {
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const currentAgentRef = useRef<string>('greeter');
   const currentScreenIdRef = useRef<string | null>(null);
+  const ownedMicStreamRef = useRef<MediaStream | null>(null);
+  const isDisconnectingRef = useRef(false);
 
   const sdkAudioElement = React.useMemo(() => {
     if (typeof window === 'undefined') return undefined;
@@ -266,6 +292,49 @@ function VoiceAgentContent() {
     document.body.appendChild(el);
     return el;
   }, []);
+
+  const personaAudioElement = React.useMemo(() => {
+    if (typeof window === 'undefined') return document.createElement('audio');
+    const el = document.createElement('audio');
+    el.autoplay = true;
+    return el;
+  }, []);
+
+  const stopMediaStreamTracks = useCallback((stream: MediaStream | null | undefined, context: string) => {
+    if (!stream) return;
+    stream.getTracks().forEach((track) => {
+      if (track.readyState !== 'ended') {
+        track.stop();
+      }
+    });
+    console.log(`🧹 Stopped media stream tracks (${context})`);
+  }, []);
+
+  const releaseOwnedMicStream = useCallback((reason: string) => {
+    if (!ownedMicStreamRef.current) return;
+    stopMediaStreamTracks(ownedMicStreamRef.current, `owned mic stream: ${reason}`);
+    ownedMicStreamRef.current = null;
+  }, [stopMediaStreamTracks]);
+
+  const resetAudioElement = useCallback((audioElement: HTMLAudioElement | null | undefined, context: string) => {
+    if (!audioElement) return;
+    try {
+      audioElement.pause();
+    } catch (error) {
+      console.warn(`Failed to pause ${context} audio element`, error);
+    }
+    const attachedStream = audioElement.srcObject;
+    if (attachedStream instanceof MediaStream) {
+      stopMediaStreamTracks(attachedStream, `${context} audio output`);
+    }
+    audioElement.srcObject = null;
+    audioElement.removeAttribute('src');
+    try {
+      audioElement.load();
+    } catch (error) {
+      console.warn(`Failed to reset ${context} audio element`, error);
+    }
+  }, [stopMediaStreamTracks]);
 
   useEffect(() => {
     if (sdkAudioElement && !audioElementRef.current) {
@@ -301,6 +370,17 @@ function VoiceAgentContent() {
       };
     }
   }, [sdkAudioElement]);
+
+  useEffect(() => {
+    return () => {
+      releaseOwnedMicStream('component unmount');
+      resetAudioElement(audioElementRef.current, 'primary');
+      resetAudioElement(personaAudioElement, 'persona');
+      if (sdkAudioElement?.parentNode) {
+        sdkAudioElement.parentNode.removeChild(sdkAudioElement);
+      }
+    };
+  }, [personaAudioElement, releaseOwnedMicStream, resetAudioElement, sdkAudioElement]);
 
   const [sessionStatus, setSessionStatus] = useState<SessionStatus>("DISCONNECTED");
   const [_shape] = useState<'oval' | 'rectangle'>('oval');
@@ -1018,6 +1098,8 @@ function VoiceAgentContent() {
       });
       console.log('🎤 Microphone permission GRANTED');
       addLog('success', '🎤 Microphone permission granted');
+      ownedMicStreamRef.current = microphoneStream;
+      setMicStream(microphoneStream);
     } catch (error) {
       console.error('🎤 MICROPHONE PERMISSION DENIED:', error);
       setMicPermissionError(true);
@@ -1361,6 +1443,24 @@ function VoiceAgentContent() {
       }
 
       const combinedInstructions = instructionParts.filter(Boolean).join('\n\n');
+      const declaredToolNames = new Set(
+        (startingAgentConfigForConnect.tools || [])
+          .map((tool) => tool?.name)
+          .filter((name): name is string => typeof name === 'string' && name.length > 0)
+      );
+      const promptReferencedToolNames = getPromptReferencedToolNames(
+        combinedInstructions,
+        PROMPT_TOOL_NAME_CANDIDATES
+      );
+      const missingDeclaredTools = promptReferencedToolNames.filter(
+        (toolName) => !declaredToolNames.has(toolName)
+      );
+      if (currentProviderRef.current === 'elevenlabs' && missingDeclaredTools.length > 0) {
+        addLog(
+          'warning',
+          `⚠️ Prompt references tools missing from journey config: ${missingDeclaredTools.join(', ')}.`
+        );
+      }
 
       // Check prompt size - WebRTC has a 64KB limit
       const promptBytes = new TextEncoder().encode(combinedInstructions).length;
@@ -1436,6 +1536,9 @@ function VoiceAgentContent() {
         audioRouterRef.current = new VoiceAgentAudioRouter();
         const { personaMicStream, agentMicStream } = 
           await audioRouterRef.current.setupBidirectionalRouting(sdkAudioElement!, personaAudioElement);
+        // Preflight mic stream is only for permission in persona mode.
+        releaseOwnedMicStream('persona mode uses routed streams');
+        setMicStream(null);
         
         // Convert flow context to string values for ElevenLabs dynamic variables
         const dynamicVariables: Record<string, string> = {};
@@ -1519,10 +1622,11 @@ Important guidelines:
         addLog('info', `📝 PROMPT OVERRIDE: ${combinedInstructions.length} chars being sent to ElevenLabs`);
         addLog('info', `📝 Override starts with: "${combinedInstructions.substring(0, 150).replace(/\n/g, ' ')}..."`);
         addLog('info', `📝 Override JSON size: ${new TextEncoder().encode(JSON.stringify({ agent: { prompt: { prompt: combinedInstructions } } })).length} bytes`);
+        const shouldUsePreflightMicStream = currentProviderRef.current === 'azure';
         
         await connect({
           audioElement: sdkAudioElement,
-          customMicStream: microphoneStream,
+          customMicStream: shouldUsePreflightMicStream ? microphoneStream : undefined,
           systemPrompt: journeyWithPQData.systemPrompt,
           agentConfig: journeyAgentConfig,
           allJourneyAgents: allJourneyAgentsMap,
@@ -1534,6 +1638,11 @@ Important guidelines:
           dynamicVariables: Object.keys(dynamicVariables).length > 0 ? dynamicVariables : undefined,
           promptOverride: combinedInstructions,
         });
+        if (!shouldUsePreflightMicStream) {
+          // ElevenLabs handles microphone capture internally after permission is granted.
+          releaseOwnedMicStream('provider manages its own mic stream');
+          setMicStream(null);
+        }
         console.log('🎙️ connect() completed');
         addLog('success', `Successfully initiated ${currentProviderRef.current === 'elevenlabs' ? 'ElevenLabs' : 'Azure'} connection`);
       }
@@ -1568,6 +1677,10 @@ Important guidelines:
         );
       }
     } catch (err: any) {
+      releaseOwnedMicStream('connect failure');
+      setMicStream(null);
+      resetAudioElement(audioElementRef.current, 'primary');
+      resetAudioElement(personaAudioElement, 'persona');
       console.error("Error connecting to Azure OpenAI:", err);
       addLog('error', 'Failed to connect to Azure OpenAI', { error: err.message });
       resetToFlowsScreen();
@@ -1697,7 +1810,14 @@ Important guidelines:
 
   // Export transcript when session ends
   const getCurrentAgentFromJourney = () => {
-    return currentJourney?.agents?.find(a => a.name === currentAgentRef.current || a.id === currentAgentRef.current);
+    return currentJourney?.agents?.find((agent) => {
+      const runtimeName = normalizeAgentNameForRuntime(agent.name);
+      return (
+        agent.name === currentAgentRef.current ||
+        agent.id === currentAgentRef.current ||
+        runtimeName === currentAgentRef.current
+      );
+    });
   };
 
   const mapJourneyToolsToAgentTools = (journeyTools: any[]): any[] => {
@@ -1828,90 +1948,108 @@ Important guidelines:
   };
 
   const disconnectFromRealtime = async (forceShowFeedback: boolean = false) => {
+    if (isDisconnectingRef.current) {
+      addLog('info', 'Disconnect already in progress');
+      return;
+    }
+    isDisconnectingRef.current = true;
+
     pendingNavigationRef.current = null;
     lastRecordInputRef.current = null;
     addLog('info', 'Disconnecting from session...');
 
-    // Flush any pending real-time saves first
     try {
-      await sessionSaverRef.current.flush();
-    } catch (error) {
-      console.error('Failed to flush pending saves:', error);
-    }
-
-    // Auto-save complete session (supports both authenticated and anonymous users)
-    let sessionSaved = false;
-    if (transcriptItems.length > 0) {
+      // Flush any pending real-time saves first
       try {
-        const currentAgent = getCurrentAgentFromJourney();
-        const agentConfig = combinedPromptRef.current ? {
-          name: currentAgentRef.current,
-          publicDescription: '',
-          instructions: combinedPromptRef.current,
-          tools: mapJourneyToolsToAgentTools(currentAgent?.tools || []),
-        } : undefined;
-
-        const sessionExport = createSessionExport({
-          sessionId: sessionIdRef.current,
-          transcript: transcriptItems,
-          events: loggedEvents,
-          journey: currentJourney || undefined,
-          screens: currentAgent?.screens,
-          agentConfig,
-          flowContext: flowContext || {},
-          debugLogs: sessionLogs.map(log => ({
-            timestamp: log.timestamp instanceof Date ? log.timestamp.toISOString() : String(log.timestamp),
-            type: log.type,
-            message: log.message,
-            details: log.details,
-          })),
-          pqData: pqData,
-        });
-
-        await saveSession(sessionExport);
-        addLog('success', 'Session auto-saved to cloud');
-        sessionSaved = true;
-        
-        // Set feedback session ID for feedback form
-        setFeedbackSessionId(sessionIdRef.current);
+        await sessionSaverRef.current.flush();
       } catch (error) {
-        console.error('Failed to auto-save session:', error);
-        addLog('warning', 'Failed to auto-save session to cloud');
+        console.error('Failed to flush pending saves:', error);
       }
-    }
 
-    // Reset the real-time saver
-    sessionSaverRef.current.reset();
+      // Auto-save complete session (supports both authenticated and anonymous users)
+      let sessionSaved = false;
+      if (transcriptItems.length > 0) {
+        try {
+          const currentAgent = getCurrentAgentFromJourney();
+          const agentConfig = combinedPromptRef.current ? {
+            name: currentAgentRef.current,
+            publicDescription: '',
+            instructions: combinedPromptRef.current,
+            tools: mapJourneyToolsToAgentTools(currentAgent?.tools || []),
+          } : undefined;
 
-    disconnect();
+          const sessionExport = createSessionExport({
+            sessionId: sessionIdRef.current,
+            transcript: transcriptItems,
+            events: loggedEvents,
+            journey: currentJourney || undefined,
+            screens: currentAgent?.screens,
+            agentConfig,
+            flowContext: flowContext || {},
+            debugLogs: sessionLogs.map(log => ({
+              timestamp: log.timestamp instanceof Date ? log.timestamp.toISOString() : String(log.timestamp),
+              type: log.type,
+              message: log.message,
+              details: log.details,
+            })),
+            pqData: pqData,
+          });
 
-    // Disconnect persona if connected
-    if (personaStatus !== 'DISCONNECTED') {
-      disconnectPersona();
-      addLog('info', '🎭 Persona disconnected');
-    }
-
-    // Clean up audio routing
-    if (audioRouterRef.current) {
-      audioRouterRef.current.cleanup();
-      audioRouterRef.current = null;
-    }
-
-    // Disable screen rendering mode
-    if (disableScreenRendering) {
-      disableScreenRendering();
-    }
-
-    setSessionStatus("DISCONNECTED");
-    addLog('success', 'Disconnected successfully');
-    
-    // Show feedback form if session was saved successfully, in preview mode, or force requested (end_call tool)
-    if (sessionSaved || isPreviewMode || forceShowFeedback) {
-      // Ensure feedbackSessionId is set for the form to render
-      if (!feedbackSessionId) {
-        setFeedbackSessionId(sessionIdRef.current);
+          await saveSession(sessionExport);
+          addLog('success', 'Session auto-saved to cloud');
+          sessionSaved = true;
+          
+          // Set feedback session ID for feedback form
+          setFeedbackSessionId(sessionIdRef.current);
+        } catch (error) {
+          console.error('Failed to auto-save session:', error);
+          addLog('warning', 'Failed to auto-save session to cloud');
+        }
       }
-      setShowFeedbackForm(true);
+
+      // Reset the real-time saver
+      sessionSaverRef.current.reset();
+
+      await disconnect();
+
+      // Disconnect persona if connected
+      if (personaStatus !== 'DISCONNECTED') {
+        disconnectPersona();
+        addLog('info', '🎭 Persona disconnected');
+      }
+
+      // Clean up audio routing
+      if (audioRouterRef.current) {
+        audioRouterRef.current.cleanup();
+        audioRouterRef.current = null;
+      }
+
+      // Tell the browser we're done with mic/audio resources for this call.
+      releaseOwnedMicStream('session disconnect');
+      setMicStream(null);
+      resetAudioElement(audioElementRef.current, 'primary');
+      resetAudioElement(personaAudioElement, 'persona');
+      setIsMicMuted(false);
+      setIsAgentSpeaking(false);
+
+      // Disable screen rendering mode
+      if (disableScreenRendering) {
+        disableScreenRendering();
+      }
+
+      setSessionStatus("DISCONNECTED");
+      addLog('success', 'Disconnected successfully');
+      
+      // Show feedback form if session was saved successfully, in preview mode, or force requested (end_call tool)
+      if (sessionSaved || isPreviewMode || forceShowFeedback) {
+        // Ensure feedbackSessionId is set for the form to render
+        if (!feedbackSessionId) {
+          setFeedbackSessionId(sessionIdRef.current);
+        }
+        setShowFeedbackForm(true);
+      }
+    } finally {
+      isDisconnectingRef.current = false;
     }
   };
 
@@ -1981,6 +2119,9 @@ Important guidelines:
       if (micStream) {
         console.log('🧹 Cleaning up microphone stream');
         micStream.getTracks().forEach(track => track.stop());
+        if (ownedMicStreamRef.current === micStream) {
+          ownedMicStreamRef.current = null;
+        }
         setMicStream(null);
       }
       // Always stop recording to release mic usage
@@ -2066,10 +2207,6 @@ Important guidelines:
     addLog('info', voice ? `🎵 Voice set to ${voice}` : '🎵 Voice set to journey default');
   };
 
-  // Persona session - uses same implementation as voice agent
-  const personaAudioElement = document.createElement('audio');
-  personaAudioElement.autoplay = true;
-  
   const audioRouterRef = useRef<VoiceAgentAudioRouter | null>(null);
   
   const {
@@ -2213,6 +2350,16 @@ Important guidelines:
       // Handle tool execution errors (logged but not shown to AI)
       if (event.type === 'tool_execution_error') {
         addLog('error', `Tool Error: ${event.toolName} - ${event.error}`, event);
+      }
+
+      // ElevenLabs tool lifecycle debugging (captures attempts and failures).
+      if (event.type === 'agent_tool_request' && event.tool_name) {
+        addLog('tool', `🧰 Agent requested tool: ${event.tool_name}`, event);
+      }
+      if (event.type === 'agent_tool_response' && event.tool_name) {
+        const status = event.is_error ? 'error' : event.is_called ? 'called' : 'not called';
+        const logType = event.is_error ? 'error' : 'tool';
+        addLog(logType, `🧰 Agent tool response: ${event.tool_name} (${status})`, event);
       }
       
       // Handle handoff attempts for debugging
@@ -2477,7 +2624,7 @@ Important guidelines:
       if (isNavigationEvent && lastRecordInputRef.current) {
         const elapsedMs = Date.now() - lastRecordInputRef.current.atMs;
         if (elapsedMs >= 0 && elapsedMs <= RECENT_RECORD_INPUT_WINDOW_MS) {
-          const remainingHoldMs = MIN_RECORD_INPUT_POPUP_MS - elapsedMs;
+          const remainingHoldMs = RECORD_INPUT_DISPLAY_MS - elapsedMs;
           if (remainingHoldMs > 0) {
             const minimumDelaySeconds = Number((remainingHoldMs / 1000).toFixed(1));
             if (resolvedDelay < minimumDelaySeconds) {
@@ -2505,8 +2652,8 @@ Important guidelines:
       return `Event "${eventId}" triggered successfully.${resolvedDelay ? ` (after ${resolvedDelay}s delay)` : ''} Proceed to the next step.`;
     },
 
-    // Record user input to screen state
-    // Supports nextEventId to automatically trigger navigation after recording
+    // Record user input to screen state immediately.
+    // If nextEventId is a navigation event, keep the captured summary visible for exactly 3 seconds.
     record_input: async (params: {
       title: string;
       summary?: string;
@@ -2546,15 +2693,16 @@ Important guidelines:
       // Trigger next event after delay if specified
       if (nextEventId) {
         const requestedDelayMs = Math.max(0, (delay || 0) * 1000);
-        const minimumDelayMs = nextEventId.startsWith('navigate_') ? MIN_RECORD_INPUT_POPUP_MS : 0;
-        const delayMs = Math.max(requestedDelayMs, minimumDelayMs);
+        const isNavigationEvent = nextEventId.startsWith('navigate_');
+        // Keep behavior deterministic for spoken-answer screens:
+        // capture immediately, then hold for 3 seconds before navigating.
+        const delayMs = isNavigationEvent ? RECORD_INPUT_DISPLAY_MS : requestedDelayMs;
         const nowMs = recordedAtMs;
         const executeAtMs = nowMs + delayMs;
-        if (delayMs > requestedDelayMs && minimumDelayMs > 0) {
-          addLog(
-            'info',
-            `⏳ Delaying "${nextEventId}" by ${Math.round(delayMs / 1000)}s so the answer summary stays visible.`
-          );
+        if (isNavigationEvent) {
+          addLog('info', `⏳ Holding "${nextEventId}" for 3s so the captured answer remains visible.`);
+        } else if (delayMs > 0) {
+          addLog('info', `⏳ Delaying "${nextEventId}" by ${Math.round(delayMs / 1000)}s.`);
         }
         pendingNavigationRef.current = {
           eventId: nextEventId,
@@ -2586,7 +2734,9 @@ Important guidelines:
         title,
         summary,
         storeKey: storeKey || null,
-        message: `Recorded: ${title}`,
+        message: nextEventId?.startsWith('navigate_')
+          ? `Recorded: ${title}. Navigation "${nextEventId}" is scheduled in 3 seconds. Do not ask the next screen question until navigation completes.`
+          : `Recorded: ${title}`,
       };
     },
 
@@ -2949,11 +3099,14 @@ Important guidelines:
       const isDebugMessage = errorMessage.startsWith('DEBUG:');
       const isNormalDisconnect = errorMessage.includes('Disconnected (user)') || 
                                   errorMessage.includes('Disconnected (agent)');
+      const isToolRoutingIssue = errorMessage.startsWith('Unhandled client tool call:');
       
       if (isDebugMessage) {
         addLog('info', `[${timestamp}] ${errorMessage}`);
       } else if (isNormalDisconnect) {
         addLog('info', `[${timestamp}] Session ended normally`);
+      } else if (isToolRoutingIssue) {
+        addLog('warning', `[${timestamp}] ${errorMessage}`);
       } else {
         addLog('error', `[${timestamp}] ElevenLabs Error: ${errorMessage}`);
         if (details?.name) {
@@ -3015,9 +3168,9 @@ Important guidelines:
     return connectAzure(options);
   }, [connectAzure, connectElevenLabs]);
 
-  const disconnect = useCallback(() => {
+  const disconnect = useCallback(async () => {
     if (currentProviderRef.current === 'elevenlabs') {
-      disconnectElevenLabs();
+      await disconnectElevenLabs();
     } else {
       disconnectAzure();
     }
