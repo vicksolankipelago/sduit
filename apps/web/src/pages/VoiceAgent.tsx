@@ -2690,11 +2690,15 @@ Important guidelines:
         const moduleUpdates: Record<string, any> = {};
         if (Object.keys(canonicalUpdates).length > 0) {
           Object.assign(moduleUpdates, canonicalUpdates);
-          // Keep legacy and canonical weekly focus keys synchronized.
-          if (storeKey === 'weeklyIntention') {
-            moduleUpdates.weeklyFocus = summary;
-          } else if (storeKey === 'weeklyFocus') {
-            moduleUpdates.weeklyIntention = summary;
+
+          // Prevent display flicker on weekly-focus screen:
+          // capture_weekly_focus owns moduleData.weeklyFocus (quote card text).
+          // If record_input uses storeKey=weeklyFocus, redirect summary to weeklyIntention instead.
+          if (storeKey === 'weeklyFocus' && moduleUpdates.weeklyFocus !== undefined) {
+            delete moduleUpdates.weeklyFocus;
+            if (!moduleUpdates.weeklyIntention && summary) {
+              moduleUpdates.weeklyIntention = summary;
+            }
           }
         }
 
@@ -3020,7 +3024,8 @@ Important guidelines:
 
       // Store in module state — matches iOS stateManager.updateModuleState pattern
       const stateUpdates: Record<string, any> = {
-        weeklyFocus: `\u201C${focus}\u201D`,
+        weeklyFocus: focus,
+        weeklyIntention: focus,
         weeklyFocusCaption: caption,
       };
       if (relatedGoal) {
