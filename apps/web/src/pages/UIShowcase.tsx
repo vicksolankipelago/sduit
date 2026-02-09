@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import './UIShowcase.css';
 
@@ -31,6 +31,8 @@ type TabMode = 'screens' | 'elements' | 'builder';
 
 const UIShowcase: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showcaseMode, setShowcaseMode] = useState<TabMode>('screens');
   const [selectedCategory, setSelectedCategory] = useState<'core' | 'card' | 'interactive' | 'advanced'>('core');
 
@@ -50,11 +52,10 @@ const UIShowcase: React.FC = () => {
   const [_dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [showCodeView, setShowCodeView] = useState(false);
 
-  // Check for navigation state with a screen to edit
+  // Check for navigation state or URL query params with a screen to edit
   useEffect(() => {
     const state = location.state as LocationState | null;
     if (state?.editScreen) {
-      // Convert Screen to StandaloneScreen format
       const standaloneScreen: StandaloneScreen = {
         ...state.editScreen,
         createdAt: new Date().toISOString(),
@@ -71,10 +72,39 @@ const UIShowcase: React.FC = () => {
       setSelectedElementIndex(null);
       setShowcaseMode('builder');
       
-      // Clear the state to prevent re-opening on refresh
       window.history.replaceState({}, document.title);
+    } else if (searchParams.get('journeyId') && searchParams.get('agentId') && searchParams.get('screenId')) {
+      const journeyId = searchParams.get('journeyId')!;
+      const agentId = searchParams.get('agentId')!;
+      const screenId = searchParams.get('screenId')!;
+
+      loadJourney(journeyId).then((journey) => {
+        if (!journey) return;
+        const agent = journey.agents.find(a => a.id === agentId);
+        if (!agent) return;
+        const screen = agent.screens?.find(s => s.id === screenId);
+        if (!screen) return;
+
+        const standaloneScreen: StandaloneScreen = {
+          ...screen,
+          createdAt: journey.createdAt || new Date().toISOString(),
+          updatedAt: journey.updatedAt || new Date().toISOString(),
+        };
+        setBuilderScreen(standaloneScreen);
+        setEditingScreenId(screen.id);
+        setEditingAgentInfo({
+          agentId: agent.id,
+          agentName: agent.name,
+          journeyId,
+        });
+        setEditingScreenSource('journey');
+        setSelectedElementIndex(null);
+        setShowcaseMode('builder');
+
+        setSearchParams({}, { replace: true });
+      });
     }
-  }, [location.state]);
+  }, [location.state, searchParams]);
 
   // Load screens on mount
   useEffect(() => {
@@ -500,6 +530,14 @@ const UIShowcase: React.FC = () => {
         )}
         {showcaseMode === 'builder' && (
           <div className="ui-showcase-builder-actions">
+            {editingAgentInfo?.journeyId && (
+              <button
+                className="ui-showcase-back-btn"
+                onClick={() => navigate(`/builder?id=${editingAgentInfo.journeyId}`)}
+              >
+                ← Back to Flow
+              </button>
+            )}
             <button className="ui-showcase-save-btn" onClick={handleSaveScreen}>
               Save Screen
             </button>

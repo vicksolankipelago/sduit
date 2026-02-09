@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import {
   Journey,
@@ -966,14 +966,12 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   };
 
   const handleEditScreen = (screen: Screen) => {
-    navigate('/screens', { 
-      state: { 
-        editScreen: screen,
-        agentId: selectedAgent?.id,
-        agentName: selectedAgent?.name,
-        journeyId: currentJourney?.id
-      } 
-    });
+    try {
+      console.log('handleEditScreen: navigating to /screens with screen:', screen.id, 'journeyId:', currentJourney?.id);
+      navigate(`/screens?journeyId=${currentJourney?.id}&agentId=${selectedAgent?.id}&screenId=${screen.id}`);
+    } catch (err) {
+      console.error('handleEditScreen: navigation failed', err);
+    }
   };
 
   const handleDeleteAgent = () => {
@@ -1029,14 +1027,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     handleUpdateAgent(updatedAgent);
     
     // Navigate to Screen Builder with the new screen
-    navigate('/screens', { 
-      state: { 
-        editScreen: newScreen,
-        agentId: selectedAgent.id,
-        agentName: selectedAgent.name,
-        journeyId: currentJourney?.id
-      } 
-    });
+    navigate(`/screens?journeyId=${currentJourney?.id}&agentId=${selectedAgent.id}&screenId=${newScreen.id}`);
   };
 
   const handleRemoveScreen = (index: number) => {
@@ -1261,14 +1252,14 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       <div className="journey-builder-header">
         <div className="journey-header-left">
           {viewMode === 'detail' && (
-            <Link
-              to="/"
+            <button
               className="journey-back-btn"
               aria-label="Back to flows"
               title="Back to flows"
+              onClick={() => navigate('/')}
             >
               ←
-            </Link>
+            </button>
           )}
           {viewMode === 'detail' && currentJourney && (
             <div className="journey-current-name">

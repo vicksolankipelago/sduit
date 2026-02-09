@@ -88,25 +88,16 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
     onChange(updatedAgent);
     
     // Navigate to Screen Builder with the new screen
-    navigate('/screens', { 
-      state: { 
-        editScreen: newScreen,
-        agentId: agent.id,
-        agentName: agent.name,
-        journeyId
-      } 
-    });
+    navigate(`/screens?journeyId=${journeyId}&agentId=${agent.id}&screenId=${newScreen.id}`);
   };
 
   const handleEditScreen = (screen: Screen) => {
-    navigate('/screens', { 
-      state: { 
-        editScreen: screen,
-        agentId: agent.id,
-        agentName: agent.name,
-        journeyId
-      } 
-    });
+    try {
+      console.log('AgentNodeEditor handleEditScreen: navigating to /screens with screen:', screen.id, 'journeyId:', journeyId);
+      navigate(`/screens?journeyId=${journeyId}&agentId=${agent.id}&screenId=${screen.id}`);
+    } catch (err) {
+      console.error('AgentNodeEditor handleEditScreen: navigation failed', err);
+    }
   };
 
   const handleDeleteScreen = (index: number) => {
