@@ -965,12 +965,19 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     handleUpdateAgent({ ...selectedAgent, handoffs });
   };
 
-  const handleEditScreen = (screen: Screen) => {
+  const handleEditScreen = async (screen: Screen) => {
+    if (!currentJourney || !selectedAgent) return;
     try {
-      console.log('handleEditScreen: navigating to /screens with screen:', screen.id, 'journeyId:', currentJourney?.id);
-      navigate(`/screens?journeyId=${currentJourney?.id}&agentId=${selectedAgent?.id}&screenId=${screen.id}`);
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+      await saveJourney(currentJourney);
+      lastSavedJourneyRef.current = JSON.stringify(currentJourney);
+      setHasUnsavedChanges(false);
+      navigate(`/screens?journeyId=${currentJourney.id}&agentId=${selectedAgent.id}&screenId=${screen.id}`);
     } catch (err) {
-      console.error('handleEditScreen: navigation failed', err);
+      console.error('handleEditScreen: save/navigation failed', err);
     }
   };
 
@@ -991,8 +998,8 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     setSelectedAgentId(updatedAgents.length > 0 ? updatedAgents[0].id : null);
   };
 
-  const handleAddScreen = (templateId?: string) => {
-    if (!selectedAgent) return;
+  const handleAddScreen = async (templateId?: string) => {
+    if (!selectedAgent || !currentJourney) return;
 
     let newScreen: Screen;
 
@@ -1026,8 +1033,22 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
 
     handleUpdateAgent(updatedAgent);
     
-    // Navigate to Screen Builder with the new screen
-    navigate(`/screens?journeyId=${currentJourney?.id}&agentId=${selectedAgent.id}&screenId=${newScreen.id}`);
+    const updatedJourney = {
+      ...currentJourney,
+      agents: currentJourney.agents.map(a => a.id === updatedAgent.id ? updatedAgent : a),
+    };
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+    try {
+      await saveJourney(updatedJourney);
+      lastSavedJourneyRef.current = JSON.stringify(updatedJourney);
+      setHasUnsavedChanges(false);
+    } catch (err) {
+      console.error('handleAddScreen: save failed', err);
+    }
+    navigate(`/screens?journeyId=${currentJourney.id}&agentId=${selectedAgent.id}&screenId=${newScreen.id}`);
   };
 
   const handleRemoveScreen = (index: number) => {

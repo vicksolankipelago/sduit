@@ -211,6 +211,7 @@ export const AgentEditorPage: React.FC = () => {
           journeyId={journeyId || undefined}
           onChange={handleAgentChange}
           onClose={handleBack}
+          onSave={handleSave}
           disabled={false}
         />
       </div>

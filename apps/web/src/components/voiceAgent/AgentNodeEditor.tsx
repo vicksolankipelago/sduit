@@ -14,6 +14,7 @@ interface AgentNodeEditorProps {
   journeyId?: string;
   onChange: (agent: Agent) => void;
   onClose: () => void;
+  onSave?: () => Promise<void>;
   disabled?: boolean;
 }
 
@@ -23,6 +24,7 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
   journeyId,
   onChange,
   onClose,
+  onSave,
   disabled = false,
 }) => {
   const navigate = useNavigate();
@@ -51,7 +53,7 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
 
   const availableHandoffTargets = allAgents.filter(a => a.id !== agent.id);
 
-  const handleAddScreen = (templateId?: string) => {
+  const handleAddScreen = async (templateId?: string) => {
     let newScreen: Screen;
 
     if (templateId) {
@@ -87,16 +89,24 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
 
     onChange(updatedAgent);
     
-    // Navigate to Screen Builder with the new screen
+    try {
+      if (onSave) {
+        await onSave();
+      }
+    } catch (err) {
+      console.error('AgentNodeEditor handleAddScreen: save failed', err);
+    }
     navigate(`/screens?journeyId=${journeyId}&agentId=${agent.id}&screenId=${newScreen.id}`);
   };
 
-  const handleEditScreen = (screen: Screen) => {
+  const handleEditScreen = async (screen: Screen) => {
     try {
-      console.log('AgentNodeEditor handleEditScreen: navigating to /screens with screen:', screen.id, 'journeyId:', journeyId);
+      if (onSave) {
+        await onSave();
+      }
       navigate(`/screens?journeyId=${journeyId}&agentId=${agent.id}&screenId=${screen.id}`);
     } catch (err) {
-      console.error('AgentNodeEditor handleEditScreen: navigation failed', err);
+      console.error('AgentNodeEditor handleEditScreen: save/navigation failed', err);
     }
   };
 
