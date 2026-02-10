@@ -256,6 +256,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   // Auto-save state
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSaveStatusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const publishCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
   const hasInitialLoadRef = useRef(false);
   
@@ -425,6 +426,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     return () => {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
       if (autoSaveStatusTimerRef.current) clearTimeout(autoSaveStatusTimerRef.current);
+      if (publishCheckTimerRef.current) clearTimeout(publishCheckTimerRef.current);
     };
   }, []);
 
@@ -467,9 +469,11 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     setSaveSuccess(false);
     setAutoSaveStatus('idle');
     try {
-      const savedJourney = await saveJourney(currentJourney);
+      const saveTimeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Save timed out after 10 seconds')), 10000)
+      );
+      const savedJourney = await Promise.race([saveJourney(currentJourney), saveTimeout]);
       if (savedJourney) {
-        // Update currentJourney with the saved journey (may have new ID)
         setCurrentJourney(savedJourney);
         try {
           const channel = new BroadcastChannel('journey-updates');
@@ -480,7 +484,6 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
           });
           channel.close();
         } catch (e) {
-          // BroadcastChannel not supported
         }
         lastSavedJourneyRef.current = JSON.stringify(savedJourney);
         setHasUnsavedChanges(false);
@@ -518,9 +521,12 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     version: journeyLike?.version || '1.0.0',
   });
 
-  // Check publish status when journey loads
   useEffect(() => {
-    const checkPublishStatus = async () => {
+    if (publishCheckTimerRef.current) {
+      clearTimeout(publishCheckTimerRef.current);
+    }
+
+    publishCheckTimerRef.current = setTimeout(async () => {
       if (currentJourney?.id && !currentJourney.id.startsWith('new-')) {
         try {
           const published = await getPublishedJourney(currentJourney.id);
@@ -537,8 +543,13 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
           setHasUnpublishedChanges(false);
         }
       }
+    }, 2000);
+
+    return () => {
+      if (publishCheckTimerRef.current) {
+        clearTimeout(publishCheckTimerRef.current);
+      }
     };
-    checkPublishStatus();
   }, [currentJourney]);
 
   const handlePublish = async () => {
@@ -570,9 +581,12 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     setIsPublishing(true);
     console.log('🚀 Starting publish...');
     try {
-      // First save the journey
+      const publishTimeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Publish timed out after 15 seconds')), 15000)
+      );
+
       console.log('🚀 Saving journey before publish...');
-      const savedJourney = await saveJourney(currentJourney);
+      const savedJourney = await Promise.race([saveJourney(currentJourney), publishTimeout]);
       console.log('🚀 Save result:', savedJourney);
       
       if (!savedJourney) {
@@ -580,13 +594,12 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
         return;
       }
       
-      // Update currentJourney with the saved journey (may have new ID)
       setCurrentJourney(savedJourney);
       lastSavedJourneyRef.current = JSON.stringify(savedJourney);
       setHasUnsavedChanges(false);
       
       console.log('🚀 Publishing journey with ID:', savedJourney.id);
-      const result = await publishJourneyApi(savedJourney.id);
+      const result = await Promise.race([publishJourneyApi(savedJourney.id), publishTimeout]);
       console.log('🚀 Publish result:', result);
       if (result.success) {
         setIsPublished(true);

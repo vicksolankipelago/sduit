@@ -172,28 +172,20 @@ export async function loadJourney(id: string): Promise<Journey | null> {
 }
 
 export async function saveJourney(journey: Journey): Promise<Journey | null> {
-  journey.updatedAt = new Date().toISOString();
+  const journeyToSave = { ...journey, updatedAt: new Date().toISOString() };
 
   const isProd = await isProduction();
 
   if (isProd) {
-    // In production, Object Storage is the sole source of truth.
-    // We save ONLY to Object Storage - no DB save needed.
-    // Production flows may not exist in the dev database at all, and that's fine.
-    // Voice sessions, the editor, and all runtime loading use Object Storage exclusively.
-    console.log(`[Production] Saving journey to Object Storage: agents count=${journey.agents?.length}, first agent prompt length=${journey.agents?.[0]?.prompt?.length || 0}`);
-    // This will throw on failure - which is intentional in production.
-    // The caller (auto-save / manual save) catches this and shows "Save failed".
-    // This prevents silently losing prompt changes that wouldn't be reflected in voice sessions.
-    const osJourney = await journeyApi.updateProductionFlow(journey.id, journey);
-    console.log(`[Production] Saved to Object Storage successfully: ${osJourney.name} (id: ${osJourney.id || journey.id})`);
-    return journey;
+    console.log(`[Production] Saving journey to Object Storage: agents count=${journeyToSave.agents?.length}, first agent prompt length=${journeyToSave.agents?.[0]?.prompt?.length || 0}`);
+    const osJourney = await journeyApi.updateProductionFlow(journeyToSave.id, journeyToSave);
+    console.log(`[Production] Saved to Object Storage successfully: ${osJourney.name} (id: ${osJourney.id || journeyToSave.id})`);
+    return journeyToSave;
   }
 
-  // Development mode: save to database, fall back to localStorage
   let savedJourney: Journey | null = null;
   try {
-    savedJourney = await journeyApi.saveUserJourney(journey);
+    savedJourney = await journeyApi.saveUserJourney(journeyToSave);
     console.log(`Saved journey to database: ${savedJourney.name} (id: ${savedJourney.id})`);
   } catch (error) {
     console.error('Failed to save to database:', error);
@@ -206,24 +198,24 @@ export async function saveJourney(journey: Journey): Promise<Journey | null> {
   try {
     const data = localStorage.getItem(STORAGE_KEY);
     let journeys: Journey[] = data ? JSON.parse(data) : [];
-    const existingIndex = journeys.findIndex((j) => j.id === journey.id);
+    const existingIndex = journeys.findIndex((j) => j.id === journeyToSave.id);
 
     if (existingIndex >= 0) {
-      journeys[existingIndex] = journey;
-      console.log(`Updated journey in localStorage: ${journey.name}`);
+      journeys[existingIndex] = journeyToSave;
+      console.log(`Updated journey in localStorage: ${journeyToSave.name}`);
     } else {
-      if (!journey.id) {
-        journey.id = uuidv4();
+      if (!journeyToSave.id) {
+        journeyToSave.id = uuidv4();
       }
-      if (!journey.createdAt) {
-        journey.createdAt = new Date().toISOString();
+      if (!journeyToSave.createdAt) {
+        journeyToSave.createdAt = new Date().toISOString();
       }
-      journeys.push(journey);
-      console.log(`Created journey in localStorage: ${journey.name}`);
+      journeys.push(journeyToSave);
+      console.log(`Created journey in localStorage: ${journeyToSave.name}`);
     }
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(journeys));
-    return journey;
+    return journeyToSave;
   } catch (error) {
     console.error('Failed to save journey to localStorage:', error);
     return null;
