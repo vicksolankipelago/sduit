@@ -2178,7 +2178,7 @@ Important guidelines:
         addLog('info', `✅ Imported flow "${newJourney.name}" successfully`);
         alert(`Flow "${newJourney.name}" imported successfully!`);
         
-        navigate(`/builder?journey=${newJourney.id}`);
+        navigate(`/builder?id=${newJourney.id}`);
       } catch (error) {
         console.error('Import error:', error);
         const message = error instanceof Error ? error.message : 'Failed to import flow';
