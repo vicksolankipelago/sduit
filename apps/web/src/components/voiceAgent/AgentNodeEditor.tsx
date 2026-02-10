@@ -53,7 +53,7 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
 
   const availableHandoffTargets = allAgents.filter(a => a.id !== agent.id);
 
-  const handleAddScreen = async (templateId?: string) => {
+  const handleAddScreen = (templateId?: string) => {
     let newScreen: Screen;
 
     if (templateId) {
@@ -89,25 +89,21 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
 
     onChange(updatedAgent);
     
-    try {
-      if (onSave) {
-        await onSave();
-      }
-    } catch (err) {
-      console.error('AgentNodeEditor handleAddScreen: save failed', err);
+    if (onSave) {
+      onSave().catch((err) => {
+        console.error('AgentNodeEditor handleAddScreen: save failed', err);
+      });
     }
     navigate(`/screens?journeyId=${journeyId}&agentId=${agent.id}&screenId=${newScreen.id}`);
   };
 
-  const handleEditScreen = async (screen: Screen) => {
-    try {
-      if (onSave) {
-        await onSave();
-      }
-      navigate(`/screens?journeyId=${journeyId}&agentId=${agent.id}&screenId=${screen.id}`);
-    } catch (err) {
-      console.error('AgentNodeEditor handleEditScreen: save/navigation failed', err);
+  const handleEditScreen = (screen: Screen) => {
+    if (onSave) {
+      onSave().catch((err) => {
+        console.error('AgentNodeEditor handleEditScreen: save failed', err);
+      });
     }
+    navigate(`/screens?journeyId=${journeyId}&agentId=${agent.id}&screenId=${screen.id}`);
   };
 
   const handleDeleteScreen = (index: number) => {

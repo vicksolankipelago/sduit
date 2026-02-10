@@ -90,6 +90,15 @@ export const AgentEditorPage: React.FC = () => {
   }, []);
 
   const handleBack = () => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    if (journey) {
+      saveJourney(journey).catch((err) => {
+        console.error('Failed to save before navigating back:', err);
+      });
+    }
     navigate(`/builder?id=${journeyId}`);
   };
 
