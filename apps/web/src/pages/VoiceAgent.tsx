@@ -3485,6 +3485,7 @@ Important guidelines:
             isListening={true}
             isMuted={isMicMuted}
             onToggleMute={handleToggleMute}
+            onEndCall={handleEndCall}
           />
         ) : undefined}
         onOpenSettings={sessionStatus === 'CONNECTED' && !isPreviewMode ? () => setSettingsOpen(true) : undefined}

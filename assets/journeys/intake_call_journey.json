@@ -1491,9 +1491,9 @@
                 "text": "Your focus this week"
               },
               "style": {
-                "color": "secondary",
-                "style": "caption1",
-                "alignment": "left"
+                "color": "primary",
+                "style": "heading2",
+                "alignment": "leading"
               },
               "conditions": [
                 {
