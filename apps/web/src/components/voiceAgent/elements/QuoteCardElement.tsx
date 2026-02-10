@@ -31,11 +31,11 @@ export const QuoteCardElement: React.FC<QuoteCardElementProps> = ({
         />
       )}
       <div className="quote-card-content">
-        <div className="quote-card-message pelago-body-2-serif">
+        <div className="quote-card-message pelago-header-2">
           {data.message}
         </div>
         {caption && (
-          <div className="quote-card-author pelago-caption-2-bold">
+          <div className="quote-card-author pelago-body-2-regular">
             {caption}
           </div>
         )}

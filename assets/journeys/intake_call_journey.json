@@ -1488,7 +1488,7 @@
               "type": "textBlock",
               "state": {
                 "id": "weekly_focus_label",
-                "text": "Your focus for this week"
+                "text": "Your focus this week"
               },
               "style": {
                 "color": "secondary",
@@ -1590,6 +1590,18 @@
                   }
                 }
               ]
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "weekly_focus_bottom_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
             }
           ],
           "position": "body",

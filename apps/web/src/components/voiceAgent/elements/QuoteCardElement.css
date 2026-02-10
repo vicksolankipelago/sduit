@@ -28,10 +28,10 @@
 
 .quote-card-message {
   color: var(--text-global-primary);
-  font-style: normal;
+  font-style: italic;
 }
 
 .quote-card-author {
-  color: var(--text-global-primary);
+  color: var(--text-global-secondary);
 }
 
