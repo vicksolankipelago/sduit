@@ -1959,6 +1959,10 @@ Important guidelines:
     addLog('info', 'Disconnecting from session...');
 
     try {
+      if (disableScreenRendering) {
+        disableScreenRendering();
+      }
+
       // Flush any pending real-time saves first
       try {
         await sessionSaverRef.current.flush();
@@ -2031,11 +2035,6 @@ Important guidelines:
       resetAudioElement(personaAudioElement, 'persona');
       setIsMicMuted(false);
       setIsAgentSpeaking(false);
-
-      // Disable screen rendering mode
-      if (disableScreenRendering) {
-        disableScreenRendering();
-      }
 
       setSessionStatus("DISCONNECTED");
       addLog('success', 'Disconnected successfully');
@@ -3523,7 +3522,7 @@ Important guidelines:
       />
       
       {/* Header - Show when disconnected and NOT in preview mode, transitioning, or loading */}
-      {sessionStatus === 'DISCONNECTED' && !isPreviewMode && !isTransitioningJourney && !loadingJourneyId && (
+      {sessionStatus === 'DISCONNECTED' && !isPreviewMode && !isTransitioningJourney && !loadingJourneyId && !showFeedbackForm && (
         <div className="voice-agent-header">
           <h2 className="voice-agent-title">Flows</h2>
           {isAdmin && (
@@ -3639,7 +3638,7 @@ Important guidelines:
       )}
 
       {/* Journeys Content - Hide in preview mode and during journey transitions */}
-      {!isPreviewMode && !isTransitioningJourney && (
+      {!isPreviewMode && !isTransitioningJourney && !showFeedbackForm && (
       <div className="voice-agent-content">
         <div className="voice-agent-session-view">
           {sessionStatus === 'DISCONNECTED' && loadingJourneyId ? (
