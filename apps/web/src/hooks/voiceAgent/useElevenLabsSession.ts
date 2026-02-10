@@ -21,32 +21,49 @@ import { buildElevenLabsOverrides } from './buildElevenLabsOverrides';
 
 const elevenLabsLogger = logger;
 
-// AWS API Gateway endpoint for ElevenLabs session tokens
-const ELEVENLABS_TOKEN_ENDPOINT = 'https://un4a8jbuha.execute-api.us-east-2.amazonaws.com/prod/ai-voice-intake-call/11labs/session';
+const ELEVENLABS_AWS_ENDPOINT = 'https://un4a8jbuha.execute-api.us-east-2.amazonaws.com/prod/ai-voice-intake-call/11labs/session';
+const ELEVENLABS_LOCAL_ENDPOINT = '/api/elevenlabs/session';
 
 /**
- * Fetches a conversation token from the secure AWS endpoint
- * This keeps the ElevenLabs API key on the server side
+ * Fetches a conversation token from the AWS endpoint, falling back to our own server.
+ * This keeps the ElevenLabs API key server-side for security.
  */
 async function fetchConversationToken(agentId: string): Promise<string> {
-  const url = `${ELEVENLABS_TOKEN_ENDPOINT}/${agentId}`;
-  console.log('🔑 Fetching conversation token from:', url);
-  
-  const response = await fetch(url);
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to fetch conversation token: ${response.status} - ${errorText}`);
+  const awsUrl = `${ELEVENLABS_AWS_ENDPOINT}/${agentId}`;
+  console.log('🔑 Fetching conversation token from AWS:', awsUrl);
+
+  try {
+    const response = await fetch(awsUrl);
+    if (response.ok) {
+      const data = await response.json();
+      const token = data.token || data.conversationToken;
+      if (token) {
+        console.log('🔑 Conversation token received from AWS');
+        return token;
+      }
+    }
+    console.warn('🔑 AWS endpoint failed, falling back to local server');
+  } catch (err) {
+    console.warn('🔑 AWS endpoint unreachable, falling back to local server:', err);
   }
-  
-  const data = await response.json();
-  
-  if (!data.token) {
+
+  const localUrl = `${ELEVENLABS_LOCAL_ENDPOINT}?agentId=${encodeURIComponent(agentId)}`;
+  console.log('🔑 Fetching conversation token from local server:', localUrl);
+
+  const localResponse = await fetch(localUrl);
+  if (!localResponse.ok) {
+    const errorText = await localResponse.text();
+    throw new Error(`Failed to fetch conversation token: ${localResponse.status} - ${errorText}`);
+  }
+
+  const localData = await localResponse.json();
+  const token = localData.token || localData.conversationToken;
+  if (!token) {
     throw new Error('Token endpoint did not return a token');
   }
-  
-  console.log('🔑 Conversation token received successfully');
-  return data.token;
+
+  console.log('🔑 Conversation token received from local server');
+  return token;
 }
 
 export interface ElevenLabsSessionCallbacks {
