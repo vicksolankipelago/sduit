@@ -967,18 +967,21 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
 
   const handleEditScreen = async (screen: Screen) => {
     if (!currentJourney || !selectedAgent) return;
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
     try {
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-        autoSaveTimerRef.current = null;
-      }
-      await saveJourney(currentJourney);
+      await Promise.race([
+        saveJourney(currentJourney),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Save timeout')), 3000)),
+      ]);
       lastSavedJourneyRef.current = JSON.stringify(currentJourney);
       setHasUnsavedChanges(false);
-      navigate(`/screens?journeyId=${currentJourney.id}&agentId=${selectedAgent.id}&screenId=${screen.id}`);
     } catch (err) {
-      console.error('handleEditScreen: save/navigation failed', err);
+      console.error('handleEditScreen: save failed, navigating anyway', err);
     }
+    navigate(`/screens?journeyId=${currentJourney.id}&agentId=${selectedAgent.id}&screenId=${screen.id}`);
   };
 
   const handleDeleteAgent = () => {
@@ -1042,11 +1045,14 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       autoSaveTimerRef.current = null;
     }
     try {
-      await saveJourney(updatedJourney);
+      await Promise.race([
+        saveJourney(updatedJourney),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Save timeout')), 3000)),
+      ]);
       lastSavedJourneyRef.current = JSON.stringify(updatedJourney);
       setHasUnsavedChanges(false);
     } catch (err) {
-      console.error('handleAddScreen: save failed', err);
+      console.error('handleAddScreen: save failed, navigating anyway', err);
     }
     navigate(`/screens?journeyId=${currentJourney.id}&agentId=${selectedAgent.id}&screenId=${newScreen.id}`);
   };
@@ -1277,7 +1283,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
               className="journey-back-btn"
               aria-label="Back to flows"
               title="Back to flows"
-              onClick={async (e) => {
+              onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 if (autoSaveTimerRef.current) {
@@ -1285,11 +1291,9 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                   autoSaveTimerRef.current = null;
                 }
                 if (currentJourney && hasUnsavedChanges) {
-                  try {
-                    await saveJourney(currentJourney);
-                  } catch (err) {
+                  saveJourney(currentJourney).catch((err) => {
                     console.error('Failed to save before navigating back:', err);
-                  }
+                  });
                 }
                 navigate('/');
               }}
