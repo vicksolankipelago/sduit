@@ -22,7 +22,7 @@ import { buildElevenLabsOverrides } from './buildElevenLabsOverrides';
 const elevenLabsLogger = logger;
 
 // AWS API Gateway endpoint for ElevenLabs session tokens
-const ELEVENLABS_TOKEN_ENDPOINT = 'https://un4a8jbuha.execute-api.us-east-2.amazonaws.com/prod/ai-voice-agent/11labs/session';
+const ELEVENLABS_TOKEN_ENDPOINT = 'https://un4a8jbuha.execute-api.us-east-2.amazonaws.com/prod/ai-voice-intake-call/11labs/session';
 
 /**
  * Fetches a conversation token from the secure AWS endpoint
