@@ -109,6 +109,7 @@
 
 /* Inner screen wrapper - creates the rounded screen effect */
 .agent-ui-device-screen-wrapper {
+  position: relative;
   display: flex;
   flex-direction: column;
   flex: 1;
