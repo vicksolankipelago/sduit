@@ -31,7 +31,7 @@ export const QuoteCardElement: React.FC<QuoteCardElementProps> = ({
         />
       )}
       <div className="quote-card-content">
-        <div className="quote-card-message pelago-header-2">
+        <div className="quote-card-message pelago-body-1-regular">
           {data.message}
         </div>
         {caption && (

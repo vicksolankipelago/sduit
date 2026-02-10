@@ -96,21 +96,16 @@
 }
 
 .large-question-option-label {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 4px;
-  background: #FFE0E6;
-  padding: 3px 8px;
-  border-radius: 4px;
   margin-top: 4px;
-  width: fit-content;
 }
 
 .large-question-option-label-text {
   font-family: var(--font-family-grotesque, 'ES Rebond Grotesque', sans-serif);
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--text-global-primary, #212633);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--text-global-secondary, #6B7280);
   line-height: 1;
 }
 

@@ -207,7 +207,6 @@ export const LargeQuestionElement: React.FC<LargeQuestionElementProps> = ({
               {option.label && (
                 <div className="large-question-option-label">
                   <span className="large-question-option-label-text">{option.label}</span>
-                  <PillIcon iconName="pelatoken" />
                 </div>
               )}
             </div>
