@@ -174,13 +174,15 @@
 /* Responsive - Desktop Large */
 @media (min-width: 1400px) {
   .voice-control-keyboard,
-  .voice-control-end-call {
+  .voice-control-end-call,
+  .voice-control-help {
     width: 52px;
     height: 52px;
   }
 
   .voice-control-keyboard svg,
-  .voice-control-end-call svg {
+  .voice-control-end-call svg,
+  .voice-control-help svg {
     width: 26px;
     height: 26px;
   }
@@ -214,13 +216,15 @@
   }
 
   .voice-control-keyboard,
-  .voice-control-end-call {
+  .voice-control-end-call,
+  .voice-control-help {
     width: 44px;
     height: 44px;
   }
 
   .voice-control-keyboard svg,
-  .voice-control-end-call svg {
+  .voice-control-end-call svg,
+  .voice-control-help svg {
     width: 20px;
     height: 20px;
   }
@@ -236,6 +240,148 @@
   }
 }
 
+/* Help Button */
+.voice-control-help {
+  width: 36px;
+  height: 36px;
+  color: var(--text-global-secondary);
+}
+
+.voice-control-help svg {
+  width: 18px;
+  height: 18px;
+}
+
+.voice-control-help:hover {
+  background: var(--background-light-card);
+  color: var(--text-global-primary);
+}
+
+/* Help Overlay */
+.voice-help-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+  animation: help-fade-in 0.2s ease;
+}
+
+@keyframes help-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.voice-help-card {
+  background: var(--background-light);
+  border-radius: 16px;
+  padding: 20px 20px 24px;
+  max-width: 360px;
+  width: 100%;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12);
+  animation: help-slide-up 0.25s ease;
+}
+
+@keyframes help-slide-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.voice-help-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.voice-help-title {
+  font-family: var(--font-family-grotesque, 'ES Rebond Grotesque', sans-serif);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--text-global-primary);
+}
+
+.voice-help-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-global-secondary);
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.voice-help-close:hover {
+  background: var(--background-light-card);
+  color: var(--text-global-primary);
+}
+
+.voice-help-items {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.voice-help-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.voice-help-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--background-light-card, #f0f0f0);
+  color: var(--text-global-primary);
+}
+
+.voice-help-icon-mic {
+  background: rgba(162, 204, 110, 0.15);
+  color: #5a8a1e;
+}
+
+.voice-help-icon-buttons {
+  background: rgba(100, 149, 237, 0.12);
+  color: #3b6dcc;
+}
+
+.voice-help-icon-speak {
+  background: rgba(162, 204, 110, 0.15);
+  color: #5a8a1e;
+}
+
+.voice-help-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.voice-help-text strong {
+  font-family: var(--font-family-grotesque, 'ES Rebond Grotesque', sans-serif);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-global-primary);
+}
+
+.voice-help-text span {
+  font-family: var(--font-family-grotesque, 'ES Rebond Grotesque', sans-serif);
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--text-global-secondary);
+  line-height: 1.4;
+}
+
 /* Responsive - Small Mobile */
 @media (max-width: 480px) {
   .voice-control-bar {
@@ -247,13 +393,15 @@
   }
 
   .voice-control-keyboard,
-  .voice-control-end-call {
+  .voice-control-end-call,
+  .voice-control-help {
     width: 40px;
     height: 40px;
   }
 
   .voice-control-keyboard svg,
-  .voice-control-end-call svg {
+  .voice-control-end-call svg,
+  .voice-control-help svg {
     width: 18px;
     height: 18px;
   }

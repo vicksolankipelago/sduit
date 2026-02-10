@@ -412,6 +412,7 @@ export interface LargeQuestionOption {
   title: string;
   description?: string;
   imageName?: string;
+  label?: string;
   pill?: LargeQuestionOptionPill;
 }
 

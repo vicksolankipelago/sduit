@@ -204,6 +204,12 @@ export const LargeQuestionElement: React.FC<LargeQuestionElementProps> = ({
                   {option.description}
                 </div>
               )}
+              {option.label && (
+                <div className="large-question-option-label">
+                  <span className="large-question-option-label-text">{option.label}</span>
+                  <PillIcon iconName="pelatoken" />
+                </div>
+              )}
             </div>
             {isSelected(option.id) && (
               <div className="large-question-option-check">
