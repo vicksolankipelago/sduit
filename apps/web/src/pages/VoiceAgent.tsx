@@ -1443,11 +1443,18 @@ function VoiceAgentContent() {
       }
 
       const combinedInstructions = instructionParts.filter(Boolean).join('\n\n');
-      const declaredToolNames = new Set(
-        (startingAgentConfigForConnect.tools || [])
+      // System tools are always added by journeyRuntime regardless of journey config
+      const systemToolNames = new Set([
+        'trigger_event', 'record_input', 'end_call',
+        'set_checkin_frequency', 'set_reminder_time',
+        'set_goals', 'capture_weekly_focus', 'setVoiceEnabled',
+      ]);
+      const declaredToolNames = new Set([
+        ...systemToolNames,
+        ...(startingAgentConfigForConnect.tools || [])
           .map((tool) => tool?.name)
-          .filter((name): name is string => typeof name === 'string' && name.length > 0)
-      );
+          .filter((name): name is string => typeof name === 'string' && name.length > 0),
+      ]);
       const promptReferencedToolNames = getPromptReferencedToolNames(
         combinedInstructions,
         PROMPT_TOOL_NAME_CANDIDATES

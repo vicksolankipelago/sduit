@@ -196,10 +196,19 @@ export class JourneyRuntime {
       combinedInstructions = interpolatePrompt(combinedInstructions, this.flowContext);
     }
 
-    // Convert journey tools to RealtimeAgent tools
-    const realtimeTools = agentConfig.tools.map(toolConfig =>
-      this.createRealtimeTool(toolConfig, agentName)
-    );
+    // System tool names — these always use the system implementation to avoid
+    // conflicting schemas/descriptions from journey-level tool definitions.
+    const systemToolNames = new Set([
+      'trigger_event', 'record_input', 'end_call',
+      'set_checkin_frequency', 'set_reminder_time',
+      'set_goals', 'capture_weekly_focus', 'setVoiceEnabled',
+    ]);
+
+    // Convert journey tools to RealtimeAgent tools, skipping any that
+    // duplicate a system tool (system definitions have the correct schema).
+    const realtimeTools = agentConfig.tools
+      .filter(toolConfig => !systemToolNames.has(toolConfig.name))
+      .map(toolConfig => this.createRealtimeTool(toolConfig, agentName));
 
     // Add system tools available to all journeys
     // trigger_event - for screen navigation and UI events
