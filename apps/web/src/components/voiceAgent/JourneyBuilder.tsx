@@ -1277,7 +1277,23 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
               className="journey-back-btn"
               aria-label="Back to flows"
               title="Back to flows"
-              onClick={() => navigate('/')}
+              onClick={async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (autoSaveTimerRef.current) {
+                  clearTimeout(autoSaveTimerRef.current);
+                  autoSaveTimerRef.current = null;
+                }
+                if (currentJourney && hasUnsavedChanges) {
+                  try {
+                    await saveJourney(currentJourney);
+                  } catch (err) {
+                    console.error('Failed to save before navigating back:', err);
+                  }
+                }
+                navigate('/');
+              }}
+              type="button"
             >
               ←
             </button>
