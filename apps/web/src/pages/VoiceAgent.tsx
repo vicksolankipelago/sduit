@@ -557,6 +557,16 @@ function VoiceAgentContent() {
     disableScreenRendering?.();
   };
 
+  useEffect(() => {
+    const handleResetToFlows = () => {
+      resetToFlowsScreen();
+    };
+    window.addEventListener('resetToFlows', handleResetToFlows);
+    return () => {
+      window.removeEventListener('resetToFlows', handleResetToFlows);
+    };
+  }, []);
+
   // Load default journeys on first mount
   useEffect(() => {
     const loadJourneys = async () => {

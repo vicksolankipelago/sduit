@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './Navigation.css';
 
 export const Navigation: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { user, logout, isAdmin } = useAuth();
+  const location = useLocation();
 
   const handleSignOut = () => {
     logout();
@@ -95,6 +96,11 @@ export const Navigation: React.FC = () => {
             end={item.path === '/'}
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
             title={isCollapsed ? item.label : undefined}
+            onClick={() => {
+              if (item.path === '/' && location.pathname === '/') {
+                window.dispatchEvent(new CustomEvent('resetToFlows'));
+              }
+            }}
           >
             <span className="nav-icon">{item.icon}</span>
             {!isCollapsed && <span className="nav-label">{item.label}</span>}
