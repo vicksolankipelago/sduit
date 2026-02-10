@@ -349,10 +349,9 @@ async function main() {
     return (app as any)._router.handle(req, res);
   });
 
-  // ElevenLabs Session Endpoint - generates signed URL or conversation token
-  app.get("/api/elevenlabs/session", async (req, res) => {
+  // ElevenLabs Session Handler - generates signed URL or conversation token
+  async function handleElevenLabsSession(req: Request, res: Response, agentId: string) {
     try {
-      const agentId = req.query.agentId as string;
       const apiKey = process.env.ELEVENLABS_API_KEY;
 
       sessionLogger.info("=== ElevenLabs Session Request ===");
@@ -427,6 +426,18 @@ async function main() {
       sessionLogger.error("Error getting ElevenLabs session:", err.message);
       return apiResponse.serverError(res, "Failed to create ElevenLabs session", err.message);
     }
+  }
+
+  // Original endpoint (query param)
+  app.get("/api/elevenlabs/session", async (req, res) => {
+    const agentId = req.query.agentId as string;
+    return handleElevenLabsSession(req, res, agentId);
+  });
+
+  // Mobile app endpoint (path param) - matches /ai-voice-intake-call/11labs/session/:agentId
+  app.get("/ai-voice-intake-call/11labs/session/:agentId", async (req, res) => {
+    const agentId = req.params.agentId;
+    return handleElevenLabsSession(req, res, agentId);
   });
 
   // SDP Exchange Proxy - handles CORS issues by proxying through server
