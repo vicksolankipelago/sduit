@@ -1296,9 +1296,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
               className="journey-back-btn"
               aria-label="Back to flows"
               title="Back to flows"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
+              onClick={() => {
                 if (autoSaveTimerRef.current) {
                   clearTimeout(autoSaveTimerRef.current);
                   autoSaveTimerRef.current = null;
