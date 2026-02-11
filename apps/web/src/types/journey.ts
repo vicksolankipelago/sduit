@@ -610,11 +610,11 @@ export interface OpenQuestionElementStyle {
 
 /**
  * Orb Element (Voice Agent Visualization)
- * Custom Navi compass-style visualization with audio-reactive morphing.
+ * Custom Navi compass-style visualization with animated needle motion.
  */
 export interface OrbData {
   id: string;
-  /** Custom gradient colors [start, end] */
+  /** Optional stroke colors [primary, secondary] */
   colors?: [string, string];
   /** Agent state for auto volume mode */
   agentState?: 'thinking' | 'listening' | 'talking' | null;

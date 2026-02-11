@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { OrbData, OrbElementStyle } from '../../../types/journey';
 import { Orb, AgentState } from '../../ui/orb';
 import './OrbElement.css';
@@ -19,12 +19,10 @@ export interface OrbElementProps {
 }
 
 const SIZE_MAP = {
-  small: { width: '88px', height: '88px' },
-  medium: { width: '196px', height: '196px' },
-  large: { width: '304px', height: '304px' },
+  small: { width: '108px', height: '108px' },
+  medium: { width: '240px', height: '240px' },
+  large: { width: '320px', height: '320px' },
 };
-
-const EXPANDED_SIZE = 'min(72vw, 340px)';
 
 export const OrbElement: React.FC<OrbElementProps> = ({
   data,
@@ -38,9 +36,9 @@ export const OrbElement: React.FC<OrbElementProps> = ({
   sessionConnected,
   canExpand = true,
 }) => {
+  void canExpand;
   const inputVolumeRef = useRef<number>(inputVolume ?? 0);
   const outputVolumeRef = useRef<number>(outputVolume ?? 0);
-  const [isExpanded, setIsExpanded] = useState(false);
 
   React.useEffect(() => {
     if (inputVolume !== undefined) {
@@ -62,12 +60,7 @@ export const OrbElement: React.FC<OrbElementProps> = ({
     backgroundColor: style?.backgroundColor || 'transparent',
   };
 
-  const expandedContainerStyle: React.CSSProperties = {
-    width: EXPANDED_SIZE,
-    height: EXPANDED_SIZE,
-  };
-
-  const defaultColors: [string, string] = ['#FAE355', '#FEF7CE'];
+  const defaultColors: [string, string] = ['#7E57FF', '#A487FF'];
   const colors = data.colors || defaultColors;
 
   const runtimeAgentState = useMemo<AgentState>(() => {
@@ -100,62 +93,14 @@ export const OrbElement: React.FC<OrbElementProps> = ({
     />
   );
 
-  if (!canExpand) {
-    return (
-      <div
-        className="orb-element"
-        style={containerStyle}
-        data-element-id={data.id}
-      >
-        {orbNode}
-      </div>
-    );
-  }
-
   return (
-    <>
-      <button
-        type="button"
-        className="orb-element orb-element-button"
-        style={containerStyle}
-        data-element-id={data.id}
-        onClick={() => setIsExpanded(true)}
-        aria-label="Open Navi voice animation"
-      >
-        {orbNode}
-      </button>
-
-      {isExpanded && (
-        <div className="orb-element-overlay" onClick={() => setIsExpanded(false)}>
-          <div className="orb-element-overlay-content" onClick={(event) => event.stopPropagation()}>
-            <button
-              type="button"
-              className="orb-element-overlay-close"
-              onClick={() => setIsExpanded(false)}
-              aria-label="Close Navi animation"
-            >
-              x
-            </button>
-
-            <div className="orb-element orb-element-expanded" style={expandedContainerStyle}>
-              <Orb
-                colors={colors}
-                seed={data.seed}
-                agentState={runtimeAgentState}
-                volumeMode={runtimeVolumeMode}
-                manualInput={manualInputVolume}
-                manualOutput={outputVolume}
-                inputVolumeRef={inputVolumeRef}
-                outputVolumeRef={outputVolumeRef}
-                getInputVolume={getInputVolume}
-                getOutputVolume={getOutputVolume}
-                className="orb-canvas"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+    <div
+      className="orb-element"
+      style={containerStyle}
+      data-element-id={data.id}
+    >
+      {orbNode}
+    </div>
   );
 };
 

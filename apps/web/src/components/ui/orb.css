@@ -11,27 +11,47 @@
   overflow: visible;
 }
 
-.navi-orb-glow {
-  filter: blur(5px);
+.navi-orb-shell {
+  fill: none;
+  stroke: var(--navi-orb-stroke, #7e57ff);
+  stroke-width: 2.6;
+  stroke-linecap: round;
 }
 
-.navi-orb-ripple {
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.navi-orb-shell-secondary {
+  fill: none;
+  stroke: var(--navi-orb-accent, #a487ff);
+  stroke-width: 1.4;
+  opacity: 0.5;
 }
 
 .navi-orb-ticks line {
-  stroke: #1a1a1a;
-  stroke-width: 1;
-  opacity: 0.26;
+  stroke: var(--navi-orb-stroke, #7e57ff);
+  stroke-width: 1.45;
+  stroke-linecap: round;
+  opacity: 0.64;
 }
 
 .navi-orb-needle {
   transform-origin: 50% 50%;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .navi-orb-glow {
-    filter: blur(3px);
-  }
+.navi-orb-needle-line {
+  stroke: var(--navi-orb-stroke, #7e57ff);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.navi-orb-needle-head,
+.navi-orb-needle-tail {
+  fill: none;
+  stroke: var(--navi-orb-stroke, #7e57ff);
+  stroke-width: 1.9;
+  stroke-linejoin: round;
+}
+
+.navi-orb-needle-cap {
+  fill: none;
+  stroke: var(--navi-orb-stroke, #7e57ff);
+  stroke-width: 2.2;
 }
