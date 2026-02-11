@@ -43,7 +43,9 @@ export function Orb({
   void resizeDebounce;
   void seed;
 
-  const needleRef = useRef<SVGGElement>(null);
+  const needleLineRef = useRef<SVGLineElement>(null);
+  const needleHeadRef = useRef<SVGPathElement>(null);
+  const needleTailRef = useRef<SVGPathElement>(null);
   const tickRefs = useRef<Array<SVGLineElement | null>>([]);
   const stateRef = useRef<AgentState>(agentState);
   const modeRef = useRef<"auto" | "manual">(volumeMode);
@@ -132,12 +134,52 @@ export function Orb({
       );
       const energy = clamp01((smoothInputRef.current * 0.72) + (smoothOutputRef.current * 0.48));
 
-      if (needleRef.current) {
-        needleRef.current.setAttribute(
-          "transform",
-          `rotate(${clampedHeading.toFixed(2)} ${CENTER} ${CENTER})`,
+      const angleRad = (clampedHeading * Math.PI) / 180;
+      const dirX = Math.sin(angleRad);
+      const dirY = -Math.cos(angleRad);
+      const perpX = -dirY;
+      const perpY = dirX;
+
+      const halfNeedle = 23;
+      const topX = CENTER + dirX * halfNeedle;
+      const topY = CENTER + dirY * halfNeedle;
+      const bottomX = CENTER - dirX * halfNeedle;
+      const bottomY = CENTER - dirY * halfNeedle;
+
+      if (needleLineRef.current) {
+        needleLineRef.current.setAttribute("x1", topX.toFixed(2));
+        needleLineRef.current.setAttribute("y1", topY.toFixed(2));
+        needleLineRef.current.setAttribute("x2", bottomX.toFixed(2));
+        needleLineRef.current.setAttribute("y2", bottomY.toFixed(2));
+        needleLineRef.current.setAttribute("opacity", (0.8 + energy * 0.2).toFixed(3));
+      }
+
+      const topTipX = topX + dirX * 6;
+      const topTipY = topY + dirY * 6;
+      const topLeftX = topX - dirX * 5 + perpX * 3.2;
+      const topLeftY = topY - dirY * 5 + perpY * 3.2;
+      const topRightX = topX - dirX * 5 - perpX * 3.2;
+      const topRightY = topY - dirY * 5 - perpY * 3.2;
+      if (needleHeadRef.current) {
+        needleHeadRef.current.setAttribute(
+          "d",
+          `M ${topTipX.toFixed(2)} ${topTipY.toFixed(2)} L ${topLeftX.toFixed(2)} ${topLeftY.toFixed(2)} L ${topX.toFixed(2)} ${topY.toFixed(2)} L ${topRightX.toFixed(2)} ${topRightY.toFixed(2)} Z`,
         );
-        needleRef.current.setAttribute("opacity", (0.8 + energy * 0.2).toFixed(3));
+        needleHeadRef.current.setAttribute("opacity", (0.8 + energy * 0.2).toFixed(3));
+      }
+
+      const tailTipX = bottomX - dirX * 6;
+      const tailTipY = bottomY - dirY * 6;
+      const tailLeftX = bottomX + dirX * 5 + perpX * 3.2;
+      const tailLeftY = bottomY + dirY * 5 + perpY * 3.2;
+      const tailRightX = bottomX + dirX * 5 - perpX * 3.2;
+      const tailRightY = bottomY + dirY * 5 - perpY * 3.2;
+      if (needleTailRef.current) {
+        needleTailRef.current.setAttribute(
+          "d",
+          `M ${tailTipX.toFixed(2)} ${tailTipY.toFixed(2)} L ${tailLeftX.toFixed(2)} ${tailLeftY.toFixed(2)} L ${bottomX.toFixed(2)} ${bottomY.toFixed(2)} L ${tailRightX.toFixed(2)} ${tailRightY.toFixed(2)} Z`,
+        );
+        needleTailRef.current.setAttribute("opacity", (0.8 + energy * 0.2).toFixed(3));
       }
 
       const pulseSpeed =
@@ -203,8 +245,6 @@ export function Orb({
         style={orbStyle}
       >
         <circle className="navi-orb-shell" cx={CENTER} cy={CENTER} r="34" />
-        <circle className="navi-orb-shell-secondary" cx={CENTER} cy={CENTER} r="28" />
-
         <g className="navi-orb-ticks">
           {Array.from({ length: 8 }).map((_, index) => {
             const angle = (index / 8) * Math.PI * 2;
@@ -231,12 +271,11 @@ export function Orb({
           })}
         </g>
 
-        <g ref={needleRef} className="navi-orb-needle">
-          <line className="navi-orb-needle-line" x1="50" y1="27" x2="50" y2="73" />
-          <path className="navi-orb-needle-head" d="M50 21 L45 30 L50 27 L55 30 Z" />
-          <path className="navi-orb-needle-tail" d="M50 79 L46.8 71 L50 73 L53.2 71 Z" />
+        <g className="navi-orb-needle">
+          <line ref={needleLineRef} className="navi-orb-needle-line" x1="50" y1="27" x2="50" y2="73" />
+          <path ref={needleHeadRef} className="navi-orb-needle-head" d="M50 21 L45 30 L50 27 L55 30 Z" />
+          <path ref={needleTailRef} className="navi-orb-needle-tail" d="M50 79 L46.8 71 L50 73 L53.2 71 Z" />
         </g>
-        <circle className="navi-orb-hub" cx="50" cy="50" r="3.4" />
       </svg>
     </div>
   );

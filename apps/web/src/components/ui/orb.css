@@ -18,13 +18,6 @@
   stroke-linecap: round;
 }
 
-.navi-orb-shell-secondary {
-  fill: none;
-  stroke: var(--navi-orb-accent, #a487ff);
-  stroke-width: 1.4;
-  opacity: 0.5;
-}
-
 .navi-orb-ticks line {
   stroke: var(--navi-orb-stroke, #7e57ff);
   stroke-width: 1.45;
@@ -48,10 +41,4 @@
   stroke: var(--navi-orb-stroke, #7e57ff);
   stroke-width: 1.9;
   stroke-linejoin: round;
-}
-
-.navi-orb-hub {
-  fill: none;
-  stroke: var(--navi-orb-stroke, #7e57ff);
-  stroke-width: 2.2;
 }
