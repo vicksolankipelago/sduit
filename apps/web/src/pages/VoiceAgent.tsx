@@ -22,9 +22,8 @@ import AgentUIRenderer from '../components/voiceAgent/AgentUIRenderer';
 import SessionLogViewer, { LogEntry } from '../components/voiceAgent/SessionLogViewer';
 import MemberPersonaEditor from '../components/voiceAgent/MemberPersonaEditor';
 import FeedbackSurvey from '../components/voiceAgent/FeedbackSurvey';
-import VoiceControlBar from '../components/voiceAgent/VoiceControlBar';
+import VoiceControlBar, { type ActiveSpeaker } from '../components/voiceAgent/VoiceControlBar';
 import { ErrorBoundary } from '../components/voiceAgent/ErrorBoundary';
-import { useAudioLevel } from '../hooks/voiceAgent/useAudioLevel';
 import { EditIcon, SettingsIcon } from '../components/Icons';
 
 import { SessionStatus, TranscriptItem } from '../types/voiceAgent';
@@ -344,19 +343,19 @@ function VoiceAgentContent() {
       // Track actual audio playback to control speaking state
       const handleAudioPlay = () => {
         console.log('🔊 Audio started playing');
-        setIsAgentSpeaking(true);
+        setActiveSpeaker('agent');
       };
       
       const handleAudioEnded = () => {
         console.log('🔇 Audio ended');
-        setIsAgentSpeaking(false);
+        setActiveSpeaker('member');
       };
       
       const handleAudioPause = () => {
         // Only set speaking to false if audio is actually paused (not just buffering)
         if (sdkAudioElement.ended) {
           console.log('⏸️ Audio paused/ended');
-          setIsAgentSpeaking(false);
+          setActiveSpeaker('member');
         }
       };
       
@@ -411,7 +410,8 @@ function VoiceAgentContent() {
   
   // Voice control state
   const [isMicMuted, setIsMicMuted] = useState(false);
-  const [_isAgentSpeaking, setIsAgentSpeaking] = useState(false);
+  const [activeSpeaker, setActiveSpeaker] = useState<ActiveSpeaker>('none');
+  const [memberAudioLevel, setMemberAudioLevel] = useState(0);
   const [_hasScreensVisible, setHasScreensVisible] = useState(false);
   const [micStream, setMicStream] = useState<MediaStream | null>(null);
   
@@ -507,9 +507,6 @@ function VoiceAgentContent() {
     })
   );
 
-  // Track audio level from microphone for visualization - keeping hook call to avoid disrupting audio flow
-  useAudioLevel(micStream);
-
   // Buffer for accumulating assistant responses
   const assistantResponseBuffer = useRef<string>('');
   const assistantResponseStartTime = useRef<Date | null>(null);
@@ -578,6 +575,8 @@ function VoiceAgentContent() {
     pendingNavigationRef.current = null;
     lastRecordInputRef.current = null;
     setSessionStatus('DISCONNECTED');
+    setActiveSpeaker('none');
+    setMemberAudioLevel(0);
     setCurrentJourney(null);
     setIsTransitioningJourney(false);
     setLoadingJourneyId(null);
@@ -827,6 +826,8 @@ function VoiceAgentContent() {
 
     // Set session status to connected (non-voice active)
     setSessionStatus('CONNECTED');
+    setActiveSpeaker('none');
+    setMemberAudioLevel(0);
     setLoadingJourneyId(null);
     setIsNonVoiceMode(true);
     addLog('success', `✅ Non-voice session started`);
@@ -856,6 +857,8 @@ function VoiceAgentContent() {
         addLog('info', `📞 Session complete`);
         // For non-voice mode, just disconnect (no feedback form needed)
         setSessionStatus('DISCONNECTED');
+        setActiveSpeaker('none');
+        setMemberAudioLevel(0);
         setIsNonVoiceMode(false);
         disableScreenRendering?.();
         setHasScreensVisible(false);
@@ -935,6 +938,8 @@ function VoiceAgentContent() {
             
             // Force session to disconnected state first
             setSessionStatus('DISCONNECTED');
+            setActiveSpeaker('none');
+            setMemberAudioLevel(0);
             
             // Connect to voice session with the new journey
             console.log('🔗 About to schedule connectToRealtime call...');
@@ -1824,6 +1829,8 @@ Important guidelines:
     
     // Force session to disconnected state to allow reconnection
     setSessionStatus('DISCONNECTED');
+    setActiveSpeaker('none');
+    setMemberAudioLevel(0);
     
     // Transform quiz answers from option IDs to readable labels
     const transformedModuleState = moduleState ? transformQuizAnswersToLabels(moduleState) : {};
@@ -2108,7 +2115,8 @@ Important guidelines:
       resetAudioElement(audioElementRef.current, 'primary');
       resetAudioElement(personaAudioElement, 'persona');
       setIsMicMuted(false);
-      setIsAgentSpeaking(false);
+      setActiveSpeaker('none');
+      setMemberAudioLevel(0);
 
       setSessionStatus("DISCONNECTED");
       addLog('success', 'Disconnected successfully');
@@ -2302,12 +2310,17 @@ Important guidelines:
       if (currentProviderRef.current !== 'azure') return;
       setSessionStatus(s as SessionStatus);
       if (s === 'CONNECTING') {
+        setActiveSpeaker('none');
+        setMemberAudioLevel(0);
         addLog('info', 'Connecting to Azure OpenAI...');
       } else if (s === 'CONNECTED') {
+        setActiveSpeaker('member');
         addLog('success', 'Connected to Azure OpenAI WebRTC');
         setIsTransitioningJourney(false);
         setLoadingJourneyId(null);
       } else if (s === 'DISCONNECTED') {
+        setActiveSpeaker('none');
+        setMemberAudioLevel(0);
         addLog('info', 'Disconnected from Azure OpenAI');
         setIsTransitioningJourney(false);
         setLoadingJourneyId(null);
@@ -3707,6 +3720,7 @@ Important guidelines:
     setMicMuted: setMicMutedElevenLabs,
     sendUserMessage: sendUserMessageElevenLabs,
     sendContextualUpdate: sendContextualUpdateElevenLabs,
+    getInputVolume: getInputVolumeElevenLabs,
   } = useElevenLabsSession({
     customPrompts,
     clientTools: elevenLabsClientTools,
@@ -3715,18 +3729,27 @@ Important guidelines:
       setSessionStatus(s as SessionStatus);
       const timestamp = new Date().toLocaleTimeString();
       if (s === 'CONNECTING') {
+        setActiveSpeaker('none');
+        setMemberAudioLevel(0);
         addLog('info', `[${timestamp}] Connecting to ElevenLabs...`);
         setConnectionError(null); // Clear any previous errors
       } else if (s === 'CONNECTED') {
+        setActiveSpeaker('member');
         addLog('success', `[${timestamp}] Connected to ElevenLabs`);
         setIsTransitioningJourney(false);
         setLoadingJourneyId(null);
         setConnectionError(null); // Clear any previous errors
       } else if (s === 'DISCONNECTED') {
+        setActiveSpeaker('none');
+        setMemberAudioLevel(0);
         addLog('info', `[${timestamp}] Disconnected from ElevenLabs`);
         setIsTransitioningJourney(false);
         setLoadingJourneyId(null);
       }
+    },
+    onModeChange: (mode) => {
+      if (currentProviderRef.current !== 'elevenlabs') return;
+      setActiveSpeaker(mode === 'speaking' ? 'agent' : 'member');
     },
     onTranscript: (role: string, text: string, isDone?: boolean) => {
       const roleKey = role as 'user' | 'assistant';
@@ -3816,6 +3839,35 @@ Important guidelines:
     },
   }); // clientTools already passed in callbacks object above
 
+  useEffect(() => {
+    if (
+      sessionStatus !== 'CONNECTED' ||
+      currentProviderRef.current !== 'elevenlabs' ||
+      activeSpeaker !== 'member' ||
+      isMicMuted
+    ) {
+      setMemberAudioLevel(0);
+      return;
+    }
+
+    let smoothedLevel = 0;
+    const pollInterval = window.setInterval(() => {
+      const rawLevel = getInputVolumeElevenLabs?.() ?? 0;
+      const clampedLevel = Math.max(0, Math.min(rawLevel, 1));
+
+      // Smooth updates to avoid jumpy scaling.
+      smoothedLevel = (smoothedLevel * 0.62) + (clampedLevel * 0.38);
+      setMemberAudioLevel((previousLevel) => {
+        const nextLevel = (previousLevel * 0.5) + (smoothedLevel * 0.5);
+        return Math.abs(nextLevel - previousLevel) < 0.01 ? previousLevel : nextLevel;
+      });
+    }, 50);
+
+    return () => {
+      window.clearInterval(pollInterval);
+    };
+  }, [activeSpeaker, getInputVolumeElevenLabs, isMicMuted, sessionStatus]);
+
   const sendUiResponseToSession = useCallback((text: string, metadata?: Record<string, unknown>) => {
     const trimmed = text?.trim();
     if (!trimmed) return;
@@ -3883,6 +3935,9 @@ Important guidelines:
   const handleToggleMute = () => {
     const newMutedState = !isMicMuted;
     setIsMicMuted(newMutedState);
+    if (newMutedState) {
+      setMemberAudioLevel(0);
+    }
     setMicMuted(newMutedState);
     addLog('info', `Microphone ${newMutedState ? 'muted' : 'unmuted'}`);
   };
@@ -3996,8 +4051,10 @@ Important guidelines:
       <AgentUIRenderer
         bottomBar={sessionStatus === 'CONNECTED' && !isNonVoiceMode ? (
           <VoiceControlBar
-            isListening={true}
+            isListening={activeSpeaker === 'agent'}
             isMuted={isMicMuted}
+            activeSpeaker={activeSpeaker}
+            memberAudioLevel={memberAudioLevel}
             onToggleMute={handleToggleMute}
             onEndCall={handleEndCall}
           />
@@ -4006,6 +4063,8 @@ Important guidelines:
         onExit={sessionStatus === 'CONNECTED' ? () => {
           if (isNonVoiceMode) {
             setSessionStatus('DISCONNECTED');
+            setActiveSpeaker('none');
+            setMemberAudioLevel(0);
             setIsNonVoiceMode(false);
             disableScreenRendering?.();
             setHasScreensVisible(false);

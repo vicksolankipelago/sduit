@@ -173,10 +173,10 @@ export const MiniWidgetElement: React.FC<MiniWidgetElementProps> = ({
         <WidgetIcon iconName={data.titleIconName || data.contentIconName || ''} />
       )}
       <div className="mini-widget-text-content">
-        <div className="mini-widget-title">{resolvedTitle}</div>
         {resolvedContent && (
           <div className="mini-widget-subtitle">{resolvedContent}</div>
         )}
+        <div className="mini-widget-title">{resolvedTitle}</div>
       </div>
       {data.showActionArrow && (
         <div className="mini-widget-arrow">

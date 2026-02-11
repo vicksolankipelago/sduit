@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import './VoiceControlBar.css';
 
+export type ActiveSpeaker = 'agent' | 'member' | 'none';
+
 export interface VoiceControlBarProps {
   isListening: boolean;
   isMuted: boolean;
+  activeSpeaker?: ActiveSpeaker;
+  memberAudioLevel?: number;
   onToggleMute: () => void;
   onEndCall?: () => void;
   onOpenSettings?: () => void;
@@ -31,7 +35,7 @@ const HelpOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </div>
             <div className="voice-help-text">
               <strong>Microphone</strong>
-              <span>Tap to mute or unmute yourself. Pulses when listening.</span>
+              <span>Tap to mute or unmute yourself. Color and motion reflect who is speaking.</span>
             </div>
           </div>
           <div className="voice-help-item">
@@ -67,11 +71,26 @@ const HelpOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 export const VoiceControlBar: React.FC<VoiceControlBarProps> = ({
   isListening,
   isMuted,
+  activeSpeaker = 'none',
+  memberAudioLevel = 0,
   onToggleMute,
   onEndCall,
   onOpenSettings,
 }) => {
   const [showHelp, setShowHelp] = useState(false);
+  const normalizedAudioLevel = Math.max(0, Math.min(memberAudioLevel, 1));
+  const waveformScale = 1 + normalizedAudioLevel * 0.24;
+  const micStateClass = isMuted
+    ? 'speaker-muted'
+    : activeSpeaker === 'member'
+      ? 'speaker-member waveform-active'
+      : activeSpeaker === 'agent'
+        ? 'speaker-agent'
+        : 'speaker-none';
+  const micStyle: (React.CSSProperties & { '--voice-mic-wave-scale'?: string }) | undefined =
+    !isMuted && activeSpeaker === 'member'
+      ? { '--voice-mic-wave-scale': waveformScale.toFixed(3) }
+      : undefined;
 
   return (
     <>
@@ -92,7 +111,8 @@ export const VoiceControlBar: React.FC<VoiceControlBarProps> = ({
 
           {/* Microphone Button */}
           <button
-            className={`voice-control-btn voice-control-mic ${isMuted ? 'muted' : ''} ${isListening ? 'listening' : ''}`}
+            className={`voice-control-btn voice-control-mic ${isMuted ? 'muted' : ''} ${isListening ? 'listening' : ''} ${micStateClass}`}
+            style={micStyle}
             onClick={onToggleMute}
             title={isMuted ? 'Unmute microphone' : 'Mute microphone'}
           >
@@ -149,4 +169,3 @@ export const VoiceControlBar: React.FC<VoiceControlBarProps> = ({
 };
 
 export default VoiceControlBar;
-

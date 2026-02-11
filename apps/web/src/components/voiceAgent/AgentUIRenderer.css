@@ -349,16 +349,18 @@
 }
 
 .agent-ui-device-screen .mini-widget-title {
-  font-size: 8px !important;
-}
-
-.agent-ui-device-screen .mini-widget-value {
   font-size: 11px !important;
+  line-height: 1.3 !important;
   -webkit-line-clamp: 2 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
 }
 
-.agent-ui-device-screen .mini-widget-secondary {
+.agent-ui-device-screen .mini-widget-subtitle {
   font-size: 9px !important;
+  line-height: 1.2 !important;
 }
 
 /* Images - keep visible and reasonably sized */
@@ -464,15 +466,17 @@
 .agent-ui-device-bottom-bar .voice-control-mic {
   width: 56px;
   height: 56px;
-  background: var(--background-light);
-  border-color: var(--ui-element-divider);
-  color: var(--text-global-primary);
+  background: var(--voice-mic-bg, var(--background-light));
+  border-color: var(--voice-mic-border, var(--ui-element-divider));
+  color: var(--voice-mic-fg, var(--text-global-primary));
+  box-shadow: var(--voice-mic-shadow, none);
 }
  
-.agent-ui-device-bottom-bar .voice-control-mic.muted {
-  background: var(--background-light);
-  border-color: var(--ui-element-divider);
-  color: var(--alert-error-default);
+.agent-ui-device-bottom-bar .voice-control-mic.muted,
+.agent-ui-device-bottom-bar .voice-control-mic.speaker-muted {
+  background: var(--voice-mic-bg, var(--background-light));
+  border-color: var(--voice-mic-border, var(--ui-element-divider));
+  color: var(--voice-mic-fg, var(--text-global-primary));
 }
  
 .agent-ui-device-bottom-bar .voice-control-end-call {
