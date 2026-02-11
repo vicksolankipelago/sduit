@@ -194,21 +194,27 @@ export const LargeQuestionElement: React.FC<LargeQuestionElementProps> = ({
             )}
             <div className="large-question-option-content">
               <div className="large-question-option-header">
-                <div className="large-question-option-title">
-                  {option.title}
+                <div className="large-question-option-text-column">
+                  <div className="large-question-option-title">
+                    {option.title}
+                  </div>
+                  {option.description && (
+                    <div className="large-question-option-description pelago-body-2-regular">
+                      {option.description}
+                    </div>
+                  )}
                 </div>
-                {option.label && (
-                  <div className="large-question-option-label-badge">
-                    <span className="large-question-option-label-badge-text">{option.label}</span>
+                {(option.label || option.pill) && (
+                  <div className="large-question-option-meta-column">
+                    {option.label && (
+                      <div className="large-question-option-label-badge">
+                        <span className="large-question-option-label-badge-text">{option.label}</span>
+                      </div>
+                    )}
+                    {option.pill && <OptionPill pill={option.pill} />}
                   </div>
                 )}
-                {option.pill && <OptionPill pill={option.pill} />}
               </div>
-              {option.description && (
-                <div className="large-question-option-description pelago-body-2-regular">
-                  {option.description}
-                </div>
-              )}
             </div>
             {isSelected(option.id) && (
               <div className="large-question-option-check">
