@@ -25,10 +25,10 @@ const CENTER = VIEWBOX_SIZE / 2;
 const OUTER_RING_RADIUS = 34;
 const INNER_FILL_RADIUS = 31.5;
 const LINE_WIDTH = 2.9;
-const NEEDLE_HALF_LENGTH = 18.5;
-const NEEDLE_TIP_LENGTH = 4.8;
-const NEEDLE_WING_DEPTH = 4.3;
-const NEEDLE_WING_HALF_WIDTH = 2.4;
+const NEEDLE_HALF_LENGTH = 15.2;
+const NEEDLE_TIP_LENGTH = 3.6;
+const NEEDLE_WING_DEPTH = 3.3;
+const NEEDLE_WING_HALF_WIDTH = 1.9;
 const CARDINAL_SPOKE_OUTER_RADIUS = 30.6;
 const DIAGONAL_SPOKE_OUTER_RADIUS = 30.9;
 const CARDINAL_SPOKE_BASE_LENGTH = 4.8;
@@ -153,9 +153,11 @@ export function Orb({
       const energy = clamp01((smoothInputRef.current * 0.72) + (smoothOutputRef.current * 0.48));
 
       if (fillGradientRef.current) {
-        const gradientX = CENTER - 4 + Math.sin(elapsed * 0.46) * 5.8;
-        const gradientY = CENTER - 7 + Math.cos(elapsed * 0.38) * 4.9;
-        const gradientRadius = OUTER_RING_RADIUS * (1 + Math.sin(elapsed * 0.52) * 0.05);
+        const gradientX = CENTER - 4 + Math.sin(elapsed * 0.72) * (7.6 + energy * 2.3);
+        const gradientY = CENTER - 7 + Math.cos(elapsed * 0.62) * (6.4 + energy * 1.9);
+        const gradientRadius = OUTER_RING_RADIUS * (
+          1 + Math.sin(elapsed * 0.9) * (0.08 + energy * 0.05)
+        );
         fillGradientRef.current.setAttribute("cx", gradientX.toFixed(2));
         fillGradientRef.current.setAttribute("cy", gradientY.toFixed(2));
         fillGradientRef.current.setAttribute("r", gradientRadius.toFixed(2));

@@ -197,6 +197,68 @@ function deriveRecordInputModuleUpdates(params: {
   return updates;
 }
 
+function getTrimmedString(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function isWeeklyFocusRecordInput(params: {
+  title?: unknown;
+  storeKey?: unknown;
+}): boolean {
+  const storeKey = getTrimmedString(params.storeKey);
+  if (storeKey === 'weeklyFocus' || storeKey === 'weeklyIntention') {
+    return true;
+  }
+
+  const normalizedTitle = normalizeRecordInputTitle(getTrimmedString(params.title));
+  return (
+    normalizedTitle === 'weekly focus' ||
+    normalizedTitle === 'weekly intention' ||
+    normalizedTitle === 'intention'
+  );
+}
+
+function getStoredWeeklyFocusText(moduleState: Record<string, any> | null | undefined): string {
+  const weeklyFocus = getTrimmedString(moduleState?.weeklyFocus);
+  if (weeklyFocus) return weeklyFocus;
+  return getTrimmedString(moduleState?.weeklyIntention);
+}
+
+function applyWeeklyFocusRecordInputPolicy(
+  params: {
+    title?: unknown;
+    summary?: unknown;
+    storeKey?: unknown;
+  },
+  updates: Record<string, string>,
+  moduleState: Record<string, any> | null | undefined
+): { summary: string; updates: Record<string, string> } {
+  const inputSummary = getTrimmedString(params.summary);
+  if (!isWeeklyFocusRecordInput(params)) {
+    return { summary: inputSummary, updates };
+  }
+
+  // capture_weekly_focus is the source of truth for the member's exact wording.
+  const preservedSummary = getStoredWeeklyFocusText(moduleState);
+  const summary = preservedSummary || inputSummary;
+  const sanitizedUpdates = { ...updates };
+
+  // Never let record_input overwrite weekly-focus keys derived from title/storeKey.
+  delete sanitizedUpdates.weeklyFocus;
+  delete sanitizedUpdates.weeklyFocusSummary;
+  delete sanitizedUpdates.weeklyIntentionSummary;
+
+  if (preservedSummary) {
+    // Keep existing member wording untouched once captured.
+    delete sanitizedUpdates.weeklyIntention;
+  } else if (summary && !sanitizedUpdates.weeklyIntention) {
+    // Fallback when capture_weekly_focus was not called.
+    sanitizedUpdates.weeklyIntention = summary;
+  }
+
+  return { summary, updates: sanitizedUpdates };
+}
+
 // Transform quiz module state option IDs to readable labels
 // Handles both single-select strings and multi-select arrays/JSON strings
 function transformQuizAnswersToLabels(moduleState: Record<string, any>): Record<string, any> {
@@ -281,6 +343,7 @@ function VoiceAgentContent() {
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const currentAgentRef = useRef<string>('greeter');
   const currentScreenIdRef = useRef<string | null>(null);
+  const moduleStateRef = useRef<Record<string, any>>(moduleState || {});
   const ownedMicStreamRef = useRef<MediaStream | null>(null);
   const isDisconnectingRef = useRef(false);
 
@@ -442,6 +505,11 @@ function VoiceAgentContent() {
     currentScreenIdRef.current = currentScreenId ?? null;
   }, [currentScreenId]);
 
+  // Keep a synchronous module-state ref so sequential tool calls can read latest values.
+  useEffect(() => {
+    moduleStateRef.current = moduleState || {};
+  }, [moduleState]);
+
   // Ref to store the voice intake navigator journey (for quiz-to-voice transitions)
   const intakeNavigatorJourneyRef = useRef<Journey | null>(null);
   
@@ -545,6 +613,14 @@ function VoiceAgentContent() {
                  type === 'agent' ? '🤖' : type === 'tool' ? '🔧' : type === 'event' ? '📢' : 'ℹ️';
     console.log(`${icon} [${type.toUpperCase()}] ${message}`, details || '');
   };
+
+  const applyModuleStateUpdates = useCallback((updates: Record<string, any>) => {
+    if (!updateModuleState || Object.keys(updates).length === 0) {
+      return;
+    }
+    moduleStateRef.current = { ...moduleStateRef.current, ...updates };
+    updateModuleState(updates);
+  }, [updateModuleState]);
 
   const clearNotificationPlanReviewFallback = useCallback(() => {
     if (notificationPlanReviewFallbackTimerRef.current) {
@@ -2495,20 +2571,25 @@ Important guidelines:
       // Handle record_input tool specifically - update screen state
       if (toolName === 'record_input' && args.title) {
         const { title, summary = '', description = '', storeKey } = args;
-        const canonicalUpdates = deriveRecordInputModuleUpdates({ title, summary, storeKey });
+        const baseUpdates = deriveRecordInputModuleUpdates({ title, summary, storeKey });
+        const { summary: displaySummary, updates: canonicalUpdates } = applyWeeklyFocusRecordInputPolicy(
+          { title, summary, storeKey },
+          baseUpdates,
+          moduleStateRef.current
+        );
         lastRecordInputRef.current = {
           atMs: Date.now(),
           title: String(title),
-          summary: String(summary),
+          summary: displaySummary,
         };
-        addLog('info', `📝 Recording input - Title: ${title}, Summary: ${summary}`);
+        addLog('info', `📝 Recording input - Title: ${title}, Summary: ${displaySummary}`);
         
         // Dispatch a custom event that ScreenProvider can listen to
         // This will update the screen state with the recorded input
         const event = new CustomEvent('recordInput', {
           detail: {
             title,
-            summary,
+            summary: displaySummary,
             description,
             timestamp: Date.now(),
             storeKey,
@@ -2517,8 +2598,8 @@ Important guidelines:
         window.dispatchEvent(event);
         
         // Also update persistent module state in AgentUIContext to ensure summary cards render.
-        if (updateModuleState && Object.keys(canonicalUpdates).length > 0) {
-          updateModuleState(canonicalUpdates);
+        if (Object.keys(canonicalUpdates).length > 0) {
+          applyModuleStateUpdates(canonicalUpdates);
           addLog('info', `✅ Updated persistent module state`, { keys: Object.keys(canonicalUpdates) });
         }
         
@@ -3098,11 +3179,16 @@ Important guidelines:
     }) => {
       const startedAtMs = Date.now();
       const { title, summary = '', description = '', storeKey, nextEventId, delay = 0 } = params;
-      const canonicalUpdates = deriveRecordInputModuleUpdates({ title, summary, storeKey });
+      const baseUpdates = deriveRecordInputModuleUpdates({ title, summary, storeKey });
+      const { summary: displaySummary, updates: canonicalUpdates } = applyWeeklyFocusRecordInputPolicy(
+        { title, summary, storeKey },
+        baseUpdates,
+        moduleStateRef.current
+      );
       const recordedAtMs = Date.now();
-      lastRecordInputRef.current = { atMs: recordedAtMs, title, summary };
+      lastRecordInputRef.current = { atMs: recordedAtMs, title, summary: displaySummary };
       addLog('tool', `📝 record_input called: ${title}`, {
-        summary,
+        summary: displaySummary,
         storeKey,
         nextEventId,
         delay,
@@ -3112,28 +3198,16 @@ Important guidelines:
 
       // Dispatch event for ScreenProvider
       window.dispatchEvent(new CustomEvent('recordInput', {
-        detail: { title, summary, description, timestamp: recordedAtMs, storeKey }
+        detail: { title, summary: displaySummary, description, timestamp: recordedAtMs, storeKey }
       }));
 
-      if (updateModuleState) {
-        const moduleUpdates: Record<string, any> = {};
-        if (Object.keys(canonicalUpdates).length > 0) {
-          Object.assign(moduleUpdates, canonicalUpdates);
+      const moduleUpdates: Record<string, any> = {};
+      if (Object.keys(canonicalUpdates).length > 0) {
+        Object.assign(moduleUpdates, canonicalUpdates);
+      }
 
-          // Prevent display flicker on weekly-focus screen:
-          // capture_weekly_focus owns moduleData.weeklyFocus (quote card text).
-          // If record_input uses storeKey=weeklyFocus, redirect summary to weeklyIntention instead.
-          if (storeKey === 'weeklyFocus' && moduleUpdates.weeklyFocus !== undefined) {
-            delete moduleUpdates.weeklyFocus;
-            if (!moduleUpdates.weeklyIntention && summary) {
-              moduleUpdates.weeklyIntention = summary;
-            }
-          }
-        }
-
-        if (Object.keys(moduleUpdates).length > 0) {
-          updateModuleState(moduleUpdates);
-        }
+      if (Object.keys(moduleUpdates).length > 0) {
+        applyModuleStateUpdates(moduleUpdates);
       }
 
       // Trigger next event after delay if specified
@@ -3187,7 +3261,7 @@ Important guidelines:
       return {
         saved: true,
         title,
-        summary,
+        summary: displaySummary,
         storeKey: storeKey || null,
         message: nextEventId?.startsWith('navigate_')
           ? `Recorded: ${title}. Navigation "${nextEventId}" is scheduled in 3 seconds. Do not ask the next screen question until navigation completes.`
@@ -3490,9 +3564,7 @@ Important guidelines:
         stateUpdates.weeklyFocusGoal = relatedGoal;
       }
 
-      if (updateModuleState) {
-        updateModuleState(stateUpdates);
-      }
+      applyModuleStateUpdates(stateUpdates);
 
       const completedAtMs = Date.now();
       addLog('tool', `🎯 capture_weekly_focus result`, {
@@ -3711,7 +3783,7 @@ Important guidelines:
       setTimeout(() => disconnectFromRealtimeRef.current?.(true), 500);
       return 'Participant screened out';
     },
-  }), [updateModuleState, switchToAgent]); // addLog is stable (regular function)
+  }), [applyModuleStateUpdates, switchToAgent]); // addLog is stable (regular function)
 
   // ElevenLabs hook with same callbacks - pass clientTools at init time
   const {
