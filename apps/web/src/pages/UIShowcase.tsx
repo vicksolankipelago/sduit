@@ -18,7 +18,7 @@ import {
   deleteScreen,
   duplicateScreen,
 } from '../services/screenStorage';
-import { listJourneys, loadJourney, saveJourney } from '../services/journeyStorage';
+import { listJourneys, loadJourneyForRuntime, saveJourney } from '../services/journeyStorage';
 
 interface LocationState {
   editScreen?: Screen;
@@ -78,7 +78,7 @@ const UIShowcase: React.FC = () => {
       const agentId = searchParams.get('agentId')!;
       const screenId = searchParams.get('screenId')!;
 
-      loadJourney(journeyId).then((journey) => {
+      loadJourneyForRuntime(journeyId).then((journey) => {
         if (!journey) return;
         const agent = journey.agents.find(a => a.id === agentId);
         if (!agent) return;
@@ -126,7 +126,7 @@ const UIShowcase: React.FC = () => {
     try {
       const journeyList = await listJourneys();
       for (const journeyItem of journeyList) {
-        const journey = await loadJourney(journeyItem.id);
+        const journey = await loadJourneyForRuntime(journeyItem.id);
         if (journey?.agents) {
           for (const agent of journey.agents) {
             if (agent.screens && agent.screens.length > 0) {
@@ -178,7 +178,7 @@ const UIShowcase: React.FC = () => {
     // Check if this is a journey screen (compound ID: journeyId:agentId:screenId)
     if (screenId.includes(':')) {
       const [journeyId, agentId, actualScreenId] = screenId.split(':');
-      const journey = await loadJourney(journeyId);
+      const journey = await loadJourneyForRuntime(journeyId);
       if (journey) {
         const agent = journey.agents.find(a => a.id === agentId);
         if (agent?.screens) {
@@ -231,7 +231,7 @@ const UIShowcase: React.FC = () => {
     try {
       if (editingScreenSource === 'journey' && editingAgentInfo?.journeyId && editingAgentInfo?.agentId) {
         // Save to journey
-        const journey = await loadJourney(editingAgentInfo.journeyId);
+        const journey = await loadJourneyForRuntime(editingAgentInfo.journeyId);
         if (journey) {
           const agentIndex = journey.agents.findIndex(a => a.id === editingAgentInfo.agentId);
           if (agentIndex >= 0) {
