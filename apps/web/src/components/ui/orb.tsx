@@ -22,6 +22,16 @@ type OrbProps = {
 const DEFAULT_COLORS: [string, string] = ["#7E57FF", "#A487FF"];
 const VIEWBOX_SIZE = 100;
 const CENTER = VIEWBOX_SIZE / 2;
+const OUTER_RING_RADIUS = 34;
+const LINE_WIDTH = 2.9;
+const NEEDLE_HALF_LENGTH = 18.5;
+const NEEDLE_TIP_LENGTH = 4.8;
+const NEEDLE_WING_DEPTH = 4.3;
+const NEEDLE_WING_HALF_WIDTH = 2.4;
+const CARDINAL_SPOKE_INNER_RADIUS = 31;
+const DIAGONAL_SPOKE_INNER_RADIUS = 31.8;
+const CARDINAL_SPOKE_BASE_LENGTH = 4.8;
+const DIAGONAL_SPOKE_BASE_LENGTH = 3.1;
 const MIN_NEEDLE_DEGREES = -68;
 const MAX_NEEDLE_DEGREES = 68;
 
@@ -140,11 +150,10 @@ export function Orb({
       const perpX = -dirY;
       const perpY = dirX;
 
-      const halfNeedle = 23;
-      const topX = CENTER + dirX * halfNeedle;
-      const topY = CENTER + dirY * halfNeedle;
-      const bottomX = CENTER - dirX * halfNeedle;
-      const bottomY = CENTER - dirY * halfNeedle;
+      const topX = CENTER + dirX * NEEDLE_HALF_LENGTH;
+      const topY = CENTER + dirY * NEEDLE_HALF_LENGTH;
+      const bottomX = CENTER - dirX * NEEDLE_HALF_LENGTH;
+      const bottomY = CENTER - dirY * NEEDLE_HALF_LENGTH;
 
       if (needleLineRef.current) {
         needleLineRef.current.setAttribute("x1", topX.toFixed(2));
@@ -154,12 +163,12 @@ export function Orb({
         needleLineRef.current.setAttribute("opacity", (0.8 + energy * 0.2).toFixed(3));
       }
 
-      const topTipX = topX + dirX * 6;
-      const topTipY = topY + dirY * 6;
-      const topLeftX = topX - dirX * 5 + perpX * 3.2;
-      const topLeftY = topY - dirY * 5 + perpY * 3.2;
-      const topRightX = topX - dirX * 5 - perpX * 3.2;
-      const topRightY = topY - dirY * 5 - perpY * 3.2;
+      const topTipX = topX + dirX * NEEDLE_TIP_LENGTH;
+      const topTipY = topY + dirY * NEEDLE_TIP_LENGTH;
+      const topLeftX = topX - dirX * NEEDLE_WING_DEPTH + perpX * NEEDLE_WING_HALF_WIDTH;
+      const topLeftY = topY - dirY * NEEDLE_WING_DEPTH + perpY * NEEDLE_WING_HALF_WIDTH;
+      const topRightX = topX - dirX * NEEDLE_WING_DEPTH - perpX * NEEDLE_WING_HALF_WIDTH;
+      const topRightY = topY - dirY * NEEDLE_WING_DEPTH - perpY * NEEDLE_WING_HALF_WIDTH;
       if (needleHeadRef.current) {
         needleHeadRef.current.setAttribute(
           "d",
@@ -168,12 +177,12 @@ export function Orb({
         needleHeadRef.current.setAttribute("opacity", (0.8 + energy * 0.2).toFixed(3));
       }
 
-      const tailTipX = bottomX - dirX * 6;
-      const tailTipY = bottomY - dirY * 6;
-      const tailLeftX = bottomX + dirX * 5 + perpX * 3.2;
-      const tailLeftY = bottomY + dirY * 5 + perpY * 3.2;
-      const tailRightX = bottomX + dirX * 5 - perpX * 3.2;
-      const tailRightY = bottomY + dirY * 5 - perpY * 3.2;
+      const tailTipX = bottomX - dirX * NEEDLE_TIP_LENGTH;
+      const tailTipY = bottomY - dirY * NEEDLE_TIP_LENGTH;
+      const tailLeftX = bottomX + dirX * NEEDLE_WING_DEPTH + perpX * NEEDLE_WING_HALF_WIDTH;
+      const tailLeftY = bottomY + dirY * NEEDLE_WING_DEPTH + perpY * NEEDLE_WING_HALF_WIDTH;
+      const tailRightX = bottomX + dirX * NEEDLE_WING_DEPTH - perpX * NEEDLE_WING_HALF_WIDTH;
+      const tailRightY = bottomY + dirY * NEEDLE_WING_DEPTH - perpY * NEEDLE_WING_HALF_WIDTH;
       if (needleTailRef.current) {
         needleTailRef.current.setAttribute(
           "d",
@@ -190,11 +199,11 @@ export function Orb({
 
         const isCardinal = index % 2 === 0;
         const angle = (index / 8) * Math.PI * 2;
-        const innerRadius = isCardinal ? 36 : 37;
-        const baseLength = isCardinal ? 6.4 : 3.8;
+        const innerRadius = isCardinal ? CARDINAL_SPOKE_INNER_RADIUS : DIAGONAL_SPOKE_INNER_RADIUS;
+        const baseLength = isCardinal ? CARDINAL_SPOKE_BASE_LENGTH : DIAGONAL_SPOKE_BASE_LENGTH;
         const localPulse = 0.5 + 0.5 * Math.sin(elapsed * pulseSpeed + index * 0.86);
-        const lengthBoost = isCardinal ? 1.9 : 1.2;
-        const dynamicLength = baseLength + lengthBoost * localPulse * (0.45 + energy * 0.95);
+        const lengthBoost = isCardinal ? 1.4 : 0.9;
+        const dynamicLength = baseLength + lengthBoost * localPulse * (0.5 + energy * 0.75);
         const outerRadius = innerRadius + dynamicLength;
 
         const x1 = CENTER + Math.cos(angle) * innerRadius;
@@ -230,9 +239,10 @@ export function Orb({
   const accentColor = DEFAULT_COLORS[1];
   void colorsRef;
   void colorsLiveRef;
-  const orbStyle: React.CSSProperties & Record<"--navi-orb-stroke" | "--navi-orb-accent", string> = {
+  const orbStyle: React.CSSProperties & Record<"--navi-orb-stroke" | "--navi-orb-accent" | "--navi-orb-line-width", string> = {
     "--navi-orb-stroke": strokeColor,
     "--navi-orb-accent": accentColor,
+    "--navi-orb-line-width": `${LINE_WIDTH}px`,
   };
 
   return (
@@ -244,13 +254,15 @@ export function Orb({
         aria-label="Compass"
         style={orbStyle}
       >
-        <circle className="navi-orb-shell" cx={CENTER} cy={CENTER} r="34" />
+        <circle className="navi-orb-shell" cx={CENTER} cy={CENTER} r={OUTER_RING_RADIUS} />
+        <circle className="navi-orb-shell-shimmer" cx={CENTER} cy={CENTER} r={OUTER_RING_RADIUS} />
         <g className="navi-orb-ticks">
           {Array.from({ length: 8 }).map((_, index) => {
             const angle = (index / 8) * Math.PI * 2;
             const isCardinal = index % 2 === 0;
-            const inner = isCardinal ? 36 : 37;
-            const outer = isCardinal ? 43 : 41;
+            const inner = isCardinal ? CARDINAL_SPOKE_INNER_RADIUS : DIAGONAL_SPOKE_INNER_RADIUS;
+            const baseLength = isCardinal ? CARDINAL_SPOKE_BASE_LENGTH : DIAGONAL_SPOKE_BASE_LENGTH;
+            const outer = inner + baseLength;
             const x1 = CENTER + Math.cos(angle) * inner;
             const y1 = CENTER + Math.sin(angle) * inner;
             const x2 = CENTER + Math.cos(angle) * outer;

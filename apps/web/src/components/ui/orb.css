@@ -14,15 +14,27 @@
 .navi-orb-shell {
   fill: none;
   stroke: var(--navi-orb-stroke, #7e57ff);
-  stroke-width: 2.6;
+  stroke-width: var(--navi-orb-line-width, 2.9px);
+  opacity: 0.92;
   stroke-linecap: round;
+}
+
+.navi-orb-shell-shimmer {
+  fill: none;
+  stroke: var(--navi-orb-accent, #a487ff);
+  stroke-width: var(--navi-orb-line-width, 2.9px);
+  stroke-linecap: round;
+  stroke-dasharray: 18 220;
+  opacity: 0.18;
+  filter: drop-shadow(0 0 1.5px rgba(164, 135, 255, 0.35));
+  animation: navi-orb-shimmer 3.2s linear infinite;
 }
 
 .navi-orb-ticks line {
   stroke: var(--navi-orb-stroke, #7e57ff);
-  stroke-width: 1.45;
+  stroke-width: var(--navi-orb-line-width, 2.9px);
   stroke-linecap: round;
-  opacity: 0.5;
+  opacity: 0.42;
 }
 
 .navi-orb-needle {
@@ -31,7 +43,7 @@
 
 .navi-orb-needle-line {
   stroke: var(--navi-orb-stroke, #7e57ff);
-  stroke-width: 2.5;
+  stroke-width: var(--navi-orb-line-width, 2.9px);
   stroke-linecap: round;
 }
 
@@ -39,6 +51,21 @@
 .navi-orb-needle-tail {
   fill: none;
   stroke: var(--navi-orb-stroke, #7e57ff);
-  stroke-width: 1.9;
+  stroke-width: var(--navi-orb-line-width, 2.9px);
+  stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+@keyframes navi-orb-shimmer {
+  0% {
+    stroke-dashoffset: 0;
+    opacity: 0.08;
+  }
+  25% {
+    opacity: 0.26;
+  }
+  100% {
+    stroke-dashoffset: -238;
+    opacity: 0.08;
+  }
 }

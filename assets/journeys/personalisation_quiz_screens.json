@@ -836,6 +836,18 @@
           "layout": "stack",
           "elements": [
             {
+              "type": "spacer",
+              "state": {
+                "id": "orb_top_padding"
+              },
+              "style": {
+                "width": null,
+                "height": 20,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
               "type": "orb",
               "state": {
                 "id": "orb_fb8c6ef0-e27f-4f39-9ceb-9302d0a130ca",
