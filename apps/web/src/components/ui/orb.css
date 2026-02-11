@@ -11,6 +11,29 @@
   overflow: visible;
 }
 
+.navi-orb-fill-layer {
+  pointer-events: none;
+}
+
+.navi-orb-fill-base {
+  opacity: 0.94;
+}
+
+.navi-orb-fill-glow {
+  opacity: 0.58;
+  mix-blend-mode: screen;
+  transform-origin: 50% 50%;
+}
+
+.navi-orb-fill-glow-a {
+  animation: navi-orb-fill-drift-a 6.8s ease-in-out infinite;
+}
+
+.navi-orb-fill-glow-b {
+  opacity: 0.48;
+  animation: navi-orb-fill-drift-b 7.6s ease-in-out infinite;
+}
+
 .navi-orb-shell {
   fill: none;
   stroke: var(--navi-orb-stroke, #7e57ff);
@@ -31,10 +54,10 @@
 }
 
 .navi-orb-ticks line {
-  stroke: var(--navi-orb-stroke, #7e57ff);
+  stroke: var(--navi-orb-ink, #fff);
   stroke-width: var(--navi-orb-line-width, 2.9px);
   stroke-linecap: round;
-  opacity: 0.42;
+  opacity: 0.78;
 }
 
 .navi-orb-needle {
@@ -42,7 +65,7 @@
 }
 
 .navi-orb-needle-line {
-  stroke: var(--navi-orb-stroke, #7e57ff);
+  stroke: var(--navi-orb-ink, #fff);
   stroke-width: var(--navi-orb-line-width, 2.9px);
   stroke-linecap: round;
 }
@@ -50,10 +73,34 @@
 .navi-orb-needle-head,
 .navi-orb-needle-tail {
   fill: none;
-  stroke: var(--navi-orb-stroke, #7e57ff);
+  stroke: var(--navi-orb-ink, #fff);
   stroke-width: var(--navi-orb-line-width, 2.9px);
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+@keyframes navi-orb-fill-drift-a {
+  0% {
+    transform: translate(-2px, -1px) scale(0.96);
+  }
+  50% {
+    transform: translate(2px, 1px) scale(1.04);
+  }
+  100% {
+    transform: translate(-2px, -1px) scale(0.96);
+  }
+}
+
+@keyframes navi-orb-fill-drift-b {
+  0% {
+    transform: translate(2px, 1px) scale(1.03);
+  }
+  50% {
+    transform: translate(-2px, -1px) scale(0.95);
+  }
+  100% {
+    transform: translate(2px, 1px) scale(1.03);
+  }
 }
 
 @keyframes navi-orb-shimmer {

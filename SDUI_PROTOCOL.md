@@ -6,6 +6,8 @@
 > Any LLM, code generator, or human editing journey JSON, prompts, or tool definitions
 > **MUST** follow these rules exactly. Breaking these conventions will cause iOS parsing
 > failures, silent data loss, or blank screens.
+>
+> Mobile API response stability is documented in `server/MOBILE_RENDER_CONTRACT.md`.
 
 ---
 

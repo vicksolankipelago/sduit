@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useId, useRef } from "react";
 import "./orb.css";
 
 export type AgentState = null | "thinking" | "listening" | "talking";
@@ -23,6 +23,7 @@ const DEFAULT_COLORS: [string, string] = ["#7E57FF", "#A487FF"];
 const VIEWBOX_SIZE = 100;
 const CENTER = VIEWBOX_SIZE / 2;
 const OUTER_RING_RADIUS = 34;
+const INNER_FILL_RADIUS = 31.5;
 const LINE_WIDTH = 2.9;
 const NEEDLE_HALF_LENGTH = 18.5;
 const NEEDLE_TIP_LENGTH = 4.8;
@@ -53,6 +54,13 @@ export function Orb({
   void resizeDebounce;
   void seed;
 
+  const idBase = useId().replace(/:/g, "");
+  const fillClipId = `navi-orb-fill-clip-${idBase}`;
+  const fillGradientId = `navi-orb-fill-grad-${idBase}`;
+  const fillLinearId = `navi-orb-fill-linear-${idBase}`;
+  const fillBlurId = `navi-orb-fill-blur-${idBase}`;
+
+  const fillGradientRef = useRef<SVGRadialGradientElement>(null);
   const needleLineRef = useRef<SVGLineElement>(null);
   const needleHeadRef = useRef<SVGPathElement>(null);
   const needleTailRef = useRef<SVGPathElement>(null);
@@ -143,6 +151,15 @@ export function Orb({
         MAX_NEEDLE_DEGREES,
       );
       const energy = clamp01((smoothInputRef.current * 0.72) + (smoothOutputRef.current * 0.48));
+
+      if (fillGradientRef.current) {
+        const gradientX = CENTER - 4 + Math.sin(elapsed * 0.46) * 5.8;
+        const gradientY = CENTER - 7 + Math.cos(elapsed * 0.38) * 4.9;
+        const gradientRadius = OUTER_RING_RADIUS * (1 + Math.sin(elapsed * 0.52) * 0.05);
+        fillGradientRef.current.setAttribute("cx", gradientX.toFixed(2));
+        fillGradientRef.current.setAttribute("cy", gradientY.toFixed(2));
+        fillGradientRef.current.setAttribute("r", gradientRadius.toFixed(2));
+      }
 
       const angleRad = (clampedHeading * Math.PI) / 180;
       const dirX = Math.sin(angleRad);
@@ -239,10 +256,27 @@ export function Orb({
   const accentColor = DEFAULT_COLORS[1];
   void colorsRef;
   void colorsLiveRef;
-  const orbStyle: React.CSSProperties & Record<"--navi-orb-stroke" | "--navi-orb-accent" | "--navi-orb-line-width", string> = {
+  const orbStyle: React.CSSProperties & Record<
+    "--navi-orb-stroke" |
+    "--navi-orb-accent" |
+    "--navi-orb-line-width" |
+    "--navi-orb-ink" |
+    "--navi-orb-fill-core" |
+    "--navi-orb-fill-mid" |
+    "--navi-orb-fill-edge" |
+    "--navi-orb-fill-glow-a" |
+    "--navi-orb-fill-glow-b",
+    string
+  > = {
     "--navi-orb-stroke": strokeColor,
     "--navi-orb-accent": accentColor,
     "--navi-orb-line-width": `${LINE_WIDTH}px`,
+    "--navi-orb-ink": "#FFFFFF",
+    "--navi-orb-fill-core": "#3E5EFF",
+    "--navi-orb-fill-mid": "#6D64FF",
+    "--navi-orb-fill-edge": "#C77BFF",
+    "--navi-orb-fill-glow-a": "rgba(91, 119, 255, 0.75)",
+    "--navi-orb-fill-glow-b": "rgba(215, 117, 238, 0.62)",
   };
 
   return (
@@ -254,6 +288,59 @@ export function Orb({
         aria-label="Compass"
         style={orbStyle}
       >
+        <defs>
+          <clipPath id={fillClipId}>
+            <circle cx={CENTER} cy={CENTER} r={INNER_FILL_RADIUS} />
+          </clipPath>
+          <radialGradient
+            id={fillGradientId}
+            ref={fillGradientRef}
+            gradientUnits="userSpaceOnUse"
+            cx={CENTER - 4}
+            cy={CENTER - 7}
+            r={OUTER_RING_RADIUS}
+          >
+            <stop offset="0%" stopColor="var(--navi-orb-fill-core, #3e5eff)" stopOpacity="0.95" />
+            <stop offset="58%" stopColor="var(--navi-orb-fill-mid, #6d64ff)" stopOpacity="0.88" />
+            <stop offset="100%" stopColor="var(--navi-orb-fill-edge, #c77bff)" stopOpacity="0.62" />
+          </radialGradient>
+          <linearGradient id={fillLinearId} x1="12%" y1="16%" x2="86%" y2="88%">
+            <stop offset="0%" stopColor="var(--navi-orb-fill-glow-a, rgba(91, 119, 255, 0.75))" />
+            <stop offset="100%" stopColor="var(--navi-orb-fill-glow-b, rgba(215, 117, 238, 0.62))" />
+          </linearGradient>
+          <filter id={fillBlurId} x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="4.2" />
+          </filter>
+        </defs>
+
+        <g className="navi-orb-fill-layer" clipPath={`url(#${fillClipId})`}>
+          <circle
+            className="navi-orb-fill-base"
+            cx={CENTER}
+            cy={CENTER}
+            r={INNER_FILL_RADIUS}
+            fill={`url(#${fillGradientId})`}
+          />
+          <ellipse
+            className="navi-orb-fill-glow navi-orb-fill-glow-a"
+            cx={CENTER - 9}
+            cy={CENTER - 5}
+            rx="18"
+            ry="16"
+            fill={`url(#${fillLinearId})`}
+            filter={`url(#${fillBlurId})`}
+          />
+          <ellipse
+            className="navi-orb-fill-glow navi-orb-fill-glow-b"
+            cx={CENTER + 8}
+            cy={CENTER + 7}
+            rx="16"
+            ry="14"
+            fill={`url(#${fillLinearId})`}
+            filter={`url(#${fillBlurId})`}
+          />
+        </g>
+
         <circle className="navi-orb-shell" cx={CENTER} cy={CENTER} r={OUTER_RING_RADIUS} />
         <circle className="navi-orb-shell-shimmer" cx={CENTER} cy={CENTER} r={OUTER_RING_RADIUS} />
         <g className="navi-orb-ticks">

@@ -19,6 +19,7 @@ import { createModuleResponse, normalizeAgentToModule } from "../utils/moduleNor
 
 const router = Router();
 const mobileLogger = logger.namespace("Mobile");
+const MOBILE_RENDER_CONTRACT_VERSION = "v1";
 
 // ============================================================================
 // Azure Session Endpoint
@@ -166,29 +167,7 @@ router.get("/journey/:journeyId", async (req: Request, res: Response) => {
   try {
     const { journeyId } = req.params;
 
-    // First try to get from published flows (production)
-    let journey = await publishedFlowStorage.getPublishedFlow(journeyId);
-
-    // If not found in published, try to get from draft storage (for development/testing)
-    if (!journey) {
-      const draftJourney = await storage.getJourney(journeyId);
-      if (draftJourney) {
-        // Convert draft to published format for consistent response
-        journey = {
-          id: draftJourney.id,
-          journeyId: draftJourney.id,
-          name: draftJourney.name,
-          description: draftJourney.description || "",
-          systemPrompt: draftJourney.systemPrompt,
-          voice: draftJourney.voice,
-          agents: draftJourney.agents as any[],
-          startingAgentId: draftJourney.startingAgentId,
-          version: draftJourney.version,
-          publishedAt: draftJourney.updatedAt?.toISOString() || new Date().toISOString(),
-          publishedByUserId: "",
-        };
-      }
-    }
+    const journey = await loadJourneyForMobile(journeyId);
 
     if (!journey) {
       return apiResponse.notFound(res, "Journey");
@@ -210,6 +189,7 @@ router.get("/journey/:journeyId", async (req: Request, res: Response) => {
       startingAgentId: journey.startingAgentId,
       version: journey.version,
       publishedAt: journey.publishedAt,
+      mobileRenderContractVersion: MOBILE_RENDER_CONTRACT_VERSION,
     });
   } catch (error: any) {
     mobileLogger.error("Error getting journey for mobile:", error.message);
@@ -240,28 +220,7 @@ router.post("/journey/:journeyId/configure", async (req: Request, res: Response)
     const { journeyId } = req.params;
     const { variables = {} } = req.body;
 
-    // First try to get from published flows (production)
-    let journey = await publishedFlowStorage.getPublishedFlow(journeyId);
-
-    // If not found in published, try to get from draft storage (for development/testing)
-    if (!journey) {
-      const draftJourney = await storage.getJourney(journeyId);
-      if (draftJourney) {
-        journey = {
-          id: draftJourney.id,
-          journeyId: draftJourney.id,
-          name: draftJourney.name,
-          description: draftJourney.description || "",
-          systemPrompt: draftJourney.systemPrompt,
-          voice: draftJourney.voice,
-          agents: draftJourney.agents as any[],
-          startingAgentId: draftJourney.startingAgentId,
-          version: draftJourney.version,
-          publishedAt: draftJourney.updatedAt?.toISOString() || new Date().toISOString(),
-          publishedByUserId: "",
-        };
-      }
-    }
+    const journey = await loadJourneyForMobile(journeyId);
 
     if (!journey) {
       return apiResponse.notFound(res, "Journey");
@@ -283,12 +242,15 @@ router.post("/journey/:journeyId/configure", async (req: Request, res: Response)
       description: substitutedJourney.description,
       systemPrompt: substitutedJourney.systemPrompt,
       voice: substitutedJourney.voice,
+      ttsProvider: substitutedJourney.ttsProvider || "elevenlabs",
+      elevenLabsConfig: substitutedJourney.elevenLabsConfig,
       agents: agentsWithTools,
       startingAgentId: substitutedJourney.startingAgentId,
       version: substitutedJourney.version,
       publishedAt: substitutedJourney.publishedAt,
       // Include list of variables that were substituted
       appliedVariables: Object.keys(variables),
+      mobileRenderContractVersion: MOBILE_RENDER_CONTRACT_VERSION,
     });
   } catch (error: any) {
     mobileLogger.error("Error configuring journey for mobile:", error.message);
@@ -327,28 +289,7 @@ router.get("/journey/:journeyId/module/:agentId", async (req: Request, res: Resp
   try {
     const { journeyId, agentId } = req.params;
 
-    // First try to get from published flows (production)
-    let journey = await publishedFlowStorage.getPublishedFlow(journeyId);
-
-    // If not found in published, try to get from draft storage (for development/testing)
-    if (!journey) {
-      const draftJourney = await storage.getJourney(journeyId);
-      if (draftJourney) {
-        journey = {
-          id: draftJourney.id,
-          journeyId: draftJourney.id,
-          name: draftJourney.name,
-          description: draftJourney.description || "",
-          systemPrompt: draftJourney.systemPrompt,
-          voice: draftJourney.voice,
-          agents: draftJourney.agents as any[],
-          startingAgentId: draftJourney.startingAgentId,
-          version: draftJourney.version,
-          publishedAt: draftJourney.updatedAt?.toISOString() || new Date().toISOString(),
-          publishedByUserId: "",
-        };
-      }
-    }
+    const journey = await loadJourneyForMobile(journeyId);
 
     if (!journey) {
       return apiResponse.notFound(res, "Journey");
@@ -374,7 +315,10 @@ router.get("/journey/:journeyId/module/:agentId", async (req: Request, res: Resp
       `Returned iOS module for journey ${journeyId}, agent ${agentId} with ${moduleResponse.module.screens.length} screens`
     );
 
-    return apiResponse.success(res, moduleResponse);
+    return apiResponse.success(res, {
+      contractVersion: MOBILE_RENDER_CONTRACT_VERSION,
+      ...moduleResponse,
+    });
   } catch (error: any) {
     mobileLogger.error("Error getting iOS module:", error.message);
     return apiResponse.serverError(res, "Failed to get module");
@@ -404,28 +348,7 @@ router.get("/journey/:journeyId/modules", async (req: Request, res: Response) =>
   try {
     const { journeyId } = req.params;
 
-    // First try to get from published flows (production)
-    let journey = await publishedFlowStorage.getPublishedFlow(journeyId);
-
-    // If not found in published, try to get from draft storage (for development/testing)
-    if (!journey) {
-      const draftJourney = await storage.getJourney(journeyId);
-      if (draftJourney) {
-        journey = {
-          id: draftJourney.id,
-          journeyId: draftJourney.id,
-          name: draftJourney.name,
-          description: draftJourney.description || "",
-          systemPrompt: draftJourney.systemPrompt,
-          voice: draftJourney.voice,
-          agents: draftJourney.agents as any[],
-          startingAgentId: draftJourney.startingAgentId,
-          version: draftJourney.version,
-          publishedAt: draftJourney.updatedAt?.toISOString() || new Date().toISOString(),
-          publishedByUserId: "",
-        };
-      }
-    }
+    const journey = await loadJourneyForMobile(journeyId);
 
     if (!journey) {
       return apiResponse.notFound(res, "Journey");
@@ -435,6 +358,8 @@ router.get("/journey/:journeyId/modules", async (req: Request, res: Response) =>
     const modules = agents.map((agent: any) => ({
       module: normalizeAgentToModule(agent),
       screenPrompts: agent.screenPrompts || {},
+      agentPrompt: agent.prompt || "",
+      tools: agent.tools || [],
     }));
 
     mobileLogger.info(
@@ -442,6 +367,7 @@ router.get("/journey/:journeyId/modules", async (req: Request, res: Response) =>
     );
 
     return apiResponse.success(res, {
+      contractVersion: MOBILE_RENDER_CONTRACT_VERSION,
       journeyId: journey.journeyId,
       journeyName: journey.name,
       version: journey.version,
@@ -478,6 +404,35 @@ router.get("/health", (_req: Request, res: Response) => {
 // ============================================================================
 // Helper Functions
 // ============================================================================
+
+async function loadJourneyForMobile(journeyId: string): Promise<PublishedFlowData | null> {
+  // First try to get from published flows (production)
+  let journey = await publishedFlowStorage.getPublishedFlow(journeyId);
+
+  // If not found in published, try to get from draft storage (for development/testing)
+  if (!journey) {
+    const draftJourney = await storage.getJourney(journeyId);
+    if (draftJourney) {
+      journey = {
+        id: draftJourney.id,
+        journeyId: draftJourney.id,
+        name: draftJourney.name,
+        description: draftJourney.description || "",
+        systemPrompt: draftJourney.systemPrompt,
+        voice: draftJourney.voice,
+        ttsProvider: draftJourney.ttsProvider,
+        elevenLabsConfig: draftJourney.elevenLabsConfig,
+        agents: draftJourney.agents as any[],
+        startingAgentId: draftJourney.startingAgentId,
+        version: draftJourney.version,
+        publishedAt: draftJourney.updatedAt?.toISOString() || new Date().toISOString(),
+        publishedByUserId: "",
+      };
+    }
+  }
+
+  return journey;
+}
 
 /**
  * System tool definitions that are automatically available to all voice agents.

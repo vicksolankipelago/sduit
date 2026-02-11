@@ -203,10 +203,22 @@ function normalizeEvent(event: RawScreenEvent): IOSScreenEvent {
 /**
  * Normalize an element to iOS format
  */
-function normalizeElement(element: RawElement): IOSElement {
+function normalizeElement(
+  element: RawElement,
+  context: { screenId: string; sectionId: string; elementIndex: number }
+): IOSElement {
+  const fallbackId = `${context.screenId}_${context.sectionId}_${element.type}_${context.elementIndex}`;
+  const stateWithId: Record<string, unknown> = {
+    ...(element.state || {}),
+    id:
+      typeof element.state?.id === "string" && element.state.id.length > 0
+        ? element.state.id
+        : fallbackId,
+  };
+
   const normalized: IOSElement = {
     type: element.type,
-    state: element.state || {},
+    state: stateWithId,
   };
 
   if (element.style) {
@@ -231,7 +243,7 @@ function normalizeElement(element: RawElement): IOSElement {
 /**
  * Normalize a section to iOS format
  */
-function normalizeSection(section: RawSection): IOSSection {
+function normalizeSection(section: RawSection, screenId: string): IOSSection {
   return {
     id: section.id,
     title: section.title ?? null,
@@ -239,7 +251,13 @@ function normalizeSection(section: RawSection): IOSSection {
     layout: section.layout || "stack",
     direction: section.direction || "vertical",
     scrollable: section.scrollable ?? true,
-    elements: section.elements.map(normalizeElement),
+    elements: section.elements.map((element, elementIndex) =>
+      normalizeElement(element, {
+        screenId,
+        sectionId: section.id,
+        elementIndex,
+      })
+    ),
   };
 }
 
@@ -253,7 +271,7 @@ export function normalizeScreenForIOS(screen: RawScreen): IOSScreen {
     hidesBackButton: screen.hidesBackButton,
     analyticsProperties: screen.analyticsProperties ?? null,
     ...(screen.state && { state: screen.state }),
-    sections: screen.sections.map(normalizeSection),
+    sections: screen.sections.map((section) => normalizeSection(section, screen.id)),
     events: (screen.events || []).map(normalizeEvent),
   };
 }
