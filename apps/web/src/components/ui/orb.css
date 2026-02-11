@@ -37,22 +37,11 @@
 }
 
 .navi-orb-shell {
-  fill: none;
-  stroke: var(--navi-orb-stroke, #7e57ff);
-  stroke-width: var(--navi-orb-line-width, 2.9px);
-  opacity: 0.92;
-  stroke-linecap: round;
+  display: none;
 }
 
 .navi-orb-shell-shimmer {
-  fill: none;
-  stroke: var(--navi-orb-accent, #a487ff);
-  stroke-width: var(--navi-orb-line-width, 2.9px);
-  stroke-linecap: round;
-  stroke-dasharray: 18 220;
-  opacity: 0.18;
-  filter: drop-shadow(0 0 1.5px rgba(164, 135, 255, 0.35));
-  animation: navi-orb-shimmer 3.2s linear infinite;
+  display: none;
 }
 
 .navi-orb-ticks line {
