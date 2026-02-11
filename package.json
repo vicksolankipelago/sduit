@@ -56,5 +56,8 @@
     "tsx": "^4.21.0",
     "uuid": "^13.0.0",
     "vitest": "^4.0.18"
+  },
+  "optionalDependencies": {
+    "lightningcss-linux-x64-gnu": "^1.30.2"
   }
 }
