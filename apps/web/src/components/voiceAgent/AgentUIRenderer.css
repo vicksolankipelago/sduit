@@ -470,20 +470,20 @@
 }
 
 .agent-ui-device-bottom-bar .voice-control-bar-container {
-  max-width: 342px;
-  gap: 16px;
+  max-width: 318px;
+  gap: 14px;
 }
 
 .agent-ui-device-bottom-bar .voice-control-btn {
-  width: 70px;
-  height: 70px;
+  width: 58px;
+  height: 58px;
   background: #e4e6ec;
   color: #212633;
 }
 
 .agent-ui-device-bottom-bar .voice-control-btn svg {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
 }
 
 .agent-ui-device-bottom-bar .voice-control-mic {

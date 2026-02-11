@@ -14,8 +14,8 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 18px;
-  max-width: 342px;
+  gap: 14px;
+  max-width: 318px;
   margin: 0 auto;
   width: 100%;
 }
@@ -25,8 +25,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 70px;
-  height: 70px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
   border: none;
   background: #e4e6ec;
@@ -95,59 +95,24 @@
 
 .voice-control-waveform {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  gap: 12px;
-  height: 36px;
+  gap: 10px;
+  height: 40px;
 }
 
 .voice-control-wave-bar {
-  width: 12px;
+  width: 10px;
   height: var(--voice-wave-bar-height, 14px);
   border-radius: 100px;
   background: #212633;
-  transform-origin: center bottom;
-  transition: height 0.16s ease;
-  animation-delay: var(--voice-wave-bar-delay, 0s);
-}
-
-.voice-control-waveform-group.state-agent .voice-control-wave-bar {
-  animation: voice-wave-agent 0.9s ease-in-out infinite;
-}
-
-.voice-control-waveform-group.state-member .voice-control-wave-bar {
-  animation: voice-wave-member 0.72s ease-in-out infinite;
-}
-
-.voice-control-waveform-group.state-muted .voice-control-wave-bar,
-.voice-control-waveform-group.state-idle .voice-control-wave-bar {
-  animation: none;
-}
-
-@keyframes voice-wave-agent {
-  0%,
-  100% {
-    transform: scaleY(0.55);
-  }
-  50% {
-    transform: scaleY(calc(1.05 + var(--voice-wave-level, 0) * 0.35));
-  }
-}
-
-@keyframes voice-wave-member {
-  0%,
-  100% {
-    transform: scaleY(calc(0.75 + var(--voice-wave-level, 0) * 0.4));
-  }
-  50% {
-    transform: scaleY(calc(1.1 + var(--voice-wave-level, 0) * 0.55));
-  }
+  transition: height 0.06s linear;
 }
 
 .voice-control-keyboard svg,
 .voice-control-mic svg {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
 }
 
 .voice-help-overlay {
@@ -290,19 +255,19 @@
   }
 
   .voice-control-bar-container {
-    max-width: 336px;
+    max-width: 304px;
   }
 
   .voice-control-btn {
-    width: 64px;
-    height: 64px;
+    width: 52px;
+    height: 52px;
   }
 
   .voice-control-waveform {
-    gap: 10px;
+    gap: 9px;
   }
 
   .voice-control-wave-bar {
-    width: 11px;
+    width: 9px;
   }
 }

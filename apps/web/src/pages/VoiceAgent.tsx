@@ -4254,6 +4254,7 @@ Important guidelines:
             isMuted={isMicMuted}
             activeSpeaker={activeSpeaker}
             memberAudioLevel={memberAudioLevel}
+            getAgentAudioLevel={getElevenLabsOutputVolume}
             onToggleMute={handleToggleMute}
           />
         ) : undefined}

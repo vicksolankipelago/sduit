@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import './VoiceControlBar.css';
 
 export type ActiveSpeaker = 'agent' | 'member' | 'none';
@@ -7,6 +7,7 @@ export interface VoiceControlBarProps {
   isMuted: boolean;
   activeSpeaker?: ActiveSpeaker;
   memberAudioLevel?: number;
+  getAgentAudioLevel?: () => number;
   onToggleMute: () => void;
   onKeyboardClick?: () => void;
 }
@@ -71,10 +72,47 @@ export const VoiceControlBar: React.FC<VoiceControlBarProps> = ({
   isMuted,
   activeSpeaker = 'none',
   memberAudioLevel = 0,
+  getAgentAudioLevel,
   onToggleMute,
   onKeyboardClick,
 }) => {
+  const [waveClock, setWaveClock] = useState(0);
+  const [agentAudioLevel, setAgentAudioLevel] = useState(0);
+
+  useEffect(() => {
+    let frameId = 0;
+    let lastSampleAt = 0;
+
+    const sample = (timestamp: number) => {
+      if (timestamp - lastSampleAt >= 34) {
+        setWaveClock(timestamp);
+
+        if (!isMuted && activeSpeaker === 'agent' && getAgentAudioLevel) {
+          const nextLevel = Math.max(0, Math.min(getAgentAudioLevel(), 1));
+          setAgentAudioLevel((previousLevel) => (previousLevel * 0.6) + (nextLevel * 0.4));
+        } else {
+          setAgentAudioLevel((previousLevel) => previousLevel * 0.76);
+        }
+
+        lastSampleAt = timestamp;
+      }
+
+      frameId = window.requestAnimationFrame(sample);
+    };
+
+    frameId = window.requestAnimationFrame(sample);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [activeSpeaker, getAgentAudioLevel, isMuted]);
+
   const normalizedAudioLevel = Math.max(0, Math.min(memberAudioLevel, 1));
+  const normalizedAgentLevel = Math.max(0, Math.min(agentAudioLevel, 1));
+  const liveWaveLevel = isMuted
+    ? 0
+    : activeSpeaker === 'member'
+      ? normalizedAudioLevel
+      : activeSpeaker === 'agent'
+        ? normalizedAgentLevel
+        : 0.08;
   const waveformScale = 1 + normalizedAudioLevel * 0.16;
   const micStateClass = isMuted
     ? 'speaker-muted'
@@ -102,41 +140,27 @@ export const VoiceControlBar: React.FC<VoiceControlBarProps> = ({
         ? 'state-member'
         : 'state-idle';
 
-  const waveformEnergy = isMuted
-    ? 0
-    : activeSpeaker === 'member'
-      ? normalizedAudioLevel
-      : activeSpeaker === 'agent'
-        ? 0.72
-        : 0.2;
-
   const waveformHeights = useMemo(() => {
+    const barProfile = [0.48, 0.78, 1, 0.78, 0.48];
+    const barPhase = [0.2, 1.1, 1.9, 2.8, 3.6];
+
     if (isMuted) {
       return [12, 12, 12, 12, 12];
     }
 
-    if (activeSpeaker === 'agent') {
-      return [16, 24, 36, 24, 16];
-    }
+    const baseHeight = activeSpeaker === 'none' ? 10 : 12;
+    const maxBoost = activeSpeaker === 'none' ? 6 : 8 + (liveWaveLevel * 24);
 
-    if (activeSpeaker === 'member') {
-      const boost = 6 + normalizedAudioLevel * 22;
-      return [
-        Math.round(12 + boost * 0.2),
-        Math.round(16 + boost * 0.45),
-        Math.round(20 + boost * 0.72),
-        Math.round(16 + boost * 0.45),
-        Math.round(12 + boost * 0.2),
-      ];
-    }
-
-    return [14, 14, 14, 14, 14];
-  }, [activeSpeaker, isMuted, normalizedAudioLevel]);
-
-  const waveformDelays = ['-0.24s', '-0.12s', '0s', '0.12s', '0.24s'];
-  const waveformStyle = {
-    '--voice-wave-level': waveformEnergy.toFixed(3),
-  } as React.CSSProperties;
+    return barProfile.map((profile, index) => {
+      const phase = barPhase[index];
+      const waveA = Math.sin(waveClock * 0.014 + phase);
+      const waveB = Math.sin(waveClock * 0.029 + phase * 1.9) * 0.45;
+      const dynamic = Math.max(0, Math.min(1, ((waveA + waveB) + 1.45) / 2.45));
+      const energy = (0.32 + (liveWaveLevel * 0.68)) * (0.4 + (dynamic * 0.6));
+      const height = baseHeight + (profile * maxBoost * energy);
+      return Math.round(Math.max(8, Math.min(38, height)));
+    });
+  }, [activeSpeaker, isMuted, liveWaveLevel, waveClock]);
 
   return (
     <div className="voice-control-bar">
@@ -164,7 +188,7 @@ export const VoiceControlBar: React.FC<VoiceControlBarProps> = ({
           )}
         </button>
 
-        <div className={`voice-control-waveform-group ${waveformStateClass}`} style={waveformStyle}>
+        <div className={`voice-control-waveform-group ${waveformStateClass}`}>
           <div className="voice-control-wave-label">{statusLabel}</div>
           <div className="voice-control-waveform" aria-hidden="true">
             {waveformHeights.map((height, index) => (
@@ -174,7 +198,6 @@ export const VoiceControlBar: React.FC<VoiceControlBarProps> = ({
                 style={
                   {
                     '--voice-wave-bar-height': `${height}px`,
-                    '--voice-wave-bar-delay': waveformDelays[index],
                   } as React.CSSProperties
                 }
               />
