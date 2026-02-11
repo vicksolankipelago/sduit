@@ -1,0 +1,37 @@
+.navi-orb-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.navi-orb-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.navi-orb-glow {
+  filter: blur(5px);
+}
+
+.navi-orb-ripple {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.navi-orb-ticks line {
+  stroke: #1a1a1a;
+  stroke-width: 1;
+  opacity: 0.26;
+}
+
+.navi-orb-needle {
+  transform-origin: 50% 50%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navi-orb-glow {
+    filter: blur(3px);
+  }
+}

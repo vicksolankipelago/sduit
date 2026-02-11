@@ -3720,7 +3720,6 @@ Important guidelines:
     setMicMuted: setMicMutedElevenLabs,
     sendUserMessage: sendUserMessageElevenLabs,
     sendContextualUpdate: sendContextualUpdateElevenLabs,
-    getInputVolume: getInputVolumeElevenLabs,
   } = useElevenLabsSession({
     customPrompts,
     clientTools: elevenLabsClientTools,
@@ -3750,6 +3749,20 @@ Important guidelines:
     onModeChange: (mode) => {
       if (currentProviderRef.current !== 'elevenlabs') return;
       setActiveSpeaker(mode === 'speaking' ? 'agent' : 'member');
+      if (mode === 'speaking') {
+        setMemberAudioLevel(0);
+      }
+    },
+    onVadScore: (vadScore) => {
+      if (currentProviderRef.current !== 'elevenlabs') return;
+      if (isMicMuted || activeSpeaker !== 'member') {
+        setMemberAudioLevel(0);
+        return;
+      }
+
+      // Use ElevenLabs real-time VAD score as the user speaking intensity signal.
+      const boostedScore = Math.min(1, Math.pow(vadScore, 0.7) * 1.2);
+      setMemberAudioLevel((previousLevel) => (previousLevel * 0.42) + (boostedScore * 0.58));
     },
     onTranscript: (role: string, text: string, isDone?: boolean) => {
       const roleKey = role as 'user' | 'assistant';
@@ -3838,35 +3851,6 @@ Important guidelines:
       }
     },
   }); // clientTools already passed in callbacks object above
-
-  useEffect(() => {
-    if (
-      sessionStatus !== 'CONNECTED' ||
-      currentProviderRef.current !== 'elevenlabs' ||
-      activeSpeaker !== 'member' ||
-      isMicMuted
-    ) {
-      setMemberAudioLevel(0);
-      return;
-    }
-
-    let smoothedLevel = 0;
-    const pollInterval = window.setInterval(() => {
-      const rawLevel = getInputVolumeElevenLabs?.() ?? 0;
-      const clampedLevel = Math.max(0, Math.min(rawLevel, 1));
-
-      // Smooth updates to avoid jumpy scaling.
-      smoothedLevel = (smoothedLevel * 0.62) + (clampedLevel * 0.38);
-      setMemberAudioLevel((previousLevel) => {
-        const nextLevel = (previousLevel * 0.5) + (smoothedLevel * 0.5);
-        return Math.abs(nextLevel - previousLevel) < 0.01 ? previousLevel : nextLevel;
-      });
-    }, 50);
-
-    return () => {
-      window.clearInterval(pollInterval);
-    };
-  }, [activeSpeaker, getInputVolumeElevenLabs, isMicMuted, sessionStatus]);
 
   const sendUiResponseToSession = useCallback((text: string, metadata?: Record<string, unknown>) => {
     const trimmed = text?.trim();
@@ -4103,6 +4087,9 @@ Important guidelines:
           console.log('🔔 Notifications denied');
         }}
         onSetVoiceEnabled={handleSetVoiceEnabled}
+        activeSpeaker={activeSpeaker}
+        memberAudioLevel={memberAudioLevel}
+        sessionConnected={sessionStatus === 'CONNECTED'}
       />
       
       {/* Header - Show when disconnected and NOT in preview mode, transitioning, or loading */}

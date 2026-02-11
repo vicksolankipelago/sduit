@@ -75,6 +75,7 @@ export interface ElevenLabsSessionCallbacks {
   onToolCall?: (toolName: string, args: any, result: any) => void;
   onConversationComplete?: () => void;
   onModeChange?: (mode: 'speaking' | 'listening') => void;
+  onVadScore?: (vadScore: number) => void;
   onError?: (error: string, details?: any) => void;
   // Client tools must be passed at hook initialization, not at connect time
   clientTools?: Record<string, (params: any) => Promise<any> | any>;
@@ -338,6 +339,13 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
           console.log('🔊 ElevenLabs mode changed:', mode);
           setIsSpeaking(mode === 'speaking');
           callbacksRef.current.onModeChange?.(mode);
+        },
+        onVadScore: (vadData) => {
+          const rawScore = Number((vadData as any)?.vadScore ?? 0);
+          const normalizedScore = Number.isFinite(rawScore)
+            ? Math.max(0, Math.min(rawScore, 1))
+            : 0;
+          callbacksRef.current.onVadScore?.(normalizedScore);
         },
         onStatusChange: (statusData) => {
           elevenLabsLogger.debug('Status changed:', statusData);

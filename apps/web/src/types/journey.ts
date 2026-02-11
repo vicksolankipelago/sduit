@@ -610,7 +610,7 @@ export interface OpenQuestionElementStyle {
 
 /**
  * Orb Element (Voice Agent Visualization)
- * Uses ElevenLabs UI Orb component with Three.js
+ * Custom Navi compass-style visualization with audio-reactive morphing.
  */
 export interface OrbData {
   id: string;

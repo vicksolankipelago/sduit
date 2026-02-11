@@ -5,6 +5,8 @@ import { getElementComponent } from '../../lib/voiceAgent/elementRegistry';
 import { ScreenErrorBoundary, ElementErrorBoundary } from './ErrorBoundary';
 import './ScreenPreview.css';
 
+type ActiveSpeaker = 'agent' | 'member' | 'none';
+
 export interface ScreenPreviewProps {
   screen: Screen;
   allScreens?: Screen[];
@@ -12,6 +14,9 @@ export interface ScreenPreviewProps {
   editable?: boolean;
   selectedElementId?: string;
   onElementSelect?: (elementId: string, sectionIndex: number, elementIndex: number) => void;
+  activeSpeaker?: ActiveSpeaker;
+  memberAudioLevel?: number;
+  sessionConnected?: boolean;
 }
 
 export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
@@ -21,6 +26,9 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
   editable = false,
   selectedElementId,
   onElementSelect,
+  activeSpeaker,
+  memberAudioLevel,
+  sessionConnected,
 }) => {
   const {
     currentScreen,
@@ -176,6 +184,10 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
             onSelectionChange={element.type === 'largeQuestion' ? handleSingleSelectChange : undefined}
             onMultiSelectionChange={element.type === 'largeQuestion' ? handleMultiSelectionChange : undefined}
             onMultiSelectToggle={(element.type === 'checkboxButton' || element.type === 'chipsGroup') ? handleMultiSelectToggle : undefined}
+            activeSpeaker={activeSpeaker}
+            memberAudioLevel={memberAudioLevel}
+            sessionConnected={sessionConnected}
+            canExpand={!editable}
           />
         </ElementErrorBoundary>
         {isSelected && editable && (
@@ -326,4 +338,3 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
 };
 
 export default ScreenPreview;
-

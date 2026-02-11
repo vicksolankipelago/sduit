@@ -111,7 +111,7 @@ function createOrbScreens(): Screen[] {
               type: 'orb',
               state: {
                 id: 'voice_orb',
-                colors: ['#A2CC6E', '#DDF1C4'],
+                colors: ['#FAE355', '#FEF7CE'],
                 agentState: 'listening',
                 volumeMode: 'auto',
               },

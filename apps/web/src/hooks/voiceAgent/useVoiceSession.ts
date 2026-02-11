@@ -20,6 +20,7 @@ export interface VoiceSessionCallbacks {
   onToolCall?: (toolName: string, args: any, result: any) => void;
   onConversationComplete?: () => void;
   onModeChange?: (mode: 'speaking' | 'listening') => void;
+  onVadScore?: (vadScore: number) => void;
 }
 
 export interface VoiceSessionOptions {
@@ -100,6 +101,7 @@ export function useVoiceSession(
     onToolCall: callbacks.onToolCall,
     onConversationComplete: callbacks.onConversationComplete,
     onModeChange: callbacks.onModeChange,
+    onVadScore: callbacks.onVadScore,
     // Client tools must be passed at hook initialization
     clientTools: options.clientTools,
   }), [callbacks, options.clientTools]);

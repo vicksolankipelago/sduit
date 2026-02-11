@@ -313,13 +313,13 @@ export const ElementMetadataRegistry: Record<ElementType, ElementMetadata> = {
   },
   'orb': {
     type: 'orb',
-    displayName: 'Voice Orb',
+    displayName: 'Navi Compass',
     category: 'interactive',
-    icon: '🔮',
-    description: '3D animated orb with audio reactivity for voice agent visualization',
+    icon: '🧭',
+    description: 'Compass-inspired Navi visual with non-linear morphing for voice activity',
     defaultData: {
       id: '',
-      colors: ['#A2CC6E', '#DDF1C4'],
+      colors: ['#FAE355', '#FEF7CE'],
       agentState: null,
       volumeMode: 'auto',
     },
@@ -369,4 +369,3 @@ export function getElementMetadata(type: ElementType): ElementMetadata | undefin
 export function getElementsByCategory(category: ElementMetadata['category']): ElementMetadata[] {
   return Object.values(ElementMetadataRegistry).filter(meta => meta.category === category);
 }
-
