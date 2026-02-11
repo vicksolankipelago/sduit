@@ -28,8 +28,8 @@ const NEEDLE_HALF_LENGTH = 18.5;
 const NEEDLE_TIP_LENGTH = 4.8;
 const NEEDLE_WING_DEPTH = 4.3;
 const NEEDLE_WING_HALF_WIDTH = 2.4;
-const CARDINAL_SPOKE_INNER_RADIUS = 31;
-const DIAGONAL_SPOKE_INNER_RADIUS = 31.8;
+const CARDINAL_SPOKE_OUTER_RADIUS = 30.6;
+const DIAGONAL_SPOKE_OUTER_RADIUS = 30.9;
 const CARDINAL_SPOKE_BASE_LENGTH = 4.8;
 const DIAGONAL_SPOKE_BASE_LENGTH = 3.1;
 const MIN_NEEDLE_DEGREES = -68;
@@ -199,12 +199,12 @@ export function Orb({
 
         const isCardinal = index % 2 === 0;
         const angle = (index / 8) * Math.PI * 2;
-        const innerRadius = isCardinal ? CARDINAL_SPOKE_INNER_RADIUS : DIAGONAL_SPOKE_INNER_RADIUS;
+        const outerRadius = isCardinal ? CARDINAL_SPOKE_OUTER_RADIUS : DIAGONAL_SPOKE_OUTER_RADIUS;
         const baseLength = isCardinal ? CARDINAL_SPOKE_BASE_LENGTH : DIAGONAL_SPOKE_BASE_LENGTH;
         const localPulse = 0.5 + 0.5 * Math.sin(elapsed * pulseSpeed + index * 0.86);
-        const lengthBoost = isCardinal ? 1.4 : 0.9;
-        const dynamicLength = baseLength + lengthBoost * localPulse * (0.5 + energy * 0.75);
-        const outerRadius = innerRadius + dynamicLength;
+        const lengthBoost = isCardinal ? 2.0 : 1.2;
+        const dynamicLength = baseLength + lengthBoost * localPulse * (0.45 + energy * 0.8);
+        const innerRadius = outerRadius - dynamicLength;
 
         const x1 = CENTER + Math.cos(angle) * innerRadius;
         const y1 = CENTER + Math.sin(angle) * innerRadius;
@@ -260,9 +260,9 @@ export function Orb({
           {Array.from({ length: 8 }).map((_, index) => {
             const angle = (index / 8) * Math.PI * 2;
             const isCardinal = index % 2 === 0;
-            const inner = isCardinal ? CARDINAL_SPOKE_INNER_RADIUS : DIAGONAL_SPOKE_INNER_RADIUS;
+            const outer = isCardinal ? CARDINAL_SPOKE_OUTER_RADIUS : DIAGONAL_SPOKE_OUTER_RADIUS;
             const baseLength = isCardinal ? CARDINAL_SPOKE_BASE_LENGTH : DIAGONAL_SPOKE_BASE_LENGTH;
-            const outer = inner + baseLength;
+            const inner = outer - baseLength;
             const x1 = CENTER + Math.cos(angle) * inner;
             const y1 = CENTER + Math.sin(angle) * inner;
             const x2 = CENTER + Math.cos(angle) * outer;

@@ -870,9 +870,9 @@
               },
               "style": {
                 "width": null,
-                "height": null,
+                "height": 12,
                 "direction": "vertical",
-                "isFlexible": true
+                "isFlexible": false
               }
             },
             {
