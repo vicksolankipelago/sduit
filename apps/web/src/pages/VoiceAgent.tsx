@@ -2975,6 +2975,23 @@ Important guidelines:
         .map((event: any) => getNavigationTargetFromEvent(event))
         .filter((value: string | undefined): value is string => typeof value === 'string');
 
+      // Idempotency guard:
+      // If the model calls navigate_to for the screen we're already on
+      // (for example, after a trigger_event-based navigation already completed),
+      // return success instead of surfacing an invalid transition error.
+      if (activeScreen.id === screen) {
+        return buildResult({
+          success: true,
+          fromScreen: activeScreen.id,
+          nextScreen: activeScreen.id,
+          currentScreen: activeScreen.id,
+          delaySeconds: 0,
+          reason: 'already_on_target_screen',
+          message: `Already on "${screen}". No additional navigation needed.`,
+          availableNextScreens,
+        });
+      }
+
       if (!matchingNavEvent) {
         return buildResult({
           success: false,
