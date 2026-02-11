@@ -138,7 +138,7 @@ const UIShowcase: React.FC = () => {
                 
                 journeyScreens.push({
                   id: `${journey.id}:${agent.id}:${screen.id}`,
-                  title: screen.title || 'Untitled Screen',
+                  title: screen.title || screen.id || 'Untitled Screen',
                   sectionCount: screen.sections?.length || 0,
                   elementCount,
                   updatedAt: journey.updatedAt || new Date().toISOString(),
