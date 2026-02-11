@@ -2,13 +2,13 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 16px;
+  padding: 8px 16px;
   border-radius: 8px;
   background-color: var(--background-light);
   width: 100%;
   box-sizing: border-box;
-  overflow: visible; /* Allow content to determine height */
-  height: auto; /* Dynamic height based on content */
+  overflow: visible;
+  height: auto;
 }
 
 .text-card-element-with-checkmark {
@@ -21,27 +21,23 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-top: 4px;
+  padding-top: 3px;
   flex-shrink: 0;
 }
 
 .text-card-content-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 0px;
   flex: 1;
 }
 
 .text-card-caption {
-  text-transform: capitalize;
   color: var(--text-global-secondary);
-  letter-spacing: 0.05em;
-  font-size: 0.95rem;
 }
 
 .text-card-text {
   color: var(--text-global-primary);
-  line-height: 24px;
   white-space: pre-wrap;
   word-wrap: break-word;
   overflow-wrap: break-word;

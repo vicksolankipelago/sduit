@@ -4,318 +4,171 @@
   left: 0;
   right: 0;
   z-index: 2000;
-  background: var(--background-light);
-  border-top: 1px solid var(--ui-element-divider);
-  padding: 0.5rem 2rem 0.75rem 2rem; /* Even more compact */
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+  background: var(--background-light, #fff);
+  border-top: 1px solid var(--ui-element-divider, #ccc);
+  padding: 10px 16px 12px;
+  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
 }
 
 .voice-control-bar-container {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3rem;
-  max-width: 900px;
-  width: 100%;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  max-width: 342px;
   margin: 0 auto;
-  position: relative;
+  width: 100%;
 }
 
-@media (min-width: 1200px) {
-  .voice-control-bar-container {
-    gap: 4rem;
-  }
-}
-
-/* Base Button Styles */
 .voice-control-btn {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--background-light);
-  border: 2px solid var(--ui-element-outline-default);
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
+  border: none;
+  background: #e4e6ec;
+  color: #212633;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
   padding: 0;
+  flex-shrink: 0;
 }
 
 .voice-control-btn:hover {
-  transform: scale(1.05);
-  border-color: var(--text-global-primary);
+  transform: scale(1.03);
 }
 
 .voice-control-btn:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
 }
 
-/* Keyboard Button */
-.voice-control-keyboard {
-  width: 36px;
-  height: 36px;
-  color: var(--text-global-secondary);
+.voice-control-btn:disabled {
+  cursor: default;
 }
 
-.voice-control-keyboard svg {
-  width: 18px;
-  height: 18px;
-}
-
-.voice-control-keyboard.active {
-  background: var(--primary-cta-default);
-  border-color: var(--primary-cta-default);
-  color: white;
-}
-
-.voice-control-keyboard:hover {
-  background: var(--background-light-card);
-}
-
-.voice-control-keyboard.active:hover {
-  background: var(--primary-cta-hover);
-  border-color: var(--primary-cta-hover);
-}
-
-/* Microphone Button */
-.voice-control-mic {
-  --voice-mic-bg: var(--primary-cta-default);
-  --voice-mic-border: var(--primary-cta-default);
-  --voice-mic-fg: var(--text-global-light);
-  --voice-mic-shadow: 0 4px 12px rgba(26, 26, 26, 0.15);
-  --voice-mic-wave-scale: 1;
-  width: 48px;
-  height: 48px;
-  background: var(--voice-mic-bg);
-  border-color: var(--voice-mic-border);
-  color: var(--voice-mic-fg);
-  box-shadow: var(--voice-mic-shadow);
-  transform: scale(var(--voice-mic-wave-scale));
-  transition:
-    background-color 0.22s ease,
-    border-color 0.22s ease,
-    color 0.22s ease,
-    box-shadow 0.22s ease,
-    transform 0.08s linear;
-}
-
-.voice-control-mic svg {
-  width: 22px;
-  height: 22px;
-}
-
-.voice-control-mic:hover {
-  filter: brightness(1.03);
-  box-shadow: 0 6px 16px rgba(26, 26, 26, 0.2);
-  transform: scale(var(--voice-mic-wave-scale));
-}
-
-.voice-control-mic:active {
-  transform: scale(calc(var(--voice-mic-wave-scale) * 0.95));
-}
-
-.voice-control-mic.speaker-agent,
-.voice-control-mic.listening:not(.speaker-member):not(.speaker-muted):not(.muted) {
-  --voice-mic-bg: #4f72e5;
-  --voice-mic-border: #4f72e5;
-  --voice-mic-shadow: 0 6px 16px rgba(79, 114, 229, 0.36);
-  animation: mic-agent-idle 2.4s ease-in-out infinite;
-}
-
-.voice-control-mic.speaker-member {
-  --voice-mic-bg: var(--background-mint-green);
-  --voice-mic-border: var(--background-mint-green);
-  --voice-mic-shadow: 0 6px 16px rgba(162, 204, 110, 0.36);
-  animation: none;
-}
-
-.voice-control-mic.speaker-none {
-  --voice-mic-bg: var(--primary-cta-default);
-  --voice-mic-border: var(--primary-cta-default);
-  --voice-mic-shadow: 0 4px 12px rgba(26, 26, 26, 0.15);
-}
-
-.voice-control-mic.waveform-active {
-  animation: none;
-}
-
-.voice-control-mic.muted,
-.voice-control-mic.speaker-muted {
-  --voice-mic-bg: var(--alert-error-default);
-  --voice-mic-border: var(--alert-error-default);
-  --voice-mic-shadow: 0 4px 12px rgba(220, 53, 69, 0.28);
-  --voice-mic-wave-scale: 1;
-  animation: none;
-}
-
-.voice-control-mic.muted:hover,
-.voice-control-mic.speaker-muted:hover {
-  filter: none;
-  box-shadow: 0 6px 16px rgba(220, 53, 69, 0.34);
-}
-
-@keyframes mic-agent-idle {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.08);
-  }
-}
-
-/* Settings Button - Positioned on far right */
-.voice-control-settings {
-  position: absolute;
-  right: 0;
-  width: 32px;
-  height: 32px;
-  background: transparent;
-  border: none;
-  color: var(--text-global-secondary);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  opacity: 0.7;
-}
-
-.voice-control-settings:hover {
-  background: var(--background-light-card);
-  color: var(--text-global-primary);
+.voice-control-btn.disabled {
   opacity: 1;
 }
 
-.voice-control-settings svg {
-  width: 18px;
-  height: 18px;
-  stroke-width: 1.5;
+.voice-control-mic {
+  --voice-mic-wave-scale: 1;
+  transform: scale(var(--voice-mic-wave-scale));
+  transition: transform 0.08s linear, background-color 0.2s ease;
 }
 
-/* End Call Button */
-.voice-control-end-call {
-  width: 36px;
+.voice-control-mic:hover {
+  transform: scale(calc(var(--voice-mic-wave-scale) * 1.03));
+}
+
+.voice-control-mic:active {
+  transform: scale(calc(var(--voice-mic-wave-scale) * 0.96));
+}
+
+.voice-control-mic.speaker-agent,
+.voice-control-mic.speaker-member {
+  background: #d9dde8;
+}
+
+.voice-control-waveform-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.voice-control-wave-label {
+  color: #212633;
+  font-family: var(--font-family-grotesque, 'ES Rebond Grotesque', sans-serif);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 16px;
+  letter-spacing: 0.06px;
+  text-align: center;
+}
+
+.voice-control-waveform {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 12px;
   height: 36px;
-  background: var(--alert-error-default);
-  border-color: var(--alert-error-default);
-  color: white;
 }
 
-.voice-control-end-call svg {
-  width: 18px;
-  height: 18px;
+.voice-control-wave-bar {
+  width: 12px;
+  height: var(--voice-wave-bar-height, 14px);
+  border-radius: 100px;
+  background: #212633;
+  transform-origin: center bottom;
+  transition: height 0.16s ease;
+  animation-delay: var(--voice-wave-bar-delay, 0s);
 }
 
-.voice-control-end-call:hover {
-  background: var(--alert-error-hover);
-  border-color: var(--alert-error-hover);
-  transform: scale(1.05);
+.voice-control-waveform-group.state-agent .voice-control-wave-bar {
+  animation: voice-wave-agent 0.9s ease-in-out infinite;
 }
 
-/* Responsive - Desktop Large */
-@media (min-width: 1400px) {
-  .voice-control-keyboard,
-  .voice-control-end-call,
-  .voice-control-help {
-    width: 52px;
-    height: 52px;
-  }
+.voice-control-waveform-group.state-member .voice-control-wave-bar {
+  animation: voice-wave-member 0.72s ease-in-out infinite;
+}
 
-  .voice-control-keyboard svg,
-  .voice-control-end-call svg,
-  .voice-control-help svg {
-    width: 26px;
-    height: 26px;
-  }
+.voice-control-waveform-group.state-muted .voice-control-wave-bar,
+.voice-control-waveform-group.state-idle .voice-control-wave-bar {
+  animation: none;
+}
 
-  .voice-control-mic {
-    width: 72px;
-    height: 72px;
+@keyframes voice-wave-agent {
+  0%,
+  100% {
+    transform: scaleY(0.55);
   }
-
-  .voice-control-mic svg {
-    width: 32px;
-    height: 32px;
+  50% {
+    transform: scaleY(calc(1.05 + var(--voice-wave-level, 0) * 0.35));
   }
 }
 
-/* Responsive - Tablet */
-@media (max-width: 1024px) {
-  .voice-control-bar-container {
-    gap: 2.5rem;
+@keyframes voice-wave-member {
+  0%,
+  100% {
+    transform: scaleY(calc(0.75 + var(--voice-wave-level, 0) * 0.4));
+  }
+  50% {
+    transform: scaleY(calc(1.1 + var(--voice-wave-level, 0) * 0.55));
   }
 }
 
-/* Responsive - Mobile */
-@media (max-width: 768px) {
-  .voice-control-bar {
-    padding: 0.75rem 1rem 1.25rem 1rem;
-  }
-
-  .voice-control-bar-container {
-    gap: 1.5rem;
-  }
-
-  .voice-control-keyboard,
-  .voice-control-end-call,
-  .voice-control-help {
-    width: 44px;
-    height: 44px;
-  }
-
-  .voice-control-keyboard svg,
-  .voice-control-end-call svg,
-  .voice-control-help svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  .voice-control-mic {
-    width: 56px;
-    height: 56px;
-  }
-
-  .voice-control-mic svg {
-    width: 24px;
-    height: 24px;
-  }
+.voice-control-keyboard svg,
+.voice-control-mic svg {
+  width: 24px;
+  height: 24px;
 }
 
-/* Help Button */
-.voice-control-help {
-  width: 36px;
-  height: 36px;
-  color: var(--text-global-secondary);
-}
-
-.voice-control-help svg {
-  width: 18px;
-  height: 18px;
-}
-
-.voice-control-help:hover {
-  background: var(--background-light-card);
-  color: var(--text-global-primary);
-}
-
-/* Help Overlay */
 .voice-help-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  z-index: 3000;
+  z-index: 3200;
   background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 12px;
   animation: help-fade-in 0.2s ease;
-  border-radius: inherit;
 }
 
 @keyframes help-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .voice-help-card {
@@ -329,8 +182,14 @@
 }
 
 @keyframes help-slide-up {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .voice-help-header {
@@ -425,37 +284,25 @@
   line-height: 1.4;
 }
 
-/* Responsive - Small Mobile */
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .voice-control-bar {
-    padding: 0.625rem 0.75rem 1rem 0.75rem;
+    padding: 8px 12px 10px;
   }
 
   .voice-control-bar-container {
-    gap: 1.25rem;
+    max-width: 336px;
   }
 
-  .voice-control-keyboard,
-  .voice-control-end-call,
-  .voice-control-help {
-    width: 40px;
-    height: 40px;
+  .voice-control-btn {
+    width: 64px;
+    height: 64px;
   }
 
-  .voice-control-keyboard svg,
-  .voice-control-end-call svg,
-  .voice-control-help svg {
-    width: 18px;
-    height: 18px;
+  .voice-control-waveform {
+    gap: 10px;
   }
 
-  .voice-control-mic {
-    width: 52px;
-    height: 52px;
-  }
-
-  .voice-control-mic svg {
-    width: 22px;
-    height: 22px;
+  .voice-control-wave-bar {
+    width: 11px;
   }
 }

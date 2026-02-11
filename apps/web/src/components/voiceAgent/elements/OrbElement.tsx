@@ -63,8 +63,8 @@ export const OrbElement: React.FC<OrbElementProps> = ({
   };
 
   const colors: [string, string] = [
-    pelagoColors.backgroundPunchPink || '#EEBCFF',
-    pelagoColors.backgroundLightPunchPink || '#F7DFFE',
+    pelagoColors.textGlobalPrimary || '#222838',
+    pelagoColors.textGlobalSecondary || '#4A5164',
   ];
 
   const runtimeAgentState = useMemo<AgentState>(() => {
@@ -75,7 +75,8 @@ export const OrbElement: React.FC<OrbElementProps> = ({
   }, [activeSpeaker, data.agentState, sessionConnected]);
 
   const shouldUseManualInput = activeSpeaker === 'member' && typeof memberAudioLevel === 'number';
-  const runtimeVolumeMode = shouldUseManualInput ? 'manual' : (data.volumeMode || 'auto');
+  const shouldUseManualOutput = activeSpeaker === 'agent' && (!!getOutputVolume || typeof outputVolume === 'number');
+  const runtimeVolumeMode = (shouldUseManualInput || shouldUseManualOutput) ? 'manual' : (data.volumeMode || 'auto');
 
   const manualInputVolume = shouldUseManualInput
     ? Math.max(0, Math.min(memberAudioLevel ?? 0, 1))

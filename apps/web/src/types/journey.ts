@@ -536,6 +536,8 @@ export interface TextCardElementStyle {
   borderWidth?: number;
   cornerRadius?: number;
   showCheckmark?: boolean;
+  checkmarkBackgroundColor?: string;
+  checkmarkColor?: string;
 }
 
 /**
@@ -567,6 +569,7 @@ export interface MiniWidgetElementStyle {
   borderColor?: string | null;
   borderDashed?: boolean;
   showAlert?: boolean;
+  cornerRadius?: number;
 }
 
 /**

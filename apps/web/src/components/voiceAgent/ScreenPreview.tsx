@@ -16,6 +16,7 @@ export interface ScreenPreviewProps {
   onElementSelect?: (elementId: string, sectionIndex: number, elementIndex: number) => void;
   activeSpeaker?: ActiveSpeaker;
   memberAudioLevel?: number;
+  getOutputVolume?: () => number;
   sessionConnected?: boolean;
 }
 
@@ -28,6 +29,7 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
   onElementSelect,
   activeSpeaker,
   memberAudioLevel,
+  getOutputVolume,
   sessionConnected,
 }) => {
   const {
@@ -186,6 +188,7 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
             onMultiSelectToggle={(element.type === 'checkboxButton' || element.type === 'chipsGroup') ? handleMultiSelectToggle : undefined}
             activeSpeaker={activeSpeaker}
             memberAudioLevel={memberAudioLevel}
+            getOutputVolume={getOutputVolume}
             sessionConnected={sessionConnected}
             canExpand={!editable}
           />
@@ -236,7 +239,7 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
       ].filter(Boolean).join(' ');
 
       const node = (
-        <div key={section.id} className={sectionClassName}>
+        <div key={section.id} className={sectionClassName} data-section-id={section.id}>
           {section.title && (
             <div className="screen-preview-section-title pelago-caption-2-bold">
               {section.title}
@@ -277,7 +280,7 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
   }, [sectionsByPosition, filterElements, renderElement]);
 
   const content = (
-    <div className="screen-preview-container">
+    <div className="screen-preview-container" data-screen-id={screen.id}>
       {/* Navigation Bar */}
       {(screen.title || !editable || navigationStack.length > 1) && (
         <div className="screen-preview-nav-bar">

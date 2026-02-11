@@ -1168,11 +1168,11 @@ function createPostWebPQScreens(): Screen[] {
               type: 'textBlock',
               state: {
                 id: 'review_title',
-                text: 'Your plan for this week',
+                text: 'Your plan summary',
               },
               style: {
                 style: 'heading1',
-                alignment: 'center',
+                alignment: 'leading',
                 color: 'primary',
               },
             },
@@ -1202,16 +1202,51 @@ function createPostWebPQScreens(): Screen[] {
               type: 'textCard',
               state: {
                 id: 'about_you_card',
-                title: 'About you',
+                title: 'Your Focus',
+                content: '{$moduleData.weeklyIntention}',
+              },
+              style: {
+                backgroundColor: 'backgroundLightPunchPink',
+                borderColor: 'backgroundLightPunchPink',
+                captionColor: 'textGlobalPrimary',
+                textColor: 'textGlobalPrimary',
+                borderWidth: 0,
+                cornerRadius: 8,
+                showCheckmark: true,
+                checkmarkBackgroundColor: 'primaryCTADefault',
+                checkmarkColor: 'textGlobalLight',
+              },
+              conditions: [
+                {
+                  rules: {
+                    and: [
+                      { '!=': [{ var: 'summary' }, null] },
+                      { '!=': [{ var: 'summary' }, '' ] },
+                    ],
+                  },
+                  state: {
+                    summary: '{$moduleData.weeklyIntention}',
+                  },
+                },
+              ],
+            },
+            {
+              type: 'textCard',
+              state: {
+                id: 'your_why_card',
+                title: 'What Gets in the Way',
                 content: '{$moduleData.aboutYouSummary}',
               },
               style: {
-                backgroundColor: 'backgroundLightMintGreen',
-                borderColor: 'backgroundLightMintGreen',
-                captionColor: 'textGlobalSecondary',
+                backgroundColor: 'backgroundTeaGreen',
+                borderColor: 'backgroundTeaGreen',
+                captionColor: 'textGlobalPrimary',
                 textColor: 'textGlobalPrimary',
-                borderWidth: 1,
-                cornerRadius: 16,
+                borderWidth: 0,
+                cornerRadius: 8,
+                showCheckmark: true,
+                checkmarkBackgroundColor: 'primaryCTADefault',
+                checkmarkColor: 'textGlobalLight',
               },
               conditions: [
                 {
@@ -1230,46 +1265,20 @@ function createPostWebPQScreens(): Screen[] {
             {
               type: 'textCard',
               state: {
-                id: 'your_why_card',
-                title: 'your why',
-                content: '{$moduleData.yourWhySummary}',
-              },
-              style: {
-                backgroundColor: 'backgroundLightMintGreen',
-                borderColor: 'backgroundLightMintGreen',
-                captionColor: 'textGlobalSecondary',
-                textColor: 'textGlobalPrimary',
-                borderWidth: 1,
-                cornerRadius: 16,
-              },
-              conditions: [
-                {
-                  rules: {
-                    and: [
-                      { '!=': [{ var: 'summary' }, null] },
-                      { '!=': [{ var: 'summary' }, '' ] },
-                    ],
-                  },
-                  state: {
-                    summary: '{$moduleData.yourWhySummary}',
-                  },
-                },
-              ],
-            },
-            {
-              type: 'textCard',
-              state: {
                 id: 'outcomes_card',
-                title: 'Outcomes',
+                title: 'What You\'re Hoping For',
                 content: '{$moduleData.outcomesSummary}',
               },
               style: {
-                backgroundColor: 'backgroundLightMintGreen',
-                borderColor: 'backgroundLightMintGreen',
-                captionColor: 'textGlobalSecondary',
+                backgroundColor: 'backgroundMistBlue',
+                borderColor: 'backgroundMistBlue',
+                captionColor: 'textGlobalPrimary',
                 textColor: 'textGlobalPrimary',
-                borderWidth: 1,
-                cornerRadius: 16,
+                borderWidth: 0,
+                cornerRadius: 8,
+                showCheckmark: true,
+                checkmarkBackgroundColor: 'primaryCTADefault',
+                checkmarkColor: 'textGlobalLight',
               },
               conditions: [
                 {
@@ -1322,10 +1331,11 @@ function createPostWebPQScreens(): Screen[] {
               state: {
                 id: 'drinking_streak_widget',
                 title: '{$moduleData.checkInStreak}',
-                content: 'Day streak',
+                content: 'Check-ins',
+                subtitle: 'Day streak',
               },
               style: {
-                backgroundColor: 'backgroundCerulean',
+                backgroundColor: 'backgroundContainerHover',
                 cornerRadius: 8,
               },
             },
@@ -1333,11 +1343,11 @@ function createPostWebPQScreens(): Screen[] {
               type: 'miniWidget',
               state: {
                 id: 'intention_widget',
-                title: '{$moduleData.weeklyIntention}',
-                content: 'Your focus',
+                title: 'My focus',
+                content: '{$moduleData.weeklyIntention}',
               },
               style: {
-                backgroundColor: 'backgroundLightMintGreen',
+                backgroundColor: 'backgroundContainerHover',
                 cornerRadius: 8,
               },
             },
@@ -1345,11 +1355,11 @@ function createPostWebPQScreens(): Screen[] {
               type: 'miniWidget',
               state: {
                 id: 'checkin_commitment_widget',
-                title: '{$moduleData.checkinCommitment}',
-                content: 'Check-ins this week',
+                title: 'Check-in goal',
+                content: '{$moduleData.checkinCommitment} check-ins/week',
               },
               style: {
-                backgroundColor: 'backgroundMistBlue',
+                backgroundColor: 'backgroundContainerHover',
                 cornerRadius: 8,
               },
             },
@@ -1357,13 +1367,11 @@ function createPostWebPQScreens(): Screen[] {
               type: 'miniWidget',
               state: {
                 id: 'cbt_session_widget',
-                title: 'Coming soon',
-                content: 'CBT session',
+                title: 'Slow down',
+                content: 'Find calm',
               },
               style: {
-                backgroundColor: 'backgroundLight',
-                borderColor: 'secondaryDefault',
-                borderDashed: true,
+                backgroundColor: 'backgroundContainerHover',
                 cornerRadius: 8,
               },
             },
@@ -1538,4 +1546,3 @@ function createPostWebPQScreens(): Screen[] {
     },
   ];
 }
-

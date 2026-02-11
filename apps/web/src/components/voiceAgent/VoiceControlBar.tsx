@@ -1,19 +1,17 @@
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import './VoiceControlBar.css';
 
 export type ActiveSpeaker = 'agent' | 'member' | 'none';
 
 export interface VoiceControlBarProps {
-  isListening: boolean;
   isMuted: boolean;
   activeSpeaker?: ActiveSpeaker;
   memberAudioLevel?: number;
   onToggleMute: () => void;
-  onEndCall?: () => void;
-  onOpenSettings?: () => void;
+  onKeyboardClick?: () => void;
 }
 
-const HelpOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+export const VoiceHelpOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   return (
     <div className="voice-help-overlay" onClick={onClose}>
       <div className="voice-help-card" onClick={(e) => e.stopPropagation()}>
@@ -21,7 +19,8 @@ const HelpOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           <span className="voice-help-title">How it works</span>
           <button className="voice-help-close" onClick={onClose}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
         </div>
@@ -29,8 +28,8 @@ const HelpOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           <div className="voice-help-item">
             <div className="voice-help-icon voice-help-icon-mic">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
               </svg>
             </div>
             <div className="voice-help-text">
@@ -41,9 +40,9 @@ const HelpOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           <div className="voice-help-item">
             <div className="voice-help-icon voice-help-icon-buttons">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                <line x1="12" y1="8" x2="12" y2="16"/>
-                <line x1="8" y1="12" x2="16" y2="12"/>
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <line x1="12" y1="8" x2="12" y2="16" />
+                <line x1="8" y1="12" x2="16" y2="12" />
               </svg>
             </div>
             <div className="voice-help-text">
@@ -54,7 +53,7 @@ const HelpOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           <div className="voice-help-item">
             <div className="voice-help-icon voice-help-icon-speak">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </div>
             <div className="voice-help-text">
@@ -69,17 +68,14 @@ const HelpOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 };
 
 export const VoiceControlBar: React.FC<VoiceControlBarProps> = ({
-  isListening,
   isMuted,
   activeSpeaker = 'none',
   memberAudioLevel = 0,
   onToggleMute,
-  onEndCall,
-  onOpenSettings,
+  onKeyboardClick,
 }) => {
-  const [showHelp, setShowHelp] = useState(false);
   const normalizedAudioLevel = Math.max(0, Math.min(memberAudioLevel, 1));
-  const waveformScale = 1 + normalizedAudioLevel * 0.24;
+  const waveformScale = 1 + normalizedAudioLevel * 0.16;
   const micStateClass = isMuted
     ? 'speaker-muted'
     : activeSpeaker === 'member'
@@ -92,79 +88,113 @@ export const VoiceControlBar: React.FC<VoiceControlBarProps> = ({
       ? { '--voice-mic-wave-scale': waveformScale.toFixed(3) }
       : undefined;
 
+  const statusLabel = isMuted
+    ? "Navi can't hear you"
+    : activeSpeaker === 'agent'
+      ? 'Navi is speaking'
+      : 'Navi is listening';
+
+  const waveformStateClass = isMuted
+    ? 'state-muted'
+    : activeSpeaker === 'agent'
+      ? 'state-agent'
+      : activeSpeaker === 'member'
+        ? 'state-member'
+        : 'state-idle';
+
+  const waveformEnergy = isMuted
+    ? 0
+    : activeSpeaker === 'member'
+      ? normalizedAudioLevel
+      : activeSpeaker === 'agent'
+        ? 0.72
+        : 0.2;
+
+  const waveformHeights = useMemo(() => {
+    if (isMuted) {
+      return [12, 12, 12, 12, 12];
+    }
+
+    if (activeSpeaker === 'agent') {
+      return [16, 24, 36, 24, 16];
+    }
+
+    if (activeSpeaker === 'member') {
+      const boost = 6 + normalizedAudioLevel * 22;
+      return [
+        Math.round(12 + boost * 0.2),
+        Math.round(16 + boost * 0.45),
+        Math.round(20 + boost * 0.72),
+        Math.round(16 + boost * 0.45),
+        Math.round(12 + boost * 0.2),
+      ];
+    }
+
+    return [14, 14, 14, 14, 14];
+  }, [activeSpeaker, isMuted, normalizedAudioLevel]);
+
+  const waveformDelays = ['-0.24s', '-0.12s', '0s', '0.12s', '0.24s'];
+  const waveformStyle = {
+    '--voice-wave-level': waveformEnergy.toFixed(3),
+  } as React.CSSProperties;
+
   return (
-    <>
-      <div className="voice-control-bar">
-        <div className="voice-control-bar-container">
-          {/* Help Button */}
-          <button
-            className="voice-control-btn voice-control-help"
-            onClick={() => setShowHelp(true)}
-            title="Help"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
+    <div className="voice-control-bar">
+      <div className="voice-control-bar-container">
+        <button
+          className={`voice-control-btn voice-control-mic ${isMuted ? 'muted' : ''} ${micStateClass}`}
+          style={micStyle}
+          onClick={onToggleMute}
+          title={isMuted ? 'Unmute microphone' : 'Mute microphone'}
+        >
+          {isMuted ? (
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="4" y1="4" x2="20" y2="20" />
+              <path d="M10 10v2a2 2 0 0 0 3.4 1.4" />
+              <path d="M14 8V5a2 2 0 0 0-3.95-.45" />
+              <path d="M18 10v2a6 6 0 0 1-10.24 4.24" />
+              <line x1="12" y1="18" x2="12" y2="21" />
             </svg>
-          </button>
-
-          {/* Microphone Button */}
-          <button
-            className={`voice-control-btn voice-control-mic ${isMuted ? 'muted' : ''} ${isListening ? 'listening' : ''} ${micStateClass}`}
-            style={micStyle}
-            onClick={onToggleMute}
-            title={isMuted ? 'Unmute microphone' : 'Mute microphone'}
-          >
-            {isMuted ? (
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="1" y1="1" x2="23" y2="23"/>
-                <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
-                <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/>
-                <line x1="12" y1="19" x2="12" y2="23"/>
-                <line x1="8" y1="23" x2="16" y2="23"/>
-              </svg>
-            ) : (
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                <line x1="12" y1="19" x2="12" y2="22"/>
-              </svg>
-            )}
-          </button>
-
-          {/* End Call Button */}
-          {onEndCall && (
-            <button
-              className="voice-control-btn voice-control-end-call"
-              onClick={onEndCall}
-              title="End call"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/>
-                <line x1="23" y1="1" x2="1" y2="23"/>
-              </svg>
-            </button>
+          ) : (
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="3" width="6" height="11" rx="3" />
+              <path d="M6 10v2a6 6 0 0 0 12 0v-2" />
+              <line x1="12" y1="18" x2="12" y2="21" />
+            </svg>
           )}
+        </button>
 
-          {/* Settings Button */}
-          {onOpenSettings && (
-            <button
-              className="voice-control-btn voice-control-settings"
-              onClick={onOpenSettings}
-              title="Session settings"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M12 1v6m0 6v6M5.6 5.6l4.2 4.2m4.2 4.2l4.2 4.2M1 12h6m6 0h6M5.6 18.4l4.2-4.2m4.2-4.2l4.2-4.2"/>
-              </svg>
-            </button>
-          )}
+        <div className={`voice-control-waveform-group ${waveformStateClass}`} style={waveformStyle}>
+          <div className="voice-control-wave-label">{statusLabel}</div>
+          <div className="voice-control-waveform" aria-hidden="true">
+            {waveformHeights.map((height, index) => (
+              <span
+                key={index}
+                className="voice-control-wave-bar"
+                style={
+                  {
+                    '--voice-wave-bar-height': `${height}px`,
+                    '--voice-wave-bar-delay': waveformDelays[index],
+                  } as React.CSSProperties
+                }
+              />
+            ))}
+          </div>
         </div>
-      </div>
 
-      {showHelp && <HelpOverlay onClose={() => setShowHelp(false)} />}
-    </>
+        <button
+          className="voice-control-btn voice-control-keyboard"
+          onClick={onKeyboardClick}
+          title="Use keyboard input"
+        >
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
+            <path d="M7 9h.01M11 9h.01M15 9h.01M7 12.5h.01M11 12.5h.01M15 12.5h.01" />
+            <line x1="8" y1="16" x2="16" y2="16" />
+          </svg>
+        </button>
+      </div>
+    </div>
   );
 };
 

@@ -10,6 +10,7 @@ const uiLogger = logger.namespace('AgentUIRenderer');
 
 interface AgentUIRendererProps {
   bottomBar?: React.ReactNode;
+  onOpenHelp?: () => void;
   onOpenSettings?: () => void;
   onExit?: () => void;
   showNotificationPopup?: boolean;
@@ -18,11 +19,13 @@ interface AgentUIRendererProps {
   onSetVoiceEnabled?: (enabled: boolean) => void; // Callback for setVoiceEnabled tool - must be called synchronously to preserve user gesture
   activeSpeaker?: 'agent' | 'member' | 'none';
   memberAudioLevel?: number;
+  getOutputVolume?: () => number;
   sessionConnected?: boolean;
 }
 
 export default function AgentUIRenderer({
   bottomBar,
+  onOpenHelp,
   onOpenSettings,
   onExit,
   showNotificationPopup,
@@ -31,6 +34,7 @@ export default function AgentUIRenderer({
   onSetVoiceEnabled,
   activeSpeaker,
   memberAudioLevel,
+  getOutputVolume,
   sessionConnected,
 }: AgentUIRendererProps) {
   const {
@@ -101,6 +105,19 @@ export default function AgentUIRenderer({
         {/* Device frame containing screen and bottom bar */}
         <div className="agent-ui-device-frame">
           <div className="agent-ui-device-screen-wrapper">
+            {onOpenHelp && (
+              <button
+                className="agent-ui-device-help-btn"
+                onClick={onOpenHelp}
+                title="How it works"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9.09 9a3 3 0 0 1 5.82 1c0 2-3 3-3 3" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </button>
+            )}
             <div className="agent-ui-device-screen">
               {currentScreen && currentScreen.id ? (
                 <ScreenProvider
@@ -119,6 +136,7 @@ export default function AgentUIRenderer({
                     editable={false}
                     activeSpeaker={activeSpeaker}
                     memberAudioLevel={memberAudioLevel}
+                    getOutputVolume={getOutputVolume}
                     sessionConnected={sessionConnected}
                   />
                 </ScreenProvider>

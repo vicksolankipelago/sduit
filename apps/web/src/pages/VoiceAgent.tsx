@@ -22,7 +22,7 @@ import AgentUIRenderer from '../components/voiceAgent/AgentUIRenderer';
 import SessionLogViewer, { LogEntry } from '../components/voiceAgent/SessionLogViewer';
 import MemberPersonaEditor from '../components/voiceAgent/MemberPersonaEditor';
 import FeedbackSurvey from '../components/voiceAgent/FeedbackSurvey';
-import VoiceControlBar, { type ActiveSpeaker } from '../components/voiceAgent/VoiceControlBar';
+import VoiceControlBar, { VoiceHelpOverlay, type ActiveSpeaker } from '../components/voiceAgent/VoiceControlBar';
 import { ErrorBoundary } from '../components/voiceAgent/ErrorBoundary';
 import { EditIcon, SettingsIcon } from '../components/Icons';
 
@@ -139,6 +139,21 @@ const PROMPT_TOOL_NAME_CANDIDATES = [
   'screen_out_participant',
 ];
 
+type AgentScreenEvent = {
+  id?: string;
+  action?: Array<{ type?: string; deeplink?: string }>;
+};
+
+type AgentScreen = {
+  id?: string;
+  events?: AgentScreenEvent[];
+  sections?: Array<{
+    elements?: Array<{
+      events?: AgentScreenEvent[];
+    }>;
+  }>;
+};
+
 function promptReferencesTool(prompt: string, toolName: string): boolean {
   const escapedToolName = toolName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const toolPattern = new RegExp(`\\b${escapedToolName}\\s*\\(`, 'i');
@@ -148,6 +163,118 @@ function promptReferencesTool(prompt: string, toolName: string): boolean {
 function getPromptReferencedToolNames(prompt: string, candidates: string[]): string[] {
   if (!prompt || !candidates.length) return [];
   return candidates.filter((toolName) => promptReferencesTool(prompt, toolName));
+}
+
+function collectNavigationTargetsFromEvent(event: AgentScreenEvent | undefined): string[] {
+  if (!event?.action || !Array.isArray(event.action)) return [];
+  return event.action
+    .filter((action) => action?.type === 'navigation' && typeof action?.deeplink === 'string')
+    .map((action) => action.deeplink!.trim())
+    .filter(Boolean);
+}
+
+function getScreenEvents(screen: AgentScreen | undefined): AgentScreenEvent[] {
+  if (!screen) return [];
+  const sectionEvents = (screen.sections || []).flatMap((section) =>
+    (section?.elements || []).flatMap((element) => element?.events || [])
+  );
+  return [...(screen.events || []), ...sectionEvents].filter(Boolean);
+}
+
+function getReachableScreenIds(screens: AgentScreen[], startScreenId: string): string[] {
+  const byId = new Map<string, AgentScreen>();
+  for (const screen of screens || []) {
+    if (screen?.id) byId.set(screen.id, screen);
+  }
+
+  if (!byId.has(startScreenId)) return [];
+
+  const visited = new Set<string>();
+  const queue: string[] = [startScreenId];
+  const ordered: string[] = [];
+
+  while (queue.length > 0) {
+    const currentId = queue.shift()!;
+    if (visited.has(currentId)) continue;
+    visited.add(currentId);
+    ordered.push(currentId);
+
+    const current = byId.get(currentId);
+    const nextIds = getScreenEvents(current)
+      .flatMap((event) => collectNavigationTargetsFromEvent(event))
+      .filter((id) => byId.has(id) && !visited.has(id));
+
+    for (const nextId of nextIds) {
+      queue.push(nextId);
+    }
+  }
+
+  return ordered;
+}
+
+function shouldAppendScreenPrompts(
+  agentPrompt: string | undefined,
+  availableScreenPromptIds: string[]
+): boolean {
+  if (!availableScreenPromptIds.length) return false;
+  const prompt = (agentPrompt || '').trim();
+  if (!prompt) return true;
+
+  // If the agent prompt already carries explicit screen sections, appending
+  // screenPrompts causes duplicated/conflicting instructions.
+  if (/^##\s*SCREEN:/im.test(prompt) || /^#\s*Screen instructions/im.test(prompt)) {
+    return false;
+  }
+
+  const escapedIds = availableScreenPromptIds.map((id) => id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  let referencedCount = 0;
+
+  for (const escapedId of escapedIds) {
+    const sectionHeaderPattern = new RegExp(`^##\\s*${escapedId}(?:\\s|$)`, 'im');
+    const screenIdPattern = new RegExp(`Screen ID:\\s*${escapedId}(?:\\s|$)`, 'i');
+    if (sectionHeaderPattern.test(prompt) || screenIdPattern.test(prompt)) {
+      referencedCount += 1;
+    }
+  }
+
+  // If multiple screen IDs are already present in the main prompt, treat it as
+  // screen-aware and avoid appending another full screenPrompts block.
+  return referencedCount < Math.min(3, availableScreenPromptIds.length);
+}
+
+function buildScreenPromptsAppendix(params: {
+  agentPrompt?: string;
+  screenPrompts?: Record<string, string>;
+  screens?: AgentScreen[];
+  startScreenId?: string;
+}): { text: string; includedScreenIds: string[]; skippedBecauseEmbedded: boolean } {
+  const entries = Object.entries(params.screenPrompts || {})
+    .filter(([screenId, prompt]) => Boolean(screenId) && typeof prompt === 'string' && prompt.trim().length > 0);
+  if (entries.length === 0) {
+    return { text: '', includedScreenIds: [], skippedBecauseEmbedded: false };
+  }
+
+  const availableIds = entries.map(([screenId]) => screenId);
+  if (!shouldAppendScreenPrompts(params.agentPrompt, availableIds)) {
+    return { text: '', includedScreenIds: [], skippedBecauseEmbedded: true };
+  }
+
+  const entryMap = new Map(entries);
+  let includedIds = availableIds;
+
+  if (params.startScreenId && Array.isArray(params.screens) && params.screens.length > 0) {
+    const reachableIds = getReachableScreenIds(params.screens, params.startScreenId)
+      .filter((screenId) => entryMap.has(screenId));
+    if (reachableIds.length > 0) {
+      includedIds = reachableIds;
+    }
+  }
+
+  const text = includedIds
+    .map((screenId) => `\n## SCREEN: ${screenId}\n${entryMap.get(screenId)}`)
+    .join('\n\n');
+
+  return { text, includedScreenIds: includedIds, skippedBecauseEmbedded: false };
 }
 
 function normalizeRecordInputTitle(title: string): string {
@@ -467,6 +594,7 @@ function VoiceAgentContent() {
     return localStorage.getItem('voice-agent-selected-voice') || '';
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showVoiceHelp, setShowVoiceHelp] = useState(false);
   const [currentJourney, setCurrentJourney] = useState<Journey | null>(null);
   const [availableJourneys, setAvailableJourneys] = useState<JourneyListItem[]>([]);
   const [journeysLoading, setJourneysLoading] = useState(true);
@@ -504,6 +632,12 @@ function VoiceAgentContent() {
   useEffect(() => {
     currentScreenIdRef.current = currentScreenId ?? null;
   }, [currentScreenId]);
+
+  useEffect(() => {
+    if (sessionStatus !== 'CONNECTED') {
+      setShowVoiceHelp(false);
+    }
+  }, [sessionStatus]);
 
   // Keep a synchronous module-state ref so sequential tool calls can read latest values.
   useEffect(() => {
@@ -1565,15 +1699,26 @@ function VoiceAgentContent() {
         console.log('🎤 Added starting screen instruction:', currentScreenFromContext);
       }
 
-      // Add all screen prompts if agent has screens
-      if (startingAgentConfigForConnect.screens && startingAgentConfigForConnect.screenPrompts) {
-        const screenPromptsText = Object.entries(startingAgentConfigForConnect.screenPrompts)
-          .map(([screenId, prompt]) => `\n## SCREEN: ${screenId}\n${prompt}`)
-          .join('\n\n');
-        
-        if (screenPromptsText) {
-          instructionParts.push(screenPromptsText);
+      const screenPromptAppendix = buildScreenPromptsAppendix({
+        agentPrompt: startingAgentConfigForConnect.prompt,
+        screenPrompts: startingAgentConfigForConnect.screenPrompts,
+        screens: startingAgentConfigForConnect.screens as AgentScreen[] | undefined,
+        startScreenId: currentScreenFromContext,
+      });
+      if (screenPromptAppendix.text) {
+        instructionParts.push(screenPromptAppendix.text);
+        const totalScreenPrompts = Object.keys(startingAgentConfigForConnect.screenPrompts || {}).length;
+        if (totalScreenPrompts > screenPromptAppendix.includedScreenIds.length) {
+          addLog(
+            'info',
+            `🧭 Appended ${screenPromptAppendix.includedScreenIds.length}/${totalScreenPrompts} screen prompts reachable from "${currentScreenFromContext}".`
+          );
         }
+      } else if (screenPromptAppendix.skippedBecauseEmbedded) {
+        addLog(
+          'info',
+          '🧭 Skipped appending screen prompts because the agent prompt already contains screen-level instructions.'
+        );
       }
       
       // Add personalization quiz answers as context for the AI
@@ -1663,15 +1808,13 @@ function VoiceAgentContent() {
           agent.prompt,
         ];
 
-        // Add screen prompts if agent has screens
-        if (agent.screens && agent.screenPrompts) {
-          const screenPromptsText = Object.entries(agent.screenPrompts)
-            .map(([screenId, prompt]) => `\n## SCREEN: ${screenId}\n${prompt}`)
-            .join('\n\n');
-
-          if (screenPromptsText) {
-            agentInstructionParts.push(screenPromptsText);
-          }
+        const agentScreenPromptAppendix = buildScreenPromptsAppendix({
+          agentPrompt: agent.prompt,
+          screenPrompts: agent.screenPrompts,
+          screens: agent.screens as AgentScreen[] | undefined,
+        });
+        if (agentScreenPromptAppendix.text) {
+          agentInstructionParts.push(agentScreenPromptAppendix.text);
         }
 
         allJourneyAgentsMap.set(agentName, {
@@ -3792,6 +3935,7 @@ Important guidelines:
     setMicMuted: setMicMutedElevenLabs,
     sendUserMessage: sendUserMessageElevenLabs,
     sendContextualUpdate: sendContextualUpdateElevenLabs,
+    getOutputVolume: getElevenLabsOutputVolume,
   } = useElevenLabsSession({
     customPrompts,
     clientTools: elevenLabsClientTools,
@@ -4107,14 +4251,13 @@ Important guidelines:
       <AgentUIRenderer
         bottomBar={sessionStatus === 'CONNECTED' && !isNonVoiceMode ? (
           <VoiceControlBar
-            isListening={activeSpeaker === 'agent'}
             isMuted={isMicMuted}
             activeSpeaker={activeSpeaker}
             memberAudioLevel={memberAudioLevel}
             onToggleMute={handleToggleMute}
-            onEndCall={handleEndCall}
           />
         ) : undefined}
+        onOpenHelp={sessionStatus === 'CONNECTED' ? () => setShowVoiceHelp(true) : undefined}
         onOpenSettings={sessionStatus === 'CONNECTED' && !isPreviewMode ? () => setSettingsOpen(true) : undefined}
         onExit={sessionStatus === 'CONNECTED' ? () => {
           if (isNonVoiceMode) {
@@ -4161,8 +4304,10 @@ Important guidelines:
         onSetVoiceEnabled={handleSetVoiceEnabled}
         activeSpeaker={activeSpeaker}
         memberAudioLevel={memberAudioLevel}
+        getOutputVolume={getElevenLabsOutputVolume}
         sessionConnected={sessionStatus === 'CONNECTED'}
       />
+      {showVoiceHelp && <VoiceHelpOverlay onClose={() => setShowVoiceHelp(false)} />}
       
       {/* Header - Show when disconnected and NOT in preview mode, transitioning, or loading */}
       {sessionStatus === 'DISCONNECTED' && !isPreviewMode && !isTransitioningJourney && !loadingJourneyId && !showFeedbackForm && (

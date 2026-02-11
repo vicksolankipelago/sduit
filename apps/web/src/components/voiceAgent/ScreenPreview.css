@@ -282,6 +282,21 @@
   position: relative;
 }
 
+/* Plan summary (pq-plan-review) screen-specific spacing to match Figma */
+.screen-preview-container[data-screen-id="pq-plan-review"] .screen-preview-body {
+  gap: 0;
+  padding-top: 0;
+}
+
+.screen-preview-container[data-screen-id="pq-plan-review"] .screen-preview-section[data-section-id="summary_cards_section"] .screen-preview-section-elements {
+  gap: var(--spacing-sm);
+}
+
+.screen-preview-container[data-screen-id="pq-plan-review"] .screen-preview-section[data-section-id="widgets_section"] .screen-preview-section-elements {
+  gap: var(--spacing-sm);
+  grid-auto-rows: minmax(80px, auto);
+}
+
 /* Text cards should span full width in grid layouts */
 .screen-preview-section-grid .screen-preview-element:has(.text-card-element) {
   grid-column: 1 / -1;
@@ -432,4 +447,3 @@
     max-height: calc(100vh - 150px);
   }
 }
-

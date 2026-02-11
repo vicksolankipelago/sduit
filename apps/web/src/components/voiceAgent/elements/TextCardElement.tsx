@@ -9,13 +9,15 @@ export interface TextCardElementProps {
   style?: TextCardElementStyle;
 }
 
-// Green filled circle with white checkmark - matches iOS TickWithContainer component
-const CheckmarkIcon: React.FC = () => (
+const CheckmarkIcon: React.FC<{ backgroundColorVar: string; checkColorVar: string }> = ({
+  backgroundColorVar,
+  checkColorVar,
+}) => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="8" cy="8" r="8" fill="var(--alert-success-default)"/>
+    <circle cx="8" cy="8" r="8" fill={`var(${backgroundColorVar})`} />
     <path
       d="M5 8L7 10L11 6"
-      stroke="var(--text-global-light)"
+      stroke={`var(${checkColorVar})`}
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -38,6 +40,8 @@ export const TextCardElement: React.FC<TextCardElementProps> = ({
   const borderWidth = style?.borderWidth ?? 1;
   const cornerRadius = style?.cornerRadius ?? 8;
   const showCheckmark = style?.showCheckmark ?? false;
+  const checkmarkBackgroundColorVar = mapIOSColorToCSSVar(style?.checkmarkBackgroundColor ?? 'primaryCTADefault');
+  const checkmarkColorVar = mapIOSColorToCSSVar(style?.checkmarkColor ?? 'textGlobalLight');
 
   const cardStyle: React.CSSProperties = {
     backgroundColor: `var(${backgroundColorVar})`,
@@ -64,15 +68,18 @@ export const TextCardElement: React.FC<TextCardElementProps> = ({
         data-element-id={data.id}
       >
         <div className="text-card-checkmark">
-          <CheckmarkIcon />
+          <CheckmarkIcon
+            backgroundColorVar={checkmarkBackgroundColorVar}
+            checkColorVar={checkmarkColorVar}
+          />
         </div>
         <div className="text-card-content-wrapper">
           {caption && (
-            <div className="text-card-caption pelago-caption-2-regular" style={captionStyle}>
+            <div className="text-card-caption pelago-body-2-bold" style={captionStyle}>
               {caption}
             </div>
           )}
-          <div className="text-card-text pelago-body-1-regular" style={textStyle}>
+          <div className="text-card-text pelago-body-2-regular" style={textStyle}>
             {content}
           </div>
         </div>

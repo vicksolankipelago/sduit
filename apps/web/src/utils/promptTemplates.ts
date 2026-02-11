@@ -47,6 +47,8 @@ export const DEFAULT_QUIZ_DATA: Record<string, string> = {
   areas_to_improve: '[areas to improve from quiz]',
   learning_topics: '[learning topics from quiz]',
   motivation: '[motivation from quiz]',
+  currentScreen: '[current screen id]',
+  current_screen: '[current screen id]',
 };
 
 /**
@@ -74,6 +76,8 @@ export const DEFAULT_VARIABLES: Variable[] = [
   { name: 'goal_alcohol', description: 'Member goal for alcohol (drink less, quit, etc.)', category: 'quiz', isCustom: false },
   { name: 'areas_to_improve', description: 'Specific areas member wants to improve', category: 'quiz', isCustom: false },
   { name: 'learning_topics', description: 'Topics member wants to learn about (from quiz)', category: 'quiz', isCustom: false },
+  { name: 'currentScreen', description: 'Current runtime screen pointer for flow control', category: 'context', isCustom: false },
+  { name: 'current_screen', description: 'Legacy current runtime screen pointer (snake_case)', category: 'context', isCustom: false },
 ];
 
 /**
@@ -167,6 +171,15 @@ export function substitutePromptVariables(
       unifiedContext[legacyKey] = context[quizKey];
       console.log(`🔗 Mapped ${quizKey} → ${legacyKey}: ${context[quizKey]}`);
     }
+  }
+
+  // Keep runtime screen pointer available in both naming styles.
+  const canonicalCurrentScreen =
+    context.currentScreen ?? context.current_screen ?? undefined;
+  if (canonicalCurrentScreen !== undefined && canonicalCurrentScreen !== null && canonicalCurrentScreen !== '') {
+    unifiedContext.currentScreen = canonicalCurrentScreen;
+    unifiedContext.current_screen = canonicalCurrentScreen;
+    console.log(`🔗 Mapped runtime screen pointer to both keys: ${canonicalCurrentScreen}`);
   }
   
   // Merge all data sources with flowContext having highest priority
@@ -278,4 +291,3 @@ export async function loadGadPhq2Prompt(): Promise<string> {
 export async function loadDryJanuaryPrompt(): Promise<string> {
   return loadPromptTemplate(PROMPT_TEMPLATES.DRY_JANUARY_PROMPT);
 }
-
