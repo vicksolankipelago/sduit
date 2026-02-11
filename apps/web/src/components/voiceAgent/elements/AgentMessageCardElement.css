@@ -38,5 +38,19 @@
   line-height: var(--line-height-header-1); /* 34px */
   text-align: center;
   width: 100%;
+  white-space: pre-wrap;
 }
 
+.agent-message-card-word {
+  transition: opacity 120ms ease-out, filter 120ms ease-out;
+}
+
+.agent-message-card-word.hidden {
+  opacity: 0;
+  filter: blur(2px);
+}
+
+.agent-message-card-word.visible {
+  opacity: 1;
+  filter: blur(0);
+}

@@ -16,6 +16,17 @@ export const ModerationCategoryZod = z.enum([...MODERATION_CATEGORIES]);
 
 export type SessionStatus = "DISCONNECTED" | "CONNECTING" | "CONNECTED";
 
+export interface ElevenLabsAudioAlignment {
+  characters: string[];
+  startTimesMs: number[];
+  durationsMs: number[];
+}
+
+export interface ElevenLabsAudioAlignmentSnapshot {
+  raw: unknown;
+  receivedAtMs: number;
+}
+
 export interface ToolParameterProperty {
   type: string;
   description?: string;

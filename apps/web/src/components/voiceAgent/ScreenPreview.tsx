@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
 import { Screen, ElementConfig, Section, AnyCodable } from '../../types/journey';
+import { ElevenLabsAudioAlignmentSnapshot } from '../../types/voiceAgent';
 import { useScreenContext } from '../../contexts/voiceAgent/ScreenContext';
 import { getElementComponent } from '../../lib/voiceAgent/elementRegistry';
 import { ScreenErrorBoundary, ElementErrorBoundary } from './ErrorBoundary';
@@ -18,6 +19,7 @@ export interface ScreenPreviewProps {
   memberAudioLevel?: number;
   getOutputVolume?: () => number;
   sessionConnected?: boolean;
+  agentSpeechAlignment?: ElevenLabsAudioAlignmentSnapshot | null;
 }
 
 export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
@@ -31,6 +33,7 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
   memberAudioLevel,
   getOutputVolume,
   sessionConnected,
+  agentSpeechAlignment,
 }) => {
   const {
     currentScreen,
@@ -190,6 +193,7 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
             memberAudioLevel={memberAudioLevel}
             getOutputVolume={getOutputVolume}
             sessionConnected={sessionConnected}
+            agentSpeechAlignment={agentSpeechAlignment}
             canExpand={!editable}
           />
         </ElementErrorBoundary>

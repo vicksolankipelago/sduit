@@ -592,6 +592,10 @@ export interface AgentMessageCardData {
   agentName?: string;
   avatar?: string;
   timestamp?: string;
+  /**
+   * When true (default), words can be revealed in sync with ElevenLabs audio alignment.
+   */
+  syncWithSpeech?: boolean;
 }
 
 export interface AgentMessageCardElementStyle {

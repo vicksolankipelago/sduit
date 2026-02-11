@@ -252,8 +252,16 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
           if (cleaned.startsWith('$moduleData.')) {
             const path = cleaned.substring('$moduleData.'.length);
             resolvedState[key] = getNestedValue(moduleStateRef.current, path);
-          } else if (cleaned.startsWith('$screenData.') || cleaned.startsWith('$state.')) {
-            const prefix = cleaned.startsWith('$screenData.') ? '$screenData.' : '$state.';
+          } else if (
+            cleaned.startsWith('$screenData.')
+            || cleaned.startsWith('$screenState.')
+            || cleaned.startsWith('$state.')
+          ) {
+            const prefix = cleaned.startsWith('$screenData.')
+              ? '$screenData.'
+              : cleaned.startsWith('$screenState.')
+                ? '$screenState.'
+                : '$state.';
             const path = cleaned.substring(prefix.length);
             resolvedState[key] = getNestedValue(screenStateRef.current, path);
           } else {

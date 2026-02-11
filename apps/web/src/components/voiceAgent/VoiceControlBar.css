@@ -11,11 +11,11 @@
 }
 
 .voice-control-bar-container {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 14px;
-  max-width: 318px;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) 58px;
+  align-items: center;
+  column-gap: 16px;
+  max-width: 324px;
   margin: 0 auto;
   width: 100%;
 }
@@ -73,13 +73,12 @@
 }
 
 .voice-control-waveform-group {
-  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  min-width: 0;
+  gap: 8px;
 }
 
 .voice-control-wave-label {
@@ -116,7 +115,7 @@
 }
 
 .voice-help-overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 3200;
   background: rgba(0, 0, 0, 0.4);
@@ -125,6 +124,7 @@
   justify-content: center;
   padding: 12px;
   animation: help-fade-in 0.2s ease;
+  border-radius: inherit;
 }
 
 @keyframes help-fade-in {
@@ -140,7 +140,7 @@
   background: var(--background-light, #fff);
   border-radius: 16px;
   padding: 16px 16px 20px;
-  max-width: 300px;
+  max-width: min(300px, calc(100% - 24px));
   width: 100%;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
   animation: help-slide-up 0.25s ease;
@@ -255,6 +255,8 @@
   }
 
   .voice-control-bar-container {
+    grid-template-columns: 52px minmax(0, 1fr) 52px;
+    column-gap: 14px;
     max-width: 304px;
   }
 

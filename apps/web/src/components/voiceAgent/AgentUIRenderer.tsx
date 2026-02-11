@@ -2,6 +2,7 @@ import React from 'react';
 import { useAgentUI } from '../../contexts/voiceAgent/AgentUIContext';
 import { ScreenProvider } from '../../contexts/voiceAgent/ScreenContext';
 import { logger } from '../../utils/logger';
+import { ElevenLabsAudioAlignmentSnapshot } from '../../types/voiceAgent';
 import ScreenPreview from './ScreenPreview';
 import NotificationPermissionPopup from './NotificationPermissionPopup';
 import './AgentUIRenderer.css';
@@ -10,6 +11,7 @@ const uiLogger = logger.namespace('AgentUIRenderer');
 
 interface AgentUIRendererProps {
   bottomBar?: React.ReactNode;
+  helpOverlay?: React.ReactNode;
   onOpenHelp?: () => void;
   onOpenSettings?: () => void;
   onExit?: () => void;
@@ -21,10 +23,12 @@ interface AgentUIRendererProps {
   memberAudioLevel?: number;
   getOutputVolume?: () => number;
   sessionConnected?: boolean;
+  agentSpeechAlignment?: ElevenLabsAudioAlignmentSnapshot | null;
 }
 
 export default function AgentUIRenderer({
   bottomBar,
+  helpOverlay,
   onOpenHelp,
   onOpenSettings,
   onExit,
@@ -36,6 +40,7 @@ export default function AgentUIRenderer({
   memberAudioLevel,
   getOutputVolume,
   sessionConnected,
+  agentSpeechAlignment,
 }: AgentUIRendererProps) {
   const {
     screenRenderingMode,
@@ -138,6 +143,7 @@ export default function AgentUIRenderer({
                     memberAudioLevel={memberAudioLevel}
                     getOutputVolume={getOutputVolume}
                     sessionConnected={sessionConnected}
+                    agentSpeechAlignment={agentSpeechAlignment}
                   />
                 </ScreenProvider>
               ) : (
@@ -164,6 +170,7 @@ export default function AgentUIRenderer({
                 {bottomBar}
               </div>
             )}
+            {helpOverlay}
           </div>
           
           {/* Notification Permission Popup - rendered inside device frame */}

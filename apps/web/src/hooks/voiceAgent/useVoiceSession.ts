@@ -15,6 +15,7 @@ export interface VoiceSessionCallbacks {
   customPrompts?: Record<string, string>;
   onConnectionChange?: (status: SessionStatus) => void;
   onTranscript?: (role: string, text: string, isDone?: boolean) => void;
+  onAudioAlignment?: (alignment: unknown) => void;
   onEvent?: (event: any) => void;
   onAgentHandoff?: (fromAgent: string, toAgent: string) => void;
   onToolCall?: (toolName: string, args: any, result: any) => void;
@@ -86,6 +87,7 @@ export function useVoiceSession(
     customPrompts: callbacks.customPrompts,
     onConnectionChange: callbacks.onConnectionChange,
     onTranscript: callbacks.onTranscript,
+    onAudioAlignment: callbacks.onAudioAlignment,
     onEvent: callbacks.onEvent,
     onAgentHandoff: callbacks.onAgentHandoff,
     onToolCall: callbacks.onToolCall,
@@ -96,6 +98,7 @@ export function useVoiceSession(
     customPrompts: callbacks.customPrompts,
     onConnectionChange: callbacks.onConnectionChange,
     onTranscript: callbacks.onTranscript,
+    onAudioAlignment: callbacks.onAudioAlignment,
     onEvent: callbacks.onEvent,
     onAgentHandoff: callbacks.onAgentHandoff,
     onToolCall: callbacks.onToolCall,

@@ -70,6 +70,7 @@ export interface ElevenLabsSessionCallbacks {
   customPrompts?: Record<string, string>;
   onConnectionChange?: (status: SessionStatus) => void;
   onTranscript?: (role: string, text: string, isDone?: boolean) => void;
+  onAudioAlignment?: (alignment: unknown) => void;
   onEvent?: (event: any) => void;
   onAgentHandoff?: (fromAgent: string, toAgent: string) => void;
   onToolCall?: (toolName: string, args: any, result: any) => void;
@@ -401,6 +402,12 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
           }
         },
       };
+
+      if (callbacksRef.current.onAudioAlignment) {
+        (sessionConfig as any).onAudioAlignment = (alignment: unknown) => {
+          callbacksRef.current.onAudioAlignment?.(alignment);
+        };
+      }
       
       // Pass dynamic variables at root level (for {{variable}} substitution in prompts)
       if (options.dynamicVariables && Object.keys(options.dynamicVariables).length > 0) {

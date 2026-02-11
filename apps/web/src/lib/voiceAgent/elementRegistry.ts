@@ -299,7 +299,7 @@ export const ElementMetadataRegistry: Record<ElementType, ElementMetadata> = {
     category: 'advanced',
     icon: '🤖',
     description: 'Voice agent message bubble',
-    defaultData: { id: '', message: 'Message', agentName: 'Agent', avatar: '🤖' },
+    defaultData: { id: '', message: 'Message', agentName: 'Agent', avatar: '🤖', syncWithSpeech: true },
     defaultStyle: { backgroundColor: 'backgroundLightCard', cornerRadius: 12 },
   },
   'openQuestion': {

@@ -26,7 +26,7 @@ import VoiceControlBar, { VoiceHelpOverlay, type ActiveSpeaker } from '../compon
 import { ErrorBoundary } from '../components/voiceAgent/ErrorBoundary';
 import { EditIcon, SettingsIcon } from '../components/Icons';
 
-import { SessionStatus, TranscriptItem } from '../types/voiceAgent';
+import { ElevenLabsAudioAlignmentSnapshot, SessionStatus, TranscriptItem } from '../types/voiceAgent';
 import { Journey, JourneyListItem } from '../types/journey';
 import {
   createSessionExport,
@@ -603,6 +603,7 @@ function VoiceAgentContent() {
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [activeSpeaker, setActiveSpeaker] = useState<ActiveSpeaker>('none');
   const [memberAudioLevel, setMemberAudioLevel] = useState(0);
+  const [agentSpeechAlignment, setAgentSpeechAlignment] = useState<ElevenLabsAudioAlignmentSnapshot | null>(null);
   const [_hasScreensVisible, setHasScreensVisible] = useState(false);
   const [micStream, setMicStream] = useState<MediaStream | null>(null);
   
@@ -2531,15 +2532,18 @@ Important guidelines:
       if (s === 'CONNECTING') {
         setActiveSpeaker('none');
         setMemberAudioLevel(0);
+        applyModuleStateUpdates({ agentIsSpeaking: false, agentSpeechMode: 'connecting' });
         addLog('info', 'Connecting to Azure OpenAI...');
       } else if (s === 'CONNECTED') {
         setActiveSpeaker('member');
+        applyModuleStateUpdates({ agentIsSpeaking: false, agentSpeechMode: 'listening' });
         addLog('success', 'Connected to Azure OpenAI WebRTC');
         setIsTransitioningJourney(false);
         setLoadingJourneyId(null);
       } else if (s === 'DISCONNECTED') {
         setActiveSpeaker('none');
         setMemberAudioLevel(0);
+        applyModuleStateUpdates({ agentIsSpeaking: false, agentSpeechMode: 'disconnected' });
         addLog('info', 'Disconnected from Azure OpenAI');
         setIsTransitioningJourney(false);
         setLoadingJourneyId(null);
@@ -3946,10 +3950,13 @@ Important guidelines:
       if (s === 'CONNECTING') {
         setActiveSpeaker('none');
         setMemberAudioLevel(0);
+        setAgentSpeechAlignment(null);
+        applyModuleStateUpdates({ agentIsSpeaking: false, agentSpeechMode: 'connecting' });
         addLog('info', `[${timestamp}] Connecting to ElevenLabs...`);
         setConnectionError(null); // Clear any previous errors
       } else if (s === 'CONNECTED') {
         setActiveSpeaker('member');
+        applyModuleStateUpdates({ agentIsSpeaking: false, agentSpeechMode: 'listening' });
         addLog('success', `[${timestamp}] Connected to ElevenLabs`);
         setIsTransitioningJourney(false);
         setLoadingJourneyId(null);
@@ -3957,6 +3964,8 @@ Important guidelines:
       } else if (s === 'DISCONNECTED') {
         setActiveSpeaker('none');
         setMemberAudioLevel(0);
+        setAgentSpeechAlignment(null);
+        applyModuleStateUpdates({ agentIsSpeaking: false, agentSpeechMode: 'disconnected' });
         addLog('info', `[${timestamp}] Disconnected from ElevenLabs`);
         setIsTransitioningJourney(false);
         setLoadingJourneyId(null);
@@ -3965,9 +3974,17 @@ Important guidelines:
     onModeChange: (mode) => {
       if (currentProviderRef.current !== 'elevenlabs') return;
       setActiveSpeaker(mode === 'speaking' ? 'agent' : 'member');
+      applyModuleStateUpdates({ agentIsSpeaking: mode === 'speaking', agentSpeechMode: mode });
       if (mode === 'speaking') {
         setMemberAudioLevel(0);
       }
+    },
+    onAudioAlignment: (alignment) => {
+      if (currentProviderRef.current !== 'elevenlabs') return;
+      setAgentSpeechAlignment({
+        raw: alignment,
+        receivedAtMs: Date.now(),
+      });
     },
     onVadScore: (vadScore) => {
       if (currentProviderRef.current !== 'elevenlabs') return;
@@ -4258,6 +4275,7 @@ Important guidelines:
             onToggleMute={handleToggleMute}
           />
         ) : undefined}
+        helpOverlay={showVoiceHelp ? <VoiceHelpOverlay onClose={() => setShowVoiceHelp(false)} /> : undefined}
         onOpenHelp={sessionStatus === 'CONNECTED' ? () => setShowVoiceHelp(true) : undefined}
         onOpenSettings={sessionStatus === 'CONNECTED' && !isPreviewMode ? () => setSettingsOpen(true) : undefined}
         onExit={sessionStatus === 'CONNECTED' ? () => {
@@ -4307,8 +4325,8 @@ Important guidelines:
         memberAudioLevel={memberAudioLevel}
         getOutputVolume={getElevenLabsOutputVolume}
         sessionConnected={sessionStatus === 'CONNECTED'}
+        agentSpeechAlignment={agentSpeechAlignment}
       />
-      {showVoiceHelp && <VoiceHelpOverlay onClose={() => setShowVoiceHelp(false)} />}
       
       {/* Header - Show when disconnected and NOT in preview mode, transitioning, or loading */}
       {sessionStatus === 'DISCONNECTED' && !isPreviewMode && !isTransitioningJourney && !loadingJourneyId && !showFeedbackForm && (

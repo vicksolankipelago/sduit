@@ -657,6 +657,16 @@ export const ElementPropertyEditor: React.FC<ElementPropertyEditorProps> = ({
                 placeholder="🤖"
               />
             </FormField>
+            <FormField label="Sync With Speech">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={(element.state.syncWithSpeech as boolean | undefined) !== false}
+                  onChange={(e) => handleDataChange('syncWithSpeech', e.target.checked)}
+                />
+                <span>Reveal words in sync with ElevenLabs speech timing</span>
+              </label>
+            </FormField>
           </>
         );
 
@@ -1323,4 +1333,3 @@ const FormField: React.FC<{
 };
 
 export default ElementPropertyEditor;
-
