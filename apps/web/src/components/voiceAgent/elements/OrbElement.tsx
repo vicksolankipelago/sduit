@@ -19,9 +19,9 @@ export interface OrbElementProps {
 }
 
 const SIZE_MAP = {
-  small: { width: '108px', height: '108px' },
-  medium: { width: '240px', height: '240px' },
-  large: { width: '320px', height: '320px' },
+  small: { width: '92px', height: '92px' },
+  medium: { width: '200px', height: '200px' },
+  large: { width: '264px', height: '264px' },
 };
 
 export const OrbElement: React.FC<OrbElementProps> = ({

@@ -44,6 +44,7 @@ export function Orb({
   void seed;
 
   const needleRef = useRef<SVGGElement>(null);
+  const tickRefs = useRef<Array<SVGLineElement | null>>([]);
   const stateRef = useRef<AgentState>(agentState);
   const modeRef = useRef<"auto" | "manual">(volumeMode);
   const manualInputRef = useRef(clamp01(manualInput ?? 0));
@@ -139,6 +140,33 @@ export function Orb({
         needleRef.current.setAttribute("opacity", (0.8 + energy * 0.2).toFixed(3));
       }
 
+      const pulseSpeed =
+        state === "talking" ? 4.4 : state === "listening" ? 3.6 : state === "thinking" ? 2.4 : 1.8;
+      for (let index = 0; index < 8; index += 1) {
+        const tickNode = tickRefs.current[index];
+        if (!tickNode) continue;
+
+        const isCardinal = index % 2 === 0;
+        const angle = (index / 8) * Math.PI * 2;
+        const innerRadius = isCardinal ? 36 : 37;
+        const baseLength = isCardinal ? 6.4 : 3.8;
+        const localPulse = 0.5 + 0.5 * Math.sin(elapsed * pulseSpeed + index * 0.86);
+        const lengthBoost = isCardinal ? 1.9 : 1.2;
+        const dynamicLength = baseLength + lengthBoost * localPulse * (0.45 + energy * 0.95);
+        const outerRadius = innerRadius + dynamicLength;
+
+        const x1 = CENTER + Math.cos(angle) * innerRadius;
+        const y1 = CENTER + Math.sin(angle) * innerRadius;
+        const x2 = CENTER + Math.cos(angle) * outerRadius;
+        const y2 = CENTER + Math.sin(angle) * outerRadius;
+
+        tickNode.setAttribute("x1", x1.toFixed(2));
+        tickNode.setAttribute("y1", y1.toFixed(2));
+        tickNode.setAttribute("x2", x2.toFixed(2));
+        tickNode.setAttribute("y2", y2.toFixed(2));
+        tickNode.setAttribute("opacity", (0.34 + localPulse * 0.42).toFixed(3));
+      }
+
       frameId = window.requestAnimationFrame(animate);
     };
 
@@ -182,7 +210,7 @@ export function Orb({
             const angle = (index / 8) * Math.PI * 2;
             const isCardinal = index % 2 === 0;
             const inner = isCardinal ? 36 : 37;
-            const outer = isCardinal ? 42 : 40;
+            const outer = isCardinal ? 43 : 41;
             const x1 = CENTER + Math.cos(angle) * inner;
             const y1 = CENTER + Math.sin(angle) * inner;
             const x2 = CENTER + Math.cos(angle) * outer;
@@ -191,6 +219,9 @@ export function Orb({
             return (
               <line
                 key={`tick-${index}`}
+                ref={(node) => {
+                  tickRefs.current[index] = node;
+                }}
                 x1={x1.toFixed(2)}
                 y1={y1.toFixed(2)}
                 x2={x2.toFixed(2)}
@@ -204,8 +235,8 @@ export function Orb({
           <line className="navi-orb-needle-line" x1="50" y1="27" x2="50" y2="73" />
           <path className="navi-orb-needle-head" d="M50 21 L45 30 L50 27 L55 30 Z" />
           <path className="navi-orb-needle-tail" d="M50 79 L46.8 71 L50 73 L53.2 71 Z" />
-          <circle className="navi-orb-needle-cap" cx="50" cy="50" r="3.4" />
         </g>
+        <circle className="navi-orb-hub" cx="50" cy="50" r="3.4" />
       </svg>
     </div>
   );

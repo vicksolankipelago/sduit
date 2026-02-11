@@ -29,7 +29,7 @@
   stroke: var(--navi-orb-stroke, #7e57ff);
   stroke-width: 1.45;
   stroke-linecap: round;
-  opacity: 0.64;
+  opacity: 0.5;
 }
 
 .navi-orb-needle {
@@ -50,7 +50,7 @@
   stroke-linejoin: round;
 }
 
-.navi-orb-needle-cap {
+.navi-orb-hub {
   fill: none;
   stroke: var(--navi-orb-stroke, #7e57ff);
   stroke-width: 2.2;
