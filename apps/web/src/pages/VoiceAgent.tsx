@@ -999,8 +999,13 @@ function VoiceAgentContent() {
     const handleTriggerEvent = (event: Event) => {
       const customEvent = event as CustomEvent;
       const { eventId } = customEvent.detail;
+      const receivedAtMs = Date.now();
       console.log('🔧 [TOOL->UI] triggerEvent received:', eventId);
-      addLog('tool', `🔧 Tool triggered event: ${eventId}`);
+      addLog('tool', `🔧 Tool triggered event: ${eventId}`, {
+        currentScreen: currentScreenIdRef.current,
+        eventTimestamp: customEvent.detail?.timestamp ?? null,
+        receivedAtMs,
+      });
       
       // Special handling for permissions_screen_event - show notification permission popup
       if (eventId === 'permissions_screen_event') {
@@ -1018,8 +1023,13 @@ function VoiceAgentContent() {
     const handleNavigateToScreen = (event: Event) => {
       const customEvent = event as CustomEvent;
       const { screenId } = customEvent.detail;
+      const receivedAtMs = Date.now();
       console.log('🔧 [TOOL->UI] navigateToScreen received:', screenId);
-      addLog('tool', `🔧 Tool navigating to screen: ${screenId}`);
+      addLog('tool', `🔧 Tool navigating to screen: ${screenId}`, {
+        currentScreen: currentScreenIdRef.current,
+        eventTimestamp: customEvent.detail?.timestamp ?? null,
+        receivedAtMs,
+      });
       
       // Use navigateToScreen from context to actually navigate
       if (navigateToScreen) {
@@ -1030,8 +1040,14 @@ function VoiceAgentContent() {
     const handleRecordInput = (event: Event) => {
       const customEvent = event as CustomEvent;
       const { title, summary, storeKey } = customEvent.detail;
+      const receivedAtMs = Date.now();
       console.log('🔧 [TOOL->UI] recordInput received:', { title, summary, storeKey });
-      addLog('tool', `🔧 Tool recorded: ${title} = "${summary?.substring(0, 50)}..."`);
+      addLog('tool', `🔧 Tool recorded: ${title} = "${summary?.substring(0, 50)}..."`, {
+        currentScreen: currentScreenIdRef.current,
+        eventTimestamp: customEvent.detail?.timestamp ?? null,
+        receivedAtMs,
+        storeKey: storeKey ?? null,
+      });
     };
     
     window.addEventListener('triggerEvent', handleTriggerEvent as EventListener);
@@ -2519,8 +2535,14 @@ Important guidelines:
     // This is the primary navigation tool used by the agent prompt
     // Supports optional delay in seconds before triggering
     trigger_event: async (params: { eventId: string; delay?: number }) => {
+      const startedAtMs = Date.now();
       const { eventId, delay = 0 } = params;
       let resolvedDelay = Number.isFinite(delay) ? Math.max(0, delay) : 0;
+      addLog('tool', `🧰 trigger_event called: ${eventId}`, {
+        currentScreen: currentScreenIdRef.current,
+        startedAtMs,
+        requestedDelaySeconds: delay,
+      });
       const buildNavigationResult = (payload: {
         success: boolean;
         eventId: string;
@@ -2531,17 +2553,31 @@ Important guidelines:
         reason?: string;
         message: string;
         availableEvents?: string[];
-      }) => ({
-        success: payload.success,
-        event_id: payload.eventId,
-        from_screen: payload.fromScreen ?? null,
-        next_screen: payload.nextScreen ?? null,
-        current_screen: payload.currentScreen ?? payload.fromScreen ?? null,
-        delay_seconds: payload.delaySeconds ?? 0,
-        reason: payload.reason ?? null,
-        message: payload.message,
-        available_events: payload.availableEvents ?? [],
-      });
+      }) => {
+        const completedAtMs = Date.now();
+        addLog('tool', `🧰 trigger_event result: ${payload.reason ?? (payload.success ? 'ok' : 'failed')}`, {
+          eventId: payload.eventId,
+          success: payload.success,
+          currentScreen: payload.currentScreen ?? payload.fromScreen ?? currentScreenIdRef.current,
+          fromScreen: payload.fromScreen ?? null,
+          nextScreen: payload.nextScreen ?? null,
+          startedAtMs,
+          completedAtMs,
+          elapsedMs: completedAtMs - startedAtMs,
+          delaySeconds: payload.delaySeconds ?? resolvedDelay,
+        });
+        return {
+          success: payload.success,
+          event_id: payload.eventId,
+          from_screen: payload.fromScreen ?? null,
+          next_screen: payload.nextScreen ?? null,
+          current_screen: payload.currentScreen ?? payload.fromScreen ?? null,
+          delay_seconds: payload.delaySeconds ?? 0,
+          reason: payload.reason ?? null,
+          message: payload.message,
+          available_events: payload.availableEvents ?? [],
+        };
+      };
 
       const dispatchTriggerEvent = (id: string, delaySeconds = 0, extra: Record<string, any> = {}) => {
         const trigger = () => {
@@ -2785,9 +2821,15 @@ Important guidelines:
     // Navigate directly by target screen id.
     // This resolves the matching navigation event on the CURRENT screen, then triggers it.
     navigate_to: async (params: { screen: string; delay?: number }) => {
+      const startedAtMs = Date.now();
       const { screen, delay = 0 } = params;
       const resolvedDelay = Number.isFinite(delay) ? Math.max(0, delay) : 0;
       const activeScreenId = currentScreenIdRef.current || undefined;
+      addLog('tool', `🧰 navigate_to called: ${screen}`, {
+        currentScreen: activeScreenId,
+        startedAtMs,
+        requestedDelaySeconds: delay,
+      });
 
       const buildResult = (payload: {
         success: boolean;
@@ -2799,17 +2841,33 @@ Important guidelines:
         reason?: string;
         message: string;
         availableNextScreens?: string[];
-      }) => ({
-        success: payload.success,
-        event_id: payload.eventId ?? null,
-        from_screen: payload.fromScreen ?? null,
-        next_screen: payload.nextScreen ?? null,
-        current_screen: payload.currentScreen ?? payload.fromScreen ?? null,
-        delay_seconds: payload.delaySeconds ?? 0,
-        reason: payload.reason ?? null,
-        message: payload.message,
-        available_next_screens: payload.availableNextScreens ?? [],
-      });
+      }) => {
+        const completedAtMs = Date.now();
+        addLog('tool', `🧰 navigate_to result: ${payload.reason ?? (payload.success ? 'ok' : 'failed')}`, {
+          screen,
+          eventId: payload.eventId ?? null,
+          success: payload.success,
+          currentScreen: payload.currentScreen ?? payload.fromScreen ?? activeScreenId,
+          fromScreen: payload.fromScreen ?? null,
+          nextScreen: payload.nextScreen ?? null,
+          availableNextScreens: payload.availableNextScreens ?? [],
+          startedAtMs,
+          completedAtMs,
+          elapsedMs: completedAtMs - startedAtMs,
+          delaySeconds: payload.delaySeconds ?? resolvedDelay,
+        });
+        return {
+          success: payload.success,
+          event_id: payload.eventId ?? null,
+          from_screen: payload.fromScreen ?? null,
+          next_screen: payload.nextScreen ?? null,
+          current_screen: payload.currentScreen ?? payload.fromScreen ?? null,
+          delay_seconds: payload.delaySeconds ?? 0,
+          reason: payload.reason ?? null,
+          message: payload.message,
+          available_next_screens: payload.availableNextScreens ?? [],
+        };
+      };
 
       const dispatchTriggerEvent = (id: string, delaySeconds = 0) => {
         const trigger = () => {
@@ -2914,11 +2972,19 @@ Important guidelines:
       nextEventId?: string;
       delay?: number;
     }) => {
+      const startedAtMs = Date.now();
       const { title, summary = '', description = '', storeKey, nextEventId, delay = 0 } = params;
       const canonicalUpdates = deriveRecordInputModuleUpdates({ title, summary, storeKey });
       const recordedAtMs = Date.now();
       lastRecordInputRef.current = { atMs: recordedAtMs, title, summary };
-      addLog('tool', `📝 record_input: ${title}`, { summary, storeKey, nextEventId, delay });
+      addLog('tool', `📝 record_input called: ${title}`, {
+        summary,
+        storeKey,
+        nextEventId,
+        delay,
+        currentScreen: currentScreenIdRef.current,
+        startedAtMs,
+      });
 
       // Dispatch event for ScreenProvider
       window.dispatchEvent(new CustomEvent('recordInput', {
@@ -2985,6 +3051,14 @@ Important guidelines:
         }, delayMs);
       }
 
+      const completedAtMs = Date.now();
+      addLog('tool', `📝 record_input result: ${title}`, {
+        currentScreen: currentScreenIdRef.current,
+        startedAtMs,
+        completedAtMs,
+        elapsedMs: completedAtMs - startedAtMs,
+        nextEventId: nextEventId || null,
+      });
       return {
         saved: true,
         title,
@@ -3003,6 +3077,7 @@ Important guidelines:
     //   goalTitles  – string[] for the checklistCard element (matches {$moduleData.goalTitles})
     //   memberGoals – full goal objects for backend/analytics
     set_goals: async (params: { goals?: any[] | string } | any[] | string) => {
+      const startedAtMs = Date.now();
       const parseJsonIfPossible = (value: unknown): unknown => {
         if (typeof value !== 'string') return value;
         const trimmed = value.trim();
@@ -3172,7 +3247,12 @@ Important guidelines:
       }
 
       const goalTitles = uniqueGoals.map(g => g.goal);
-      addLog('tool', `🎯 set_goals: ${goalTitles.join(' | ')}`);
+      addLog('tool', `🎯 set_goals called`, {
+        goalsCount: goalTitles.length,
+        goalTitles,
+        currentScreen: currentScreenIdRef.current,
+        startedAtMs,
+      });
 
       // Dispatch recordInput for logging/persistence
       window.dispatchEvent(new CustomEvent('recordInput', {
@@ -3194,6 +3274,14 @@ Important guidelines:
         });
       }
 
+      const completedAtMs = Date.now();
+      addLog('tool', `🎯 set_goals result`, {
+        currentScreen: currentScreenIdRef.current,
+        startedAtMs,
+        completedAtMs,
+        elapsedMs: completedAtMs - startedAtMs,
+        goalsCount: uniqueGoals.length,
+      });
       return {
         saved: true,
         goals: uniqueGoals,
@@ -3206,6 +3294,7 @@ Important guidelines:
     // Stores weeklyFocus, weeklyFocusGoal, and weeklyFocusCaption in module state.
     // The quoteCard element reads these via {$moduleData.weeklyFocus} and {$moduleData.weeklyFocusCaption}.
     capture_weekly_focus: async (params: { focus?: string; relatedGoal?: string } | string) => {
+      const startedAtMs = Date.now();
       const parseJsonIfPossible = (value: unknown): unknown => {
         if (typeof value !== 'string') return value;
         const trimmed = value.trim();
@@ -3259,7 +3348,12 @@ Important guidelines:
       const dateStr = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
       const caption = `– My focus set on ${dateStr}`;
 
-      addLog('tool', `🎯 capture_weekly_focus: "${focus}"${relatedGoal ? ` (goal: ${relatedGoal})` : ''}`);
+      addLog('tool', `🎯 capture_weekly_focus called`, {
+        focus,
+        relatedGoal,
+        currentScreen: currentScreenIdRef.current,
+        startedAtMs,
+      });
 
       // Store in module state — matches iOS stateManager.updateModuleState pattern
       const stateUpdates: Record<string, any> = {
@@ -3275,6 +3369,13 @@ Important guidelines:
         updateModuleState(stateUpdates);
       }
 
+      const completedAtMs = Date.now();
+      addLog('tool', `🎯 capture_weekly_focus result`, {
+        currentScreen: currentScreenIdRef.current,
+        startedAtMs,
+        completedAtMs,
+        elapsedMs: completedAtMs - startedAtMs,
+      });
       return {
         saved: true,
         weeklyFocus: focus,
@@ -3287,8 +3388,17 @@ Important guidelines:
     // End the call and show feedback
     // Supports delaySeconds for delayed disconnect
     end_call: async (params: { reason?: string; delaySeconds?: number }) => {
+      const startedAtMs = Date.now();
       const delayMs = (params.delaySeconds || 0) * 1000 + 500; // Add 500ms base delay
-      addLog('tool', `📞 end_call: ${params.reason || 'User requested'} (delay: ${delayMs}ms)`);
+      const completedAtMs = Date.now();
+      addLog('tool', `📞 end_call`, {
+        reason: params.reason || 'User requested',
+        delayMs,
+        currentScreen: currentScreenIdRef.current,
+        startedAtMs,
+        completedAtMs,
+        elapsedMs: completedAtMs - startedAtMs,
+      });
       // Use ref to call the actual disconnect function (avoids circular dependency)
       setTimeout(() => disconnectFromRealtimeRef.current?.(true), delayMs);
       return 'Call ending';
@@ -3297,6 +3407,7 @@ Important guidelines:
     // DEPRECATED: Check-in frequency is now saved automatically by the select_*_commitment events.
     // This handler remains supported for spoken-only capture and legacy agents.
     set_checkin_frequency: async (params: { days: number }) => {
+      const startedAtMs = Date.now();
       const parsed = Number(params.days);
       if (!Number.isFinite(parsed)) {
         return {
@@ -3308,7 +3419,11 @@ Important guidelines:
       const days = Math.max(1, Math.min(7, Math.round(parsed)));
       const checkinCommitment = days >= 6 ? 'Every day' : days >= 3 ? 'A few times' : 'Once';
 
-      addLog('tool', `📊 set_checkin_frequency: ${days} day(s)/week`);
+      addLog('tool', `📊 set_checkin_frequency called`, {
+        days,
+        currentScreen: currentScreenIdRef.current,
+        startedAtMs,
+      });
 
       window.dispatchEvent(new CustomEvent('recordInput', {
         detail: {
@@ -3327,6 +3442,15 @@ Important guidelines:
         });
       }
 
+      const completedAtMs = Date.now();
+      addLog('tool', `📊 set_checkin_frequency result`, {
+        days,
+        checkinCommitment,
+        currentScreen: currentScreenIdRef.current,
+        startedAtMs,
+        completedAtMs,
+        elapsedMs: completedAtMs - startedAtMs,
+      });
       return {
         saved: true,
         checkinFrequencyDays: days,
@@ -3337,12 +3461,17 @@ Important guidelines:
 
     // Save preferred reminder time (converts to UTC)
     set_reminder_time: async (params: any) => {
+      const startedAtMs = Date.now();
       try {
         // Defensive: extract time from various param shapes the LLM might send
         const userTime = typeof params === 'string' ? params
           : params?.time ?? params?.reminder_time ?? params?.reminderTime ?? String(params);
         
-        addLog('tool', `⏰ set_reminder_time called with params: ${JSON.stringify(params)}`);
+        addLog('tool', `⏰ set_reminder_time called`, {
+          params,
+          currentScreen: currentScreenIdRef.current,
+          startedAtMs,
+        });
 
         if (!userTime || userTime === 'undefined' || userTime === 'null') {
           addLog('tool', `⚠️ set_reminder_time: no valid time provided, params were: ${JSON.stringify(params)}`);
@@ -3353,7 +3482,11 @@ Important guidelines:
         }
 
         const utcTime = parseLocalTimeToUTC(userTime);
-        addLog('tool', `⏰ set_reminder_time: "${userTime}" → UTC "${utcTime}"`);
+        addLog('tool', `⏰ set_reminder_time parsed`, {
+          userTime,
+          utcTime,
+          currentScreen: currentScreenIdRef.current,
+        });
 
         // Dispatch event for ScreenProvider
         window.dispatchEvent(new CustomEvent('recordInput', {
@@ -3368,6 +3501,15 @@ Important guidelines:
           });
         }
 
+        const completedAtMs = Date.now();
+        addLog('tool', `⏰ set_reminder_time result`, {
+          currentScreen: currentScreenIdRef.current,
+          startedAtMs,
+          completedAtMs,
+          elapsedMs: completedAtMs - startedAtMs,
+          userTime,
+          utcTime,
+        });
         return {
           saved: true,
           notificationTimeLocal: userTime,
@@ -3376,7 +3518,15 @@ Important guidelines:
         };
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
-        addLog('tool', `❌ set_reminder_time error: ${errMsg}, params: ${JSON.stringify(params)}`);
+        const completedAtMs = Date.now();
+        addLog('tool', `❌ set_reminder_time error`, {
+          errMsg,
+          params,
+          currentScreen: currentScreenIdRef.current,
+          startedAtMs,
+          completedAtMs,
+          elapsedMs: completedAtMs - startedAtMs,
+        });
         console.error('set_reminder_time handler error:', error, 'params:', params);
         return {
           saved: false,
@@ -3387,10 +3537,23 @@ Important guidelines:
 
     // Navigate to a specific screen
     navigate_to_screen: async (params: { screen_id: string }) => {
-      addLog('tool', `📱 navigate_to_screen: ${params.screen_id}`);
+      const startedAtMs = Date.now();
+      addLog('tool', `📱 navigate_to_screen called`, {
+        screenId: params.screen_id,
+        currentScreen: currentScreenIdRef.current,
+        startedAtMs,
+      });
       window.dispatchEvent(new CustomEvent('navigateToScreen', {
         detail: { screenId: params.screen_id }
       }));
+      const completedAtMs = Date.now();
+      addLog('tool', `📱 navigate_to_screen result`, {
+        screenId: params.screen_id,
+        currentScreen: currentScreenIdRef.current,
+        startedAtMs,
+        completedAtMs,
+        elapsedMs: completedAtMs - startedAtMs,
+      });
       return `Navigated to screen: ${params.screen_id}`;
     },
 
