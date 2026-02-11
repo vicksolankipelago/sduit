@@ -1297,6 +1297,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
               aria-label="Back to flows"
               title="Back to flows"
               onClick={() => {
+                console.log('[BackButton] Clicked, navigating to /');
                 if (autoSaveTimerRef.current) {
                   clearTimeout(autoSaveTimerRef.current);
                   autoSaveTimerRef.current = null;
