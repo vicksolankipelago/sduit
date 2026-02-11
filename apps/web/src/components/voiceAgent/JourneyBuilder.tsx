@@ -257,6 +257,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSaveStatusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const publishCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const justPublishedRef = useRef(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
   const hasInitialLoadRef = useRef(false);
   
@@ -539,6 +540,10 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     }
 
     publishCheckTimerRef.current = setTimeout(async () => {
+      if (justPublishedRef.current) {
+        justPublishedRef.current = false;
+        return;
+      }
       if (currentJourney?.id && !currentJourney.id.startsWith('new-')) {
         try {
           const published = await getPublishedJourney(currentJourney.id);
@@ -606,6 +611,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
         return;
       }
       
+      justPublishedRef.current = true;
       setCurrentJourney(savedJourney);
       lastSavedJourneyRef.current = JSON.stringify(savedJourney);
       setHasUnsavedChanges(false);
@@ -623,6 +629,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       }
     } catch (error) {
       console.error('🚀 Publish error:', error);
+      justPublishedRef.current = false;
       alert('Failed to publish flow: ' + (error as Error).message);
     } finally {
       setIsPublishing(false);
