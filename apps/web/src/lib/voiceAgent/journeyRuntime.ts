@@ -201,7 +201,7 @@ export class JourneyRuntime {
     const systemToolNames = new Set([
       'trigger_event', 'record_input', 'end_call',
       'set_checkin_frequency', 'set_reminder_time',
-      'set_goals', 'capture_weekly_focus', 'setVoiceEnabled',
+      'set_goals', 'capture_weekly_focus', 'setVoiceEnabled', 'navigate_to',
     ]);
 
     // Convert journey tools to RealtimeAgent tools, skipping any that
@@ -213,6 +213,8 @@ export class JourneyRuntime {
     // Add system tools available to all journeys
     // trigger_event - for screen navigation and UI events
     realtimeTools.push(this.createTriggerEventTool(agentName) as any);
+    // navigate_to - navigation by target screen id (maps to current screen event)
+    realtimeTools.push(this.createNavigateToTool(agentName, agentConfig.screens || []) as any);
     
     // record_input - for recording user responses (always available as system tool)
     realtimeTools.push(this.createSystemRecordInputTool(agentName) as any);
@@ -447,6 +449,24 @@ export class JourneyRuntime {
       strict: false,
       execute: async (input: TriggerEventParams) => {
         const { eventId } = input;
+        const buildNavigationResult = (payload: {
+          success: boolean;
+          eventId: string;
+          currentScreen?: string;
+          nextScreen?: string;
+          delaySeconds?: number;
+          reason?: string;
+          message: string;
+        }) => ({
+          success: payload.success,
+          event_id: payload.eventId,
+          from_screen: null,
+          next_screen: payload.nextScreen ?? null,
+          current_screen: payload.currentScreen ?? payload.nextScreen ?? null,
+          delay_seconds: payload.delaySeconds ?? 0,
+          reason: payload.reason ?? null,
+          message: payload.message,
+        });
 
         // Robust delay parsing - use delay from tool call if provided
         let delay = 0;
@@ -476,11 +496,141 @@ export class JourneyRuntime {
 
         if (delay > 0) {
           setTimeout(trigger, delay * 1000);
-          return `Event "${eventId}" scheduled with ${delay}s delay`;
+          return buildNavigationResult({
+            success: true,
+            eventId,
+            delaySeconds: delay,
+            reason: 'scheduled',
+            message: `Event "${eventId}" scheduled with ${delay}s delay`,
+          });
         } else {
           trigger();
-          return `Event "${eventId}" triggered successfully`;
+          return buildNavigationResult({
+            success: true,
+            eventId,
+            delaySeconds: 0,
+            reason: 'triggered',
+            message: `Event "${eventId}" triggered successfully`,
+          });
         }
+      },
+    });
+  }
+
+  /**
+   * Create the navigate_to tool for screen-based agents.
+   * This maps a target screen id to the corresponding navigation event id.
+   */
+  private createNavigateToTool(agentName: string, screens: any[]) {
+    const runtime = this;
+
+    interface NavigateToParams {
+      screen: string;
+      delay?: number | string;
+    }
+
+    const buildNavigationIndex = () => {
+      const entries: Array<{ screenId: string; eventId: string }> = [];
+      for (const screen of screens || []) {
+        const allEvents = [
+          ...(screen?.events || []),
+          ...((screen?.sections || []).flatMap((section: any) =>
+            (section?.elements || []).flatMap((element: any) => element?.events || [])
+          )),
+        ];
+
+        for (const event of allEvents) {
+          const navAction = (event?.action || []).find(
+            (action: any) => action?.type === 'navigation' && typeof action?.deeplink === 'string'
+          );
+          if (navAction?.deeplink && event?.id) {
+            entries.push({ screenId: navAction.deeplink, eventId: event.id });
+          }
+        }
+      }
+      return entries;
+    };
+
+    return (tool as any)({
+      name: 'navigate_to',
+      description: 'Navigate to a target screen by screen ID. Use only valid next screens for the current journey.',
+      parameters: {
+        type: 'object' as const,
+        properties: {
+          screen: {
+            type: 'string',
+            description: 'Target screen ID to navigate to (e.g., "about-you", "outcomes")',
+          },
+          delay: {
+            type: 'number',
+            description: 'Optional delay in seconds before navigation',
+          },
+        },
+        required: ['screen'] as const,
+        additionalProperties: false as const,
+      },
+      strict: false,
+      execute: async (input: NavigateToParams) => {
+        const screen = input?.screen;
+        if (!screen) {
+          return {
+            success: false,
+            event_id: null,
+            from_screen: null,
+            next_screen: null,
+            current_screen: null,
+            delay_seconds: 0,
+            reason: 'missing_screen',
+            message: 'Missing required "screen" parameter.',
+          };
+        }
+
+        let delay = 0;
+        if (typeof input.delay === 'number') {
+          delay = input.delay;
+        } else if (typeof input.delay === 'string') {
+          delay = parseFloat(input.delay);
+          if (isNaN(delay)) delay = 0;
+        }
+
+        const navEntries = buildNavigationIndex();
+        const candidates = navEntries.filter(entry => entry.screenId === screen);
+        if (candidates.length === 0) {
+          return {
+            success: false,
+            event_id: null,
+            from_screen: null,
+            next_screen: screen,
+            current_screen: null,
+            delay_seconds: 0,
+            reason: 'no_navigation_event_for_screen',
+            message: `No navigation event found for target screen "${screen}".`,
+          };
+        }
+
+        const selected = candidates[0];
+        const trigger = () => {
+          if (runtime.eventTriggerCallback) {
+            runtime.eventTriggerCallback(selected.eventId, agentName);
+          }
+        };
+
+        if (delay > 0) {
+          setTimeout(trigger, delay * 1000);
+        } else {
+          trigger();
+        }
+
+        return {
+          success: true,
+          event_id: selected.eventId,
+          from_screen: null,
+          next_screen: screen,
+          current_screen: screen,
+          delay_seconds: delay,
+          reason: 'navigation_triggered',
+          message: `Navigation to "${screen}" triggered via event "${selected.eventId}".`,
+        };
       },
     });
   }

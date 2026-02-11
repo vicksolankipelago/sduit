@@ -512,6 +512,26 @@ const SYSTEM_TOOLS = [
     }
   },
   {
+    id: "system_navigate_to",
+    name: "navigate_to",
+    description: "Navigate to a target screen by screen ID. This resolves and triggers the matching navigation event on the current screen.",
+    parameters: {
+      type: "object" as const,
+      properties: {
+        screen: {
+          type: "string",
+          description: "The target screen ID to navigate to (must be a valid next screen from the current screen)"
+        },
+        delay: {
+          type: "number",
+          description: "Optional delay in seconds before triggering navigation"
+        }
+      },
+      required: ["screen"],
+      additionalProperties: false,
+    }
+  },
+  {
     id: "system_record_input",
     name: "record_input",
     description: "Record the user's spoken response. Use after the user answers a question to save their input.",

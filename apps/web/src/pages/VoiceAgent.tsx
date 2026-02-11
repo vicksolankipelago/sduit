@@ -2511,6 +2511,27 @@ Important guidelines:
     trigger_event: async (params: { eventId: string; delay?: number }) => {
       const { eventId, delay = 0 } = params;
       let resolvedDelay = Number.isFinite(delay) ? Math.max(0, delay) : 0;
+      const buildNavigationResult = (payload: {
+        success: boolean;
+        eventId: string;
+        fromScreen?: string;
+        nextScreen?: string;
+        currentScreen?: string;
+        delaySeconds?: number;
+        reason?: string;
+        message: string;
+        availableEvents?: string[];
+      }) => ({
+        success: payload.success,
+        event_id: payload.eventId,
+        from_screen: payload.fromScreen ?? null,
+        next_screen: payload.nextScreen ?? null,
+        current_screen: payload.currentScreen ?? payload.fromScreen ?? null,
+        delay_seconds: payload.delaySeconds ?? 0,
+        reason: payload.reason ?? null,
+        message: payload.message,
+        available_events: payload.availableEvents ?? [],
+      });
 
       const dispatchTriggerEvent = (id: string, delaySeconds = 0, extra: Record<string, any> = {}) => {
         const trigger = () => {
@@ -2585,14 +2606,29 @@ Important guidelines:
       ) {
         if (eventId === pendingNavigation.eventId) {
           addLog('warning', `⚠️ Navigation "${eventId}" ignored: already scheduled by record_input.`);
-          return `Navigation "${eventId}" is already scheduled by record_input. Wait for the screen to change and continue.`;
+          return buildNavigationResult({
+            success: true,
+            eventId,
+            fromScreen: activeScreenId,
+            nextScreen: getNavigationTargetFromEvent(requestedEventConfig),
+            currentScreen: getNavigationTargetFromEvent(requestedEventConfig) ?? activeScreenId,
+            reason: 'already_scheduled_by_record_input',
+            message: `Navigation "${eventId}" is already scheduled by record_input. Wait for the screen to change and continue.`,
+          });
         }
 
         addLog(
           'warning',
           `⚠️ Navigation "${eventId}" ignored: "${pendingNavigation.eventId}" is already scheduled by record_input.`
         );
-        return `Navigation "${pendingNavigation.eventId}" is already scheduled by record_input. Do NOT trigger "${eventId}" now; wait for navigation to complete.`;
+        return buildNavigationResult({
+          success: false,
+          eventId,
+          fromScreen: activeScreenId,
+          currentScreen: activeScreenId,
+          reason: 'different_navigation_already_scheduled',
+          message: `Navigation "${pendingNavigation.eventId}" is already scheduled by record_input. Do NOT trigger "${eventId}" now; wait for navigation to complete.`,
+        });
       }
 
       if (activeScreen && !hasEventOnScreen(activeScreen, eventId)) {
@@ -2614,18 +2650,51 @@ Important guidelines:
               reason: 'replay_after_recovery_navigation',
               recoveryEventId: autoRecoveryEvent.id,
             });
-            return `Guardrail applied: "${eventId}" is not available on "${activeScreen.id}". Triggered "${autoRecoveryEvent.id}" and replayed "${eventId}" on "${navigationTargetScreen.id}".`;
+            return buildNavigationResult({
+              success: true,
+              eventId,
+              fromScreen: activeScreen.id,
+              nextScreen: navigationTargetScreen.id,
+              currentScreen: navigationTargetScreen.id,
+              delaySeconds: 0.9,
+              reason: 'guardrail_auto_recovery_replay',
+              message: `Guardrail applied: "${eventId}" is not available on "${activeScreen.id}". Triggered "${autoRecoveryEvent.id}" and replayed "${eventId}" on "${navigationTargetScreen.id}".`,
+            });
           }
 
-          return `Guardrail applied: "${eventId}" is not available on "${activeScreen.id}". Triggered "${autoRecoveryEvent.id}" first.`;
+          return buildNavigationResult({
+            success: false,
+            eventId,
+            fromScreen: activeScreen.id,
+            nextScreen: getNavigationTargetFromEvent(autoRecoveryEvent),
+            currentScreen: getNavigationTargetFromEvent(autoRecoveryEvent) ?? activeScreen.id,
+            reason: 'guardrail_auto_recovery_only',
+            message: `Guardrail applied: "${eventId}" is not available on "${activeScreen.id}". Triggered "${autoRecoveryEvent.id}" first.`,
+            availableEvents: activeScreenEvents.map((event: any) => event.id),
+          });
         }
 
         const availableEventIds = activeScreenEvents.map((event: any) => event.id);
         addLog('warning', `⚠️ Guardrail blocked invalid event "${eventId}" on screen "${activeScreen.id}".`, { availableEvents: availableEventIds });
         if (availableEventIds.length > 0) {
-          return `Invalid event "${eventId}" for current screen "${activeScreen.id}". Available events: ${availableEventIds.join(', ')}.`;
+          return buildNavigationResult({
+            success: false,
+            eventId,
+            fromScreen: activeScreen.id,
+            currentScreen: activeScreen.id,
+            reason: 'invalid_event_for_screen',
+            message: `Invalid event "${eventId}" for current screen "${activeScreen.id}". Available events: ${availableEventIds.join(', ')}.`,
+            availableEvents: availableEventIds,
+          });
         }
-        return `Invalid event "${eventId}" for current screen "${activeScreen.id}".`;
+        return buildNavigationResult({
+          success: false,
+          eventId,
+          fromScreen: activeScreen.id,
+          currentScreen: activeScreen.id,
+          reason: 'invalid_event_for_screen',
+          message: `Invalid event "${eventId}" for current screen "${activeScreen.id}".`,
+        });
       }
 
       // Deduplication guard: prevent the same non-navigation event from firing
@@ -2635,7 +2704,14 @@ Important guidelines:
         const lastFired = recentEventTimestamps.current.get(eventId);
         if (lastFired && now - lastFired < 2000) {
           addLog('tool', `⚡ trigger_event: ${eventId} BLOCKED (duplicate within 2s)`);
-          return `Event "${eventId}" was already triggered. Do NOT call this again. Proceed to the next required action.`;
+          return buildNavigationResult({
+            success: false,
+            eventId,
+            fromScreen: activeScreenId,
+            currentScreen: activeScreenId,
+            reason: 'duplicate_non_navigation_event',
+            message: `Event "${eventId}" was already triggered. Do NOT call this again. Proceed to the next required action.`,
+          });
         }
         recentEventTimestamps.current.set(eventId, now);
       }
@@ -2662,13 +2738,160 @@ Important guidelines:
       dispatchTriggerEvent(eventId, resolvedDelay);
 
       // Return a more informative result based on event type to guide the LLM
+      const navigationTarget = getNavigationTargetFromEvent(requestedEventConfig);
       if (eventId.startsWith('select_')) {
-        return `Selection "${eventId}" saved successfully. Do NOT repeat this call. Proceed to the next action (navigation).`;
+        return buildNavigationResult({
+          success: true,
+          eventId,
+          fromScreen: activeScreenId,
+          currentScreen: activeScreenId,
+          reason: 'selection_saved',
+          message: `Selection "${eventId}" saved successfully. Do NOT repeat this call. Proceed to the next action (navigation).`,
+        });
       }
       if (isNavigationEvent) {
-        return `Navigation "${eventId}" triggered. Screen is now changing. Continue speaking to the user about the new screen.`;
+        return buildNavigationResult({
+          success: true,
+          eventId,
+          fromScreen: activeScreenId,
+          nextScreen: navigationTarget,
+          currentScreen: navigationTarget ?? activeScreenId,
+          delaySeconds: resolvedDelay,
+          reason: 'navigation_triggered',
+          message: `Navigation "${eventId}" triggered. Screen is now changing. Continue speaking to the user about the new screen.`,
+        });
       }
-      return `Event "${eventId}" triggered successfully.${resolvedDelay ? ` (after ${resolvedDelay}s delay)` : ''} Proceed to the next step.`;
+      return buildNavigationResult({
+        success: true,
+        eventId,
+        fromScreen: activeScreenId,
+        currentScreen: activeScreenId,
+        delaySeconds: resolvedDelay,
+        reason: 'event_triggered',
+        message: `Event "${eventId}" triggered successfully.${resolvedDelay ? ` (after ${resolvedDelay}s delay)` : ''} Proceed to the next step.`,
+      });
+    },
+
+    // Navigate directly by target screen id.
+    // This resolves the matching navigation event on the CURRENT screen, then triggers it.
+    navigate_to: async (params: { screen: string; delay?: number }) => {
+      const { screen, delay = 0 } = params;
+      const resolvedDelay = Number.isFinite(delay) ? Math.max(0, delay) : 0;
+      const activeScreenId = currentScreenIdRef.current || undefined;
+
+      const buildResult = (payload: {
+        success: boolean;
+        eventId?: string;
+        fromScreen?: string;
+        nextScreen?: string;
+        currentScreen?: string;
+        delaySeconds?: number;
+        reason?: string;
+        message: string;
+        availableNextScreens?: string[];
+      }) => ({
+        success: payload.success,
+        event_id: payload.eventId ?? null,
+        from_screen: payload.fromScreen ?? null,
+        next_screen: payload.nextScreen ?? null,
+        current_screen: payload.currentScreen ?? payload.fromScreen ?? null,
+        delay_seconds: payload.delaySeconds ?? 0,
+        reason: payload.reason ?? null,
+        message: payload.message,
+        available_next_screens: payload.availableNextScreens ?? [],
+      });
+
+      const dispatchTriggerEvent = (id: string, delaySeconds = 0) => {
+        const trigger = () => {
+          window.dispatchEvent(new CustomEvent('triggerEvent', {
+            detail: { eventId: id, timestamp: Date.now() }
+          }));
+        };
+        if (delaySeconds > 0) {
+          setTimeout(trigger, delaySeconds * 1000);
+        } else {
+          trigger();
+        }
+      };
+
+      const getScreenEvents = (currentScreen: any): any[] => {
+        if (!currentScreen) return [];
+        const allEvents = [
+          ...(currentScreen.events || []),
+          ...(currentScreen.sections || []).flatMap((section: any) =>
+            (section.elements || []).flatMap((element: any) => element.events || [])
+          ),
+        ].filter((event: any) => event && typeof event.id === 'string');
+
+        const dedupedById = new Map<string, any>();
+        for (const event of allEvents) {
+          if (!dedupedById.has(event.id)) dedupedById.set(event.id, event);
+        }
+        return Array.from(dedupedById.values());
+      };
+
+      const getNavigationTargetFromEvent = (event: any): string | undefined => {
+        const navAction = (event?.action || []).find(
+          (action: any) => action?.type === 'navigation' && typeof action?.deeplink === 'string'
+        );
+        return navAction?.deeplink;
+      };
+
+      const getActiveAgentScreens = (): any[] => {
+        const journey = currentJourneyRef.current;
+        if (!journey?.agents?.length) return [];
+        const runtimeAgentName = currentAgentRef.current;
+        const activeAgent =
+          journey.agents.find(a => normalizeAgentNameForRuntime(a.name) === runtimeAgentName) ||
+          journey.agents.find(a => a.id === journey.startingAgentId) ||
+          journey.agents[0];
+        return activeAgent?.screens || [];
+      };
+
+      const activeScreens = getActiveAgentScreens();
+      const activeScreen = activeScreens.find((s: any) => s.id === activeScreenId);
+      if (!activeScreen) {
+        return buildResult({
+          success: false,
+          fromScreen: activeScreenId,
+          currentScreen: activeScreenId,
+          nextScreen: screen,
+          reason: 'no_active_screen',
+          message: `Cannot navigate to "${screen}" because there is no active screen context.`,
+        });
+      }
+
+      const screenEvents = getScreenEvents(activeScreen);
+      const navEvents = screenEvents.filter((event: any) => getNavigationTargetFromEvent(event));
+      const matchingNavEvent = navEvents.find((event: any) => getNavigationTargetFromEvent(event) === screen);
+      const availableNextScreens = navEvents
+        .map((event: any) => getNavigationTargetFromEvent(event))
+        .filter((value: string | undefined): value is string => typeof value === 'string');
+
+      if (!matchingNavEvent) {
+        return buildResult({
+          success: false,
+          fromScreen: activeScreen.id,
+          currentScreen: activeScreen.id,
+          nextScreen: screen,
+          reason: 'invalid_transition_for_current_screen',
+          message: `Cannot navigate to "${screen}" from "${activeScreen.id}".`,
+          availableNextScreens,
+        });
+      }
+
+      dispatchTriggerEvent(matchingNavEvent.id, resolvedDelay);
+      return buildResult({
+        success: true,
+        eventId: matchingNavEvent.id,
+        fromScreen: activeScreen.id,
+        nextScreen: screen,
+        currentScreen: screen,
+        delaySeconds: resolvedDelay,
+        reason: 'navigation_triggered',
+        message: `Navigation to "${screen}" triggered via event "${matchingNavEvent.id}".`,
+        availableNextScreens,
+      });
     },
 
     // Record user input to screen state immediately.
