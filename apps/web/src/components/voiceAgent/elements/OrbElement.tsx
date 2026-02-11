@@ -1,6 +1,7 @@
 import React, { useMemo, useRef } from 'react';
 import { OrbData, OrbElementStyle } from '../../../types/journey';
 import { Orb, AgentState } from '../../ui/orb';
+import { usePelagoDesignSystem } from '../../../hooks/usePelagoDesignSystem';
 import './OrbElement.css';
 
 type ActiveSpeaker = 'agent' | 'member' | 'none';
@@ -37,6 +38,7 @@ export const OrbElement: React.FC<OrbElementProps> = ({
   canExpand = true,
 }) => {
   void canExpand;
+  const { colors: pelagoColors } = usePelagoDesignSystem();
   const inputVolumeRef = useRef<number>(inputVolume ?? 0);
   const outputVolumeRef = useRef<number>(outputVolume ?? 0);
 
@@ -60,7 +62,10 @@ export const OrbElement: React.FC<OrbElementProps> = ({
     backgroundColor: style?.backgroundColor || 'transparent',
   };
 
-  const colors: [string, string] = ['#7E57FF', '#A487FF'];
+  const colors: [string, string] = [
+    pelagoColors.backgroundPunchPink || '#EEBCFF',
+    pelagoColors.backgroundLightPunchPink || '#F7DFFE',
+  ];
 
   const runtimeAgentState = useMemo<AgentState>(() => {
     if (activeSpeaker === 'agent') return 'talking';

@@ -52,10 +52,9 @@
   --background-tan: #deb887;
   --background-light-tan: #eed9c4;
   
-  --background-punch-pink: #ffb6d9;
-  --background-light-punch-pink: #ffd9ec;
+  --background-punch-pink: #EEBCFF;
+  --background-light-punch-pink: #F7DFFE;
   --background-cerulean: #87ceeb;
-  --background-mist-blue: #d4e8f0;
   --background-storm-blue: #6c8fa3;
   --background-storm-gray: #b0bec5;
   
@@ -369,4 +368,3 @@ button, input, select, textarea {
   font-weight: var(--font-weight-bold);
   letter-spacing: var(--letter-spacing-button);
 }
-

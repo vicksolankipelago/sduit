@@ -13,10 +13,10 @@ export interface CheckboxButtonElementProps {
 // Green filled circle with white checkmark - matches iOS SelectorCheck component
 const SelectorCheckIcon: React.FC = () => (
   <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="11" cy="11" r="11" fill="#212633"/>
+    <circle cx="11" cy="11" r="11" fill="var(--primary-cta-default)"/>
     <path
       d="M6.5 11L9.5 14L15.5 8"
-      stroke="white"
+      stroke="var(--text-global-light)"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"

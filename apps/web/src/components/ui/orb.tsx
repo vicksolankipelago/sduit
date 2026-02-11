@@ -25,10 +25,9 @@ const CENTER = VIEWBOX_SIZE / 2;
 const OUTER_RING_RADIUS = 34;
 const INNER_FILL_RADIUS = 31.5;
 const LINE_WIDTH = 2.9;
-const NEEDLE_HALF_LENGTH = 11.8;
-const NEEDLE_TIP_LENGTH = 2.9;
-const NEEDLE_WING_DEPTH = 2.6;
-const NEEDLE_WING_HALF_WIDTH = 1.5;
+const NEEDLE_TRIANGLE_LENGTH = 12.2;
+const NEEDLE_TRIANGLE_HALF_BASE = 2.05;
+const NEEDLE_CENTER_GAP = 0.9;
 const CARDINAL_SPOKE_OUTER_RADIUS = 30.6;
 const DIAGONAL_SPOKE_OUTER_RADIUS = 30.9;
 const CARDINAL_SPOKE_BASE_LENGTH = 4.8;
@@ -61,7 +60,6 @@ export function Orb({
   const fillBlurId = `navi-orb-fill-blur-${idBase}`;
 
   const fillGradientRef = useRef<SVGRadialGradientElement>(null);
-  const needleLineRef = useRef<SVGLineElement>(null);
   const needleHeadRef = useRef<SVGPathElement>(null);
   const needleTailRef = useRef<SVGPathElement>(null);
   const tickRefs = useRef<Array<SVGLineElement | null>>([]);
@@ -169,43 +167,34 @@ export function Orb({
       const perpX = -dirY;
       const perpY = dirX;
 
-      const topX = CENTER + dirX * NEEDLE_HALF_LENGTH;
-      const topY = CENTER + dirY * NEEDLE_HALF_LENGTH;
-      const bottomX = CENTER - dirX * NEEDLE_HALF_LENGTH;
-      const bottomY = CENTER - dirY * NEEDLE_HALF_LENGTH;
-
-      if (needleLineRef.current) {
-        needleLineRef.current.setAttribute("x1", topX.toFixed(2));
-        needleLineRef.current.setAttribute("y1", topY.toFixed(2));
-        needleLineRef.current.setAttribute("x2", bottomX.toFixed(2));
-        needleLineRef.current.setAttribute("y2", bottomY.toFixed(2));
-        needleLineRef.current.setAttribute("opacity", (0.8 + energy * 0.2).toFixed(3));
-      }
-
-      const topTipX = topX + dirX * NEEDLE_TIP_LENGTH;
-      const topTipY = topY + dirY * NEEDLE_TIP_LENGTH;
-      const topLeftX = topX - dirX * NEEDLE_WING_DEPTH + perpX * NEEDLE_WING_HALF_WIDTH;
-      const topLeftY = topY - dirY * NEEDLE_WING_DEPTH + perpY * NEEDLE_WING_HALF_WIDTH;
-      const topRightX = topX - dirX * NEEDLE_WING_DEPTH - perpX * NEEDLE_WING_HALF_WIDTH;
-      const topRightY = topY - dirY * NEEDLE_WING_DEPTH - perpY * NEEDLE_WING_HALF_WIDTH;
+      const headBaseX = CENTER + dirX * NEEDLE_CENTER_GAP;
+      const headBaseY = CENTER + dirY * NEEDLE_CENTER_GAP;
+      const headTipX = CENTER + dirX * (NEEDLE_CENTER_GAP + NEEDLE_TRIANGLE_LENGTH);
+      const headTipY = CENTER + dirY * (NEEDLE_CENTER_GAP + NEEDLE_TRIANGLE_LENGTH);
+      const headLeftX = headBaseX + perpX * NEEDLE_TRIANGLE_HALF_BASE;
+      const headLeftY = headBaseY + perpY * NEEDLE_TRIANGLE_HALF_BASE;
+      const headRightX = headBaseX - perpX * NEEDLE_TRIANGLE_HALF_BASE;
+      const headRightY = headBaseY - perpY * NEEDLE_TRIANGLE_HALF_BASE;
       if (needleHeadRef.current) {
         needleHeadRef.current.setAttribute(
           "d",
-          `M ${topTipX.toFixed(2)} ${topTipY.toFixed(2)} L ${topLeftX.toFixed(2)} ${topLeftY.toFixed(2)} L ${topX.toFixed(2)} ${topY.toFixed(2)} L ${topRightX.toFixed(2)} ${topRightY.toFixed(2)} Z`,
+          `M ${headTipX.toFixed(2)} ${headTipY.toFixed(2)} L ${headLeftX.toFixed(2)} ${headLeftY.toFixed(2)} L ${headRightX.toFixed(2)} ${headRightY.toFixed(2)} Z`,
         );
         needleHeadRef.current.setAttribute("opacity", (0.8 + energy * 0.2).toFixed(3));
       }
 
-      const tailTipX = bottomX - dirX * NEEDLE_TIP_LENGTH;
-      const tailTipY = bottomY - dirY * NEEDLE_TIP_LENGTH;
-      const tailLeftX = bottomX + dirX * NEEDLE_WING_DEPTH + perpX * NEEDLE_WING_HALF_WIDTH;
-      const tailLeftY = bottomY + dirY * NEEDLE_WING_DEPTH + perpY * NEEDLE_WING_HALF_WIDTH;
-      const tailRightX = bottomX + dirX * NEEDLE_WING_DEPTH - perpX * NEEDLE_WING_HALF_WIDTH;
-      const tailRightY = bottomY + dirY * NEEDLE_WING_DEPTH - perpY * NEEDLE_WING_HALF_WIDTH;
+      const tailBaseX = CENTER - dirX * NEEDLE_CENTER_GAP;
+      const tailBaseY = CENTER - dirY * NEEDLE_CENTER_GAP;
+      const tailTipX = CENTER - dirX * (NEEDLE_CENTER_GAP + NEEDLE_TRIANGLE_LENGTH);
+      const tailTipY = CENTER - dirY * (NEEDLE_CENTER_GAP + NEEDLE_TRIANGLE_LENGTH);
+      const tailLeftX = tailBaseX + perpX * NEEDLE_TRIANGLE_HALF_BASE;
+      const tailLeftY = tailBaseY + perpY * NEEDLE_TRIANGLE_HALF_BASE;
+      const tailRightX = tailBaseX - perpX * NEEDLE_TRIANGLE_HALF_BASE;
+      const tailRightY = tailBaseY - perpY * NEEDLE_TRIANGLE_HALF_BASE;
       if (needleTailRef.current) {
         needleTailRef.current.setAttribute(
           "d",
-          `M ${tailTipX.toFixed(2)} ${tailTipY.toFixed(2)} L ${tailLeftX.toFixed(2)} ${tailLeftY.toFixed(2)} L ${bottomX.toFixed(2)} ${bottomY.toFixed(2)} L ${tailRightX.toFixed(2)} ${tailRightY.toFixed(2)} Z`,
+          `M ${tailTipX.toFixed(2)} ${tailTipY.toFixed(2)} L ${tailLeftX.toFixed(2)} ${tailLeftY.toFixed(2)} L ${tailRightX.toFixed(2)} ${tailRightY.toFixed(2)} Z`,
         );
         needleTailRef.current.setAttribute("opacity", (0.8 + energy * 0.2).toFixed(3));
       }
@@ -373,9 +362,8 @@ export function Orb({
         </g>
 
         <g className="navi-orb-needle">
-          <line ref={needleLineRef} className="navi-orb-needle-line" x1="50" y1="27" x2="50" y2="73" />
-          <path ref={needleHeadRef} className="navi-orb-needle-head" d="M50 21 L45 30 L50 27 L55 30 Z" />
-          <path ref={needleTailRef} className="navi-orb-needle-tail" d="M50 79 L46.8 71 L50 73 L53.2 71 Z" />
+          <path ref={needleHeadRef} className="navi-orb-needle-head" d="M50 37 L47.8 50 L52.2 50 Z" />
+          <path ref={needleTailRef} className="navi-orb-needle-tail" d="M50 63 L47.8 50 L52.2 50 Z" />
         </g>
       </svg>
     </div>

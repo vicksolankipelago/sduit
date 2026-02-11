@@ -36,7 +36,7 @@
   width: 100%;
   border-radius: 12px;
   overflow: hidden;
-  background-color: #f0f0f0;
+  background-color: var(--background-light-card);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -60,7 +60,7 @@
 .image-carousel-card-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary, #1a1a2e);
+  color: var(--text-global-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -68,7 +68,7 @@
 
 .image-carousel-card-subtitle {
   font-size: 12px;
-  color: var(--text-secondary, #6b7280);
+  color: var(--text-global-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -77,8 +77,8 @@
 .image-carousel-empty {
   padding: 24px;
   text-align: center;
-  color: var(--text-secondary, #6b7280);
+  color: var(--text-global-secondary);
   font-size: 14px;
-  border: 1px dashed #d1d5db;
+  border: 1px dashed var(--ui-element-outline-default);
   border-radius: 8px;
 }

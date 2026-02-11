@@ -61,7 +61,11 @@
   stroke-linecap: round;
 }
 
-.navi-orb-needle-head,
+.navi-orb-needle-head {
+  fill: var(--navi-orb-ink, #fff);
+  stroke: none;
+}
+
 .navi-orb-needle-tail {
   fill: none;
   stroke: var(--navi-orb-ink, #fff);

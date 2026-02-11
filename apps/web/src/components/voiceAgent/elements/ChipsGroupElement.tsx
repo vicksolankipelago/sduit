@@ -22,17 +22,17 @@ const ChipCheckbox: React.FC<{ checked: boolean }> = ({ checked }) => (
   >
     {checked ? (
       <>
-        <rect width="14" height="14" rx="3" fill="#212633" />
+        <rect width="14" height="14" rx="3" fill="var(--primary-cta-default)" />
         <path
           d="M3.5 7L6 9.5L10.5 5"
-          stroke="white"
+          stroke="var(--text-global-light)"
           strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
       </>
     ) : (
-      <rect x="0.5" y="0.5" width="13" height="13" rx="2.5" stroke="#E0E0E0" fill="none" />
+      <rect x="0.5" y="0.5" width="13" height="13" rx="2.5" stroke="var(--ui-element-outline-default)" fill="none" />
     )}
   </svg>
 );

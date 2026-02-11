@@ -12,10 +12,10 @@ export interface TextCardElementProps {
 // Green filled circle with white checkmark - matches iOS TickWithContainer component
 const CheckmarkIcon: React.FC = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="8" cy="8" r="8" fill="#4CAF50"/>
+    <circle cx="8" cy="8" r="8" fill="var(--alert-success-default)"/>
     <path
       d="M5 8L7 10L11 6"
-      stroke="white"
+      stroke="var(--text-global-light)"
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"

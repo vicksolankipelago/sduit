@@ -14,16 +14,16 @@
 
 /* Button Styles */
 .button-element-primary {
-  background-color: #212633;
-  color: #ffffff;
+  background-color: var(--primary-cta-default);
+  color: var(--text-button-primary);
 }
 
 .button-element-primary:hover:not(:disabled) {
-  background-color: #2d3444;
+  background-color: var(--primary-cta-hover);
 }
 
 .button-element-primary:active:not(:disabled) {
-  background-color: #181c26;
+  background-color: var(--primary-cta-pressed);
 }
 
 .button-element-secondary {
@@ -100,4 +100,3 @@
 .button-element-alert:disabled {
   background-color: var(--alert-error-disabled);
 }
-

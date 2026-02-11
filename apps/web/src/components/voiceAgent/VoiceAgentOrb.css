@@ -32,14 +32,13 @@
 }
 
 .voice-agent-orb-container.speaking .voice-agent-orb-state-label {
-  color: #1DB954;
+  color: var(--alert-success-default);
 }
 
 .voice-agent-orb-container.listening .voice-agent-orb-state-label {
-  color: #6366F1;
+  color: var(--background-punch-pink);
 }
 
 .voice-agent-orb-container.active .voice-agent-orb-state-label {
   color: var(--text-global-primary);
 }
-

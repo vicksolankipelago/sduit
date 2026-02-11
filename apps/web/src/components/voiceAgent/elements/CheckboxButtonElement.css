@@ -4,7 +4,7 @@
   justify-content: space-between;
   gap: 8px;
   padding: 24px;
-  background-color: #ffffff;
+  background-color: var(--background-light);
   border-radius: 8px;
   cursor: pointer;
   user-select: none;
@@ -19,11 +19,11 @@
 }
 
 .checkbox-button-element-selected {
-  box-shadow: 0 0 0 2px #212633;
+  box-shadow: 0 0 0 2px var(--primary-cta-default);
 }
 
 .checkbox-button-title {
-  color: #212633;
+  color: var(--text-global-primary);
   text-align: left;
   flex: 1;
 }
@@ -34,4 +34,3 @@
   justify-content: center;
   flex-shrink: 0;
 }
-

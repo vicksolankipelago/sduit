@@ -31,18 +31,18 @@ const WidgetIcon: React.FC<{ iconName: string; color?: string }> = ({ iconName, 
     ),
     'flame': (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <path d="M10 2C10 2 6 6 6 10C6 12.21 7.79 14 10 14C12.21 14 14 12.21 14 10C14 6 10 2 10 2Z" fill={color || '#FF6B35'}/>
-        <path d="M10 8C10 8 8 10 8 12C8 13.1 8.9 14 10 14C11.1 14 12 13.1 12 12C12 10 10 8 10 8Z" fill={color || '#FFB800'}/>
+        <path d="M10 2C10 2 6 6 6 10C6 12.21 7.79 14 10 14C12.21 14 14 12.21 14 10C14 6 10 2 10 2Z" fill={color || 'var(--background-peach)'}/>
+        <path d="M10 8C10 8 8 10 8 12C8 13.1 8.9 14 10 14C11.1 14 12 13.1 12 12C12 10 10 8 10 8Z" fill={color || 'var(--secondary-default)'}/>
       </svg>
     ),
     'star': (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <path d="M10 2L12.09 6.26L17 6.97L13.5 10.34L14.18 15.23L10 13.01L5.82 15.23L6.5 10.34L3 6.97L7.91 6.26L10 2Z" fill={color || '#FFB800'}/>
+        <path d="M10 2L12.09 6.26L17 6.97L13.5 10.34L14.18 15.23L10 13.01L5.82 15.23L6.5 10.34L3 6.97L7.91 6.26L10 2Z" fill={color || 'var(--secondary-default)'}/>
       </svg>
     ),
     'heart': (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <path d="M10 17L8.55 15.7C4.4 12 2 9.9 2 7.2C2 5 3.8 3.2 6 3.2C7.3 3.2 8.5 3.8 9.3 4.7L10 5.5L10.7 4.7C11.5 3.8 12.7 3.2 14 3.2C16.2 3.2 18 5 18 7.2C18 9.9 15.6 12 11.45 15.7L10 17Z" fill={color || '#FF4D6D'}/>
+        <path d="M10 17L8.55 15.7C4.4 12 2 9.9 2 7.2C2 5 3.8 3.2 6 3.2C7.3 3.2 8.5 3.8 9.3 4.7L10 5.5L10.7 4.7C11.5 3.8 12.7 3.2 14 3.2C16.2 3.2 18 5 18 7.2C18 9.9 15.6 12 11.45 15.7L10 17Z" fill={color || 'var(--background-maroon)'}/>
       </svg>
     ),
     'calendar': (
@@ -55,11 +55,11 @@ const WidgetIcon: React.FC<{ iconName: string; color?: string }> = ({ iconName, 
     ),
     'trophy': (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <path d="M6 3H14V8C14 10.21 12.21 12 10 12C7.79 12 6 10.21 6 8V3Z" fill={color || '#FFB800'}/>
-        <path d="M4 3H6V6H4C3.45 6 3 5.55 3 5V4C3 3.45 3.45 3 4 3Z" fill={color || '#FFB800'}/>
-        <path d="M14 3H16C16.55 3 17 3.45 17 4V5C17 5.55 16.55 6 16 6H14V3Z" fill={color || '#FFB800'}/>
-        <rect x="8" y="12" width="4" height="3" fill={color || '#FFB800'}/>
-        <rect x="6" y="15" width="8" height="2" rx="1" fill={color || '#FFB800'}/>
+        <path d="M6 3H14V8C14 10.21 12.21 12 10 12C7.79 12 6 10.21 6 8V3Z" fill={color || 'var(--secondary-default)'}/>
+        <path d="M4 3H6V6H4C3.45 6 3 5.55 3 5V4C3 3.45 3.45 3 4 3Z" fill={color || 'var(--secondary-default)'}/>
+        <path d="M14 3H16C16.55 3 17 3.45 17 4V5C17 5.55 16.55 6 16 6H14V3Z" fill={color || 'var(--secondary-default)'}/>
+        <rect x="8" y="12" width="4" height="3" fill={color || 'var(--secondary-default)'}/>
+        <rect x="6" y="15" width="8" height="2" rx="1" fill={color || 'var(--secondary-default)'}/>
       </svg>
     ),
   };

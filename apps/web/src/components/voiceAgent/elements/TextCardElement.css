@@ -4,7 +4,7 @@
   gap: 4px;
   padding: 16px;
   border-radius: 8px;
-  background-color: #FFFFFF;
+  background-color: var(--background-light);
   width: 100%;
   box-sizing: border-box;
   overflow: visible; /* Allow content to determine height */

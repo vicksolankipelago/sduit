@@ -3,7 +3,7 @@
   flex-direction: column;
   gap: 12px;
   padding: 24px;
-  background-color: #FEF7CE;
+  background-color: var(--secondary-disabled);
   border-radius: 8px;
   width: 100%;
   box-sizing: border-box;
@@ -15,9 +15,9 @@
 }
 
 .toggle-card-label {
-  color: #212633;
+  color: var(--text-global-primary);
   padding: 0 8px;
-  background-color: #FAE355;
+  background-color: var(--secondary-default);
   border-radius: 8px;
   line-height: 22px;
 }
@@ -51,7 +51,7 @@
 }
 
 .toggle-card-title {
-  color: #212633;
+  color: var(--text-global-primary);
 }
 
 .toggle-card-description {
@@ -80,7 +80,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #e0e0e0;
+  background-color: var(--ui-element-outline-disabled);
   transition: 0.3s;
   border-radius: 16px;
 }
@@ -92,17 +92,16 @@
   width: 27px;
   left: 2px;
   bottom: 2px;
-  background-color: white;
+  background-color: var(--text-global-light);
   transition: 0.3s;
   border-radius: 50%;
   box-shadow: 0px 3px 7px rgba(0, 0, 0, 0.12);
 }
 
 input:checked + .toggle-card-slider {
-  background-color: #458846;
+  background-color: var(--alert-success-default);
 }
 
 input:checked + .toggle-card-slider:before {
   transform: translateX(20px);
 }
-

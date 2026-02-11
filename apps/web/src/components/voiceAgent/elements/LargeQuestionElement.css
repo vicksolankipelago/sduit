@@ -26,7 +26,7 @@
   padding: 1.5rem; /* 24px padding to match Figma */
   background-color: var(--background-light);
   border-radius: 8px;
-  border: 1px solid #CCCCCC; /* Unselected border color */
+  border: 1px solid var(--ui-element-outline-default); /* Unselected border color */
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
@@ -79,7 +79,7 @@
   align-items: center;
   gap: 4px;
   padding: 4px 8px;
-  background-color: #F3F4F6; /* Default gray background */
+  background-color: var(--background-light-card); /* Default neutral background */
   border-radius: 16px;
   height: 24px;
 }
@@ -87,7 +87,7 @@
 .large-question-option-pill-text {
   font-size: 0.75rem; /* 12px */
   font-weight: 600;
-  color: var(--text-global-primary, #212633);
+  color: var(--text-global-primary);
   line-height: 1;
 }
 
@@ -100,17 +100,19 @@
 .large-question-option-label-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   margin-left: auto;
   padding: 4px 10px;
-  border-radius: 999px;
-  background-color: #fde7f3;
+  border-radius: 8px;
+  border: 1px solid var(--background-punch-pink);
+  background-color: var(--background-light-punch-pink);
 }
 
 .large-question-option-label-badge-text {
   font-family: var(--font-family-grotesque, 'ES Rebond Grotesque', sans-serif);
   font-size: 0.75rem;
   font-weight: 600;
-  color: #9d174d;
+  color: var(--text-global-primary);
   line-height: 1;
   white-space: nowrap;
 }

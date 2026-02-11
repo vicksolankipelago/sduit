@@ -4,7 +4,7 @@
 .mini-widget-element {
   display: flex;
   align-items: center;
-  background-color: var(--background-light-card, #F5F5F5);
+  background-color: var(--background-light-card);
   border-radius: 12px;
   min-height: 64px;
   box-sizing: border-box;
@@ -43,7 +43,7 @@
   font-family: var(--font-family-primary, system-ui, -apple-system, sans-serif);
   font-size: 16px;
   font-weight: 700;
-  color: var(--text-global-primary, #212633);
+  color: var(--text-global-primary);
   text-align: center;
   line-height: 1;
 }
@@ -64,7 +64,7 @@
 }
 
 .mini-widget-icon-letter {
-  background-color: var(--primary-cta-default, #1DB954);
+  background-color: var(--primary-cta-default);
   border-radius: 50%;
   font-family: var(--font-family-primary, system-ui, -apple-system, sans-serif);
   font-size: 14px;
@@ -86,7 +86,7 @@
   font-family: var(--font-family-primary, system-ui, -apple-system, sans-serif);
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-global-primary, #212633);
+  color: var(--text-global-primary);
   line-height: 1.3;
   /* Handle overflow */
   overflow: hidden;
@@ -123,7 +123,7 @@
   font-family: var(--font-family-primary, system-ui, -apple-system, sans-serif);
   font-size: 14px;
   font-weight: 700;
-  color: var(--text-global-primary, #212633);
+  color: var(--text-global-primary);
   line-height: 1.3;
   /* Handle overflow */
   overflow: hidden;
@@ -138,7 +138,7 @@
   font-family: var(--font-family-primary, system-ui, -apple-system, sans-serif);
   font-size: 12px;
   font-weight: 400;
-  color: var(--text-global-secondary, #6B7280);
+  color: var(--text-global-secondary);
   line-height: 1.3;
   /* Handle overflow */
   overflow: hidden;
@@ -152,13 +152,13 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: var(--text-global-secondary, #9CA3AF);
+  color: var(--text-global-secondary);
   margin-left: auto;
 }
 
 /* Alert state */
 .mini-widget-alert {
-  border: 2px solid var(--alert-warning-default, #F59E0B);
+  border: 2px solid var(--alert-warning-default);
 }
 
 /* Gallery preview constraint - make it clear this is a smaller widget */
