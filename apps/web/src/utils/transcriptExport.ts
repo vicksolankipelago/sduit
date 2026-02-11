@@ -284,6 +284,7 @@ function extractToolCallsFromDebugLogs(debugLogs?: ExportDebugLog[]): ProviderTo
 
   const toolNames = [
     'trigger_event',
+    'navigate_to',
     'record_input',
     'set_goals',
     'capture_weekly_focus',

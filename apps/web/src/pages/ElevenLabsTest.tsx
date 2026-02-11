@@ -53,7 +53,32 @@ export default function ElevenLabsTest() {
       const msg = `🔧 navigate_to_screen called: ${params.screen_id}`;
       addLog(msg);
       setToolCalls(prev => [...prev, msg]);
-      return `Navigated to: ${params.screen_id}`;
+      return {
+        success: true,
+        event_id: null,
+        from_screen: null,
+        next_screen: params.screen_id,
+        current_screen: params.screen_id,
+        delay_seconds: 0,
+        reason: 'navigation_triggered',
+        message: `Navigated to: ${params.screen_id}`,
+      };
+    },
+    navigate_to: async (params: { screen?: string; screen_id?: string; delay?: number }) => {
+      const screen = params.screen ?? params.screen_id;
+      const msg = `🔧 navigate_to called: ${screen}`;
+      addLog(msg);
+      setToolCalls(prev => [...prev, msg]);
+      return {
+        success: true,
+        event_id: null,
+        from_screen: null,
+        next_screen: screen ?? null,
+        current_screen: screen ?? null,
+        delay_seconds: params.delay ?? 0,
+        reason: 'navigation_triggered',
+        message: `Navigation to "${screen}" triggered.`,
+      };
     },
     switch_agent: async (params: { agent_id?: string; agent_name?: string }) => {
       const msg = `🔧 switch_agent called: ${params.agent_id || params.agent_name}`;
@@ -102,6 +127,18 @@ export default function ElevenLabsTest() {
           const mode = (data as any).mode;
           addLog(`🔊 Mode: ${mode}`);
           setIsSpeaking(mode === 'speaking');
+        },
+        onAgentToolRequest: (request) => {
+          addLog(`🧰 agent_tool_request: ${(request as any)?.tool_name || 'unknown'}`);
+        },
+        onAgentToolResponse: (response) => {
+          const toolName = (response as any)?.tool_name || 'unknown';
+          const status = (response as any)?.is_error ? 'error' : ((response as any)?.is_called ? 'called' : 'not_called');
+          addLog(`🧰 agent_tool_response: ${toolName} (${status})`);
+        },
+        onUnhandledClientToolCall: (toolCall) => {
+          addLog(`🔴 unhandled_client_tool_call: ${(toolCall as any)?.tool_name || 'unknown'}`);
+          console.error('ElevenLabs unhandled_client_tool_call', toolCall);
         },
       };
 
@@ -244,7 +281,7 @@ export default function ElevenLabsTest() {
           <li>Using ElevenLabs SDK directly (not our wrapper)</li>
           <li>Agent ID: {TEST_AGENT_ID}</li>
           <li>Connection Type: WebRTC</li>
-          <li>Client Tools: trigger_event, record_input, end_call, navigate_to_screen, switch_agent</li>
+          <li>Client Tools: trigger_event, navigate_to, record_input, end_call, navigate_to_screen, switch_agent</li>
         </ul>
       </div>
 

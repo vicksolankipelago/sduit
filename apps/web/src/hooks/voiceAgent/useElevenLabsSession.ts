@@ -164,6 +164,37 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
       ])
     );
 
+    const normalizeNavigateToResponse = (params: any, rawResult: any) => {
+      const screen = params?.screen ?? params?.screen_id ?? null;
+      const eventId = params?.eventId ?? params?.event_id ?? null;
+      const resultObject = rawResult && typeof rawResult === 'object' && !Array.isArray(rawResult)
+        ? rawResult as Record<string, any>
+        : null;
+
+      const success = resultObject
+        ? (resultObject.success ?? true)
+        : true;
+      const nextScreen = resultObject?.next_screen ?? screen;
+      const currentScreen = resultObject?.current_screen ?? nextScreen;
+      const reason = resultObject?.reason ?? (success ? 'navigation_triggered' : 'navigation_failed');
+      const message = typeof resultObject?.message === 'string'
+        ? resultObject.message
+        : success
+          ? `Navigation to "${nextScreen ?? 'unknown'}" triggered.`
+          : `Navigation to "${nextScreen ?? 'unknown'}" failed.`;
+
+      return {
+        success,
+        event_id: resultObject?.event_id ?? eventId,
+        from_screen: resultObject?.from_screen ?? null,
+        next_screen: nextScreen,
+        current_screen: currentScreen,
+        delay_seconds: resultObject?.delay_seconds ?? 0,
+        reason,
+        message,
+      };
+    };
+
     // Backward-compat aliasing:
     // If the dashboard uses `navigate_to` but runtime only exposes `navigate_to_screen`,
     // register `navigate_to` as an alias so ElevenLabs doesn't report "unhandled".
@@ -172,13 +203,28 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
       if (wrappedRecord.navigate_to_screen) {
         wrappedRecord.navigate_to = async (params: any) => {
           const screen = params?.screen ?? params?.screen_id;
-          return wrappedRecord.navigate_to_screen({ screen_id: screen });
+          const result = await wrappedRecord.navigate_to_screen({ screen_id: screen });
+          return normalizeNavigateToResponse(params, result);
         };
       } else if (wrappedRecord.trigger_event) {
         // Last-resort compatibility: allow event-style usage if provided by the model.
         wrappedRecord.navigate_to = async (params: any) => {
           const eventId = params?.eventId ?? params?.event_id;
-          return wrappedRecord.trigger_event({ eventId, delay: params?.delay });
+          if (!eventId) {
+            return {
+              success: false,
+              event_id: null,
+              from_screen: null,
+              next_screen: params?.screen ?? params?.screen_id ?? null,
+              current_screen: null,
+              delay_seconds: 0,
+              reason: 'missing_event_id',
+              message: 'navigate_to fallback requires eventId when trigger_event is used as compatibility mode.',
+            };
+          }
+
+          const result = await wrappedRecord.trigger_event({ eventId, delay: params?.delay });
+          return normalizeNavigateToResponse(params, result);
         };
       }
     }

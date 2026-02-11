@@ -127,6 +127,7 @@ const RECORD_INPUT_DISPLAY_MS = 3000;
 const RECENT_RECORD_INPUT_WINDOW_MS = 15000;
 const PROMPT_TOOL_NAME_CANDIDATES = [
   'trigger_event',
+  'navigate_to',
   'record_input',
   'set_goals',
   'capture_weekly_focus',
@@ -1473,7 +1474,7 @@ function VoiceAgentContent() {
       const systemToolNames = new Set([
         'trigger_event', 'record_input', 'end_call',
         'set_checkin_frequency', 'set_reminder_time',
-        'set_goals', 'capture_weekly_focus', 'setVoiceEnabled',
+        'set_goals', 'capture_weekly_focus', 'setVoiceEnabled', 'navigate_to',
       ]);
       const declaredToolNames = new Set([
         ...systemToolNames,
