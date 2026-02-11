@@ -508,7 +508,22 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     }
   };
 
-  const toPublishComparable = (journeyLike: any) => JSON.stringify({
+  const sortKeysDeep = (value: any): any => {
+    if (Array.isArray(value)) {
+      return value.map(sortKeysDeep);
+    }
+    if (value && typeof value === 'object') {
+      return Object.keys(value)
+        .sort()
+        .reduce((acc, key) => {
+          acc[key] = sortKeysDeep(value[key]);
+          return acc;
+        }, {} as Record<string, any>);
+    }
+    return value;
+  };
+
+  const toPublishComparable = (journeyLike: any) => JSON.stringify(sortKeysDeep({
     name: journeyLike?.name || '',
     description: journeyLike?.description || '',
     systemPrompt: journeyLike?.systemPrompt || '',
@@ -519,7 +534,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     agents: journeyLike?.agents || [],
     startingAgentId: journeyLike?.startingAgentId || '',
     version: journeyLike?.version || '1.0.0',
-  });
+  }));
 
   useEffect(() => {
     if (publishCheckTimerRef.current) {

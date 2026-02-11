@@ -177,10 +177,32 @@ export async function saveJourney(journey: Journey): Promise<Journey | null> {
   const isProd = await isProduction();
 
   if (isProd) {
-    console.log(`[Production] Saving journey to Object Storage: agents count=${journeyToSave.agents?.length}, first agent prompt length=${journeyToSave.agents?.[0]?.prompt?.length || 0}`);
-    const osJourney = await journeyApi.updateProductionFlow(journeyToSave.id, journeyToSave);
-    console.log(`[Production] Saved to Object Storage successfully: ${osJourney.name} (id: ${osJourney.id || journeyToSave.id})`);
-    return journeyToSave;
+    // In production, keep DB and Object Storage in sync:
+    // - DB is the source for /publish and published-vs-draft comparison.
+    // - Object Storage is the runtime source for production playback.
+    let savedJourney: Journey | null = null;
+    try {
+      savedJourney = await journeyApi.saveUserJourney(journeyToSave);
+      console.log(`[Production] Saved journey to database: ${savedJourney.name} (id: ${savedJourney.id})`);
+    } catch (error) {
+      console.error('[Production] Failed to save to database:', error);
+    }
+
+    const sourceJourney = savedJourney || journeyToSave;
+    try {
+      console.log(
+        `[Production] Saving journey to Object Storage: agents count=${sourceJourney.agents?.length}, first agent prompt length=${sourceJourney.agents?.[0]?.prompt?.length || 0}`
+      );
+      const osJourney = await journeyApi.updateProductionFlow(sourceJourney.id, sourceJourney);
+      console.log(
+        `[Production] Saved to Object Storage successfully: ${osJourney.name} (id: ${osJourney.id || sourceJourney.id})`
+      );
+    } catch (error) {
+      // If a production snapshot does not exist yet, DB save still succeeds and publish can create it.
+      console.warn('[Production] Failed to update Object Storage snapshot during save:', error);
+    }
+
+    return sourceJourney;
   }
 
   let savedJourney: Journey | null = null;
@@ -457,4 +479,3 @@ export async function loadJourneyForRuntime(id: string): Promise<Journey | null>
   }
   return loadJourney(id);
 }
-

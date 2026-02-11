@@ -118,12 +118,16 @@ interface RawAgent {
 // ============================================================================
 
 /**
- * Base URL prefix for navigation deeplinks.
- * iOS expects full deeplink URLs (e.g., "https://links.pelagohealth.com/onboarding/about-you")
- * while the journey builder uses plain screen IDs (e.g., "about-you").
- * This prefix is prepended to plain screen IDs during normalization.
+ * Optional URL prefix for navigation deeplinks.
+ *
+ * Most mobile clients in this project consume plain screen IDs in deeplink
+ * actions (e.g., "about-you"). Prefixing to full URLs can break CTA navigation
+ * if the client does not parse URL deeplinks.
+ *
+ * Set SDUI_PREFIX_DEEPLINKS=true only when a client explicitly requires full URLs.
  */
 const DEEPLINK_BASE_URL = "https://links.pelagohealth.com/onboarding/";
+const SHOULD_PREFIX_DEEPLINKS = process.env.SDUI_PREFIX_DEEPLINKS === "true";
 
 // ============================================================================
 // Normalization Functions
@@ -137,6 +141,9 @@ const DEEPLINK_BASE_URL = "https://links.pelagohealth.com/onboarding/";
 function normalizeDeeplink(deeplink: string): string {
   if (!deeplink) return deeplink;
   if (deeplink.startsWith("http://") || deeplink.startsWith("https://")) {
+    return deeplink;
+  }
+  if (!SHOULD_PREFIX_DEEPLINKS) {
     return deeplink;
   }
   return `${DEEPLINK_BASE_URL}${deeplink}`;

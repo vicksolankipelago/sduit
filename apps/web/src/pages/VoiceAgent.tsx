@@ -490,6 +490,8 @@ function VoiceAgentContent() {
     eventId: string;
     executeAtMs: number;
     expiresAtMs: number;
+    targetScreenId?: string;
+    source?: 'record_input' | 'navigate_to';
   } | null>(null);
   const lastRecordInputRef = useRef<{
     atMs: number;
@@ -2689,8 +2691,9 @@ Important guidelines:
         pendingNavigation &&
         Date.now() <= pendingNavigation.expiresAtMs
       ) {
+        const pendingSource = pendingNavigation.source ?? 'record_input';
         if (eventId === pendingNavigation.eventId) {
-          addLog('warning', `⚠️ Navigation "${eventId}" ignored: already scheduled by record_input.`);
+          addLog('warning', `⚠️ Navigation "${eventId}" ignored: already scheduled by ${pendingSource}.`);
           return buildNavigationResult({
             success: true,
             eventId,
@@ -2698,13 +2701,13 @@ Important guidelines:
             nextScreen: getNavigationTargetFromEvent(requestedEventConfig),
             currentScreen: getNavigationTargetFromEvent(requestedEventConfig) ?? activeScreenId,
             reason: 'already_scheduled_by_record_input',
-            message: `Navigation "${eventId}" is already scheduled by record_input. Wait for the screen to change and continue.`,
+            message: `Navigation "${eventId}" is already scheduled by ${pendingSource}. Wait for the screen to change and continue.`,
           });
         }
 
         addLog(
           'warning',
-          `⚠️ Navigation "${eventId}" ignored: "${pendingNavigation.eventId}" is already scheduled by record_input.`
+          `⚠️ Navigation "${eventId}" ignored: "${pendingNavigation.eventId}" is already scheduled by ${pendingSource}.`
         );
         return buildNavigationResult({
           success: false,
@@ -2712,7 +2715,7 @@ Important guidelines:
           fromScreen: activeScreenId,
           currentScreen: activeScreenId,
           reason: 'different_navigation_already_scheduled',
-          message: `Navigation "${pendingNavigation.eventId}" is already scheduled by record_input. Do NOT trigger "${eventId}" now; wait for navigation to complete.`,
+          message: `Navigation "${pendingNavigation.eventId}" is already scheduled by ${pendingSource}. Do NOT trigger "${eventId}" now; wait for navigation to complete.`,
         });
       }
 
@@ -2859,12 +2862,13 @@ Important guidelines:
 
     // Navigate directly by target screen id.
     // This resolves the matching navigation event on the CURRENT screen, then triggers it.
-    navigate_to: async (params: { screen: string; delay?: number }) => {
+    navigate_to: async (params: { screen?: string; screen_id?: string; delay?: number }) => {
       const startedAtMs = Date.now();
-      const { screen, delay = 0 } = params;
+      const targetScreen = params?.screen ?? params?.screen_id;
+      const { delay = 0 } = params ?? {};
       const resolvedDelay = Number.isFinite(delay) ? Math.max(0, delay) : 0;
       const activeScreenId = currentScreenIdRef.current || undefined;
-      addLog('tool', `🧰 navigate_to called: ${screen}`, {
+      addLog('tool', `🧰 navigate_to called: ${targetScreen ?? 'missing_screen'}`, {
         currentScreen: activeScreenId,
         startedAtMs,
         requestedDelaySeconds: delay,
@@ -2883,7 +2887,7 @@ Important guidelines:
       }) => {
         const completedAtMs = Date.now();
         addLog('tool', `🧰 navigate_to result: ${payload.reason ?? (payload.success ? 'ok' : 'failed')}`, {
-          screen,
+          screen: targetScreen ?? null,
           eventId: payload.eventId ?? null,
           success: payload.success,
           currentScreen: payload.currentScreen ?? payload.fromScreen ?? activeScreenId,
@@ -2907,6 +2911,17 @@ Important guidelines:
           available_next_screens: payload.availableNextScreens ?? [],
         };
       };
+
+      if (!targetScreen || typeof targetScreen !== 'string') {
+        return buildResult({
+          success: false,
+          fromScreen: activeScreenId,
+          currentScreen: activeScreenId,
+          nextScreen: undefined,
+          reason: 'missing_screen',
+          message: 'Missing required "screen" parameter.',
+        });
+      }
 
       const dispatchTriggerEvent = (id: string, delaySeconds = 0) => {
         const trigger = () => {
@@ -2957,20 +2972,50 @@ Important guidelines:
 
       const activeScreens = getActiveAgentScreens();
       const activeScreen = activeScreens.find((s: any) => s.id === activeScreenId);
+
+      const pendingNavigation = pendingNavigationRef.current;
+      if (pendingNavigation && Date.now() <= pendingNavigation.expiresAtMs) {
+        if (pendingNavigation.targetScreenId === targetScreen) {
+          return buildResult({
+            success: true,
+            eventId: pendingNavigation.eventId,
+            fromScreen: activeScreenId,
+            nextScreen: targetScreen,
+            currentScreen: targetScreen,
+            delaySeconds: 0,
+            reason: 'navigation_in_progress',
+            message: `Navigation to "${targetScreen}" is already in progress.`,
+          });
+        }
+
+        if (pendingNavigation.targetScreenId && pendingNavigation.targetScreenId !== targetScreen) {
+          return buildResult({
+            success: false,
+            eventId: pendingNavigation.eventId,
+            fromScreen: activeScreenId,
+            nextScreen: targetScreen,
+            currentScreen: activeScreenId,
+            delaySeconds: 0,
+            reason: 'navigation_in_progress_to_different_screen',
+            message: `Navigation to "${pendingNavigation.targetScreenId}" is still in progress. Wait for it to complete before navigating to "${targetScreen}".`,
+          });
+        }
+      }
+
       if (!activeScreen) {
         return buildResult({
           success: false,
           fromScreen: activeScreenId,
           currentScreen: activeScreenId,
-          nextScreen: screen,
+          nextScreen: targetScreen,
           reason: 'no_active_screen',
-          message: `Cannot navigate to "${screen}" because there is no active screen context.`,
+          message: `Cannot navigate to "${targetScreen}" because there is no active screen context.`,
         });
       }
 
       const screenEvents = getScreenEvents(activeScreen);
       const navEvents = screenEvents.filter((event: any) => getNavigationTargetFromEvent(event));
-      const matchingNavEvent = navEvents.find((event: any) => getNavigationTargetFromEvent(event) === screen);
+      const matchingNavEvent = navEvents.find((event: any) => getNavigationTargetFromEvent(event) === targetScreen);
       const availableNextScreens = navEvents
         .map((event: any) => getNavigationTargetFromEvent(event))
         .filter((value: string | undefined): value is string => typeof value === 'string');
@@ -2979,7 +3024,7 @@ Important guidelines:
       // If the model calls navigate_to for the screen we're already on
       // (for example, after a trigger_event-based navigation already completed),
       // return success instead of surfacing an invalid transition error.
-      if (activeScreen.id === screen) {
+      if (activeScreen.id === targetScreen) {
         return buildResult({
           success: true,
           fromScreen: activeScreen.id,
@@ -2987,7 +3032,7 @@ Important guidelines:
           currentScreen: activeScreen.id,
           delaySeconds: 0,
           reason: 'already_on_target_screen',
-          message: `Already on "${screen}". No additional navigation needed.`,
+          message: `Already on "${targetScreen}". No additional navigation needed.`,
           availableNextScreens,
         });
       }
@@ -2997,23 +3042,33 @@ Important guidelines:
           success: false,
           fromScreen: activeScreen.id,
           currentScreen: activeScreen.id,
-          nextScreen: screen,
+          nextScreen: targetScreen,
           reason: 'invalid_transition_for_current_screen',
-          message: `Cannot navigate to "${screen}" from "${activeScreen.id}".`,
+          message: `Cannot navigate to "${targetScreen}" from "${activeScreen.id}".`,
           availableNextScreens,
         });
       }
+
+      const executeAtMs = Date.now() + resolvedDelay * 1000;
+      pendingNavigationRef.current = {
+        eventId: matchingNavEvent.id,
+        executeAtMs,
+        // Keep a short buffer after expected execution to absorb duplicate tool calls.
+        expiresAtMs: executeAtMs + 2000,
+        targetScreenId: targetScreen,
+        source: 'navigate_to',
+      };
 
       dispatchTriggerEvent(matchingNavEvent.id, resolvedDelay);
       return buildResult({
         success: true,
         eventId: matchingNavEvent.id,
         fromScreen: activeScreen.id,
-        nextScreen: screen,
-        currentScreen: screen,
+        nextScreen: targetScreen,
+        currentScreen: targetScreen,
         delaySeconds: resolvedDelay,
         reason: 'navigation_triggered',
-        message: `Navigation to "${screen}" triggered via event "${matchingNavEvent.id}".`,
+        message: `Navigation to "${targetScreen}" triggered via event "${matchingNavEvent.id}".`,
         availableNextScreens,
       });
     },
@@ -3087,6 +3142,7 @@ Important guidelines:
           executeAtMs,
           // Keep a short buffer after execute time to absorb duplicate LLM calls.
           expiresAtMs: executeAtMs + 2000,
+          source: 'record_input',
         };
 
         setTimeout(() => {

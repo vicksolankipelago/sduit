@@ -226,7 +226,30 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
           const result = await wrappedRecord.trigger_event({ eventId, delay: params?.delay });
           return normalizeNavigateToResponse(params, result);
         };
+      } else {
+        // Ensure navigate_to is always registered so the SDK never emits
+        // unhandled_client_tool_call for this tool name.
+        wrappedRecord.navigate_to = async (params: any) => normalizeNavigateToResponse(params, {
+          success: false,
+          event_id: null,
+          from_screen: null,
+          next_screen: params?.screen ?? params?.screen_id ?? null,
+          current_screen: null,
+          delay_seconds: 0,
+          reason: 'navigate_to_not_configured',
+          message: 'navigate_to is not configured in client tools.',
+        });
       }
+    }
+
+    // Normalize navigate_to responses consistently (including native handlers)
+    // so ElevenLabs assignment paths like response.current_screen are stable.
+    if (wrappedRecord.navigate_to) {
+      const originalNavigateTo = wrappedRecord.navigate_to;
+      wrappedRecord.navigate_to = async (params: any) => {
+        const result = await originalNavigateTo(params);
+        return normalizeNavigateToResponse(params, result);
+      };
     }
 
     return wrappedRecord;
