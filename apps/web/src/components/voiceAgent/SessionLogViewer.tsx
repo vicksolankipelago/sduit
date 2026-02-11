@@ -85,88 +85,18 @@ const SessionLogViewer: React.FC<SessionLogViewerProps> = ({ logs, journey, curr
             className="log-action-button"
             onClick={(e) => {
               e.stopPropagation();
-              const sections: string[] = [];
-
-              sections.push('='.repeat(80));
-              sections.push('SESSION DEBUG EXPORT');
-              sections.push(`Exported: ${new Date().toISOString()}`);
-              sections.push('='.repeat(80));
-              sections.push('');
-
-              if (combinedPrompt) {
-                sections.push('--- AGENT PROMPT ---');
-                sections.push(combinedPrompt);
-                sections.push('');
-                sections.push('-'.repeat(80));
-                sections.push('');
-              }
-
-              const currentAgent = journey?.agents?.find(
-                a => a.name === currentAgentName || a.id === currentAgentName
-              );
-
-              if (currentAgent?.tools && currentAgent.tools.length > 0) {
-                sections.push('--- TOOL DEFINITIONS ---');
-                for (const tool of currentAgent.tools) {
-                  sections.push(`Tool: ${tool.name}`);
-                  sections.push(`  Description: ${tool.description}`);
-                  if (tool.parameters) {
-                    sections.push(`  Parameters: ${JSON.stringify(tool.parameters, null, 2)}`);
-                  }
-                  sections.push('');
-                }
-                sections.push('-'.repeat(80));
-                sections.push('');
-              }
-
-              if (currentAgent?.screens && currentAgent.screens.length > 0) {
-                sections.push('--- SCREEN CONFIGURATIONS ---');
-                for (const screen of currentAgent.screens) {
-                  sections.push(`Screen: ${screen.id} (${screen.title || 'untitled'})`);
-                  sections.push(`  Sections: ${JSON.stringify(screen.sections, null, 2)}`);
-                  if (screen.events) {
-                    sections.push(`  Events: ${JSON.stringify(screen.events, null, 2)}`);
-                  }
-                  sections.push('');
-                }
-                sections.push('-'.repeat(80));
-                sections.push('');
-              }
-
-              if (flowContext && Object.keys(flowContext).length > 0) {
-                sections.push('--- VARIABLES / FLOW CONTEXT ---');
-                for (const [key, value] of Object.entries(flowContext)) {
-                  const displayValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
-                  sections.push(`  ${key}: ${displayValue}`);
-                }
-                sections.push('');
-                sections.push('-'.repeat(80));
-                sections.push('');
-              }
-
-              sections.push('--- SESSION LOGS ---');
-              sections.push('');
-              for (const log of logs) {
-                sections.push(
-                  `[${formatTime(log.timestamp)}] ${log.type.toUpperCase()}: ${log.message}${
-                    log.details ? '\n' + formatDetails(log.details) : ''
-                  }`
-                );
-                sections.push('');
-              }
-
-              const content = sections.join('\n');
+              const content = combinedPrompt?.trim() || '';
               const blob = new Blob([content], { type: 'text/plain' });
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a');
               a.href = url;
-              a.download = `session-debug-${Date.now()}.txt`;
+              a.download = `prompt-${Date.now()}.txt`;
               a.click();
               URL.revokeObjectURL(url);
             }}
-            title="Download debug export with full context"
+            title="Download prompt only"
           >
-            💾 Export
+            💾 Export Prompt
           </button>
         </div>
       </div>

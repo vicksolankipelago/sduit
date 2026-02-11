@@ -146,8 +146,7 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
   const getWrappedClientTools = useCallback(() => {
     const raw = clientToolsRef.current;
     if (!raw) return undefined;
-    
-    return Object.fromEntries(
+    const wrapped = Object.fromEntries(
       Object.entries(raw).map(([name, handler]) => [
         name,
         async (params: any) => {
@@ -164,6 +163,27 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         }
       ])
     );
+
+    // Backward-compat aliasing:
+    // If the dashboard uses `navigate_to` but runtime only exposes `navigate_to_screen`,
+    // register `navigate_to` as an alias so ElevenLabs doesn't report "unhandled".
+    const wrappedRecord = wrapped as Record<string, (params: any) => Promise<any> | any>;
+    if (!wrappedRecord.navigate_to) {
+      if (wrappedRecord.navigate_to_screen) {
+        wrappedRecord.navigate_to = async (params: any) => {
+          const screen = params?.screen ?? params?.screen_id;
+          return wrappedRecord.navigate_to_screen({ screen_id: screen });
+        };
+      } else if (wrappedRecord.trigger_event) {
+        // Last-resort compatibility: allow event-style usage if provided by the model.
+        wrappedRecord.navigate_to = async (params: any) => {
+          const eventId = params?.eventId ?? params?.event_id;
+          return wrappedRecord.trigger_event({ eventId, delay: params?.delay });
+        };
+      }
+    }
+
+    return wrappedRecord;
   }, []);
   
   console.log('🔧 ElevenLabs hook init - using vanilla SDK for dynamic overrides');
