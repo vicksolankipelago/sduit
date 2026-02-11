@@ -197,16 +197,16 @@ export const LargeQuestionElement: React.FC<LargeQuestionElementProps> = ({
                 <div className="large-question-option-title">
                   {option.title}
                 </div>
+                {option.label && (
+                  <div className="large-question-option-label-badge">
+                    <span className="large-question-option-label-badge-text">{option.label}</span>
+                  </div>
+                )}
                 {option.pill && <OptionPill pill={option.pill} />}
               </div>
               {option.description && (
                 <div className="large-question-option-description pelago-body-2-regular">
                   {option.description}
-                </div>
-              )}
-              {option.label && (
-                <div className="large-question-option-label">
-                  <span className="large-question-option-label-text">{option.label}</span>
                 </div>
               )}
             </div>
