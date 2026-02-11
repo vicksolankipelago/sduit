@@ -130,12 +130,11 @@ export function Orb({
         MAX_NEEDLE_DEGREES,
       );
       const energy = clamp01((smoothInputRef.current * 0.72) + (smoothOutputRef.current * 0.48));
-      const needleScale = 1 + energy * 0.04;
 
       if (needleRef.current) {
         needleRef.current.setAttribute(
           "transform",
-          `translate(${CENTER} ${CENTER}) rotate(${clampedHeading.toFixed(2)}) scale(${needleScale.toFixed(3)}) translate(${-CENTER} ${-CENTER})`,
+          `rotate(${clampedHeading.toFixed(2)} ${CENTER} ${CENTER})`,
         );
         needleRef.current.setAttribute("opacity", (0.8 + energy * 0.2).toFixed(3));
       }
@@ -156,9 +155,11 @@ export function Orb({
     outputVolumeRef,
   ]);
 
-  const runtimeColors = colorsRef?.current ?? colorsLiveRef.current ?? DEFAULT_COLORS;
-  const strokeColor = normalizeColor(runtimeColors[0], DEFAULT_COLORS[0]);
-  const accentColor = normalizeColor(runtimeColors[1], strokeColor);
+  // Keep the compass palette fixed to the requested purple style.
+  const strokeColor = DEFAULT_COLORS[0];
+  const accentColor = DEFAULT_COLORS[1];
+  void colorsRef;
+  void colorsLiveRef;
   const orbStyle: React.CSSProperties & Record<"--navi-orb-stroke" | "--navi-orb-accent", string> = {
     "--navi-orb-stroke": strokeColor,
     "--navi-orb-accent": accentColor,
@@ -281,9 +282,4 @@ function clamp01(value: number): number {
 function clamp(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min;
   return Math.max(min, Math.min(max, value));
-}
-
-function normalizeColor(color: string | undefined, fallback: string): string {
-  if (!color || !color.trim()) return fallback;
-  return color;
 }

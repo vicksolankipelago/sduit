@@ -60,8 +60,7 @@ export const OrbElement: React.FC<OrbElementProps> = ({
     backgroundColor: style?.backgroundColor || 'transparent',
   };
 
-  const defaultColors: [string, string] = ['#7E57FF', '#A487FF'];
-  const colors = data.colors || defaultColors;
+  const colors: [string, string] = ['#7E57FF', '#A487FF'];
 
   const runtimeAgentState = useMemo<AgentState>(() => {
     if (activeSpeaker === 'agent') return 'talking';
