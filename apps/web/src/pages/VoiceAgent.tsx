@@ -496,6 +496,8 @@ function VoiceAgentContent() {
     title: string;
     summary: string;
   } | null>(null);
+  // Safety fallback to prevent notification setup from getting stuck.
+  const notificationPlanReviewFallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Real-time session saver with debouncing
   const sessionSaverRef = useRef<DebouncedSessionSaver>(
     new DebouncedSessionSaver(500, (error) => {
@@ -545,7 +547,32 @@ function VoiceAgentContent() {
     console.log(`${icon} [${type.toUpperCase()}] ${message}`, details || '');
   };
 
+  const clearNotificationPlanReviewFallback = useCallback(() => {
+    if (notificationPlanReviewFallbackTimerRef.current) {
+      clearTimeout(notificationPlanReviewFallbackTimerRef.current);
+      notificationPlanReviewFallbackTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleNotificationPlanReviewFallback = useCallback((source: string) => {
+    clearNotificationPlanReviewFallback();
+
+    notificationPlanReviewFallbackTimerRef.current = setTimeout(() => {
+      const activeScreen = currentScreenIdRef.current;
+      if (activeScreen !== 'pq-notification-setup') {
+        return;
+      }
+
+      addLog('warning', '⚠️ Auto-advancing from notification setup to plan review (safety fallback).', {
+        source,
+        activeScreen,
+      });
+      navigateToScreen?.('pq-plan-review');
+    }, 5000);
+  }, [addLog, clearNotificationPlanReviewFallback, navigateToScreen]);
+
   const resetToFlowsScreen = () => {
+    clearNotificationPlanReviewFallback();
     pendingNavigationRef.current = null;
     lastRecordInputRef.current = null;
     setSessionStatus('DISCONNECTED');
@@ -567,6 +594,12 @@ function VoiceAgentContent() {
       window.removeEventListener('resetToFlows', handleResetToFlows);
     };
   }, []);
+
+  useEffect(() => {
+    return () => {
+      clearNotificationPlanReviewFallback();
+    };
+  }, [clearNotificationPlanReviewFallback]);
 
   // Load default journeys on first mount
   useEffect(() => {
@@ -969,6 +1002,9 @@ function VoiceAgentContent() {
       const { success, fromScreen, toScreen, availableScreens } = customEvent.detail;
       if (success) {
         pendingNavigationRef.current = null;
+        if (toScreen && toScreen !== 'pq-notification-setup') {
+          clearNotificationPlanReviewFallback();
+        }
         addLog('success', `✅ Navigated: "${fromScreen}" → "${toScreen}"`);
         // CRITICAL FIX: Sync the navigation result back to AgentUIContext
         // This ensures currentScreenIdRef stays in sync with ScreenContext's navigation
@@ -992,7 +1028,7 @@ function VoiceAgentContent() {
       window.removeEventListener('screenNavigation', handleNavigation as EventListener);
       window.removeEventListener('screenNavigationResult', handleNavigationResult as EventListener);
     };
-  }, [addLog, navigateToScreen]);
+  }, [addLog, navigateToScreen, clearNotificationPlanReviewFallback]);
 
   // Listen for tool-dispatched events and connect them to screen context functions
   // This bridges the gap between ElevenLabs client tool calls and UI navigation
@@ -1012,6 +1048,7 @@ function VoiceAgentContent() {
       if (eventId === 'permissions_screen_event') {
         addLog('info', '🔔 Notification permission request triggered - showing popup');
         setShowNotificationPopup(true);
+        scheduleNotificationPlanReviewFallback('permissions_screen_event');
         return;
       }
       
@@ -1060,7 +1097,7 @@ function VoiceAgentContent() {
       window.removeEventListener('navigateToScreen', handleNavigateToScreen as EventListener);
       window.removeEventListener('recordInput', handleRecordInput as EventListener);
     };
-  }, [addLog, triggerEventUI, navigateToScreen]);
+  }, [addLog, triggerEventUI, navigateToScreen, scheduleNotificationPlanReviewFallback]);
 
   const connectToRealtime = async (journeyOverride?: Journey, flowContextOverride?: Record<string, any>, options?: { skipScreenReset?: boolean }) => {
     console.log('🎙️🎙️🎙️ connectToRealtime CALLED 🎙️🎙️🎙️');
@@ -1250,6 +1287,7 @@ function VoiceAgentContent() {
       if (eventId === 'permissions_screen_event') {
         addLog('info', '🔔 Notification permission request triggered - showing popup');
         setShowNotificationPopup(true);
+        scheduleNotificationPlanReviewFallback('onEventTrigger');
         return;
       }
       
@@ -3906,20 +3944,30 @@ Important guidelines:
         showNotificationPopup={showNotificationPopup}
         onNotificationAllow={() => {
           setShowNotificationPopup(false);
+          clearNotificationPlanReviewFallback();
           updateModuleState?.({ notificationsEnabled: true });
           sendUiResponseToSession('I allowed notifications', {
             source: 'notification_permission',
             allowed: true,
           });
+          if (currentScreenIdRef.current === 'pq-notification-setup') {
+            addLog('info', '🔀 Auto-advancing to plan review after notification approval');
+            navigateToScreen?.('pq-plan-review');
+          }
           console.log('🔔 Notifications enabled');
         }}
         onNotificationDeny={() => {
           setShowNotificationPopup(false);
+          clearNotificationPlanReviewFallback();
           updateModuleState?.({ notificationsEnabled: false });
           sendUiResponseToSession("I don't want notifications", {
             source: 'notification_permission',
             allowed: false,
           });
+          if (currentScreenIdRef.current === 'pq-notification-setup') {
+            addLog('info', '🔀 Auto-advancing to plan review after notification denial');
+            navigateToScreen?.('pq-plan-review');
+          }
           console.log('🔔 Notifications denied');
         }}
         onSetVoiceEnabled={handleSetVoiceEnabled}
