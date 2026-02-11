@@ -430,6 +430,18 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     };
   }, []);
 
+  // Click diagnostic: log what element captures clicks (helps debug unresponsive buttons)
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('.journey-agent-screen-item-actions') || target.closest('.journey-back-btn') || target.closest('.nav-item')) {
+        console.log('[ClickDiag] Interactive element clicked:', target.tagName, target.className, 'composedPath:', e.composedPath().slice(0, 5).map((el: any) => el.tagName || el.toString()));
+      }
+    };
+    document.addEventListener('click', handler, true);
+    return () => document.removeEventListener('click', handler, true);
+  }, []);
+
   const handleCreateNewJourney = () => {
     const newJourney: Journey = {
       id: `new-${uuidv4()}`,
@@ -979,11 +991,16 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   };
 
   const handleEditScreen = async (screen: Screen) => {
-    if (!currentJourney || !selectedAgent) return;
+    console.log('[EditScreen] Clicked, screen:', screen.id);
+    if (!currentJourney || !selectedAgent) {
+      console.warn('[EditScreen] Missing currentJourney or selectedAgent, cannot navigate');
+      return;
+    }
     if (autoSaveTimerRef.current) {
       clearTimeout(autoSaveTimerRef.current);
       autoSaveTimerRef.current = null;
     }
+    const targetUrl = `/screens?journeyId=${currentJourney.id}&agentId=${selectedAgent.id}&screenId=${screen.id}`;
     try {
       await Promise.race([
         saveJourney(currentJourney),
@@ -992,9 +1009,10 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       lastSavedJourneyRef.current = JSON.stringify(currentJourney);
       setHasUnsavedChanges(false);
     } catch (err) {
-      console.error('handleEditScreen: save failed, navigating anyway', err);
+      console.error('[EditScreen] save failed, navigating anyway', err);
     }
-    navigate(`/screens?journeyId=${currentJourney.id}&agentId=${selectedAgent.id}&screenId=${screen.id}`);
+    console.log('[EditScreen] Navigating to:', targetUrl);
+    navigate(targetUrl);
   };
 
   const handleDeleteAgent = () => {
@@ -2370,7 +2388,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                                   <span className="journey-agent-screen-item-title">{screen.title}</span>
                                 </div>
                                 <div className="journey-agent-screen-item-meta">
-                                  {screen.sections.length} section(s), {screen.sections.reduce((acc, s) => acc + s.elements.length, 0)} element(s)
+                                  {(screen.sections || []).length} section(s), {(screen.sections || []).reduce((acc, s) => acc + (s.elements || []).length, 0)} element(s)
                                 </div>
                                 {isAdmin && (
                                   <div className="journey-agent-screen-item-actions">
