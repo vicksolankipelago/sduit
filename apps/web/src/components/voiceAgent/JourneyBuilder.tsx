@@ -257,6 +257,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSaveStatusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const publishCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const justPublishedRef = useRef(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
   const hasInitialLoadRef = useRef(false);
   
@@ -430,6 +431,18 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     };
   }, []);
 
+  // Click diagnostic: log what element captures clicks (helps debug unresponsive buttons)
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('.journey-agent-screen-item-actions') || target.closest('.journey-back-btn') || target.closest('.nav-item')) {
+        console.log('[ClickDiag] Interactive element clicked:', target.tagName, target.className, 'composedPath:', e.composedPath().slice(0, 5).map((el: any) => el.tagName || el.toString()));
+      }
+    };
+    document.addEventListener('click', handler, true);
+    return () => document.removeEventListener('click', handler, true);
+  }, []);
+
   const handleCreateNewJourney = () => {
     const newJourney: Journey = {
       id: `new-${uuidv4()}`,
@@ -542,6 +555,10 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     }
 
     publishCheckTimerRef.current = setTimeout(async () => {
+      if (justPublishedRef.current) {
+        justPublishedRef.current = false;
+        return;
+      }
       if (currentJourney?.id && !currentJourney.id.startsWith('new-')) {
         try {
           const published = await getPublishedJourney(currentJourney.id);
@@ -609,6 +626,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
         return;
       }
       
+      justPublishedRef.current = true;
       setCurrentJourney(savedJourney);
       lastSavedJourneyRef.current = JSON.stringify(savedJourney);
       setHasUnsavedChanges(false);
@@ -626,6 +644,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       }
     } catch (error) {
       console.error('🚀 Publish error:', error);
+      justPublishedRef.current = false;
       alert('Failed to publish flow: ' + (error as Error).message);
     } finally {
       setIsPublishing(false);
@@ -994,11 +1013,16 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   };
 
   const handleEditScreen = async (screen: Screen) => {
-    if (!currentJourney || !selectedAgent) return;
+    console.log('[EditScreen] Clicked, screen:', screen.id);
+    if (!currentJourney || !selectedAgent) {
+      console.warn('[EditScreen] Missing currentJourney or selectedAgent, cannot navigate');
+      return;
+    }
     if (autoSaveTimerRef.current) {
       clearTimeout(autoSaveTimerRef.current);
       autoSaveTimerRef.current = null;
     }
+    const targetUrl = `/screens?journeyId=${currentJourney.id}&agentId=${selectedAgent.id}&screenId=${screen.id}`;
     try {
       await Promise.race([
         saveJourney(currentJourney),
@@ -1007,9 +1031,10 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       lastSavedJourneyRef.current = JSON.stringify(currentJourney);
       setHasUnsavedChanges(false);
     } catch (err) {
-      console.error('handleEditScreen: save failed, navigating anyway', err);
+      console.error('[EditScreen] save failed, navigating anyway', err);
     }
-    navigate(`/screens?journeyId=${currentJourney.id}&agentId=${selectedAgent.id}&screenId=${screen.id}`);
+    console.log('[EditScreen] Navigating to:', targetUrl);
+    navigate(targetUrl);
   };
 
   const handleDeleteAgent = () => {
@@ -1312,6 +1337,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
               aria-label="Back to flows"
               title="Back to flows"
               onClick={() => {
+                console.log('[BackButton] Clicked, navigating to /');
                 if (autoSaveTimerRef.current) {
                   clearTimeout(autoSaveTimerRef.current);
                   autoSaveTimerRef.current = null;
@@ -2384,7 +2410,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                                   <span className="journey-agent-screen-item-title">{screen.title}</span>
                                 </div>
                                 <div className="journey-agent-screen-item-meta">
-                                  {screen.sections.length} section(s), {screen.sections.reduce((acc, s) => acc + s.elements.length, 0)} element(s)
+                                  {(screen.sections || []).length} section(s), {(screen.sections || []).reduce((acc, s) => acc + (s.elements || []).length, 0)} element(s)
                                 </div>
                                 {isAdmin && (
                                   <div className="journey-agent-screen-item-actions">
