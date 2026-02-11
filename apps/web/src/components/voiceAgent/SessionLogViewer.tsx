@@ -17,7 +17,7 @@ interface SessionLogViewerProps {
   flowContext?: Record<string, any>;
 }
 
-const SessionLogViewer: React.FC<SessionLogViewerProps> = ({ logs, journey, currentAgentName, combinedPrompt, flowContext }) => {
+const SessionLogViewer: React.FC<SessionLogViewerProps> = ({ logs, journey: _journey, currentAgentName: _currentAgentName, combinedPrompt, flowContext: _flowContext }) => {
   const logContainerRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new logs arrive
