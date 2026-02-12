@@ -110,7 +110,7 @@ export default function AgentUIRenderer({
         {/* Device frame containing screen and bottom bar */}
         <div className="agent-ui-device-frame">
           <div className="agent-ui-device-screen-wrapper">
-            {onOpenHelp && (
+            {onOpenHelp && currentScreen?.id !== 'pq-voice-ready' && (
               <button
                 className="agent-ui-device-help-btn"
                 onClick={onOpenHelp}

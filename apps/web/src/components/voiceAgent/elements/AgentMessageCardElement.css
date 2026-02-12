@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding: 1.5rem var(--padding-horizontal-standard);
+  padding: 1.5rem 0.5rem;
   background-color: transparent; /* No background */
   border-radius: 0;
   max-width: 100%;

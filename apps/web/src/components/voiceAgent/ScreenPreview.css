@@ -297,6 +297,145 @@
   grid-auto-rows: minmax(80px, auto);
 }
 
+/* AI disclaimer screen spacing + element fidelity */
+.screen-preview-container[data-screen-id="pq-voice-ready"] .screen-preview-fixed-top {
+  border-bottom: none;
+}
+
+.screen-preview-container[data-screen-id="pq-voice-ready"] .screen-preview-body {
+  gap: 0;
+  padding-top: 0;
+}
+
+.screen-preview-container[data-screen-id="pq-voice-ready"] .screen-preview-section[data-section-id="voice_ready_header"] {
+  padding-top: 10px;
+  padding-bottom: 8px;
+}
+
+.screen-preview-container[data-screen-id="pq-voice-ready"] .screen-preview-section[data-section-id="voice_ready_header"] .screen-preview-section-elements {
+  gap: 8px;
+}
+
+.screen-preview-container[data-screen-id="pq-voice-ready"] .text-block-element[data-element-id="voice_ready_progress_title"] {
+  font-family: var(--font-family-grotesque);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption-2);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0;
+}
+
+.screen-preview-container[data-screen-id="pq-voice-ready"] .text-card-element[data-element-id="voice_ready_progress_track"] {
+  position: relative;
+  height: 4px;
+  min-height: 4px;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: #e4e6ec !important;
+  overflow: hidden;
+}
+
+.screen-preview-container[data-screen-id="pq-voice-ready"] .text-card-element[data-element-id="voice_ready_progress_track"]::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 43%;
+  background: #48536f;
+  border-radius: 999px;
+}
+
+.screen-preview-container[data-screen-id="pq-voice-ready"] .text-card-element[data-element-id="voice_ready_progress_track"] .text-card-caption,
+.screen-preview-container[data-screen-id="pq-voice-ready"] .text-card-element[data-element-id="voice_ready_progress_track"] .text-card-text {
+  display: none;
+}
+
+.screen-preview-container[data-screen-id="pq-voice-ready"] .checklist-card-element {
+  padding: 0;
+  background: transparent !important;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.screen-preview-container[data-screen-id="pq-voice-ready"] .checklist-card-title {
+  margin-bottom: 10px;
+}
+
+.screen-preview-container[data-screen-id="pq-voice-ready"] .checklist-card-items {
+  gap: 12px;
+}
+
+.screen-preview-container[data-screen-id="pq-voice-ready"] .checklist-card-item {
+  gap: 8px;
+}
+
+.screen-preview-container[data-screen-id="pq-voice-ready"] .checklist-card-checkmark {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary-cta-default);
+  color: var(--text-global-light);
+}
+
+.screen-preview-container[data-screen-id="pq-voice-ready"] .checklist-card-checkmark svg {
+  display: none;
+}
+
+.screen-preview-container[data-screen-id="pq-voice-ready"] .checklist-card-checkmark::before {
+  content: '✓';
+  font-family: var(--font-family-grotesque);
+  font-size: 13px;
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+}
+
+.screen-preview-container[data-screen-id="pq-voice-ready"] .text-card-element[data-element-id="ai_crisis_callout"] {
+  gap: 10px;
+  padding: 16px;
+  border-color: #a4bdff !important;
+  border-width: 1px !important;
+  border-style: solid;
+  border-radius: 12px !important;
+  background: var(--background-mist-blue) !important;
+}
+
+.screen-preview-container[data-screen-id="pq-voice-ready"] .text-card-element[data-element-id="ai_crisis_callout"] .text-card-caption {
+  font-family: var(--font-family-grotesque);
+  font-size: var(--font-size-body-1);
+  line-height: var(--line-height-body-2);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0;
+  color: var(--text-global-primary);
+}
+
+.screen-preview-container[data-screen-id="pq-voice-ready"] .text-card-element[data-element-id="ai_crisis_callout"] .text-card-text {
+  font-family: var(--font-family-grotesque);
+  font-size: 15px;
+  line-height: var(--line-height-body-1);
+  font-weight: var(--font-weight-regular);
+  color: var(--text-global-primary);
+}
+
+/* Undo global device text downsizing for this specific screen */
+.agent-ui-device-screen .screen-preview-container[data-screen-id="pq-voice-ready"] .checklist-card-item span:last-child,
+.agent-ui-device-screen .screen-preview-container[data-screen-id="pq-voice-ready"] .text-card-element[data-element-id="ai_crisis_callout"] .text-card-caption,
+.agent-ui-device-screen .screen-preview-container[data-screen-id="pq-voice-ready"] .text-card-element[data-element-id="ai_crisis_callout"] .text-card-text,
+.agent-ui-device-screen .screen-preview-container[data-screen-id="pq-voice-ready"] .button-element span {
+  margin: 0 !important;
+}
+
+.agent-ui-device-screen .screen-preview-container[data-screen-id="pq-voice-ready"] .checklist-card-item span:last-child {
+  font-size: var(--font-size-body-2) !important;
+  line-height: var(--line-height-body-2) !important;
+  font-weight: var(--font-weight-regular) !important;
+}
+
+.agent-ui-device-screen .screen-preview-container[data-screen-id="pq-voice-ready"] .button-element span {
+  font-size: var(--font-size-button-1) !important;
+  line-height: var(--line-height-button-1) !important;
+  font-weight: var(--font-weight-bold) !important;
+  letter-spacing: var(--letter-spacing-button) !important;
+}
+
 /* Text cards should span full width in grid layouts */
 .screen-preview-section-grid .screen-preview-element:has(.text-card-element) {
   grid-column: 1 / -1;

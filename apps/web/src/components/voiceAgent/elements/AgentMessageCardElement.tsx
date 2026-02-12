@@ -56,41 +56,44 @@ function toNumberArray(value: unknown): number[] {
     .filter((item): item is number => item !== null);
 }
 
-function normalizeToMs(values: number[], maxThresholdForSeconds: number): number[] {
-  if (!values.length) return [];
-  const maxValue = Math.max(...values);
-  if (maxValue <= maxThresholdForSeconds) {
-    return values.map((value) => value * 1000);
-  }
-  return values;
+function toMsFromSeconds(values: number[]): number[] {
+  return values.map((value) => value * 1000);
+}
+
+function hasFractionalValue(values: number[]): boolean {
+  return values.some((value) => Math.abs(value - Math.round(value)) > 0.0001);
 }
 
 const ALIGNMENT_CHARACTER_KEYS = ['characters', 'chars'];
-const ALIGNMENT_START_TIME_KEYS = [
+const ALIGNMENT_START_TIME_KEYS_MS = [
   'char_start_times_ms',
   'charStartTimesMs',
   'character_start_times_ms',
   'characterStartTimesMs',
+  'start_times_ms',
+  'startTimesMs',
+];
+const ALIGNMENT_START_TIME_KEYS = [
   'char_start_times',
   'charStartTimes',
   'character_start_times',
   'characterStartTimes',
-  'start_times_ms',
-  'startTimesMs',
   'start_times',
   'startTimes',
 ];
-const ALIGNMENT_DURATION_KEYS = [
+const ALIGNMENT_DURATION_KEYS_MS = [
   'char_durations_ms',
   'charDurationsMs',
   'character_durations_ms',
   'characterDurationsMs',
+  'durations_ms',
+  'durationsMs',
+];
+const ALIGNMENT_DURATION_KEYS = [
   'char_durations',
   'charDurations',
   'character_durations',
   'characterDurations',
-  'durations_ms',
-  'durationsMs',
   'durations',
 ];
 const ALIGNMENT_WORD_LIST_KEYS = [
@@ -103,31 +106,40 @@ const ALIGNMENT_WORD_LIST_KEYS = [
   'alignmentWords',
 ];
 const ALIGNMENT_WORD_TEXT_KEYS = ['text', 'word', 'token', 'value'];
-const ALIGNMENT_WORD_START_KEYS = [
+const ALIGNMENT_WORD_START_KEYS_MS = [
   'start_ms',
   'startMs',
   'start_time_ms',
   'startTimeMs',
-  'start',
+];
+const ALIGNMENT_WORD_START_KEYS_SECONDS = [
   'start_time',
   'startTime',
 ];
-const ALIGNMENT_WORD_END_KEYS = [
+const ALIGNMENT_WORD_START_KEYS_AMBIGUOUS = [
+  'start',
+];
+const ALIGNMENT_WORD_END_KEYS_MS = [
   'end_ms',
   'endMs',
   'end_time_ms',
   'endTimeMs',
-  'end',
+];
+const ALIGNMENT_WORD_END_KEYS_SECONDS = [
   'end_time',
   'endTime',
 ];
-const ALIGNMENT_WORD_DURATION_KEYS = [
+const ALIGNMENT_WORD_END_KEYS_AMBIGUOUS = [
+  'end',
+];
+const ALIGNMENT_WORD_DURATION_KEYS_MS = [
   'duration_ms',
   'durationMs',
-  'duration',
   'word_duration_ms',
   'wordDurationMs',
 ];
+const ALIGNMENT_WORD_DURATION_KEYS_SECONDS = ['duration_seconds', 'durationSeconds'];
+const ALIGNMENT_WORD_DURATION_KEYS_AMBIGUOUS = ['duration'];
 
 function toRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -150,6 +162,24 @@ function getNumberArrayFromKeys(payload: Record<string, unknown>, keys: string[]
   return toNumberArray(getFirstDefinedValue(payload, keys));
 }
 
+function getTimeArrayMs(
+  payload: Record<string, unknown>,
+  msKeys: string[],
+  nonMsKeys: string[]
+): number[] {
+  const msValues = getNumberArrayFromKeys(payload, msKeys);
+  if (msValues.length > 0) return msValues;
+
+  const nonMsValues = getNumberArrayFromKeys(payload, nonMsKeys);
+  if (!nonMsValues.length) return [];
+
+  // Only convert to ms for likely second-based arrays.
+  if (hasFractionalValue(nonMsValues)) {
+    return toMsFromSeconds(nonMsValues);
+  }
+  return nonMsValues;
+}
+
 function getFirstFiniteNumber(payload: Record<string, unknown>, keys: string[]): number | null {
   for (const key of keys) {
     const candidate = payload[key];
@@ -164,6 +194,28 @@ function getFirstFiniteNumber(payload: Record<string, unknown>, keys: string[]):
     }
   }
   return null;
+}
+
+function getTimedValueMs(
+  payload: Record<string, unknown>,
+  msKeys: string[],
+  secondsKeys: string[],
+  ambiguousKeys: string[]
+): number | null {
+  const msValue = getFirstFiniteNumber(payload, msKeys);
+  if (msValue !== null) return msValue;
+
+  const secondValue = getFirstFiniteNumber(payload, secondsKeys);
+  if (secondValue !== null) return secondValue * 1000;
+
+  const ambiguousValue = getFirstFiniteNumber(payload, ambiguousKeys);
+  if (ambiguousValue === null) return null;
+
+  // Ambiguous fields (start/end/duration) are interpreted as seconds when fractional.
+  if (Math.abs(ambiguousValue - Math.round(ambiguousValue)) > 0.0001) {
+    return ambiguousValue * 1000;
+  }
+  return ambiguousValue;
 }
 
 function buildWordTimingsFromCharacters(
@@ -229,7 +281,12 @@ function parseWordAlignmentPayload(payload: Record<string, unknown>): Normalized
 
   const entriesWithTiming = wordEntries
     .map((entry) => {
-      const start = getFirstFiniteNumber(entry, ALIGNMENT_WORD_START_KEYS);
+      const start = getTimedValueMs(
+        entry,
+        ALIGNMENT_WORD_START_KEYS_MS,
+        ALIGNMENT_WORD_START_KEYS_SECONDS,
+        ALIGNMENT_WORD_START_KEYS_AMBIGUOUS
+      );
       if (start === null) return null;
 
       const entryText = getFirstDefinedValue(entry, ALIGNMENT_WORD_TEXT_KEYS);
@@ -237,17 +294,27 @@ function parseWordAlignmentPayload(payload: Record<string, unknown>): Normalized
         ? entryText.trim()
         : '';
 
-      const directEnd = getFirstFiniteNumber(entry, ALIGNMENT_WORD_END_KEYS);
+      const directEnd = getTimedValueMs(
+        entry,
+        ALIGNMENT_WORD_END_KEYS_MS,
+        ALIGNMENT_WORD_END_KEYS_SECONDS,
+        ALIGNMENT_WORD_END_KEYS_AMBIGUOUS
+      );
       if (directEnd !== null) {
         return { start, end: directEnd, text };
       }
 
-      const duration = getFirstFiniteNumber(entry, ALIGNMENT_WORD_DURATION_KEYS);
+      const duration = getTimedValueMs(
+        entry,
+        ALIGNMENT_WORD_DURATION_KEYS_MS,
+        ALIGNMENT_WORD_DURATION_KEYS_SECONDS,
+        ALIGNMENT_WORD_DURATION_KEYS_AMBIGUOUS
+      );
       if (duration !== null) {
         return { start, end: start + duration, text };
       }
 
-      return { start, end: start + 0.2, text };
+      return { start, end: start + 200, text };
     })
     .filter((entry): entry is { start: number; end: number; text: string } => entry !== null);
 
@@ -255,8 +322,8 @@ function parseWordAlignmentPayload(payload: Record<string, unknown>): Normalized
 
   const startRaw = entriesWithTiming.map((entry) => entry.start);
   const endRaw = entriesWithTiming.map((entry) => entry.end);
-  const startMsValues = normalizeToMs(startRaw, 120);
-  const endMsValues = normalizeToMs(endRaw, 120);
+  const startMsValues = startRaw;
+  const endMsValues = endRaw;
 
   const words: AlignmentWordTiming[] = [];
   let textParts: string[] = [];
@@ -290,13 +357,15 @@ function parseCharacterAlignmentPayload(payload: Record<string, unknown>): Norma
   const characters = toStringArray(getFirstDefinedValue(payload, ALIGNMENT_CHARACTER_KEYS));
   if (!characters.length) return null;
 
-  const startCandidates = normalizeToMs(
-    getNumberArrayFromKeys(payload, ALIGNMENT_START_TIME_KEYS),
-    120
+  const startCandidates = getTimeArrayMs(
+    payload,
+    ALIGNMENT_START_TIME_KEYS_MS,
+    ALIGNMENT_START_TIME_KEYS
   );
-  const durationCandidates = normalizeToMs(
-    getNumberArrayFromKeys(payload, ALIGNMENT_DURATION_KEYS),
-    20
+  const durationCandidates = getTimeArrayMs(
+    payload,
+    ALIGNMENT_DURATION_KEYS_MS,
+    ALIGNMENT_DURATION_KEYS
   );
   const words = buildWordTimingsFromCharacters(characters, startCandidates, durationCandidates);
   if (!words.length) return null;
@@ -441,12 +510,14 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
   const animationStartRef = useRef<number | null>(null);
   const fallbackAnimationStartRef = useRef<number | null>(null);
   const previousAlignmentTextRef = useRef<string>('');
+  const previousAlignmentWordCountRef = useRef<number>(0);
   const previousAlignmentReceivedAtRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!shouldUseAlignment || !normalizedAlignment) {
       animationStartRef.current = null;
       previousAlignmentTextRef.current = '';
+      previousAlignmentWordCountRef.current = 0;
       previousAlignmentReceivedAtRef.current = null;
       setElapsedSpeechMs(null);
       return;
@@ -458,10 +529,15 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
       previousReceivedAt !== null
       && currentReceivedAt >= previousReceivedAt
       && (currentReceivedAt - previousReceivedAt) < 900;
-    const isContinuation =
+    const textBasedContinuation =
       arrivedSoonAfterPrevious
       && previousAlignmentTextRef.current.length > 0
       && normalizedAlignment.text.startsWith(previousAlignmentTextRef.current);
+    const wordCountBasedContinuation =
+      arrivedSoonAfterPrevious
+      && previousAlignmentWordCountRef.current > 0
+      && normalizedAlignment.words.length >= previousAlignmentWordCountRef.current;
+    const isContinuation = textBasedContinuation || wordCountBasedContinuation;
 
     if (!isContinuation) {
       animationStartRef.current = performance.now();
@@ -469,6 +545,7 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
     }
 
     previousAlignmentTextRef.current = normalizedAlignment.text;
+    previousAlignmentWordCountRef.current = normalizedAlignment.words.length;
     previousAlignmentReceivedAtRef.current = currentReceivedAt;
   }, [agentSpeechAlignment?.receivedAtMs, normalizedAlignment, shouldUseAlignment]);
 
@@ -547,7 +624,7 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
   const getWordVisualState = (wordIndex: number | null): React.CSSProperties => {
     if (wordIndex === null) return { opacity: 1, filter: 'blur(0px)' };
 
-    if (!shouldUseAlignment || !normalizedAlignment || elapsedSpeechMs === null) {
+    if (!shouldUseAlignment || !normalizedAlignment) {
       if (!syncWithSpeech || fallbackElapsedSpeechMs === null) {
         return { opacity: 1, filter: 'blur(0px)' };
       }
@@ -565,24 +642,21 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
       };
     }
 
+    const activeElapsedSpeechMs = elapsedSpeechMs ?? 0;
+
     const alignmentWordCount = normalizedAlignment.words.length;
     if (alignmentWordCount === 0) {
       return { opacity: 1, filter: 'blur(0px)' };
     }
 
-    const mappedAlignmentWordIndex = totalWordCount <= 1
-      ? 0
-      : Math.min(
-          alignmentWordCount - 1,
-          Math.round((wordIndex / Math.max(totalWordCount - 1, 1)) * Math.max(alignmentWordCount - 1, 0))
-        );
+    const mappedAlignmentWordIndex = Math.min(wordIndex, alignmentWordCount - 1);
     const wordTiming = normalizedAlignment.words[mappedAlignmentWordIndex];
     if (!wordTiming) {
       return { opacity: 1, filter: 'blur(0px)' };
     }
 
     const revealDurationMs = Math.max(MIN_WORD_REVEAL_DURATION_MS, wordTiming.endMs - wordTiming.startMs);
-    const revealProgress = clamp01((elapsedSpeechMs - wordTiming.startMs) / revealDurationMs);
+    const revealProgress = clamp01((activeElapsedSpeechMs - wordTiming.startMs) / revealDurationMs);
     const opacity = BASE_WORD_OPACITY + ((1 - BASE_WORD_OPACITY) * revealProgress);
     const blurPx = (1 - revealProgress) * 1.4;
 

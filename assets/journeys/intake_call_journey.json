@@ -975,7 +975,7 @@
     },
     {
       "id": "pq-voice-ready",
-      "title": "Ready to Chat",
+      "title": "AI disclaimer",
       "sections": [
         {
           "id": "content_section",
@@ -985,42 +985,55 @@
             {
               "type": "spacer",
               "state": {
-                "id": "top_spacer"
+                "id": "voice_ready_top_space"
               },
               "style": {
                 "width": null,
-                "height": null,
+                "height": 8,
                 "direction": "vertical",
-                "isFlexible": true
-              }
-            },
-            {
-              "type": "animatedImage",
-              "state": {
-                "id": "chat_animation",
-                "lottieName": "COLOR_Pelago_WalkWithPhone"
-              },
-              "style": {
-                "width": 200,
-                "height": 200
+                "isFlexible": false
               }
             },
             {
               "type": "textBlock",
               "state": {
-                "id": "ready_title",
-                "text": "Ready to chat?"
+                "id": "ai_disclaimer_title",
+                "text": "AI disclaimer"
               },
               "style": {
                 "color": "primary",
-                "style": "heading1",
-                "alignment": "center"
+                "style": "heading2",
+                "alignment": "leading"
               }
             },
             {
               "type": "spacer",
               "state": {
-                "id": "mid_spacer"
+                "id": "ai_disclaimer_title_gap"
+              },
+              "style": {
+                "width": null,
+                "height": 10,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "ai_disclaimer_body",
+                "text": "This tool is powered by AI, not a medical or mental health professional. It may sometimes produce inaccurate or incomplete responses. Some conversations may touch on sensitive topics — you can stop at any time."
+              },
+              "style": {
+                "color": "primary",
+                "style": "body2",
+                "alignment": "leading"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "ai_commitment_gap"
               },
               "style": {
                 "width": null,
@@ -1030,21 +1043,53 @@
               }
             },
             {
-              "type": "textBlock",
+              "type": "checklistCard",
               "state": {
-                "id": "ready_description",
-                "text": "Navi will speak to you via the speaker. Find a quiet room where you can chat."
+                "id": "ai_commitment_checklist",
+                "title": "Our commitment to you",
+                "itemTitles": [
+                  "Your information stays personal and private",
+                  "You will remain anonymous.",
+                  "All data is handled securely and kept confidential."
+                ]
               },
               "style": {
-                "color": "secondary",
-                "style": "body1",
-                "alignment": "center"
+                "backgroundColor": "backgroundLight",
+                "cornerRadius": 0
               }
             },
             {
               "type": "spacer",
               "state": {
-                "id": "bottom_spacer"
+                "id": "ai_callout_gap"
+              },
+              "style": {
+                "width": null,
+                "height": 8,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "textCard",
+              "state": {
+                "id": "ai_crisis_callout",
+                "title": "If you are in crisis",
+                "content": "If at any point you feel unsafe or need immediate help, please call or text 988 right away (Suicide and Crisis Lifeline)."
+              },
+              "style": {
+                "backgroundColor": "backgroundMistBlue",
+                "borderColor": "backgroundCerulean",
+                "textColor": "textGlobalPrimary",
+                "captionColor": "textGlobalPrimary",
+                "borderWidth": 1,
+                "cornerRadius": 12
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "voice_ready_bottom_flex"
               },
               "style": {
                 "width": null,
@@ -1067,7 +1112,7 @@
               "type": "button",
               "state": {
                 "id": "start_chat_btn",
-                "title": "Start Conversation",
+                "title": "Continue",
                 "isDisabled": false
               },
               "style": {
@@ -1114,7 +1159,8 @@
           "direction": "vertical",
           "scrollable": false
         }
-      ]
+      ],
+      "hidesBackButton": true
     },
     {
       "id": "pq-program-summary",
@@ -2295,79 +2341,7 @@
           "id": "content_section",
           "title": null,
           "layout": "stack",
-          "elements": [
-            {
-              "type": "spacer",
-              "state": {
-                "id": "top_spacer"
-              },
-              "style": {
-                "width": null,
-                "height": null,
-                "direction": "vertical",
-                "isFlexible": true
-              }
-            },
-            {
-              "type": "animatedImage",
-              "state": {
-                "id": "notification_animation",
-                "lottieName": "COLOR_Pelago_WalkWithPhone"
-              },
-              "style": {
-                "width": 280,
-                "height": 280
-              }
-            },
-            {
-              "type": "textBlock",
-              "state": {
-                "id": "permissions_header",
-                "text": "Stay on track with notifications"
-              },
-              "style": {
-                "color": "primary",
-                "style": "heading1",
-                "alignment": "center"
-              }
-            },
-            {
-              "type": "spacer",
-              "state": {
-                "id": "bottom_spacer"
-              },
-              "style": {
-                "width": null,
-                "height": null,
-                "direction": "vertical",
-                "isFlexible": true
-              }
-            },
-            {
-              "type": "toggleCard",
-              "state": {
-                "id": "notifications-toggle",
-                "label": "Recommended",
-                "title": "Turn on notifications",
-                "isToggled": true,
-                "description": null
-              },
-              "style": {
-                "icon": "Notification",
-                "borderColor": "secondaryDefault",
-                "cornerRadius": 8,
-                "backgroundColor": "secondaryDisabled"
-              },
-              "events": [
-                {
-                  "id": "NotificationToggled",
-                  "type": "onToggle",
-                  "action": [],
-                  "conditions": []
-                }
-              ]
-            }
-          ],
+          "elements": [],
           "position": "body",
           "direction": "vertical",
           "scrollable": true
@@ -2852,7 +2826,7 @@
     "about-you": "Screen ID: about-you\nAvailable Events: navigate_to_outcomes\n\nPurpose: Understand what brings them here. This is a sensitive moment — be gentle and create a safe space.\n\nQuestion (adapt based on {{feelings_alcohol}}):\n- curious: \"So tell me a bit about what's been on your mind around your drinking.\"\n- planning steps: \"It sounds like you've been thinking about making some changes. What's been going on?\"\n- recently cut down: \"That's amazing that you've already started making changes. What prompted that for you?\"\n- not interested: \"No pressure at all. What made you want to check out Pelago?\"\n\nAfter response:\n1. Call record_input IMMEDIATELY with ALL required parameters: {\"title\": \"About You\", \"summary\": \"[one-line summary]\", \"storeKey\": \"aboutYouSummary\", \"description\": \"[brief context about their response]\", \"nextEventId\": \"navigate_to_outcomes\"}\n2. Give ONE short personalized reflection tied to what they actually said (reference a concrete detail). Avoid generic lines like \"That takes real courage\".\n3. STOP. Wait for navigation. Do NOT ask about outcomes or goals here.",
     "weekly-focus": "Screen ID: weekly-focus\nAvailable Events: navigate_to_cm_rewards_intro\n\nPurpose: Capture a concise weekly focus and display it in the quote card.\n\nUI: Agent message card remains visible. Show label + quote card after capture_weekly_focus.\n\nOnly ask about weekly focus AFTER arriving on this screen. Connect suggestions to their goals when possible.\n\nExample: \"Now let's pick a focus for this week. Something like cutting back on weeknight drinks or being more mindful before reaching for a drink. What feels right for you?\"\n\nIf user says \"okay\" or \"thanks\" without giving a focus, gently prompt: \"What comes to mind as something you'd like to work on this week?\"\n\nAfter user gives a clear focus:\n1. Call capture_weekly_focus IMMEDIATELY: {\"focus\": \"[short focus phrase]\", \"relatedGoal\": \"[matching goal or omit]\"}.\n2. Keep focus in the member's own words as much as possible (light cleanup only, no heavy paraphrasing).\n3. Brief acknowledgment: \"Great focus for the week.\"\n4. Call record_input IMMEDIATELY with ALL required parameters: {\"title\": \"Weekly Focus\", \"summary\": \"[one-line summary]\", \"storeKey\": \"weeklyIntention\", \"description\": \"[brief context about their focus]\", \"nextEventId\": \"navigate_to_cm_rewards_intro\"}.\n5. STOP. Both calls are mandatory — record_input triggers navigation. Do NOT speak about rewards here.\n\nCRITICAL: Do NOT call navigate_to_checkin_commitment from this screen.",
     "motivation": "Screen ID: motivation\nAvailable Events: navigate_to_weekly_focus\n\nPurpose: Understand what feels most motivating to them right now.\n\nBehavior:\n1. On screen load, ask: \"What about this feels most motivating for you right now?\"\n2. Wait for the user to respond.\n3. Call record_input IMMEDIATELY with ALL required parameters: {\"title\": \"Motivation\", \"summary\": \"[one-line summary]\", \"storeKey\": \"yourWhySummary\", \"description\": \"[brief context about their motivation]\", \"nextEventId\": \"navigate_to_weekly_focus\"}\n4. Give a brief content-specific acknowledgment that mirrors their reason (for example, reference sleep, family, confidence, or health if they said it). Do NOT default to \"That's really meaningful.\"\n5. STOP. Wait for navigation. Do NOT mention weekly focus here.",
-    "pq-voice-ready": "Screen ID: pq-voice-ready\nAvailable Events: navigate_to_program_summary\n\nPurpose: Voice agent welcome screen where the intake conversation begins\n\nUI Display:\n- Title: \"Ready to chat?\"\n- Description: \"Navi will speak to you via the speaker. Find a quiet room where you can chat.\"\n- Pelago WalkWithPhone animation\n\nBehavior:\n- This is a CTA-only screen (no voice interaction)\n- When user taps \"Start Conversation\", the button automatically enables voice and navigates to pq-program-summary\n\nNo voice interaction needed on this screen.",
+    "pq-voice-ready": "Screen ID: pq-voice-ready\nAvailable Events: navigate_to_program_summary\n\nPurpose: Share a clear AI disclaimer and privacy commitments before starting voice intake.\n\nUI Display:\n- Header: \"AI disclaimer\"\n- Disclaimer paragraph about AI limitations and sensitive topics\n- \"Our commitment to you\" checklist with privacy assurances\n- Crisis support callout with 988 guidance\n\nBehavior:\n- This is still a CTA-only screen (no voice interaction)\n- When user taps \"Continue\", the button automatically enables voice and navigates to pq-program-summary\n\nNo voice interaction needed on this screen.",
     "pq-plan-review": "Screen ID: pq-plan-review\nAvailable Events: navigate_to_completion\n\nPurpose: Final quick recap.\n\nBehavior:\n1. Say: \"We've put together a plan for you — take a look.\"\n2. Pause 2-3 seconds for user to review the summary cards.\n3. Say: \"Your focus this week is [weeklyIntention], with [commitment] check-ins to keep you on track. Ready to get started?\"\n4. After confirmation, say: \"Let's make a start.\"\n5. Call: navigate_to with arguments {\"screen\": \"pq-start-programme\"}.",
     "cm-rewards-intro": "Screen ID: cm-rewards-intro\nAvailable Events: navigate_to_checkin_commitment\n\nPurpose: Introduce what rewards are, explain check-ins for tracking drinks, then move to check-in selection.\n\nBehavior:\n1. Introduce check-ins and rewards: \"So one thing that's going to really help is check-ins. They're quick daily reflections where you can track your drinks and spot patterns over time. And the best part is — every check-in earns you points that you can put towards rewards. Let's set up your schedule.\"\n2. Do NOT say \"gift cards\" — just say \"rewards\".\n3. Call: navigate_to with arguments {\"screen\": \"checkin-commitment\", \"delay\": 4}.\n4. STOP SPEAKING. Do NOT ask the check-in question here.\n\nCRITICAL: The check-in question belongs on the NEXT screen (checkin-commitment).",
     "checkin-commitment": "Screen ID: checkin-commitment\nAvailable Events: select_daily_commitment, select_few_times_commitment, select_once_commitment, navigate_to_notification_setup\n\n**CRITICAL: This screen requires TWO function calls - selection AND navigation. Both are MANDATORY.**\n\nBehavior:\n1. ON SCREEN LOAD, ask: \"How often would you like to check in this week - every day, a few times, or just once?\"\n2. Wait for their choice, then IMMEDIATELY call the matching selection event:\n   - \"every day\"/\"daily\" → trigger_event {\"eventId\": \"select_daily_commitment\"}\n   - \"few times\"/\"couple times\" → trigger_event {\"eventId\": \"select_few_times_commitment\"}\n   - \"once\"/\"one time\" → trigger_event {\"eventId\": \"select_once_commitment\"}\n3. This first selection call updates the selected commitment option in the UI on the current screen.\n4. Then call trigger_event with arguments {\"eventId\": \"navigate_to_notification_setup\"}\n5. ONLY AFTER navigation, ask: \"What time would you like your daily reminder?\"\n\nNote: The selection event saves both checkinCommitment and checkinFrequencyDays automatically.\n\nWARNING: You MUST navigate to pq-notification-setup BEFORE asking about reminder time.",
