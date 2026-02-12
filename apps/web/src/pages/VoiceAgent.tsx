@@ -260,34 +260,32 @@ function getReachableScreenIds(screens: AgentScreen[], startScreenId: string): s
   return ordered;
 }
 
-function shouldAppendScreenPrompts(
+function hasEmbeddedScreenPromptSections(agentPrompt: string | undefined): boolean {
+  const prompt = (agentPrompt || '').trim();
+  if (!prompt) return false;
+  return /^##\s*SCREEN:/im.test(prompt) || /^#\s*Screen instructions/im.test(prompt);
+}
+
+function getPromptReferencedScreenIds(
   agentPrompt: string | undefined,
   availableScreenPromptIds: string[]
-): boolean {
-  if (!availableScreenPromptIds.length) return false;
+): Set<string> {
   const prompt = (agentPrompt || '').trim();
-  if (!prompt) return true;
-
-  // If the agent prompt already carries explicit screen sections, appending
-  // screenPrompts causes duplicated/conflicting instructions.
-  if (/^##\s*SCREEN:/im.test(prompt) || /^#\s*Screen instructions/im.test(prompt)) {
-    return false;
+  if (!prompt || !availableScreenPromptIds.length) {
+    return new Set<string>();
   }
 
-  const escapedIds = availableScreenPromptIds.map((id) => id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-  let referencedCount = 0;
-
-  for (const escapedId of escapedIds) {
+  const referenced = new Set<string>();
+  for (const screenId of availableScreenPromptIds) {
+    const escapedId = screenId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const sectionHeaderPattern = new RegExp(`^##\\s*${escapedId}(?:\\s|$)`, 'im');
     const screenIdPattern = new RegExp(`Screen ID:\\s*${escapedId}(?:\\s|$)`, 'i');
     if (sectionHeaderPattern.test(prompt) || screenIdPattern.test(prompt)) {
-      referencedCount += 1;
+      referenced.add(screenId);
     }
   }
 
-  // If multiple screen IDs are already present in the main prompt, treat it as
-  // screen-aware and avoid appending another full screenPrompts block.
-  return referencedCount < Math.min(3, availableScreenPromptIds.length);
+  return referenced;
 }
 
 function buildScreenPromptsAppendix(params: {
@@ -303,9 +301,10 @@ function buildScreenPromptsAppendix(params: {
   }
 
   const availableIds = entries.map(([screenId]) => screenId);
-  if (!shouldAppendScreenPrompts(params.agentPrompt, availableIds)) {
+  if (hasEmbeddedScreenPromptSections(params.agentPrompt)) {
     return { text: '', includedScreenIds: [], skippedBecauseEmbedded: true };
   }
+  const referencedIds = getPromptReferencedScreenIds(params.agentPrompt, availableIds);
 
   const entryMap = new Map(entries);
   let includedIds = availableIds;
@@ -316,6 +315,12 @@ function buildScreenPromptsAppendix(params: {
     if (reachableIds.length > 0) {
       includedIds = reachableIds;
     }
+  }
+  if (referencedIds.size > 0) {
+    includedIds = includedIds.filter((screenId) => !referencedIds.has(screenId));
+  }
+  if (includedIds.length === 0) {
+    return { text: '', includedScreenIds: [], skippedBecauseEmbedded: false };
   }
 
   const text = includedIds

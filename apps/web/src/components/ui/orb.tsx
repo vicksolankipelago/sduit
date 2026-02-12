@@ -217,7 +217,7 @@ export function Orb({
   return (
     <div className={className ? `${className} navi-orb-root` : "navi-orb-root"} style={rootStyle}>
       <div className="navi-icon-wrapper" ref={iconRef}>
-        {iconImage ? (
+        {iconImage && !iconLoadFailed ? (
           <img
             className="navi-icon-image"
             src={resolvedIconSrc ?? iconImage}

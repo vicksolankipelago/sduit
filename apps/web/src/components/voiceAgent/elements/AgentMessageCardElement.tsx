@@ -417,7 +417,7 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
           )}
         </div>
       </div>
-      <div className="agent-message-card-message pelago-body-1-regular">
+      <div className="agent-message-card-message">
         {messageTokens.map((token, tokenIndex) => {
           if (token.isWhitespace) {
             return (
