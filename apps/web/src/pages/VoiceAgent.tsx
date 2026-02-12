@@ -2809,6 +2809,28 @@ Important guidelines:
         addLog('info', 'Session will automatically disconnect once audio finishes...', {});
       }
       
+      // Log all debug events from ElevenLabs SDK (WebRTC layer)
+      if (typeof event.type === 'string' && event.type.startsWith('debug_')) {
+        const debugType = event.type.replace('debug_', '');
+        if (debugType === 'conversation_metadata' || debugType === 'config') {
+          addLog('info', `⚙️ ElevenLabs config received: ${debugType}`, event);
+        }
+        if (debugType === 'audio_element_ready') {
+          addLog('info', '🔈 WebRTC audio element ready');
+        }
+        if (debugType === 'parsing_error') {
+          addLog('error', `🔴 WebRTC parsing error: ${event.message}`, event);
+        }
+        if (debugType.includes('agent') || debugType.includes('handoff') || debugType.includes('transfer')) {
+          addLog('agent', `🔄 Agent event [${debugType}]`, event);
+        }
+      }
+      
+      // Log interruption events
+      if (event.type === 'interruption') {
+        addLog('info', `⚡ Interruption event (id: ${event.event_id})`, event);
+      }
+
       // Handle custom events from tools (like substance_selected, drink_logged, etc.)
       if (event.type === 'substance_selected' || 
           event.type === 'motivation_logged' || 
