@@ -124,7 +124,6 @@ function normalizeAgentNameForRuntime(name: string): string {
 
 const RECORD_INPUT_DISPLAY_MS = 3000;
 const RECENT_RECORD_INPUT_WINDOW_MS = 15000;
-const LIVE_AGENT_MESSAGE_CLEAR_MS = 3500;
 const PROMPT_TOOL_NAME_CANDIDATES = [
   'trigger_event',
   'navigate_to',
@@ -799,7 +798,7 @@ function VoiceAgentContent() {
   const currentMessageIdsRef = useRef<{ user?: string; assistant?: string }>({});
   const lastElevenLabsModeRef = useRef<'speaking' | 'listening' | null>(null);
   const lastLiveAgentMessageRef = useRef<string | null>(null);
-  const liveAgentMessageClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didInitializeLiveAgentMessageRef = useRef(false);
   // Track which itemIds have been queued to prevent duplicate saves
   const queuedItemIdsRef = useRef<Set<string>>(new Set());
   // Buffer for accumulating user message text (since text comes in chunks)
@@ -843,29 +842,8 @@ function VoiceAgentContent() {
     updateModuleState(updates);
   }, [updateModuleState]);
 
-  const cancelLiveAgentMessageClear = useCallback(() => {
-    if (liveAgentMessageClearTimerRef.current) {
-      clearTimeout(liveAgentMessageClearTimerRef.current);
-      liveAgentMessageClearTimerRef.current = null;
-    }
-  }, []);
-
-  const scheduleLiveAgentMessageClear = useCallback((delayMs: number = LIVE_AGENT_MESSAGE_CLEAR_MS) => {
-    cancelLiveAgentMessageClear();
-    liveAgentMessageClearTimerRef.current = setTimeout(() => {
-      liveAgentMessageClearTimerRef.current = null;
-      lastLiveAgentMessageRef.current = '';
-      applyModuleStateUpdates({ [LIVE_AGENT_MESSAGE_MODULE_KEY]: '' });
-    }, Math.max(0, delayMs));
-  }, [applyModuleStateUpdates, cancelLiveAgentMessageClear]);
-
   const updateLiveAgentMessage = useCallback((message: string) => {
     const nextMessage = typeof message === 'string' ? message : '';
-    if (nextMessage.trim()) {
-      scheduleLiveAgentMessageClear();
-    } else {
-      cancelLiveAgentMessageClear();
-    }
     if (
       lastLiveAgentMessageRef.current === nextMessage &&
       moduleStateRef.current?.[LIVE_AGENT_MESSAGE_MODULE_KEY] === nextMessage
@@ -875,21 +853,17 @@ function VoiceAgentContent() {
 
     lastLiveAgentMessageRef.current = nextMessage;
     applyModuleStateUpdates({ [LIVE_AGENT_MESSAGE_MODULE_KEY]: nextMessage });
-  }, [applyModuleStateUpdates, cancelLiveAgentMessageClear, scheduleLiveAgentMessageClear]);
+  }, [applyModuleStateUpdates]);
 
   const clearLiveAgentMessage = useCallback(() => {
-    cancelLiveAgentMessageClear();
     updateLiveAgentMessage('');
-  }, [cancelLiveAgentMessageClear, updateLiveAgentMessage]);
-
-  useEffect(() => {
-    return () => {
-      cancelLiveAgentMessageClear();
-    };
-  }, [cancelLiveAgentMessageClear]);
+  }, [updateLiveAgentMessage]);
 
   useEffect(() => {
     // Ensure interpolation references never render literal {$moduleData.*} placeholders.
+    // Guard against callback identity changes triggering repeated clears mid-turn.
+    if (didInitializeLiveAgentMessageRef.current) return;
+    didInitializeLiveAgentMessageRef.current = true;
     clearLiveAgentMessage();
   }, [clearLiveAgentMessage]);
 
