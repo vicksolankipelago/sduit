@@ -293,17 +293,20 @@ function buildScreenPromptsAppendix(params: {
   screenPrompts?: Record<string, string>;
   screens?: AgentScreen[];
   startScreenId?: string;
-}): { text: string; includedScreenIds: string[]; skippedBecauseEmbedded: boolean } {
+}): {
+  text: string;
+  includedScreenIds: string[];
+  skippedBecauseEmbedded: boolean;
+  appendedAsOverride: boolean;
+} {
   const entries = Object.entries(params.screenPrompts || {})
     .filter(([screenId, prompt]) => Boolean(screenId) && typeof prompt === 'string' && prompt.trim().length > 0);
   if (entries.length === 0) {
-    return { text: '', includedScreenIds: [], skippedBecauseEmbedded: false };
+    return { text: '', includedScreenIds: [], skippedBecauseEmbedded: false, appendedAsOverride: false };
   }
 
   const availableIds = entries.map(([screenId]) => screenId);
-  if (hasEmbeddedScreenPromptSections(params.agentPrompt)) {
-    return { text: '', includedScreenIds: [], skippedBecauseEmbedded: true };
-  }
+  const hasEmbeddedSections = hasEmbeddedScreenPromptSections(params.agentPrompt);
   const referencedIds = getPromptReferencedScreenIds(params.agentPrompt, availableIds);
 
   const entryMap = new Map(entries);
@@ -316,18 +319,44 @@ function buildScreenPromptsAppendix(params: {
       includedIds = reachableIds;
     }
   }
-  if (referencedIds.size > 0) {
+  if (!hasEmbeddedSections && referencedIds.size > 0) {
     includedIds = includedIds.filter((screenId) => !referencedIds.has(screenId));
   }
   if (includedIds.length === 0) {
-    return { text: '', includedScreenIds: [], skippedBecauseEmbedded: false };
+    return {
+      text: '',
+      includedScreenIds: [],
+      skippedBecauseEmbedded: hasEmbeddedSections,
+      appendedAsOverride: false,
+    };
   }
 
-  const text = includedIds
+  const screenSectionsText = includedIds
     .map((screenId) => `\n## SCREEN: ${screenId}\n${entryMap.get(screenId)}`)
     .join('\n\n');
+  if (hasEmbeddedSections) {
+    const overrideText = [
+      '\n---',
+      'RUNTIME SCREEN OVERRIDES (AUTHORITATIVE)',
+      'Use the screen instructions below as the source of truth for this session.',
+      'If any earlier screen instructions conflict, follow these overrides.',
+      '---',
+      screenSectionsText,
+    ].join('\n');
+    return {
+      text: overrideText,
+      includedScreenIds: includedIds,
+      skippedBecauseEmbedded: false,
+      appendedAsOverride: true,
+    };
+  }
 
-  return { text, includedScreenIds: includedIds, skippedBecauseEmbedded: false };
+  return {
+    text: screenSectionsText,
+    includedScreenIds: includedIds,
+    skippedBecauseEmbedded: false,
+    appendedAsOverride: false,
+  };
 }
 
 function normalizeRecordInputTitle(title: string): string {
@@ -1790,7 +1819,12 @@ function VoiceAgentContent() {
       if (screenPromptAppendix.text) {
         instructionParts.push(screenPromptAppendix.text);
         const totalScreenPrompts = Object.keys(startingAgentConfigForConnect.screenPrompts || {}).length;
-        if (totalScreenPrompts > screenPromptAppendix.includedScreenIds.length) {
+        if (screenPromptAppendix.appendedAsOverride) {
+          addLog(
+            'info',
+            `🧭 Appended ${screenPromptAppendix.includedScreenIds.length}/${totalScreenPrompts} runtime screen overrides to supersede embedded prompt screens.`
+          );
+        } else if (totalScreenPrompts > screenPromptAppendix.includedScreenIds.length) {
           addLog(
             'info',
             `🧭 Appended ${screenPromptAppendix.includedScreenIds.length}/${totalScreenPrompts} screen prompts reachable from "${currentScreenFromContext}".`

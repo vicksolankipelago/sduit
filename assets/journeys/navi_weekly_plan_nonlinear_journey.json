@@ -1,0 +1,743 @@
+{
+  "screens": [
+    {
+      "id": "navi-weekly-plan-start",
+      "title": "Weekly plan setup",
+      "events": [
+        {
+          "id": "navigate_to_weekly_plan_conversation",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "voiceNavigationEnabled": true,
+                "current_screen": "navi-weekly-plan-conversation"
+              }
+            },
+            {
+              "tool": "setVoiceEnabled",
+              "type": "toolCall",
+              "params": {
+                "enabled": true
+              }
+            },
+            {
+              "type": "navigation",
+              "deeplink": "navi-weekly-plan-conversation"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 12,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "weekly_plan_title",
+                "text": "Set up your week with Navi"
+              },
+              "style": {
+                "color": "primary",
+                "style": "heading2",
+                "alignment": "leading"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "title_gap"
+              },
+              "style": {
+                "width": null,
+                "height": 10,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "weekly_plan_description",
+                "text": "Navi will help you define one specific change, what gets in the way, and what you want back this week."
+              },
+              "style": {
+                "color": "secondary",
+                "style": "body2",
+                "alignment": "leading"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "privacy_gap"
+              },
+              "style": {
+                "width": null,
+                "height": 16,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "checklistCard",
+              "state": {
+                "id": "privacy_commitment",
+                "title": "Before you begin",
+                "itemTitles": [
+                  "This conversation is private.",
+                  "Your employer cannot see personal responses.",
+                  "You can share only what feels comfortable."
+                ]
+              },
+              "style": {
+                "backgroundColor": "backgroundLight",
+                "cornerRadius": 12
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "crisis_gap"
+              },
+              "style": {
+                "width": null,
+                "height": 8,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "textCard",
+              "state": {
+                "id": "crisis_support_callout",
+                "title": "If you are in crisis",
+                "content": "Call or text 988 right away for immediate support."
+              },
+              "style": {
+                "backgroundColor": "backgroundMistBlue",
+                "borderColor": "backgroundCerulean",
+                "textColor": "textGlobalPrimary",
+                "captionColor": "textGlobalPrimary",
+                "borderWidth": 1,
+                "cornerRadius": 12
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "bottom_flex_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        },
+        {
+          "id": "button_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "button",
+              "state": {
+                "id": "start_weekly_plan_btn",
+                "title": "Continue",
+                "isDisabled": false
+              },
+              "style": {
+                "size": "large",
+                "style": "primary"
+              },
+              "events": [
+                {
+                  "id": "navigate_to_weekly_plan_conversation",
+                  "type": "onSelected",
+                  "action": [
+                    {
+                      "type": "stateUpdate",
+                      "scope": "module",
+                      "updates": {
+                        "voiceNavigationEnabled": true,
+                        "current_screen": "navi-weekly-plan-conversation"
+                      }
+                    },
+                    {
+                      "tool": "setVoiceEnabled",
+                      "type": "toolCall",
+                      "params": {
+                        "enabled": true
+                      }
+                    },
+                    {
+                      "type": "navigation",
+                      "deeplink": "navi-weekly-plan-conversation"
+                    }
+                  ],
+                  "conditions": []
+                }
+              ]
+            }
+          ],
+          "position": "fixed-bottom",
+          "direction": "vertical",
+          "scrollable": false
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "navi-weekly-plan-conversation",
+      "title": null,
+      "events": [
+        {
+          "id": "navigate_to_tracking_frequency",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "current_screen": "navi-tracking-frequency"
+              }
+            },
+            {
+              "type": "navigation",
+              "deeplink": "navi-tracking-frequency"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "conversation_agent_message_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "agentMessageCard",
+              "state": {
+                "id": "conversation_agent_message",
+                "message": "{$moduleData.agentLiveMessage}",
+                "agentName": "Navi",
+                "syncWithSpeech": true
+              },
+              "style": {
+                "backgroundColor": "backgroundLight",
+                "cornerRadius": 0
+              }
+            }
+          ],
+          "position": "fixed-top",
+          "direction": "vertical",
+          "scrollable": false
+        },
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "openQuestion",
+              "state": {
+                "id": "weekly_plan_open_question",
+                "question": "What do you want this week to look like for your drinking?"
+              },
+              "style": {}
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "conversation_gap"
+              },
+              "style": {
+                "width": null,
+                "height": 16,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "textCard",
+              "state": {
+                "id": "behavior_summary_card",
+                "title": "Behavior",
+                "content": "{$moduleData.behavior_specific}"
+              },
+              "style": {
+                "backgroundColor": "backgroundLight",
+                "cornerRadius": 12
+              }
+            },
+            {
+              "type": "textCard",
+              "state": {
+                "id": "barrier_summary_card",
+                "title": "Barrier",
+                "content": "{$moduleData.barrier}"
+              },
+              "style": {
+                "backgroundColor": "backgroundLight",
+                "cornerRadius": 12
+              }
+            },
+            {
+              "type": "textCard",
+              "state": {
+                "id": "benefit_summary_card",
+                "title": "Benefit",
+                "content": "{$moduleData.benefit_specific}"
+              },
+              "style": {
+                "backgroundColor": "backgroundLight",
+                "cornerRadius": 12
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "navi-tracking-frequency",
+      "title": null,
+      "state": {
+        "selectedTracking": null
+      },
+      "events": [
+        {
+          "id": "select_tracking_every_day",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "screen",
+              "updates": {
+                "selectedTracking": [
+                  "every_day"
+                ]
+              }
+            },
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "tracking_frequency": "Every day"
+              }
+            }
+          ],
+          "conditions": []
+        },
+        {
+          "id": "select_tracking_few_times",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "screen",
+              "updates": {
+                "selectedTracking": [
+                  "few_times"
+                ]
+              }
+            },
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "tracking_frequency": "A few times a week"
+              }
+            }
+          ],
+          "conditions": []
+        },
+        {
+          "id": "select_tracking_when_i_remember",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "screen",
+              "updates": {
+                "selectedTracking": [
+                  "when_i_remember"
+                ]
+              }
+            },
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "tracking_frequency": "When I remember"
+              }
+            }
+          ],
+          "conditions": []
+        },
+        {
+          "id": "navigate_to_plan_handoff",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "current_screen": "navi-plan-handoff"
+              }
+            },
+            {
+              "type": "navigation",
+              "deeplink": "navi-plan-handoff"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "tracking_agent_message_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "agentMessageCard",
+              "state": {
+                "id": "tracking_agent_message",
+                "message": "{$moduleData.agentLiveMessage}",
+                "agentName": "Navi",
+                "syncWithSpeech": true
+              },
+              "style": {
+                "backgroundColor": "backgroundLight",
+                "cornerRadius": 0
+              }
+            }
+          ],
+          "position": "fixed-top",
+          "direction": "vertical",
+          "scrollable": false
+        },
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "largeQuestion",
+              "state": {
+                "id": "tracking_frequency_question",
+                "type": "singleSelect",
+                "copyId": null,
+                "header": {
+                  "id": "tracking_frequency_header",
+                  "title": "How often do you want to track this week?",
+                  "caption": null,
+                  "imageName": null,
+                  "description": null
+                },
+                "caption": null,
+                "options": [
+                  {
+                    "id": "every_day",
+                    "title": "Every day",
+                    "description": "Build consistency with daily tracking"
+                  },
+                  {
+                    "id": "few_times",
+                    "title": "A few times",
+                    "description": "Track a few times across the week"
+                  },
+                  {
+                    "id": "when_i_remember",
+                    "title": "When I remember",
+                    "description": "Start light and track when it feels doable"
+                  }
+                ],
+                "category": "tracking",
+                "maxSelection": 1,
+                "allowsMultiSelection": false,
+                "currentlySelectedOptions": null
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "navi-plan-handoff",
+      "title": null,
+      "events": [
+        {
+          "id": "navigate_to_weekly_plan_completion",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "current_screen": "navi-weekly-plan-completion"
+              }
+            },
+            {
+              "type": "navigation",
+              "deeplink": "navi-weekly-plan-completion"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "handoff_agent_message_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "agentMessageCard",
+              "state": {
+                "id": "handoff_agent_message",
+                "message": "{$moduleData.agentLiveMessage}",
+                "agentName": "Navi",
+                "syncWithSpeech": true
+              },
+              "style": {
+                "backgroundColor": "backgroundLight",
+                "cornerRadius": 0
+              }
+            }
+          ],
+          "position": "fixed-top",
+          "direction": "vertical",
+          "scrollable": false
+        },
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "handoff_title",
+                "text": "Your weekly plan summary"
+              },
+              "style": {
+                "color": "primary",
+                "style": "heading2",
+                "alignment": "leading"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "handoff_title_gap"
+              },
+              "style": {
+                "width": null,
+                "height": 10,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "textCard",
+              "state": {
+                "id": "handoff_behavior_card",
+                "title": "Behavior",
+                "content": "{$moduleData.behavior_specific}"
+              },
+              "style": {
+                "backgroundColor": "backgroundLight",
+                "cornerRadius": 12
+              }
+            },
+            {
+              "type": "textCard",
+              "state": {
+                "id": "handoff_barrier_card",
+                "title": "Barrier",
+                "content": "{$moduleData.barrier}"
+              },
+              "style": {
+                "backgroundColor": "backgroundLight",
+                "cornerRadius": 12
+              }
+            },
+            {
+              "type": "textCard",
+              "state": {
+                "id": "handoff_benefit_card",
+                "title": "Benefit",
+                "content": "{$moduleData.benefit_specific}"
+              },
+              "style": {
+                "backgroundColor": "backgroundLight",
+                "cornerRadius": 12
+              }
+            },
+            {
+              "type": "textCard",
+              "state": {
+                "id": "handoff_tracking_card",
+                "title": "Tracking frequency",
+                "content": "{$moduleData.tracking_frequency}"
+              },
+              "style": {
+                "backgroundColor": "backgroundLightMintGreen",
+                "cornerRadius": 12
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "navi-weekly-plan-completion",
+      "title": null,
+      "events": [
+        {
+          "id": "complete_weekly_plan_setup",
+          "type": "custom",
+          "action": [
+            {
+              "type": "closeModule",
+              "parameters": {
+                "reason": "weekly_plan_setup_completed"
+              },
+              "flowCompleted": true
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "top_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            },
+            {
+              "type": "animatedImage",
+              "state": {
+                "id": "completion_animation",
+                "lottieName": "COLOR_Pelago_Island"
+              },
+              "style": {
+                "width": 280,
+                "height": 280
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "completion_text",
+                "text": "Weekly plan ready"
+              },
+              "style": {
+                "color": "primary",
+                "style": "heading1",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "completion_text_gap"
+              },
+              "style": {
+                "width": null,
+                "height": 8,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "completion_subtext",
+                "text": "Taking you to your plan now."
+              },
+              "style": {
+                "color": "secondary",
+                "style": "body2",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "bottom_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        }
+      ],
+      "hidesBackButton": true
+    }
+  ],
+  "screenPrompts": {
+    "navi-weekly-plan-start": "Screen ID: navi-weekly-plan-start\\nAvailable Events: navigate_to_weekly_plan_conversation\\n\\nPurpose: UI-only entry. User taps Continue to begin voice weekly plan setup.",
+    "navi-weekly-plan-conversation": "Screen ID: navi-weekly-plan-conversation\\nAvailable Events: navigate_to_tracking_frequency\\n\\nPurpose: Run non-linear 3B conversation. Capture and confirm behavior, barrier, and benefit in member words.\\n\\nAfter confirmation, call record_input three times with store keys behavior_specific, barrier, benefit_specific, then trigger_event navigate_to_tracking_frequency.",
+    "navi-tracking-frequency": "Screen ID: navi-tracking-frequency\\nAvailable Events: select_tracking_every_day, select_tracking_few_times, select_tracking_when_i_remember, navigate_to_plan_handoff\\n\\nPurpose: Ask how often to track and store the chosen frequency.\\n\\nCall one selection event based on user response, then trigger_event navigate_to_plan_handoff.",
+    "navi-plan-handoff": "Screen ID: navi-plan-handoff\\nAvailable Events: navigate_to_weekly_plan_completion\\n\\nPurpose: Confirm handoff to UI and continue to completion screen.",
+    "navi-weekly-plan-completion": "Screen ID: navi-weekly-plan-completion\\nAvailable Events: complete_weekly_plan_setup\\n\\nPurpose: End weekly plan setup flow. Call trigger_event complete_weekly_plan_setup then end_call."
+  }
+}

@@ -94,12 +94,11 @@ async function fetchSessionAuthFromUrl(
 }
 
 /**
- * Fetches ElevenLabs session auth, preferring websocket credentials so that
- * `onAudioAlignment` is available for speech-synced word reveal.
+ * Fetches ElevenLabs session auth, preferring WebRTC for audio reliability.
  */
 async function fetchElevenLabsSessionAuth(agentId: string): Promise<ElevenLabsSessionAuth> {
-  const localPreferredUrl = `${ELEVENLABS_LOCAL_ENDPOINT}?agentId=${encodeURIComponent(agentId)}&transport=websocket`;
-  console.log('🔑 Fetching ElevenLabs session auth from local server (prefer websocket):', localPreferredUrl);
+  const localPreferredUrl = `${ELEVENLABS_LOCAL_ENDPOINT}?agentId=${encodeURIComponent(agentId)}&transport=webrtc`;
+  console.log('🔑 Fetching ElevenLabs session auth from local server (prefer WebRTC):', localPreferredUrl);
 
   try {
     const localPreferredAuth = await fetchSessionAuthFromUrl(localPreferredUrl, 'local', agentId);
@@ -107,12 +106,12 @@ async function fetchElevenLabsSessionAuth(agentId: string): Promise<ElevenLabsSe
       console.log('🔑 Session auth received from local server:', localPreferredAuth.mode);
       return localPreferredAuth;
     }
-    console.warn('🔑 Local preferred transport did not return usable session auth');
+    console.warn('🔑 Local preferred WebRTC auth did not return usable session auth');
   } catch (err) {
-    console.warn('🔑 Local preferred transport request failed:', err);
+    console.warn('🔑 Local preferred WebRTC request failed:', err);
   }
 
-  const awsUrl = `${ELEVENLABS_AWS_ENDPOINT}/${agentId}?transport=websocket`;
+  const awsUrl = `${ELEVENLABS_AWS_ENDPOINT}/${agentId}?transport=webrtc`;
   console.log('🔑 Fetching ElevenLabs session auth from AWS endpoint:', awsUrl);
 
   try {
