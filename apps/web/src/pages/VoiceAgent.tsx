@@ -767,6 +767,7 @@ function VoiceAgentContent() {
   const assistantResponseBuffer = useRef<string>('');
   const assistantResponseStartTime = useRef<Date | null>(null);
   const currentMessageIdsRef = useRef<{ user?: string; assistant?: string }>({});
+  const lastElevenLabsModeRef = useRef<'speaking' | 'listening' | null>(null);
   const lastLiveAgentMessageRef = useRef<string | null>(null);
   // Track which itemIds have been queued to prevent duplicate saves
   const queuedItemIdsRef = useRef<Set<string>>(new Set());
@@ -2678,6 +2679,7 @@ Important guidelines:
         // Accumulate assistant response tokens
         if (!assistantResponseStartTime.current) {
           assistantResponseStartTime.current = new Date();
+          clearLiveAgentMessage();
           // Don't set speaking state here - let audio element events handle it
         }
         assistantResponseBuffer.current += text;
@@ -4035,11 +4037,13 @@ Important guidelines:
         setActiveSpeaker('none');
         setMemberAudioLevel(0);
         setAgentSpeechAlignment(null);
+        lastElevenLabsModeRef.current = null;
         applyModuleStateUpdates({ agentIsSpeaking: false, agentSpeechMode: 'connecting' });
         addLog('info', `[${timestamp}] Connecting to ElevenLabs...`);
         setConnectionError(null); // Clear any previous errors
       } else if (s === 'CONNECTED') {
         setActiveSpeaker('member');
+        lastElevenLabsModeRef.current = 'listening';
         applyModuleStateUpdates({ agentIsSpeaking: false, agentSpeechMode: 'listening' });
         addLog('success', `[${timestamp}] Connected to ElevenLabs`);
         setIsTransitioningJourney(false);
@@ -4049,6 +4053,7 @@ Important guidelines:
         setActiveSpeaker('none');
         setMemberAudioLevel(0);
         setAgentSpeechAlignment(null);
+        lastElevenLabsModeRef.current = null;
         applyModuleStateUpdates({ agentIsSpeaking: false, agentSpeechMode: 'disconnected' });
         addLog('info', `[${timestamp}] Disconnected from ElevenLabs`);
         setIsTransitioningJourney(false);
@@ -4057,6 +4062,13 @@ Important guidelines:
     },
     onModeChange: (mode) => {
       if (currentProviderRef.current !== 'elevenlabs') return;
+      const isNewSpeakingTurn = mode === 'speaking' && lastElevenLabsModeRef.current !== 'speaking';
+      if (isNewSpeakingTurn) {
+        // Prevent previous assistant text from flashing while new speech starts.
+        setAgentSpeechAlignment(null);
+        clearLiveAgentMessage();
+      }
+      lastElevenLabsModeRef.current = mode;
       setActiveSpeaker(mode === 'speaking' ? 'agent' : 'member');
       applyModuleStateUpdates({ agentIsSpeaking: mode === 'speaking', agentSpeechMode: mode });
       if (mode === 'speaking') {

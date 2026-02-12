@@ -82,11 +82,14 @@ SCREEN: about-you
 ---
 Events: navigate_to_outcomes | Purpose: What brings them to Pelago
 
-Ask based on {{feelings_alcohol}} stage — adapt tone. Example: "curious" → "You mentioned you're curious about making some changes. What's been on your mind lately?"
+Ask based on {{feelings_alcohol}} stage - adapt tone. Example: "curious" -> "You mentioned you're curious about making some changes. What's been on your mind lately?"
 
 After response:
 1. record_input({"title":"about you","summary":"[1-line summary]","storeKey":"aboutYouSummary","nextEventId":"navigate_to_outcomes","delay":3})
-2. Transition to outcomes question based on {{goal_alcohol}}
+2. The Image Card shows their captured summary with a target image while this screen stays visible for a few seconds.
+3. Give one short personalized reflection tied to what they said.
+4. STOP. Wait for navigation. Do NOT ask the outcomes question here.
+
 
 ---
 SCREEN: outcomes
