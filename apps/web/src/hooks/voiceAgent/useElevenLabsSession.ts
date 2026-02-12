@@ -8,9 +8,8 @@
  * The React useConversation hook only accepts overrides at initialization time,
  * but we need to pass dynamic prompts based on journeys loaded at runtime.
  * 
- * Authentication: Uses secure token-based auth via AWS API Gateway.
- * The token endpoint generates conversation tokens server-side, keeping
- * the ElevenLabs API key secure.
+ * Authentication: Uses server-issued session auth (signed URL or conversation token)
+ * so the ElevenLabs API key stays server-side.
  */
 
 import { useCallback, useRef, useState, useEffect } from 'react';
@@ -25,45 +24,124 @@ const ELEVENLABS_AWS_ENDPOINT = 'https://un4a8jbuha.execute-api.us-east-2.amazon
 const ELEVENLABS_LOCAL_ENDPOINT = '/api/elevenlabs/session';
 
 /**
- * Fetches a conversation token from the AWS endpoint, falling back to our own server.
- * This keeps the ElevenLabs API key server-side for security.
+ * Session auth payload expected by Conversation.startSession().
+ * WebSocket mode exposes audio alignment events used by agent word reveal timing.
  */
-async function fetchConversationToken(agentId: string): Promise<string> {
-  const awsUrl = `${ELEVENLABS_AWS_ENDPOINT}/${agentId}`;
-  console.log('🔑 Fetching conversation token from AWS:', awsUrl);
+type ElevenLabsSessionAuth =
+  | {
+      mode: 'websocket';
+      signedUrl: string;
+      source: 'local' | 'aws';
+    }
+  | {
+      mode: 'webrtc';
+      conversationToken: string;
+      source: 'local' | 'aws';
+    }
+  | {
+      mode: 'public';
+      agentId: string;
+      source: 'local' | 'aws';
+    };
+
+function toNonEmptyString(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function parseSessionAuthPayload(
+  payload: unknown,
+  source: 'local' | 'aws',
+  fallbackAgentId: string
+): ElevenLabsSessionAuth | null {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return null;
+  }
+
+  const record = payload as Record<string, unknown>;
+  const signedUrl = toNonEmptyString(record.signedUrl) ?? toNonEmptyString(record.signed_url);
+  if (signedUrl) {
+    return { mode: 'websocket', signedUrl, source };
+  }
+
+  const conversationToken =
+    toNonEmptyString(record.conversationToken) ?? toNonEmptyString(record.token);
+  if (conversationToken) {
+    return { mode: 'webrtc', conversationToken, source };
+  }
+
+  if (record.publicAgent === true) {
+    const publicAgentId = toNonEmptyString(record.agentId) ?? fallbackAgentId;
+    return { mode: 'public', agentId: publicAgentId, source };
+  }
+
+  return null;
+}
+
+async function fetchSessionAuthFromUrl(
+  url: string,
+  source: 'local' | 'aws',
+  agentId: string
+): Promise<ElevenLabsSessionAuth | null> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    return null;
+  }
+
+  const payload = await response.json();
+  return parseSessionAuthPayload(payload, source, agentId);
+}
+
+/**
+ * Fetches ElevenLabs session auth, preferring websocket credentials so that
+ * `onAudioAlignment` is available for speech-synced word reveal.
+ */
+async function fetchElevenLabsSessionAuth(agentId: string): Promise<ElevenLabsSessionAuth> {
+  const localPreferredUrl = `${ELEVENLABS_LOCAL_ENDPOINT}?agentId=${encodeURIComponent(agentId)}&transport=websocket`;
+  console.log('🔑 Fetching ElevenLabs session auth from local server (prefer websocket):', localPreferredUrl);
 
   try {
-    const response = await fetch(awsUrl);
-    if (response.ok) {
-      const data = await response.json();
-      const token = data.token || data.conversationToken;
-      if (token) {
-        console.log('🔑 Conversation token received from AWS');
-        return token;
-      }
+    const localPreferredAuth = await fetchSessionAuthFromUrl(localPreferredUrl, 'local', agentId);
+    if (localPreferredAuth) {
+      console.log('🔑 Session auth received from local server:', localPreferredAuth.mode);
+      return localPreferredAuth;
     }
-    console.warn('🔑 AWS endpoint failed, falling back to local server');
+    console.warn('🔑 Local preferred transport did not return usable session auth');
   } catch (err) {
-    console.warn('🔑 AWS endpoint unreachable, falling back to local server:', err);
+    console.warn('🔑 Local preferred transport request failed:', err);
   }
 
-  const localUrl = `${ELEVENLABS_LOCAL_ENDPOINT}?agentId=${encodeURIComponent(agentId)}`;
-  console.log('🔑 Fetching conversation token from local server:', localUrl);
+  const awsUrl = `${ELEVENLABS_AWS_ENDPOINT}/${agentId}?transport=websocket`;
+  console.log('🔑 Fetching ElevenLabs session auth from AWS endpoint:', awsUrl);
 
-  const localResponse = await fetch(localUrl);
-  if (!localResponse.ok) {
-    const errorText = await localResponse.text();
-    throw new Error(`Failed to fetch conversation token: ${localResponse.status} - ${errorText}`);
+  try {
+    const awsAuth = await fetchSessionAuthFromUrl(awsUrl, 'aws', agentId);
+    if (awsAuth) {
+      console.log('🔑 Session auth received from AWS endpoint:', awsAuth.mode);
+      return awsAuth;
+    }
+    console.warn('🔑 AWS endpoint did not return usable session auth');
+  } catch (err) {
+    console.warn('🔑 AWS endpoint request failed:', err);
   }
 
-  const localData = await localResponse.json();
-  const token = localData.token || localData.conversationToken;
-  if (!token) {
-    throw new Error('Token endpoint did not return a token');
+  const localFallbackUrl = `${ELEVENLABS_LOCAL_ENDPOINT}?agentId=${encodeURIComponent(agentId)}`;
+  console.log('🔑 Retrying ElevenLabs session auth from local server (default transport):', localFallbackUrl);
+  const localFallbackResponse = await fetch(localFallbackUrl);
+  if (!localFallbackResponse.ok) {
+    const errorText = await localFallbackResponse.text();
+    throw new Error(`Failed to fetch ElevenLabs session auth: ${localFallbackResponse.status} - ${errorText}`);
   }
 
-  console.log('🔑 Conversation token received from local server');
-  return token;
+  const localFallbackPayload = await localFallbackResponse.json();
+  const localFallbackAuth = parseSessionAuthPayload(localFallbackPayload, 'local', agentId);
+  if (!localFallbackAuth) {
+    throw new Error('Session endpoint did not return signed URL, conversation token, or public agent configuration');
+  }
+
+  console.log('🔑 Session auth received from local server (fallback):', localFallbackAuth.mode);
+  return localFallbackAuth;
 }
 
 export interface ElevenLabsSessionCallbacks {
@@ -283,25 +361,24 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
     updateStatus('CONNECTING');
 
     try {
-      // Fetch conversation token from secure AWS endpoint
-      // This keeps the ElevenLabs API key server-side for security
-      console.log('🔑 Fetching conversation token for agent:', agentId);
-      const conversationToken = await fetchConversationToken(agentId);
-      console.log('🔑 Token fetched successfully, starting session...');
-      
-      // Build session config for the vanilla SDK using conversationToken (private WebRTC mode)
-      // This is more secure than using agentId directly (public mode)
-      const sessionConfig: Parameters<typeof Conversation.startSession>[0] = {
-        conversationToken,
-        connectionType: 'webrtc',
+      // Fetch server-side session auth (signed URL or token). We prefer websocket
+      // when available because it exposes audio alignment timestamps for word sync.
+      console.log('🔑 Fetching session auth for agent:', agentId);
+      const sessionAuth = await fetchElevenLabsSessionAuth(agentId);
+      console.log('🔑 Session auth fetched successfully:', {
+        mode: sessionAuth.mode,
+        source: sessionAuth.source,
+      });
+
+      const sessionConfig: Record<string, any> = {
         // Callbacks for the vanilla SDK
-        onConnect: ({ conversationId }) => {
+        onConnect: ({ conversationId }: { conversationId: string }) => {
           elevenLabsLogger.info('ElevenLabs conversation connected, ID:', conversationId);
           console.log('✅ ElevenLabs onConnect callback fired, conversationId:', conversationId);
           conversationIdRef.current = conversationId;
           updateStatus('CONNECTED');
         },
-        onDisconnect: (details) => {
+        onDisconnect: (details: any) => {
           const reason = (details as any)?.reason || 'unknown';
           elevenLabsLogger.info('ElevenLabs conversation disconnected, reason:', reason);
           console.log('🔌 ElevenLabs onDisconnect - reason:', reason);
@@ -316,7 +393,7 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
           updateStatus('DISCONNECTED');
           callbacksRef.current.onConversationComplete?.();
         },
-        onMessage: (message) => {
+        onMessage: (message: any) => {
           elevenLabsLogger.debug('ElevenLabs message:', message);
           const msg = message as any;
           console.log('💬 ElevenLabs message:', msg.source, msg.message?.substring?.(0, 50));
@@ -327,32 +404,32 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
           }
           callbacksRef.current.onEvent?.(message);
         },
-        onError: (error) => {
+        onError: (error: any) => {
           const errorMessage = typeof error === 'string' ? error : ((error as any)?.message || JSON.stringify(error));
           elevenLabsLogger.error('ElevenLabs error:', error);
           console.error('🔴 ElevenLabs SDK onError callback:', error);
           callbacksRef.current.onError?.(`SDK Error: ${errorMessage}`, error);
           updateStatus('DISCONNECTED');
         },
-        onModeChange: (data) => {
+        onModeChange: (data: any) => {
           const mode = (data as any).mode === 'speaking' ? 'speaking' : 'listening';
           elevenLabsLogger.debug('Mode changed:', mode);
           console.log('🔊 ElevenLabs mode changed:', mode);
           setIsSpeaking(mode === 'speaking');
           callbacksRef.current.onModeChange?.(mode);
         },
-        onVadScore: (vadData) => {
+        onVadScore: (vadData: any) => {
           const rawScore = Number((vadData as any)?.vadScore ?? 0);
           const normalizedScore = Number.isFinite(rawScore)
             ? Math.max(0, Math.min(rawScore, 1))
             : 0;
           callbacksRef.current.onVadScore?.(normalizedScore);
         },
-        onStatusChange: (statusData) => {
+        onStatusChange: (statusData: any) => {
           elevenLabsLogger.debug('Status changed:', statusData);
           console.log('📊 ElevenLabs status changed:', (statusData as any).status);
         },
-        onAgentToolRequest: (request) => {
+        onAgentToolRequest: (request: any) => {
           elevenLabsLogger.info('Agent tool request:', request);
           console.log('🧰 ElevenLabs agent_tool_request:', request);
           callbacksRef.current.onEvent?.({
@@ -360,7 +437,7 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
             ...request,
           });
         },
-        onAgentToolResponse: (response) => {
+        onAgentToolResponse: (response: any) => {
           elevenLabsLogger.info('Agent tool response:', response);
           console.log('🧰 ElevenLabs agent_tool_response:', response);
           callbacksRef.current.onEvent?.({
@@ -368,7 +445,7 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
             ...response,
           });
         },
-        onUnhandledClientToolCall: (toolCall) => {
+        onUnhandledClientToolCall: (toolCall: any) => {
           elevenLabsLogger.error('Unhandled client tool call:', toolCall);
           console.error('🔴 ElevenLabs unhandled_client_tool_call:', toolCall);
           callbacksRef.current.onEvent?.({
@@ -402,6 +479,17 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
           }
         },
       };
+
+      if (sessionAuth.mode === 'websocket') {
+        (sessionConfig as any).signedUrl = sessionAuth.signedUrl;
+        (sessionConfig as any).connectionType = 'websocket';
+      } else if (sessionAuth.mode === 'webrtc') {
+        (sessionConfig as any).conversationToken = sessionAuth.conversationToken;
+        (sessionConfig as any).connectionType = 'webrtc';
+      } else {
+        (sessionConfig as any).agentId = sessionAuth.agentId;
+        (sessionConfig as any).connectionType = 'websocket';
+      }
 
       if (callbacksRef.current.onAudioAlignment) {
         (sessionConfig as any).onAudioAlignment = (alignment: unknown) => {
@@ -450,7 +538,10 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
       // Log config without the full prompt or token
       const configForLog = {
         agentId: agentId,
-        hasConversationToken: !!conversationToken,
+        authMode: sessionAuth.mode,
+        authSource: sessionAuth.source,
+        hasConversationToken: !!(sessionConfig as any).conversationToken,
+        hasSignedUrl: !!(sessionConfig as any).signedUrl,
         connectionType: sessionConfig.connectionType,
         hasDynamicVariables: !!(sessionConfig as any).dynamicVariables,
         hasOverrides: !!(sessionConfig as any).overrides,
@@ -459,11 +550,13 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         hasClientTools: !!wrappedTools,
         clientToolNames: wrappedTools ? Object.keys(wrappedTools) : [],
       };
-      console.log('🔌 Session config (vanilla SDK, token auth):', JSON.stringify(configForLog, null, 2));
-      console.log('🚀 About to call Conversation.startSession with conversationToken...');
+      console.log('🔌 Session config (vanilla SDK):', JSON.stringify(configForLog, null, 2));
+      console.log(`🚀 About to call Conversation.startSession using ${sessionConfig.connectionType} transport...`);
 
       // Use the vanilla SDK's Conversation.startSession()
-      const conversation = await Conversation.startSession(sessionConfig);
+      const conversation = await Conversation.startSession(
+        sessionConfig as Parameters<typeof Conversation.startSession>[0]
+      );
       conversationRef.current = conversation;
       agentIdRef.current = agentId;
       

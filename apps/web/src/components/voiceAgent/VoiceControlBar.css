@@ -6,7 +6,7 @@
   z-index: 2000;
   background: var(--background-light, #fff);
   border-top: 1px solid var(--ui-element-divider, #ccc);
-  padding: 10px 16px 12px;
+  padding: 14px 22px 12px;
   box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
 }
 
@@ -73,12 +73,14 @@
 }
 
 .voice-control-waveform-group {
+  --voice-wave-label-offset: 12px;
   min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  transform: translateY(calc(-1 * var(--voice-wave-label-offset)));
 }
 
 .voice-control-wave-label {
@@ -251,7 +253,7 @@
 
 @media (max-width: 768px) {
   .voice-control-bar {
-    padding: 8px 12px 10px;
+    padding: 10px 18px 10px;
   }
 
   .voice-control-bar-container {

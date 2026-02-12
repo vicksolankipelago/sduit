@@ -1,4 +1,4 @@
-import express from "express";
+import express, { type Request, type Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
@@ -353,12 +353,18 @@ async function main() {
   async function handleElevenLabsSession(req: Request, res: Response, agentId: string) {
     try {
       const apiKey = process.env.ELEVENLABS_API_KEY;
+      const transportQuery = typeof req.query.transport === "string"
+        ? req.query.transport.toLowerCase()
+        : undefined;
+      const transportPreference: "websocket" | "webrtc" =
+        transportQuery === "websocket" ? "websocket" : "webrtc";
 
       sessionLogger.info("=== ElevenLabs Session Request ===");
       sessionLogger.info("Configuration:", {
         agentId: agentId || "NOT PROVIDED",
         apiKeySet: !!apiKey,
         apiKeyLength: apiKey ? apiKey.length : 0,
+        transportPreference,
       });
 
       if (!agentId) {
@@ -374,52 +380,120 @@ async function main() {
         });
       }
 
-      // Get conversation token for WebRTC connection (preferred - better Safari support)
-      sessionLogger.info("Getting conversation token for WebRTC...");
-      const tokenResponse = await fetch(
-        `https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${agentId}`,
-        {
-          method: 'GET',
-          headers: {
-            'xi-api-key': apiKey,
-          },
-        }
-      );
+      const requestConversationToken = async () => {
+        const response = await fetch(
+          `https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${agentId}`,
+          {
+            method: 'GET',
+            headers: {
+              'xi-api-key': apiKey,
+            },
+          }
+        );
 
-      if (tokenResponse.ok) {
-        const data = await tokenResponse.json();
-        sessionLogger.info("ElevenLabs conversation token obtained successfully (WebRTC)");
-        return res.json({ 
-          conversationToken: data.token,
-          agentId: agentId,
-        });
+        if (!response.ok) {
+          const errorText = await response.text();
+          return { ok: false as const, errorText };
+        }
+
+        const data = await response.json();
+        const token = typeof data?.token === "string" ? data.token : undefined;
+        if (!token) {
+          return { ok: false as const, errorText: "Conversation token response missing token" };
+        }
+
+        return { ok: true as const, token };
+      };
+
+      const requestSignedUrl = async () => {
+        const response = await fetch(
+          `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${agentId}`,
+          {
+            method: 'GET',
+            headers: {
+              'xi-api-key': apiKey,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          return { ok: false as const, errorText };
+        }
+
+        const data = await response.json();
+        const signedUrl = typeof data?.signed_url === "string" ? data.signed_url : undefined;
+        if (!signedUrl) {
+          return { ok: false as const, errorText: "Signed URL response missing signed_url" };
+        }
+
+        return { ok: true as const, signedUrl };
+      };
+
+      const tryWebsocketFirst = transportPreference === "websocket";
+      const firstTransport = tryWebsocketFirst ? "websocket" : "webrtc";
+      const secondTransport = tryWebsocketFirst ? "webrtc" : "websocket";
+
+      let firstErrorText = "";
+      let secondErrorText = "";
+
+      sessionLogger.info(`Attempting ElevenLabs auth (${firstTransport} first, ${secondTransport} fallback)`);
+
+      if (tryWebsocketFirst) {
+        const signedResult = await requestSignedUrl();
+        if (signedResult.ok) {
+          sessionLogger.info("ElevenLabs signed URL obtained successfully (preferred)");
+          return res.json({
+            signedUrl: signedResult.signedUrl,
+            agentId,
+            transport: "websocket",
+          });
+        }
+        firstErrorText = signedResult.errorText;
+        sessionLogger.warn("Signed URL request failed, falling back to WebRTC token");
+
+        const tokenResult = await requestConversationToken();
+        if (tokenResult.ok) {
+          sessionLogger.info("ElevenLabs conversation token obtained successfully (fallback)");
+          return res.json({
+            conversationToken: tokenResult.token,
+            agentId,
+            transport: "webrtc",
+          });
+        }
+        secondErrorText = tokenResult.errorText;
+      } else {
+        const tokenResult = await requestConversationToken();
+        if (tokenResult.ok) {
+          sessionLogger.info("ElevenLabs conversation token obtained successfully (preferred)");
+          return res.json({
+            conversationToken: tokenResult.token,
+            agentId,
+            transport: "webrtc",
+          });
+        }
+        firstErrorText = tokenResult.errorText;
+        sessionLogger.warn("Conversation token request failed, falling back to signed URL");
+
+        const signedResult = await requestSignedUrl();
+        if (signedResult.ok) {
+          sessionLogger.info("ElevenLabs signed URL obtained successfully (fallback)");
+          return res.json({
+            signedUrl: signedResult.signedUrl,
+            agentId,
+            transport: "websocket",
+          });
+        }
+        secondErrorText = signedResult.errorText;
       }
 
-      // If conversation token fails, try signed URL for WebSocket as fallback
-      sessionLogger.info("Conversation token failed, trying signed URL...");
-      const signedUrlResponse = await fetch(
-        `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${agentId}`,
-        {
-          method: 'GET',
-          headers: {
-            'xi-api-key': apiKey,
-          },
-        }
+      const combinedError = [firstErrorText, secondErrorText].filter(Boolean).join(" | ");
+      sessionLogger.error("ElevenLabs API auth failed for both transports:", combinedError);
+      return apiResponse.serverError(
+        res,
+        "Failed to authenticate with ElevenLabs",
+        combinedError || "No auth method succeeded"
       );
-
-      if (signedUrlResponse.ok) {
-        const data = await signedUrlResponse.json();
-        sessionLogger.info("ElevenLabs signed URL obtained successfully (WebSocket fallback)");
-        return res.json({ 
-          signedUrl: data.signed_url,
-          agentId: agentId,
-        });
-      }
-
-      // Both failed - provide useful error
-      const errorText = await tokenResponse.text();
-      sessionLogger.error("ElevenLabs API error:", errorText);
-      return apiResponse.serverError(res, "Failed to authenticate with ElevenLabs", errorText);
       
     } catch (err: any) {
       sessionLogger.error("=== ElevenLabs Error ===");

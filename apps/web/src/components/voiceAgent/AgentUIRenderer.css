@@ -466,7 +466,7 @@
 .agent-ui-device-bottom-bar {
   background: var(--background-light);
   border-top: none;
-  padding: 0.25rem 0.5rem 0.55rem;
+  padding: 0.75rem 1.125rem 0.8rem;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -487,8 +487,8 @@
 }
 
 .agent-ui-device-bottom-bar .voice-control-bar-container {
-  max-width: 318px;
-  gap: 14px;
+  max-width: 300px;
+  gap: 16px;
 }
 
 .agent-ui-device-bottom-bar .voice-control-btn {
