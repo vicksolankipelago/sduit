@@ -138,6 +138,54 @@ const PROMPT_TOOL_NAME_CANDIDATES = [
   'transfer_to_agent',
   'screen_out_participant',
 ];
+const LIVE_AGENT_MESSAGE_MODULE_KEY = 'agentLiveMessage';
+
+function textFromCharacterArray(value: unknown): string | null {
+  if (!Array.isArray(value) || value.length === 0) return null;
+  const text = value
+    .map((entry) => (typeof entry === 'string' ? entry : String(entry ?? '')))
+    .join('');
+  return text.length > 0 ? text : null;
+}
+
+function extractAlignmentText(alignment: unknown): string | null {
+  if (!alignment) return null;
+
+  const queue: unknown[] = [alignment];
+  const visited = new Set<unknown>();
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current || typeof current !== 'object' || visited.has(current)) continue;
+    visited.add(current);
+
+    const payload = current as Record<string, unknown>;
+    const charactersText = textFromCharacterArray(payload.characters ?? payload.chars);
+    if (charactersText !== null) {
+      return charactersText;
+    }
+    if (typeof payload.text === 'string' && payload.text.length > 0) {
+      return payload.text;
+    }
+
+    const nestedCandidates = [
+      payload.alignment,
+      payload.audio_alignment,
+      payload.audioAlignment,
+      payload.normalizedAlignment,
+      payload.raw,
+      payload.data,
+    ];
+
+    for (const nested of nestedCandidates) {
+      if (nested && typeof nested === 'object' && !visited.has(nested)) {
+        queue.push(nested);
+      }
+    }
+  }
+
+  return null;
+}
 
 type AgentScreenEvent = {
   id?: string;
@@ -714,6 +762,7 @@ function VoiceAgentContent() {
   const assistantResponseBuffer = useRef<string>('');
   const assistantResponseStartTime = useRef<Date | null>(null);
   const currentMessageIdsRef = useRef<{ user?: string; assistant?: string }>({});
+  const lastLiveAgentMessageRef = useRef<string | null>(null);
   // Track which itemIds have been queued to prevent duplicate saves
   const queuedItemIdsRef = useRef<Set<string>>(new Set());
   // Buffer for accumulating user message text (since text comes in chunks)
@@ -757,6 +806,28 @@ function VoiceAgentContent() {
     updateModuleState(updates);
   }, [updateModuleState]);
 
+  const updateLiveAgentMessage = useCallback((message: string) => {
+    const nextMessage = typeof message === 'string' ? message : '';
+    if (
+      lastLiveAgentMessageRef.current === nextMessage &&
+      moduleStateRef.current?.[LIVE_AGENT_MESSAGE_MODULE_KEY] === nextMessage
+    ) {
+      return;
+    }
+
+    lastLiveAgentMessageRef.current = nextMessage;
+    applyModuleStateUpdates({ [LIVE_AGENT_MESSAGE_MODULE_KEY]: nextMessage });
+  }, [applyModuleStateUpdates]);
+
+  const clearLiveAgentMessage = useCallback(() => {
+    updateLiveAgentMessage('');
+  }, [updateLiveAgentMessage]);
+
+  useEffect(() => {
+    // Ensure interpolation references never render literal {$moduleData.*} placeholders.
+    clearLiveAgentMessage();
+  }, [clearLiveAgentMessage]);
+
   const clearNotificationPlanReviewFallback = useCallback(() => {
     if (notificationPlanReviewFallbackTimerRef.current) {
       clearTimeout(notificationPlanReviewFallbackTimerRef.current);
@@ -785,6 +856,7 @@ function VoiceAgentContent() {
     clearNotificationPlanReviewFallback();
     pendingNavigationRef.current = null;
     lastRecordInputRef.current = null;
+    clearLiveAgentMessage();
     setSessionStatus('DISCONNECTED');
     setActiveSpeaker('none');
     setMemberAudioLevel(0);
@@ -985,6 +1057,7 @@ function VoiceAgentContent() {
   const startNonVoiceSession = useCallback(async (journey: Journey) => {
     console.log('🚀 Starting non-voice session for journey:', journey.name);
     addLog('info', `🔇 Starting non-voice session: ${journey.name}`);
+    clearLiveAgentMessage();
 
     // ALWAYS fetch fresh journey data from database to get latest screen edits
     let journeyToUse = journey;
@@ -1042,7 +1115,7 @@ function VoiceAgentContent() {
     setLoadingJourneyId(null);
     setIsNonVoiceMode(true);
     addLog('success', `✅ Non-voice session started`);
-  }, [addLog, enableScreenRendering, setAgents]);
+  }, [addLog, clearLiveAgentMessage, enableScreenRendering, setAgents]);
 
   // Listen for toolCallAction events (from ScreenContext) for navigate_to_agent
   useEffect(() => {
@@ -1362,6 +1435,8 @@ function VoiceAgentContent() {
       startNonVoiceSession(journeyToUse);
       return;
     }
+
+    clearLiveAgentMessage();
 
     // CRITICAL: Request microphone permission FIRST, before any async work
     // This preserves the user gesture context needed for mic permission prompts
@@ -2601,6 +2676,9 @@ Important guidelines:
           // Don't set speaking state here - let audio element events handle it
         }
         assistantResponseBuffer.current += text;
+        if (assistantResponseBuffer.current) {
+          updateLiveAgentMessage(assistantResponseBuffer.current);
+        }
         const { id: messageId, isNew } = ensureMessageId();
         // Only append if not a new message (new messages already have the text)
         if (messageId && text && !isNew) {
@@ -2611,6 +2689,7 @@ Important guidelines:
         if (isDone) {
           const fullResponse = assistantResponseBuffer.current.trim();
           if (fullResponse) {
+            updateLiveAgentMessage(fullResponse);
             addLog('info', `Assistant: ${fullResponse}`);
             
             // Persona will naturally hear agent via microphone - no manual routing needed
@@ -3985,6 +4064,10 @@ Important guidelines:
         raw: alignment,
         receivedAtMs: Date.now(),
       });
+      const alignmentText = extractAlignmentText(alignment);
+      if (alignmentText !== null) {
+        updateLiveAgentMessage(alignmentText);
+      }
     },
     onVadScore: (vadScore) => {
       if (currentProviderRef.current !== 'elevenlabs') return;
@@ -4030,6 +4113,7 @@ Important guidelines:
       if (role === 'user') {
         addLog('info', `User: ${text}`);
       } else {
+        updateLiveAgentMessage(text);
         addLog('info', `Assistant: ${text}`);
       }
     },

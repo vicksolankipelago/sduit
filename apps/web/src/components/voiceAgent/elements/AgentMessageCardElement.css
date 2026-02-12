@@ -32,7 +32,7 @@
 
 .agent-message-card-message {
   color: var(--text-global-primary);
-  font-family: var(--font-family-grotesque);
+  font-family: 'Suisse Works', var(--font-family-serif);
   font-size: var(--font-size-header-1); /* Header 1 size: 32px */
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-header-1); /* 34px */

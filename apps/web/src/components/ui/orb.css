@@ -23,6 +23,14 @@
   overflow: visible;
 }
 
+.navi-icon-image {
+  width: 82%;
+  height: 82%;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+}
+
 .navi-icon-ring-outer,
 .navi-icon-ring-inner,
 .navi-icon-needle {

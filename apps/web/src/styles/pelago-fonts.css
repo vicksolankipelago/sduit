@@ -134,3 +134,45 @@
   font-style: normal;
 }
 
+/* Suisse Works - Agent message font family */
+@font-face {
+  font-family: 'Suisse Works';
+  src: url('/fonts/SuisseWorks-Book.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Suisse Works';
+  src: url('/fonts/SuisseWorks-BookItalic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Suisse Works';
+  src: url('/fonts/SuisseWorks-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Suisse Works';
+  src: url('/fonts/SuisseWorks-MediumItalic.otf') format('opentype');
+  font-weight: 500;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Suisse Works';
+  src: url('/fonts/SuisseWorks-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Suisse Works';
+  src: url('/fonts/SuisseWorks-BoldItalic.otf') format('opentype');
+  font-weight: 700;
+  font-style: italic;
+}

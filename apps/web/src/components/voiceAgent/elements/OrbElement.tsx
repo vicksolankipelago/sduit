@@ -85,6 +85,7 @@ export const OrbElement: React.FC<OrbElementProps> = ({
   const orbNode = (
     <Orb
       colors={colors}
+      iconImage={data.iconImage}
       seed={data.seed}
       agentState={runtimeAgentState}
       volumeMode={runtimeVolumeMode}

@@ -623,6 +623,8 @@ export interface OrbData {
   id: string;
   /** Optional stroke colors [primary, secondary] */
   colors?: [string, string];
+  /** Optional image path/URL for rendering orb visual instead of default compass */
+  iconImage?: string;
   /** Agent state for auto volume mode */
   agentState?: 'thinking' | 'listening' | 'talking' | null;
   /** Volume control mode - 'auto' for state-based, 'manual' for explicit volume */

@@ -843,6 +843,7 @@
                   "#A2CC6E",
                   "#DDF1C4"
                 ],
+                "iconImage": "/images/group-40842.svg",
                 "agentState": null,
                 "volumeMode": "auto"
               },
@@ -1140,6 +1141,29 @@
       ],
       "sections": [
         {
+          "id": "pq-program-summary_agent_message_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "agentMessageCard",
+              "state": {
+                "id": "pq-program-summary_agent_message",
+                "message": "{$moduleData.agentLiveMessage}",
+                "agentName": "Navi",
+                "syncWithSpeech": true
+              },
+              "style": {
+                "backgroundColor": "backgroundLight",
+                "cornerRadius": 0
+              }
+            }
+          ],
+          "position": "fixed-top",
+          "direction": "vertical",
+          "scrollable": false
+        },
+        {
           "id": "content_section",
           "title": null,
           "layout": "stack",
@@ -1153,22 +1177,6 @@
                 "height": null,
                 "direction": "vertical",
                 "isFlexible": true
-              },
-              "events": []
-            },
-            {
-              "type": "orb",
-              "state": {
-                "id": "orb_6f57f27c-07ca-44d6-9649-519847031fb3",
-                "colors": [
-                  "#A2CC6E",
-                  "#DDF1C4"
-                ],
-                "agentState": null,
-                "volumeMode": "auto"
-              },
-              "style": {
-                "size": "medium"
               },
               "events": []
             },
@@ -1215,6 +1223,29 @@
         }
       ],
       "sections": [
+        {
+          "id": "about-you_agent_message_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "agentMessageCard",
+              "state": {
+                "id": "about-you_agent_message",
+                "message": "{$moduleData.agentLiveMessage}",
+                "agentName": "Navi",
+                "syncWithSpeech": true
+              },
+              "style": {
+                "backgroundColor": "backgroundLight",
+                "cornerRadius": 0
+              }
+            }
+          ],
+          "position": "fixed-top",
+          "direction": "vertical",
+          "scrollable": false
+        },
         {
           "id": "content_section",
           "title": null,
@@ -1280,6 +1311,29 @@
         }
       ],
       "sections": [
+        {
+          "id": "outcomes_agent_message_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "agentMessageCard",
+              "state": {
+                "id": "outcomes_agent_message",
+                "message": "{$moduleData.agentLiveMessage}",
+                "agentName": "Navi",
+                "syncWithSpeech": true
+              },
+              "style": {
+                "backgroundColor": "backgroundLight",
+                "cornerRadius": 0
+              }
+            }
+          ],
+          "position": "fixed-top",
+          "direction": "vertical",
+          "scrollable": false
+        },
         {
           "id": "content_section",
           "title": null,
@@ -1490,6 +1544,29 @@
       ],
       "sections": [
         {
+          "id": "motivation_agent_message_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "agentMessageCard",
+              "state": {
+                "id": "motivation_agent_message",
+                "message": "{$moduleData.agentLiveMessage}",
+                "agentName": "Navi",
+                "syncWithSpeech": true
+              },
+              "style": {
+                "backgroundColor": "backgroundLight",
+                "cornerRadius": 0
+              }
+            }
+          ],
+          "position": "fixed-top",
+          "direction": "vertical",
+          "scrollable": false
+        },
+        {
           "id": "content_section",
           "title": null,
           "layout": "stack",
@@ -1554,6 +1631,29 @@
         }
       ],
       "sections": [
+        {
+          "id": "weekly-focus_agent_message_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "agentMessageCard",
+              "state": {
+                "id": "weekly-focus_agent_message",
+                "message": "{$moduleData.agentLiveMessage}",
+                "agentName": "Navi",
+                "syncWithSpeech": true
+              },
+              "style": {
+                "backgroundColor": "backgroundLight",
+                "cornerRadius": 0
+              }
+            }
+          ],
+          "position": "fixed-top",
+          "direction": "vertical",
+          "scrollable": false
+        },
         {
           "id": "content_section",
           "title": null,
@@ -1852,6 +1952,29 @@
       ],
       "sections": [
         {
+          "id": "cm-rewards-intro_agent_message_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "agentMessageCard",
+              "state": {
+                "id": "cm-rewards-intro_agent_message",
+                "message": "{$moduleData.agentLiveMessage}",
+                "agentName": "Navi",
+                "syncWithSpeech": true
+              },
+              "style": {
+                "backgroundColor": "backgroundLight",
+                "cornerRadius": 0
+              }
+            }
+          ],
+          "position": "fixed-top",
+          "direction": "vertical",
+          "scrollable": false
+        },
+        {
           "id": "content_section",
           "title": null,
           "layout": "stack",
@@ -2064,6 +2187,29 @@
       ],
       "sections": [
         {
+          "id": "checkin-commitment_agent_message_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "agentMessageCard",
+              "state": {
+                "id": "checkin-commitment_agent_message",
+                "message": "{$moduleData.agentLiveMessage}",
+                "agentName": "Navi",
+                "syncWithSpeech": true
+              },
+              "style": {
+                "backgroundColor": "backgroundLight",
+                "cornerRadius": 0
+              }
+            }
+          ],
+          "position": "fixed-top",
+          "direction": "vertical",
+          "scrollable": false
+        },
+        {
           "id": "content_section",
           "title": null,
           "layout": "stack",
@@ -2176,6 +2322,29 @@
       ],
       "sections": [
         {
+          "id": "pq-notification-setup_agent_message_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "agentMessageCard",
+              "state": {
+                "id": "pq-notification-setup_agent_message",
+                "message": "{$moduleData.agentLiveMessage}",
+                "agentName": "Navi",
+                "syncWithSpeech": true
+              },
+              "style": {
+                "backgroundColor": "backgroundLight",
+                "cornerRadius": 0
+              }
+            }
+          ],
+          "position": "fixed-top",
+          "direction": "vertical",
+          "scrollable": false
+        },
+        {
           "id": "content_section",
           "title": null,
           "layout": "stack",
@@ -2282,6 +2451,29 @@
         }
       ],
       "sections": [
+        {
+          "id": "pq-plan-review_agent_message_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "agentMessageCard",
+              "state": {
+                "id": "pq-plan-review_agent_message",
+                "message": "{$moduleData.agentLiveMessage}",
+                "agentName": "Navi",
+                "syncWithSpeech": true
+              },
+              "style": {
+                "backgroundColor": "backgroundLight",
+                "cornerRadius": 0
+              }
+            }
+          ],
+          "position": "fixed-top",
+          "direction": "vertical",
+          "scrollable": false
+        },
         {
           "id": "title_section",
           "title": null,

@@ -5,6 +5,7 @@ export type AgentState = null | "thinking" | "listening" | "talking";
 
 type OrbProps = {
   colors?: [string, string];
+  iconImage?: string;
   colorsRef?: React.RefObject<[string, string]>;
   resizeDebounce?: number;
   seed?: number;
@@ -23,6 +24,7 @@ const DEFAULT_COLORS: [string, string] = ["#222838", "#303B52"];
 
 export function Orb({
   colors = DEFAULT_COLORS,
+  iconImage,
   colorsRef,
   resizeDebounce = 100,
   seed,
@@ -181,17 +183,26 @@ export function Orb({
   return (
     <div className={className ? `${className} navi-orb-root` : "navi-orb-root"} style={rootStyle}>
       <div className="navi-icon-wrapper" ref={iconRef}>
-        <svg
-          className="navi-icon-svg"
-          viewBox="0 0 100 100"
-          role="img"
-          aria-label="Compass icon"
-        >
-          <circle className="navi-icon-ring-outer" cx="50" cy="50" r="34" />
-          <circle className="navi-icon-ring-inner" cx="50" cy="50" r="22" />
-          <path className="navi-icon-needle" d="M63 37 55.5 55.5 37 63 44.5 44.5Z" />
-          <circle className="navi-icon-core" cx="50" cy="50" r="3.2" />
-        </svg>
+        {iconImage ? (
+          <img
+            className="navi-icon-image"
+            src={iconImage}
+            alt="Orb icon"
+            draggable={false}
+          />
+        ) : (
+          <svg
+            className="navi-icon-svg"
+            viewBox="0 0 100 100"
+            role="img"
+            aria-label="Compass icon"
+          >
+            <circle className="navi-icon-ring-outer" cx="50" cy="50" r="34" />
+            <circle className="navi-icon-ring-inner" cx="50" cy="50" r="22" />
+            <path className="navi-icon-needle" d="M63 37 55.5 55.5 37 63 44.5 44.5Z" />
+            <circle className="navi-icon-core" cx="50" cy="50" r="3.2" />
+          </svg>
+        )}
       </div>
     </div>
   );
