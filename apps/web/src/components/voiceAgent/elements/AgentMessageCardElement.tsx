@@ -30,11 +30,58 @@ const BASE_WORD_OPACITY = 0.26;
 const MIN_WORD_REVEAL_DURATION_MS = 90;
 const FALLBACK_WORD_STEP_MS = 120;
 const FALLBACK_WORD_REVEAL_DURATION_MS = 220;
+const MIN_PROJECTED_WORD_STEP_MS = 90;
+const MAX_PROJECTED_WORD_STEP_MS = 420;
+const ALIGNMENT_TAIL_PADDING_MS = 240;
 
 function clamp01(value: number): number {
   if (value <= 0) return 0;
   if (value >= 1) return 1;
   return value;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  if (value < min) return min;
+  if (value > max) return max;
+  return value;
+}
+
+function getMedian(values: number[]): number | null {
+  const filtered = values.filter((value) => Number.isFinite(value) && value > 0);
+  if (filtered.length === 0) return null;
+
+  const sorted = [...filtered].sort((a, b) => a - b);
+  const middleIndex = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 0) {
+    return (sorted[middleIndex - 1] + sorted[middleIndex]) / 2;
+  }
+  return sorted[middleIndex];
+}
+
+function getProjectedWordStepMs(words: AlignmentWordTiming[]): number {
+  if (words.length <= 1) return FALLBACK_WORD_STEP_MS;
+
+  const startGaps: number[] = [];
+  const durations: number[] = [];
+
+  for (let index = 0; index < words.length; index += 1) {
+    const current = words[index];
+    durations.push(current.endMs - current.startMs);
+
+    if (index === 0) continue;
+    const previous = words[index - 1];
+    startGaps.push(current.startMs - previous.startMs);
+  }
+
+  const gapMedian = getMedian(startGaps);
+  const durationMedian = getMedian(durations);
+  const fallbackCandidate = gapMedian ?? durationMedian ?? FALLBACK_WORD_STEP_MS;
+  const blendedCandidate =
+    gapMedian !== null && durationMedian !== null
+      ? (gapMedian * 0.7) + (durationMedian * 0.3)
+      : fallbackCandidate;
+
+  return clamp(blendedCandidate, MIN_PROJECTED_WORD_STEP_MS, MAX_PROJECTED_WORD_STEP_MS);
 }
 
 function toStringArray(value: unknown): string[] {
@@ -584,6 +631,23 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
     if (!normalizedAlignment.text.trim()) return true;
     return hasSufficientWordOverlap(data.message ?? '', normalizedAlignment.text);
   }, [data.message, normalizedAlignment, syncWithSpeech, totalWordCount]);
+  const projectedAlignmentStepMs = useMemo(() => {
+    if (!shouldUseAlignment || !normalizedAlignment) return FALLBACK_WORD_STEP_MS;
+    return getProjectedWordStepMs(normalizedAlignment.words);
+  }, [normalizedAlignment, shouldUseAlignment]);
+  const projectedAlignmentTailEndMs = useMemo(() => {
+    if (!shouldUseAlignment || !normalizedAlignment || totalWordCount === 0) return 0;
+
+    const alignmentWordCount = normalizedAlignment.words.length;
+    const lastAlignedWordEndMs = normalizedAlignment.words[alignmentWordCount - 1]?.endMs ?? 0;
+    const remainingWordCount = Math.max(totalWordCount - alignmentWordCount, 0);
+
+    if (remainingWordCount === 0) {
+      return lastAlignedWordEndMs;
+    }
+
+    return lastAlignedWordEndMs + (remainingWordCount * projectedAlignmentStepMs);
+  }, [normalizedAlignment, projectedAlignmentStepMs, shouldUseAlignment, totalWordCount]);
 
   const [elapsedSpeechMs, setElapsedSpeechMs] = useState<number | null>(null);
   const [fallbackElapsedSpeechMs, setFallbackElapsedSpeechMs] = useState<number | null>(null);
@@ -640,14 +704,13 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
       }
 
       const elapsedMs = performance.now() - startedAt;
-      const lastWordEndMs = normalizedAlignment.words[normalizedAlignment.words.length - 1]?.endMs ?? 0;
       setElapsedSpeechMs((currentValue) => {
         if (currentValue === null) return elapsedMs;
         if (Math.abs(currentValue - elapsedMs) < 16) return currentValue;
         return elapsedMs;
       });
 
-      if (elapsedMs < lastWordEndMs + 140) {
+      if (elapsedMs < projectedAlignmentTailEndMs + ALIGNMENT_TAIL_PADDING_MS) {
         animationFrameId = window.requestAnimationFrame(tick);
       }
     };
@@ -659,7 +722,7 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
         window.cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [normalizedAlignment, shouldUseAlignment, totalWordCount]);
+  }, [projectedAlignmentTailEndMs, shouldUseAlignment, totalWordCount]);
 
   useEffect(() => {
     if (!syncWithSpeech || shouldUseAlignment || totalWordCount === 0) {
@@ -730,9 +793,22 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
     }
 
     if (wordIndex >= alignmentWordCount) {
+      const lastAlignedWordEndMs = normalizedAlignment.words[alignmentWordCount - 1]?.endMs ?? 0;
+      const extrapolatedWordIndex = wordIndex - alignmentWordCount;
+      const extrapolatedStartMs = lastAlignedWordEndMs + (extrapolatedWordIndex * projectedAlignmentStepMs);
+      const extrapolatedDurationMs = Math.max(
+        MIN_WORD_REVEAL_DURATION_MS,
+        projectedAlignmentStepMs * 0.92
+      );
+      const extrapolatedProgress = clamp01(
+        (activeElapsedSpeechMs - extrapolatedStartMs) / extrapolatedDurationMs
+      );
+      const opacity = BASE_WORD_OPACITY + ((1 - BASE_WORD_OPACITY) * extrapolatedProgress);
+      const blurPx = (1 - extrapolatedProgress) * 1.4;
+
       return {
-        opacity: BASE_WORD_OPACITY,
-        filter: 'blur(1.4px)',
+        opacity,
+        filter: `blur(${blurPx.toFixed(2)}px)`,
       };
     }
 
