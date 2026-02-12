@@ -2073,9 +2073,14 @@ Important guidelines:
           addLog('info', `🔗 Passing ${Object.keys(dynamicVariables).length} dynamic variable(s) to ElevenLabs`);
         }
         
-        addLog('info', `📝 PROMPT OVERRIDE: ${combinedInstructions.length} chars being sent to ElevenLabs`);
-        addLog('info', `📝 Override starts with: "${combinedInstructions.substring(0, 150).replace(/\n/g, ' ')}..."`);
-        addLog('info', `📝 Override JSON size: ${new TextEncoder().encode(JSON.stringify({ agent: { prompt: { prompt: combinedInstructions } } })).length} bytes`);
+        const usePromptOverride = journeyToUse.elevenLabsConfig?.usePromptOverride !== false;
+        if (usePromptOverride) {
+          addLog('info', `📝 PROMPT OVERRIDE: ${combinedInstructions.length} chars being sent to ElevenLabs`);
+          addLog('info', `📝 Override starts with: "${combinedInstructions.substring(0, 150).replace(/\n/g, ' ')}..."`);
+          addLog('info', `📝 Override JSON size: ${new TextEncoder().encode(JSON.stringify({ agent: { prompt: { prompt: combinedInstructions } } })).length} bytes`);
+        } else {
+          addLog('info', '📝 Prompt override DISABLED - using ElevenLabs dashboard prompt (supports complex multi-agent workflows)');
+        }
         const shouldUsePreflightMicStream = currentProviderRef.current === 'azure';
         
         await connect({
@@ -2090,7 +2095,7 @@ Important guidelines:
           elevenLabsAgentId: journeyToUse.elevenLabsConfig?.agentId,
           elevenLabsVoiceId: journeyToUse.elevenLabsConfig?.voiceId,
           dynamicVariables: Object.keys(dynamicVariables).length > 0 ? dynamicVariables : undefined,
-          promptOverride: combinedInstructions,
+          promptOverride: usePromptOverride ? combinedInstructions : undefined,
         });
         if (!shouldUsePreflightMicStream) {
           // ElevenLabs handles microphone capture internally after permission is granted.

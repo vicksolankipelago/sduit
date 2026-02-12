@@ -1657,6 +1657,28 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                           Get your Agent ID from the ElevenLabs Conversational AI dashboard
                         </div>
                       </div>
+                      <div className="journey-agent-field" style={{ marginTop: '12px' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={currentJourney.elevenLabsConfig?.usePromptOverride ?? true}
+                            onChange={(e) => setCurrentJourney({
+                              ...currentJourney,
+                              elevenLabsConfig: {
+                                ...currentJourney.elevenLabsConfig,
+                                usePromptOverride: e.target.checked
+                              }
+                            })}
+                            disabled={disabled || !isAdmin}
+                          />
+                          <span>Override ElevenLabs prompt with local prompt</span>
+                        </label>
+                        <div className="journey-provider-config-hint">
+                          {currentJourney.elevenLabsConfig?.usePromptOverride !== false
+                            ? 'The agent prompt defined here will be sent to ElevenLabs as an override.'
+                            : 'Using the prompt configured in the ElevenLabs dashboard. This supports complex multi-agent workflows managed entirely by ElevenLabs.'}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
