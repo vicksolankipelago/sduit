@@ -200,6 +200,10 @@
   box-shadow: none !important;
 }
 
+.agent-ui-device-screen .screen-preview-fixed-top {
+  border-bottom: none !important;
+}
+
 .agent-ui-device-screen .screen-preview-container {
   border-radius: 0 !important;
 }
@@ -257,7 +261,7 @@
 .agent-ui-device-screen .screen-preview-container:not([data-screen-id="pq-plan-review"]) p,
 .agent-ui-device-screen .screen-preview-container:not([data-screen-id="pq-plan-review"]) span,
 .agent-ui-device-screen .screen-preview-container:not([data-screen-id="pq-plan-review"]) label {
-  font-size: 0.6875rem !important;
+  font-size: 0.75rem !important;
   margin: 0 !important;
   line-height: 1.3 !important;
 }

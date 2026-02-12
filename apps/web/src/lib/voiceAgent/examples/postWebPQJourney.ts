@@ -1036,29 +1036,6 @@ function createPostWebPQScreens(): Screen[] {
               },
             },
             {
-              type: 'animatedImage',
-              state: {
-                id: 'notification_animation',
-                lottieName: 'COLOR_Pelago_WalkWithPhone',
-              },
-              style: {
-                width: 280,
-                height: 280,
-              },
-            },
-            {
-              type: 'textBlock',
-              state: {
-                id: 'permissions_header',
-                text: 'Stay on track with notifications',
-              },
-              style: {
-                style: 'heading1',
-                alignment: 'center',
-                color: 'primary',
-              },
-            },
-            {
               type: 'textBlock',
               state: {
                 id: 'permissions_description',

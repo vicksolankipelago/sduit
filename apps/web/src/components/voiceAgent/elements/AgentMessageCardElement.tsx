@@ -26,6 +26,15 @@ interface MessageToken {
   wordIndex: number | null;
 }
 
+const BASE_WORD_OPACITY = 0.26;
+const MIN_WORD_REVEAL_DURATION_MS = 90;
+
+function clamp01(value: number): number {
+  if (value <= 0) return 0;
+  if (value >= 1) return 1;
+  return value;
+}
+
 function toStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.map((item) => (typeof item === 'string' ? item : String(item)));
@@ -201,7 +210,7 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
     return hasSufficientWordOverlap(data.message ?? '', normalizedAlignment.text);
   }, [data.message, normalizedAlignment, syncWithSpeech, totalWordCount]);
 
-  const [visibleWordCount, setVisibleWordCount] = useState(totalWordCount);
+  const [elapsedSpeechMs, setElapsedSpeechMs] = useState<number | null>(null);
   const animationStartRef = useRef<number | null>(null);
   const previousAlignmentTextRef = useRef<string>('');
   const previousAlignmentReceivedAtRef = useRef<number | null>(null);
@@ -211,7 +220,7 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
       animationStartRef.current = null;
       previousAlignmentTextRef.current = '';
       previousAlignmentReceivedAtRef.current = null;
-      setVisibleWordCount(totalWordCount);
+      setElapsedSpeechMs(null);
       return;
     }
 
@@ -228,12 +237,12 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
 
     if (!isContinuation) {
       animationStartRef.current = performance.now();
-      setVisibleWordCount(0);
+      setElapsedSpeechMs(0);
     }
 
     previousAlignmentTextRef.current = normalizedAlignment.text;
     previousAlignmentReceivedAtRef.current = currentReceivedAt;
-  }, [agentSpeechAlignment?.receivedAtMs, normalizedAlignment, shouldUseAlignment, totalWordCount]);
+  }, [agentSpeechAlignment?.receivedAtMs, normalizedAlignment, shouldUseAlignment]);
 
   useEffect(() => {
     if (!shouldUseAlignment || !normalizedAlignment || totalWordCount === 0) return;
@@ -246,24 +255,14 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
       }
 
       const elapsedMs = performance.now() - startedAt;
-      let visibleAlignedWords = 0;
+      const lastWordEndMs = normalizedAlignment.words[normalizedAlignment.words.length - 1]?.endMs ?? 0;
+      setElapsedSpeechMs((currentValue) => {
+        if (currentValue === null) return elapsedMs;
+        if (Math.abs(currentValue - elapsedMs) < 16) return currentValue;
+        return elapsedMs;
+      });
 
-      for (const word of normalizedAlignment.words) {
-        if (elapsedMs >= word.endMs) {
-          visibleAlignedWords += 1;
-        } else {
-          break;
-        }
-      }
-
-      const progress = normalizedAlignment.words.length > 0
-        ? Math.min(1, visibleAlignedWords / normalizedAlignment.words.length)
-        : 1;
-      const nextVisibleWordCount = Math.max(0, Math.min(totalWordCount, Math.ceil(progress * totalWordCount)));
-
-      setVisibleWordCount((currentValue) => (currentValue === nextVisibleWordCount ? currentValue : nextVisibleWordCount));
-
-      if (progress < 1) {
+      if (elapsedMs < lastWordEndMs + 140) {
         animationFrameId = window.requestAnimationFrame(tick);
       }
     };
@@ -276,6 +275,38 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
       }
     };
   }, [normalizedAlignment, shouldUseAlignment, totalWordCount]);
+
+  const getWordVisualState = (wordIndex: number | null): React.CSSProperties => {
+    if (wordIndex === null || !shouldUseAlignment || !normalizedAlignment || elapsedSpeechMs === null) {
+      return { opacity: 1, filter: 'blur(0px)' };
+    }
+
+    const alignmentWordCount = normalizedAlignment.words.length;
+    if (alignmentWordCount === 0) {
+      return { opacity: 1, filter: 'blur(0px)' };
+    }
+
+    const mappedAlignmentWordIndex = totalWordCount <= 1
+      ? 0
+      : Math.min(
+          alignmentWordCount - 1,
+          Math.round((wordIndex / Math.max(totalWordCount - 1, 1)) * Math.max(alignmentWordCount - 1, 0))
+        );
+    const wordTiming = normalizedAlignment.words[mappedAlignmentWordIndex];
+    if (!wordTiming) {
+      return { opacity: 1, filter: 'blur(0px)' };
+    }
+
+    const revealDurationMs = Math.max(MIN_WORD_REVEAL_DURATION_MS, wordTiming.endMs - wordTiming.startMs);
+    const revealProgress = clamp01((elapsedSpeechMs - wordTiming.startMs) / revealDurationMs);
+    const opacity = BASE_WORD_OPACITY + ((1 - BASE_WORD_OPACITY) * revealProgress);
+    const blurPx = (1 - revealProgress) * 1.4;
+
+    return {
+      opacity,
+      filter: `blur(${blurPx.toFixed(2)}px)`,
+    };
+  };
 
   const getCardStyle = (): React.CSSProperties => {
     const styles: React.CSSProperties = {};
@@ -336,11 +367,11 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
             );
           }
 
-          const isVisible = token.wordIndex !== null && token.wordIndex < visibleWordCount;
           return (
             <span
               key={`word-${tokenIndex}`}
-              className={`agent-message-card-word ${isVisible ? 'visible' : 'hidden'}`}
+              className="agent-message-card-word"
+              style={getWordVisualState(token.wordIndex)}
             >
               {token.text}
             </span>
