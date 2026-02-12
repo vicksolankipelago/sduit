@@ -28,6 +28,8 @@ interface MessageToken {
 
 const BASE_WORD_OPACITY = 0.26;
 const MIN_WORD_REVEAL_DURATION_MS = 90;
+const FALLBACK_WORD_STEP_MS = 120;
+const FALLBACK_WORD_REVEAL_DURATION_MS = 220;
 
 function clamp01(value: number): number {
   if (value <= 0) return 0;
@@ -211,7 +213,9 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
   }, [data.message, normalizedAlignment, syncWithSpeech, totalWordCount]);
 
   const [elapsedSpeechMs, setElapsedSpeechMs] = useState<number | null>(null);
+  const [fallbackElapsedSpeechMs, setFallbackElapsedSpeechMs] = useState<number | null>(null);
   const animationStartRef = useRef<number | null>(null);
+  const fallbackAnimationStartRef = useRef<number | null>(null);
   const previousAlignmentTextRef = useRef<string>('');
   const previousAlignmentReceivedAtRef = useRef<number | null>(null);
 
@@ -276,9 +280,65 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
     };
   }, [normalizedAlignment, shouldUseAlignment, totalWordCount]);
 
+  useEffect(() => {
+    if (!syncWithSpeech || shouldUseAlignment || totalWordCount === 0) {
+      fallbackAnimationStartRef.current = null;
+      setFallbackElapsedSpeechMs(null);
+      return;
+    }
+
+    fallbackAnimationStartRef.current = performance.now();
+    setFallbackElapsedSpeechMs(0);
+
+    const totalRevealWindowMs = (Math.max(totalWordCount - 1, 0) * FALLBACK_WORD_STEP_MS) + 420;
+    let animationFrameId = 0;
+
+    const tick = () => {
+      const startedAt = fallbackAnimationStartRef.current ?? performance.now();
+      if (fallbackAnimationStartRef.current === null) {
+        fallbackAnimationStartRef.current = startedAt;
+      }
+
+      const elapsedMs = performance.now() - startedAt;
+      setFallbackElapsedSpeechMs((currentValue) => {
+        if (currentValue === null) return elapsedMs;
+        if (Math.abs(currentValue - elapsedMs) < 16) return currentValue;
+        return elapsedMs;
+      });
+
+      if (elapsedMs < totalRevealWindowMs) {
+        animationFrameId = window.requestAnimationFrame(tick);
+      }
+    };
+
+    animationFrameId = window.requestAnimationFrame(tick);
+
+    return () => {
+      if (animationFrameId) {
+        window.cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [data.message, shouldUseAlignment, syncWithSpeech, totalWordCount]);
+
   const getWordVisualState = (wordIndex: number | null): React.CSSProperties => {
-    if (wordIndex === null || !shouldUseAlignment || !normalizedAlignment || elapsedSpeechMs === null) {
-      return { opacity: 1, filter: 'blur(0px)' };
+    if (wordIndex === null) return { opacity: 1, filter: 'blur(0px)' };
+
+    if (!shouldUseAlignment || !normalizedAlignment || elapsedSpeechMs === null) {
+      if (!syncWithSpeech || fallbackElapsedSpeechMs === null) {
+        return { opacity: 1, filter: 'blur(0px)' };
+      }
+
+      const fallbackStartMs = wordIndex * FALLBACK_WORD_STEP_MS;
+      const fallbackProgress = clamp01(
+        (fallbackElapsedSpeechMs - fallbackStartMs) / FALLBACK_WORD_REVEAL_DURATION_MS
+      );
+      const opacity = BASE_WORD_OPACITY + ((1 - BASE_WORD_OPACITY) * fallbackProgress);
+      const blurPx = (1 - fallbackProgress) * 1.2;
+
+      return {
+        opacity,
+        filter: `blur(${blurPx.toFixed(2)}px)`,
+      };
     }
 
     const alignmentWordCount = normalizedAlignment.words.length;

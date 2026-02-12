@@ -52,6 +52,7 @@ export function Orb({
   const smoothScaleRef = useRef(1);
   const rotationDegreesRef = useRef(0);
   const rotationSpeedRef = useRef(0);
+  const [iconLoadFailed, setIconLoadFailed] = React.useState(false);
 
   useEffect(() => {
     stateRef.current = agentState;
@@ -72,6 +73,10 @@ export function Orb({
       manualOutput ?? outputVolumeRef?.current ?? getOutputVolume?.() ?? 0,
     );
   }, [manualOutput, outputVolumeRef, getOutputVolume]);
+
+  useEffect(() => {
+    setIconLoadFailed(false);
+  }, [iconImage]);
 
   useEffect(() => {
     let frameId = 0;
@@ -180,17 +185,48 @@ export function Orb({
     [colors],
   );
 
+  const resolvedIconSrc = useMemo(() => {
+    if (!iconImage) return null;
+
+    const trimmed = iconImage.trim();
+    if (!trimmed) return null;
+
+    // Keep explicit URLs/paths untouched.
+    if (
+      trimmed.startsWith("http://") ||
+      trimmed.startsWith("https://") ||
+      trimmed.startsWith("/") ||
+      trimmed.startsWith("data:")
+    ) {
+      return trimmed;
+    }
+
+    // If extension is present, assume assets live under /images.
+    if (/\.(svg|png|jpg|jpeg|webp)$/i.test(trimmed)) {
+      return `/images/${trimmed}`;
+    }
+
+    // Match existing image conventions used by SDUI image elements.
+    if (trimmed.startsWith("Colour") || trimmed.startsWith("Mono")) {
+      return `/illustrations/${trimmed}.svg`;
+    }
+
+    return `/images/${trimmed}.png`;
+  }, [iconImage]);
+
   return (
     <div className={className ? `${className} navi-orb-root` : "navi-orb-root"} style={rootStyle}>
       <div className="navi-icon-wrapper" ref={iconRef}>
         {iconImage ? (
           <img
             className="navi-icon-image"
-            src={iconImage}
+            src={resolvedIconSrc ?? iconImage}
             alt="Orb icon"
             draggable={false}
+            onError={() => setIconLoadFailed(true)}
           />
-        ) : (
+        ) : null}
+        {!iconImage || iconLoadFailed ? (
           <svg
             className="navi-icon-svg"
             viewBox="0 0 100 100"
@@ -202,7 +238,7 @@ export function Orb({
             <path className="navi-icon-needle" d="M63 37 55.5 55.5 37 63 44.5 44.5Z" />
             <circle className="navi-icon-core" cx="50" cy="50" r="3.2" />
           </svg>
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -262,7 +298,8 @@ function getTargetScale(
     return 0.99 + Math.sin(elapsed * 2.2) * 0.02;
   }
 
-  return 1;
+  // Subtle idle breathing so scale animation still exists even without active speech/listening.
+  return 0.99 + Math.sin(elapsed * 2.1) * 0.015;
 }
 
 function getTargetRotationSpeed(state: AgentState, energy: number) {
@@ -274,7 +311,8 @@ function getTargetRotationSpeed(state: AgentState, energy: number) {
     case "thinking":
       return 14;
     default:
-      return 0;
+      // Keep a gentle idle rotation.
+      return 7;
   }
 }
 
