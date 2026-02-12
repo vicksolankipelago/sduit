@@ -263,7 +263,7 @@ function getReachableScreenIds(screens: AgentScreen[], startScreenId: string): s
 function hasEmbeddedScreenPromptSections(agentPrompt: string | undefined): boolean {
   const prompt = (agentPrompt || '').trim();
   if (!prompt) return false;
-  return /^##\s*SCREEN:/im.test(prompt) || /^#\s*Screen instructions/im.test(prompt);
+  return /^(?:##\s*)?SCREEN:\s*\S+/im.test(prompt) || /^#\s*Screen instructions/im.test(prompt);
 }
 
 function getPromptReferencedScreenIds(

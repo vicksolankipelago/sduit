@@ -27,6 +27,16 @@ export const OpenQuestionElement: React.FC<OpenQuestionElementProps> = ({
   const elementIdRef = useRef<string>(data.id);
   const summaryShownAtRef = useRef<number | null>(null); // Track when summary was shown
 
+  const coerceToText = (value: unknown): string => {
+    if (typeof value === 'string') return value.trim();
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    if (value && typeof value === 'object') {
+      const textCandidate = (value as { text?: unknown }).text;
+      if (typeof textCandidate === 'string') return textCandidate.trim();
+    }
+    return '';
+  };
+
   // Reset state when screen changes or element ID changes
   useEffect(() => {
     const screenId = currentScreen?.id;
@@ -96,24 +106,27 @@ export const OpenQuestionElement: React.FC<OpenQuestionElementProps> = ({
     };
     
     const title = extractValue(titleRaw) as string | undefined;
-    const summary = extractValue(summaryRaw) as string | undefined;
-    const description = extractValue(descriptionRaw) as string | undefined;
+    const summary = extractValue(summaryRaw);
+    const description = extractValue(descriptionRaw);
     const timestamp = extractValue(timestampRaw) as number | undefined;
+    const summaryText = coerceToText(summary);
+    const descriptionText = coerceToText(description);
+    const displaySummary = summaryText || descriptionText;
 
     console.log('📝 OpenQuestionElement: State check', { 
       title, 
-      summary, 
+      summary: displaySummary,
       timestamp, 
       processedTimestamp,
       hasTitle: !!title,
-      hasSummary: !!summary && summary.length > 0,
+      hasSummary: displaySummary.length > 0,
       timestampMatch: timestamp === processedTimestamp
     });
 
     // Only process if we have valid data
-    if (title && summary && summary.length > 0) {
+    if (title && displaySummary.length > 0) {
       // Use timestamp for deduplication if available, otherwise use title+summary combination
-      const dedupeKey = timestamp ?? `${title}:${summary}`;
+      const dedupeKey = timestamp ?? `${title}:${displaySummary}`;
       const currentDedupeKey = processedTimestamp ?? (recordedTitle && recordedSummary ? `${recordedTitle}:${recordedSummary}` : null);
       
       // Skip if we've already processed this exact update
@@ -122,13 +135,13 @@ export const OpenQuestionElement: React.FC<OpenQuestionElementProps> = ({
         return;
       }
       
-      console.log('📝 OpenQuestionElement: Processing record_input', { title, summary, timestamp, dedupeKey });
+      console.log('📝 OpenQuestionElement: Processing record_input', { title, summary: displaySummary, timestamp, dedupeKey });
       
       // Use timestamp if available, otherwise use a numeric key based on title+summary
       setProcessedTimestamp(timestamp ?? Date.now());
       setRecordedTitle(title);
-      setRecordedSummary(summary);
-      setRecordedDescription(description || null);
+      setRecordedSummary(displaySummary);
+      setRecordedDescription(descriptionText || null);
 
       // Animate and show summary immediately so captured input appears without UI lag.
       setQuestionMinimized(true);
@@ -151,13 +164,15 @@ export const OpenQuestionElement: React.FC<OpenQuestionElementProps> = ({
       data-element-id={data.id}
     >
       {showSummary && recordedTitle && recordedSummary ? (
-        // Summary state - show title as caption and summary as header
+        // Summary state - show title + captured text in a card
         <div className="open-question-summary">
-          <div className="open-question-title pelago-caption-2-regular">
-            {recordedTitle}
-          </div>
-          <div className="open-question-summary-text pelago-header-1">
-            {recordedSummary}
+          <div className="open-question-summary-card">
+            <div className="open-question-title pelago-caption-2-regular">
+              {recordedTitle}
+            </div>
+            <div className="open-question-summary-text pelago-header-2">
+              {recordedSummary}
+            </div>
           </div>
         </div>
       ) : (

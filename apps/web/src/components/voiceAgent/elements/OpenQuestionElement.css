@@ -36,6 +36,18 @@
   animation: fadeInUp 0.6s ease;
 }
 
+.open-question-summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 8px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--background-mint-green, #99D6AE);
+  background: var(--background-light-tea-green, #EEF9F1);
+  box-sizing: border-box;
+}
+
 .open-question-title {
   color: var(--text-global-tertiary);
   font-family: var(--font-family-grotesque);
@@ -47,9 +59,13 @@
 .open-question-summary-text {
   color: var(--text-global-primary);
   font-family: var(--font-family-grotesque);
-  font-size: var(--font-size-header-1);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-header-1);
+  font-size: var(--font-size-header-2);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-header-2);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 @keyframes fadeInUp {
@@ -62,4 +78,3 @@
     transform: translateY(0);
   }
 }
-

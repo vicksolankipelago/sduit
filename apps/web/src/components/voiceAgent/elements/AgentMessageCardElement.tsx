@@ -65,40 +65,112 @@ function normalizeToMs(values: number[], maxThresholdForSeconds: number): number
   return values;
 }
 
-function normalizeAlignment(raw: unknown): NormalizedAlignment | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const payload = raw as Record<string, unknown>;
+const ALIGNMENT_CHARACTER_KEYS = ['characters', 'chars'];
+const ALIGNMENT_START_TIME_KEYS = [
+  'char_start_times_ms',
+  'charStartTimesMs',
+  'character_start_times_ms',
+  'characterStartTimesMs',
+  'char_start_times',
+  'charStartTimes',
+  'character_start_times',
+  'characterStartTimes',
+  'start_times_ms',
+  'startTimesMs',
+  'start_times',
+  'startTimes',
+];
+const ALIGNMENT_DURATION_KEYS = [
+  'char_durations_ms',
+  'charDurationsMs',
+  'character_durations_ms',
+  'characterDurationsMs',
+  'char_durations',
+  'charDurations',
+  'character_durations',
+  'characterDurations',
+  'durations_ms',
+  'durationsMs',
+  'durations',
+];
+const ALIGNMENT_WORD_LIST_KEYS = [
+  'words',
+  'word_timings',
+  'wordTimings',
+  'word_alignment',
+  'wordAlignment',
+  'alignment_words',
+  'alignmentWords',
+];
+const ALIGNMENT_WORD_TEXT_KEYS = ['text', 'word', 'token', 'value'];
+const ALIGNMENT_WORD_START_KEYS = [
+  'start_ms',
+  'startMs',
+  'start_time_ms',
+  'startTimeMs',
+  'start',
+  'start_time',
+  'startTime',
+];
+const ALIGNMENT_WORD_END_KEYS = [
+  'end_ms',
+  'endMs',
+  'end_time_ms',
+  'endTimeMs',
+  'end',
+  'end_time',
+  'endTime',
+];
+const ALIGNMENT_WORD_DURATION_KEYS = [
+  'duration_ms',
+  'durationMs',
+  'duration',
+  'word_duration_ms',
+  'wordDurationMs',
+];
 
-  const characters = toStringArray(payload.characters ?? payload.chars);
-  if (!characters.length) return null;
+function toRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+  return value as Record<string, unknown>;
+}
 
-  const startCandidates = normalizeToMs(
-    toNumberArray(
-      payload.char_start_times_ms
-      ?? payload.charStartTimesMs
-      ?? payload.character_start_times_ms
-      ?? payload.characterStartTimesMs
-      ?? payload.char_start_times
-      ?? payload.charStartTimes
-      ?? payload.character_start_times
-      ?? payload.characterStartTimes
-    ),
-    120
-  );
-  const durationCandidates = normalizeToMs(
-    toNumberArray(
-      payload.char_durations_ms
-      ?? payload.charDurationsMs
-      ?? payload.character_durations_ms
-      ?? payload.characterDurationsMs
-      ?? payload.char_durations
-      ?? payload.charDurations
-      ?? payload.character_durations
-      ?? payload.characterDurations
-    ),
-    20
-  );
+function getFirstDefinedValue(payload: Record<string, unknown>, keys: string[]): unknown {
+  for (const key of keys) {
+    const value = payload[key];
+    if (value !== undefined && value !== null) {
+      return value;
+    }
+  }
+  return undefined;
+}
 
+function getNumberArrayFromKeys(payload: Record<string, unknown>, keys: string[]): number[] {
+  return toNumberArray(getFirstDefinedValue(payload, keys));
+}
+
+function getFirstFiniteNumber(payload: Record<string, unknown>, keys: string[]): number | null {
+  for (const key of keys) {
+    const candidate = payload[key];
+    if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+      return candidate;
+    }
+    if (typeof candidate === 'string') {
+      const parsed = Number(candidate);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+  }
+  return null;
+}
+
+function buildWordTimingsFromCharacters(
+  characters: string[],
+  startCandidates: number[],
+  durationCandidates: number[]
+): AlignmentWordTiming[] {
   const starts: number[] = [];
   const durations: number[] = [];
 
@@ -143,12 +215,164 @@ function normalizeAlignment(raw: unknown): NormalizedAlignment | null {
     words.push({ startMs: currentWordStart, endMs: currentWordEnd });
   }
 
+  return words;
+}
+
+function parseWordAlignmentPayload(payload: Record<string, unknown>): NormalizedAlignment | null {
+  const rawWords = getFirstDefinedValue(payload, ALIGNMENT_WORD_LIST_KEYS);
+  if (!Array.isArray(rawWords)) return null;
+
+  const wordEntries = rawWords
+    .map((entry) => toRecord(entry))
+    .filter((entry): entry is Record<string, unknown> => entry !== null);
+  if (!wordEntries.length) return null;
+
+  const entriesWithTiming = wordEntries
+    .map((entry) => {
+      const start = getFirstFiniteNumber(entry, ALIGNMENT_WORD_START_KEYS);
+      if (start === null) return null;
+
+      const entryText = getFirstDefinedValue(entry, ALIGNMENT_WORD_TEXT_KEYS);
+      const text = typeof entryText === 'string' && entryText.trim().length > 0
+        ? entryText.trim()
+        : '';
+
+      const directEnd = getFirstFiniteNumber(entry, ALIGNMENT_WORD_END_KEYS);
+      if (directEnd !== null) {
+        return { start, end: directEnd, text };
+      }
+
+      const duration = getFirstFiniteNumber(entry, ALIGNMENT_WORD_DURATION_KEYS);
+      if (duration !== null) {
+        return { start, end: start + duration, text };
+      }
+
+      return { start, end: start + 0.2, text };
+    })
+    .filter((entry): entry is { start: number; end: number; text: string } => entry !== null);
+
+  if (!entriesWithTiming.length) return null;
+
+  const startRaw = entriesWithTiming.map((entry) => entry.start);
+  const endRaw = entriesWithTiming.map((entry) => entry.end);
+  const startMsValues = normalizeToMs(startRaw, 120);
+  const endMsValues = normalizeToMs(endRaw, 120);
+
+  const words: AlignmentWordTiming[] = [];
+  let textParts: string[] = [];
+
+  for (let index = 0; index < entriesWithTiming.length; index += 1) {
+    const startMs = startMsValues[index];
+    const endMsCandidate = endMsValues[index];
+    if (!Number.isFinite(startMs)) continue;
+
+    const safeEndMs = Number.isFinite(endMsCandidate)
+      ? Math.max(startMs + 1, endMsCandidate)
+      : startMs + 120;
+    words.push({ startMs: Math.max(0, startMs), endMs: Math.max(0, safeEndMs) });
+
+    if (entriesWithTiming[index].text.length > 0) {
+      textParts.push(entriesWithTiming[index].text);
+    }
+  }
+
+  if (!words.length) return null;
+
+  const text = textParts.join(' ').trim();
+  const fallbackText = typeof payload.text === 'string' ? payload.text.trim() : '';
+  return {
+    text: text.length > 0 ? text : fallbackText,
+    words,
+  };
+}
+
+function parseCharacterAlignmentPayload(payload: Record<string, unknown>): NormalizedAlignment | null {
+  const characters = toStringArray(getFirstDefinedValue(payload, ALIGNMENT_CHARACTER_KEYS));
+  if (!characters.length) return null;
+
+  const startCandidates = normalizeToMs(
+    getNumberArrayFromKeys(payload, ALIGNMENT_START_TIME_KEYS),
+    120
+  );
+  const durationCandidates = normalizeToMs(
+    getNumberArrayFromKeys(payload, ALIGNMENT_DURATION_KEYS),
+    20
+  );
+  const words = buildWordTimingsFromCharacters(characters, startCandidates, durationCandidates);
   if (!words.length) return null;
 
   return {
     text: characters.join(''),
     words,
   };
+}
+
+function parseAlignmentPayload(payload: Record<string, unknown>): NormalizedAlignment | null {
+  const characterAlignment = parseCharacterAlignmentPayload(payload);
+  if (characterAlignment) return characterAlignment;
+
+  const wordAlignment = parseWordAlignmentPayload(payload);
+  if (wordAlignment) return wordAlignment;
+
+  return null;
+}
+
+function normalizeAlignment(raw: unknown): NormalizedAlignment | null {
+  const root = toRecord(raw);
+  if (!root) return null;
+
+  const queue: Record<string, unknown>[] = [root];
+  const visited = new Set<unknown>();
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current || visited.has(current)) continue;
+    visited.add(current);
+
+    const parsed = parseAlignmentPayload(current);
+    if (parsed) return parsed;
+
+    const nestedCandidates: unknown[] = [
+      current.alignment,
+      current.audio_alignment,
+      current.audioAlignment,
+      current.normalizedAlignment,
+      current.word_alignment,
+      current.wordAlignment,
+      current.tts_alignment,
+      current.ttsAlignment,
+      current.raw,
+      current.data,
+      current.audio_event,
+      current.audioEvent,
+    ];
+
+    for (const candidate of nestedCandidates) {
+      const nestedObject = toRecord(candidate);
+      if (nestedObject && !visited.has(nestedObject)) {
+        queue.push(nestedObject);
+      }
+    }
+
+    for (const value of Object.values(current)) {
+      if (Array.isArray(value)) {
+        for (const entry of value) {
+          const nestedObject = toRecord(entry);
+          if (nestedObject && !visited.has(nestedObject)) {
+            queue.push(nestedObject);
+          }
+        }
+        continue;
+      }
+
+      const nestedObject = toRecord(value);
+      if (nestedObject && !visited.has(nestedObject)) {
+        queue.push(nestedObject);
+      }
+    }
+  }
+
+  return null;
 }
 
 function getComparableWords(text: string): string[] {

@@ -259,7 +259,7 @@
 }
 
 .agent-ui-device-screen .screen-preview-container:not([data-screen-id="pq-plan-review"]) p,
-.agent-ui-device-screen .screen-preview-container:not([data-screen-id="pq-plan-review"]) span,
+.agent-ui-device-screen .screen-preview-container:not([data-screen-id="pq-plan-review"]) span:not(.agent-message-card-word),
 .agent-ui-device-screen .screen-preview-container:not([data-screen-id="pq-plan-review"]) label {
   font-size: 0.75rem !important;
   margin: 0 !important;
@@ -267,12 +267,16 @@
 }
 
 /* Make agent card copy significantly larger in device preview */
-.agent-ui-device-screen .agent-message-card-message {
+.agent-ui-device-screen .screen-preview-container .agent-message-card-message {
+  font-family: 'Suisse Works', var(--font-family-serif) !important;
+  font-weight: var(--font-weight-regular) !important;
   font-size: 2rem !important;
   line-height: 2.2rem !important;
 }
 
-.agent-ui-device-screen .agent-message-card-word {
+.agent-ui-device-screen .screen-preview-container:not([data-screen-id="pq-plan-review"]) span.agent-message-card-word {
+  font-family: 'Suisse Works', var(--font-family-serif) !important;
+  font-weight: var(--font-weight-regular) !important;
   font-size: 2rem !important;
   line-height: 2.2rem !important;
 }
