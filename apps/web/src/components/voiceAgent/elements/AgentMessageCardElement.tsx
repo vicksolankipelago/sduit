@@ -73,7 +73,15 @@ const ALIGNMENT_START_TIME_KEYS_MS = [
   'start_times_ms',
   'startTimesMs',
 ];
-const ALIGNMENT_START_TIME_KEYS = [
+const ALIGNMENT_START_TIME_KEYS_SECONDS = [
+  'char_start_times_seconds',
+  'charStartTimesSeconds',
+  'character_start_times_seconds',
+  'characterStartTimesSeconds',
+  'start_times_seconds',
+  'startTimesSeconds',
+];
+const ALIGNMENT_START_TIME_KEYS_AMBIGUOUS = [
   'char_start_times',
   'charStartTimes',
   'character_start_times',
@@ -89,12 +97,44 @@ const ALIGNMENT_DURATION_KEYS_MS = [
   'durations_ms',
   'durationsMs',
 ];
-const ALIGNMENT_DURATION_KEYS = [
+const ALIGNMENT_DURATION_KEYS_SECONDS = [
+  'char_durations_seconds',
+  'charDurationsSeconds',
+  'character_durations_seconds',
+  'characterDurationsSeconds',
+  'durations_seconds',
+  'durationsSeconds',
+];
+const ALIGNMENT_DURATION_KEYS_AMBIGUOUS = [
   'char_durations',
   'charDurations',
   'character_durations',
   'characterDurations',
   'durations',
+];
+const ALIGNMENT_END_TIME_KEYS_MS = [
+  'char_end_times_ms',
+  'charEndTimesMs',
+  'character_end_times_ms',
+  'characterEndTimesMs',
+  'end_times_ms',
+  'endTimesMs',
+];
+const ALIGNMENT_END_TIME_KEYS_SECONDS = [
+  'char_end_times_seconds',
+  'charEndTimesSeconds',
+  'character_end_times_seconds',
+  'characterEndTimesSeconds',
+  'end_times_seconds',
+  'endTimesSeconds',
+];
+const ALIGNMENT_END_TIME_KEYS_AMBIGUOUS = [
+  'char_end_times',
+  'charEndTimes',
+  'character_end_times',
+  'characterEndTimes',
+  'end_times',
+  'endTimes',
 ];
 const ALIGNMENT_WORD_LIST_KEYS = [
   'words',
@@ -113,6 +153,10 @@ const ALIGNMENT_WORD_START_KEYS_MS = [
   'startTimeMs',
 ];
 const ALIGNMENT_WORD_START_KEYS_SECONDS = [
+  'start_time_seconds',
+  'startTimeSeconds',
+  'start_seconds',
+  'startSeconds',
   'start_time',
   'startTime',
 ];
@@ -126,6 +170,10 @@ const ALIGNMENT_WORD_END_KEYS_MS = [
   'endTimeMs',
 ];
 const ALIGNMENT_WORD_END_KEYS_SECONDS = [
+  'end_time_seconds',
+  'endTimeSeconds',
+  'end_seconds',
+  'endSeconds',
   'end_time',
   'endTime',
 ];
@@ -138,7 +186,12 @@ const ALIGNMENT_WORD_DURATION_KEYS_MS = [
   'word_duration_ms',
   'wordDurationMs',
 ];
-const ALIGNMENT_WORD_DURATION_KEYS_SECONDS = ['duration_seconds', 'durationSeconds'];
+const ALIGNMENT_WORD_DURATION_KEYS_SECONDS = [
+  'duration_seconds',
+  'durationSeconds',
+  'word_duration_seconds',
+  'wordDurationSeconds',
+];
 const ALIGNMENT_WORD_DURATION_KEYS_AMBIGUOUS = ['duration'];
 
 function toRecord(value: unknown): Record<string, unknown> | null {
@@ -165,19 +218,25 @@ function getNumberArrayFromKeys(payload: Record<string, unknown>, keys: string[]
 function getTimeArrayMs(
   payload: Record<string, unknown>,
   msKeys: string[],
-  nonMsKeys: string[]
+  secondsKeys: string[],
+  ambiguousKeys: string[]
 ): number[] {
   const msValues = getNumberArrayFromKeys(payload, msKeys);
   if (msValues.length > 0) return msValues;
 
-  const nonMsValues = getNumberArrayFromKeys(payload, nonMsKeys);
-  if (!nonMsValues.length) return [];
-
-  // Only convert to ms for likely second-based arrays.
-  if (hasFractionalValue(nonMsValues)) {
-    return toMsFromSeconds(nonMsValues);
+  const secondsValues = getNumberArrayFromKeys(payload, secondsKeys);
+  if (secondsValues.length > 0) {
+    return toMsFromSeconds(secondsValues);
   }
-  return nonMsValues;
+
+  const ambiguousValues = getNumberArrayFromKeys(payload, ambiguousKeys);
+  if (!ambiguousValues.length) return [];
+
+  // Ambiguous arrays are interpreted as seconds only when fractional.
+  if (hasFractionalValue(ambiguousValues)) {
+    return toMsFromSeconds(ambiguousValues);
+  }
+  return ambiguousValues;
 }
 
 function getFirstFiniteNumber(payload: Record<string, unknown>, keys: string[]): number | null {
@@ -360,13 +419,32 @@ function parseCharacterAlignmentPayload(payload: Record<string, unknown>): Norma
   const startCandidates = getTimeArrayMs(
     payload,
     ALIGNMENT_START_TIME_KEYS_MS,
-    ALIGNMENT_START_TIME_KEYS
+    ALIGNMENT_START_TIME_KEYS_SECONDS,
+    ALIGNMENT_START_TIME_KEYS_AMBIGUOUS
   );
   const durationCandidates = getTimeArrayMs(
     payload,
     ALIGNMENT_DURATION_KEYS_MS,
-    ALIGNMENT_DURATION_KEYS
+    ALIGNMENT_DURATION_KEYS_SECONDS,
+    ALIGNMENT_DURATION_KEYS_AMBIGUOUS
   );
+  const endCandidates = getTimeArrayMs(
+    payload,
+    ALIGNMENT_END_TIME_KEYS_MS,
+    ALIGNMENT_END_TIME_KEYS_SECONDS,
+    ALIGNMENT_END_TIME_KEYS_AMBIGUOUS
+  );
+
+  if (endCandidates.length > 0 && startCandidates.length > 0) {
+    for (let index = 0; index < startCandidates.length; index += 1) {
+      if (Number.isFinite(durationCandidates[index])) continue;
+      const start = startCandidates[index];
+      const end = endCandidates[index];
+      if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
+      durationCandidates[index] = Math.max(1, end - start);
+    }
+  }
+
   const words = buildWordTimingsFromCharacters(characters, startCandidates, durationCandidates);
   if (!words.length) return null;
 
@@ -502,6 +580,8 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
 
   const shouldUseAlignment = useMemo(() => {
     if (!syncWithSpeech || !normalizedAlignment || totalWordCount === 0) return false;
+    if (normalizedAlignment.words.length === 0) return false;
+    if (!normalizedAlignment.text.trim()) return true;
     return hasSufficientWordOverlap(data.message ?? '', normalizedAlignment.text);
   }, [data.message, normalizedAlignment, syncWithSpeech, totalWordCount]);
 
@@ -649,7 +729,14 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
       return { opacity: 1, filter: 'blur(0px)' };
     }
 
-    const mappedAlignmentWordIndex = Math.min(wordIndex, alignmentWordCount - 1);
+    if (wordIndex >= alignmentWordCount) {
+      return {
+        opacity: BASE_WORD_OPACITY,
+        filter: 'blur(1.4px)',
+      };
+    }
+
+    const mappedAlignmentWordIndex = wordIndex;
     const wordTiming = normalizedAlignment.words[mappedAlignmentWordIndex];
     if (!wordTiming) {
       return { opacity: 1, filter: 'blur(0px)' };

@@ -1506,7 +1506,7 @@
                 "itemTitles": "{$moduleData.goalTitles}"
               },
               "style": {
-                "backgroundColor": "backgroundLightMintGreen",
+                "backgroundColor": "backgroundLight",
                 "cornerRadius": 16
               },
               "conditions": [

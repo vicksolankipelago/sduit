@@ -270,15 +270,15 @@
 .agent-ui-device-screen .screen-preview-container .agent-message-card-message {
   font-family: 'Suisse Works', var(--font-family-serif) !important;
   font-weight: var(--font-weight-regular) !important;
-  font-size: 1.35rem !important;
-  line-height: 1.65rem !important;
+  font-size: 1rem !important;
+  line-height: 1.45rem !important;
 }
 
 .agent-ui-device-screen .screen-preview-container:not([data-screen-id="pq-plan-review"]) span.agent-message-card-word {
   font-family: 'Suisse Works', var(--font-family-serif) !important;
   font-weight: var(--font-weight-regular) !important;
-  font-size: 1.35rem !important;
-  line-height: 1.65rem !important;
+  font-size: 1rem !important;
+  line-height: 1.45rem !important;
 }
 
 /* Reduce spacing between text block elements */
