@@ -3187,10 +3187,20 @@ Important guidelines:
     // Trigger an event (e.g., navigate to next screen, trigger UI action)
     // This is the primary navigation tool used by the agent prompt
     // Supports optional delay in seconds before triggering
-    trigger_event: async (params: { eventId: string; delay?: number }) => {
+    trigger_event: async (params: { eventId: string; delay?: number | string }) => {
       const startedAtMs = Date.now();
       const { eventId, delay = 0 } = params;
-      let resolvedDelay = Number.isFinite(delay) ? Math.max(0, delay) : 0;
+      const parseDelaySeconds = (value: unknown): number => {
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          return Math.max(0, value);
+        }
+        if (typeof value === 'string') {
+          const parsed = Number(value.trim());
+          return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+        }
+        return 0;
+      };
+      let resolvedDelay = parseDelaySeconds(delay);
       addLog('tool', `🧰 trigger_event called: ${eventId}`, {
         currentScreen: currentScreenIdRef.current,
         startedAtMs,
@@ -3525,11 +3535,21 @@ Important guidelines:
 
     // Navigate directly by target screen id.
     // This resolves the matching navigation event on the CURRENT screen, then triggers it.
-    navigate_to: async (params: { screen?: string; screen_id?: string; delay?: number }) => {
+    navigate_to: async (params: { screen?: string; screen_id?: string; delay?: number | string }) => {
       const startedAtMs = Date.now();
       const targetScreen = params?.screen ?? params?.screen_id;
       const { delay = 0 } = params ?? {};
-      const resolvedDelay = Number.isFinite(delay) ? Math.max(0, delay) : 0;
+      const parseDelaySeconds = (value: unknown): number => {
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          return Math.max(0, value);
+        }
+        if (typeof value === 'string') {
+          const parsed = Number(value.trim());
+          return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+        }
+        return 0;
+      };
+      let resolvedDelay = parseDelaySeconds(delay);
       const activeScreenId = currentScreenIdRef.current || undefined;
       addLog('tool', `🧰 navigate_to called: ${targetScreen ?? 'missing_screen'}`, {
         currentScreen: activeScreenId,
@@ -3639,15 +3659,16 @@ Important guidelines:
       const pendingNavigation = pendingNavigationRef.current;
       if (pendingNavigation && Date.now() <= pendingNavigation.expiresAtMs) {
         if (pendingNavigation.targetScreenId === targetScreen) {
+          const remainingDelaySeconds = Math.max(0, Number(((pendingNavigation.executeAtMs - Date.now()) / 1000).toFixed(1)));
           return buildResult({
             success: true,
             eventId: pendingNavigation.eventId,
             fromScreen: activeScreenId,
             nextScreen: targetScreen,
             currentScreen: activeScreenId,
-            delaySeconds: 0,
+            delaySeconds: remainingDelaySeconds,
             reason: 'navigation_in_progress',
-            message: `Navigation to "${targetScreen}" is already in progress.`,
+            message: `Navigation to "${targetScreen}" is already in progress${remainingDelaySeconds > 0 ? ` (about ${remainingDelaySeconds}s remaining)` : ''}.`,
           });
         }
 
@@ -3762,6 +3783,24 @@ Important guidelines:
           message: `Cannot navigate to "${targetScreen}" from "${activeScreen.id}".`,
           availableNextScreens,
         });
+      }
+
+      // Preserve freshly captured responses on screen before navigating away.
+      if (lastRecordInputRef.current) {
+        const elapsedMs = Date.now() - lastRecordInputRef.current.atMs;
+        if (elapsedMs >= 0 && elapsedMs <= RECENT_RECORD_INPUT_WINDOW_MS) {
+          const remainingHoldMs = RECORD_INPUT_DISPLAY_MS - elapsedMs;
+          if (remainingHoldMs > 0) {
+            const minimumDelaySeconds = Number((remainingHoldMs / 1000).toFixed(1));
+            if (resolvedDelay < minimumDelaySeconds) {
+              resolvedDelay = minimumDelaySeconds;
+              addLog(
+                'info',
+                `⏳ Holding navigate_to("${targetScreen}") for ${minimumDelaySeconds}s so the captured answer stays visible.`
+              );
+            }
+          }
+        }
       }
 
       const executeAtMs = Date.now() + resolvedDelay * 1000;

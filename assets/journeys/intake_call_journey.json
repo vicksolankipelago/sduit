@@ -1022,7 +1022,7 @@
               "type": "textBlock",
               "state": {
                 "id": "ai_disclaimer_body",
-                "text": "This tool is powered by AI, not a medical or mental health professional. It may sometimes produce inaccurate or incomplete responses. Some conversations may touch on sensitive topics — you can stop at any time."
+                "text": "This tool is powered by AI, not a medical or mental health professional. It may sometimes produce inaccurate or incomplete responses. Some conversations may touch on sensitive topics \u2014 you can stop at any time."
               },
               "style": {
                 "color": "primary",
@@ -1183,6 +1183,24 @@
             }
           ],
           "conditions": []
+        },
+        {
+          "id": "next_step_event",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "current_screen": "about-you"
+              }
+            },
+            {
+              "type": "navigation",
+              "deeplink": "about-you"
+            }
+          ],
+          "conditions": []
         }
       ],
       "sections": [
@@ -1251,6 +1269,24 @@
       "events": [
         {
           "id": "outcomes",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "current_screen": "outcomes"
+              }
+            },
+            {
+              "type": "navigation",
+              "deeplink": "outcomes"
+            }
+          ],
+          "conditions": []
+        },
+        {
+          "id": "navigate_to_outcomes",
           "type": "custom",
           "action": [
             {
@@ -1373,6 +1409,42 @@
             }
           ],
           "conditions": []
+        },
+        {
+          "id": "navigate_to_motivation",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "current_screen": "motivation"
+              }
+            },
+            {
+              "type": "navigation",
+              "deeplink": "motivation"
+            }
+          ],
+          "conditions": []
+        },
+        {
+          "id": "navigate_to_voice_motivation",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "current_screen": "motivation"
+              }
+            },
+            {
+              "type": "navigation",
+              "deeplink": "motivation"
+            }
+          ],
+          "conditions": []
         }
       ],
       "sections": [
@@ -1418,19 +1490,85 @@
               "conditions": [
                 {
                   "rules": {
-                    "or": [
+                    "and": [
                       {
-                        "==": [
+                        "or": [
                           {
-                            "var": "goals"
+                            "==": [
+                              {
+                                "var": "goals"
+                              },
+                              null
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "goals"
+                              },
+                              ""
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "outcomesSummary"
+                              },
+                              null
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "outcomesSummary"
+                              },
+                              ""
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "state": {
+                    "goals": "{$moduleData.goalTitles}",
+                    "outcomesSummary": "{$moduleData.outcomesSummary}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "textCard",
+              "state": {
+                "id": "outcomes_summary_card",
+                "title": "What I heard",
+                "content": "{$moduleData.outcomesSummary}"
+              },
+              "style": {
+                "backgroundColor": "backgroundLight",
+                "textColor": "textGlobalPrimary",
+                "captionColor": "textGlobalPrimary",
+                "cornerRadius": 12
+              },
+              "conditions": [
+                {
+                  "rules": {
+                    "and": [
+                      {
+                        "!=": [
+                          {
+                            "var": "outcomesSummary"
                           },
                           null
                         ]
                       },
                       {
-                        "==": [
+                        "!=": [
                           {
-                            "var": "goals"
+                            "var": "outcomesSummary"
                           },
                           ""
                         ]
@@ -1438,7 +1576,7 @@
                     ]
                   },
                   "state": {
-                    "goals": "{$moduleData.goalTitles}"
+                    "outcomesSummary": "{$moduleData.outcomesSummary}"
                   }
                 }
               ]
@@ -1535,6 +1673,42 @@
       "events": [
         {
           "id": "weekly-focus",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "current_screen": "weekly-focus"
+              }
+            },
+            {
+              "type": "navigation",
+              "deeplink": "weekly-focus"
+            }
+          ],
+          "conditions": []
+        },
+        {
+          "id": "navigate_to_intention",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "current_screen": "weekly-focus"
+              }
+            },
+            {
+              "type": "navigation",
+              "deeplink": "weekly-focus"
+            }
+          ],
+          "conditions": []
+        },
+        {
+          "id": "navigate_to_weekly_focus",
           "type": "custom",
           "action": [
             {
@@ -1651,6 +1825,24 @@
             }
           ],
           "conditions": []
+        },
+        {
+          "id": "navigate_to_cm_rewards_intro",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "current_screen": "cm-rewards-intro"
+              }
+            },
+            {
+              "type": "navigation",
+              "deeplink": "cm-rewards-intro"
+            }
+          ],
+          "conditions": []
         }
       ],
       "sections": [
@@ -1716,7 +1908,7 @@
                     ]
                   },
                   "state": {
-                    "focus": "{$moduleData.weeklyFocus}"
+                    "focus": "{$moduleData.weeklyIntention}"
                   }
                 }
               ]
@@ -1755,7 +1947,7 @@
                     ]
                   },
                   "state": {
-                    "focus": "{$moduleData.weeklyFocus}"
+                    "focus": "{$moduleData.weeklyIntention}"
                   }
                 }
               ]
@@ -1794,7 +1986,7 @@
                     ]
                   },
                   "state": {
-                    "focus": "{$moduleData.weeklyFocus}"
+                    "focus": "{$moduleData.weeklyIntention}"
                   }
                 }
               ]
@@ -1833,7 +2025,7 @@
                     ]
                   },
                   "state": {
-                    "focus": "{$moduleData.weeklyFocus}"
+                    "focus": "{$moduleData.weeklyIntention}"
                   }
                 }
               ]
@@ -1842,7 +2034,7 @@
               "type": "quoteCard",
               "state": {
                 "id": "weekly_focus_quote",
-                "message": "{$moduleData.weeklyFocus}"
+                "message": "{$moduleData.weeklyIntention}"
               },
               "style": {
                 "imageName": null
@@ -1870,7 +2062,7 @@
                     ]
                   },
                   "state": {
-                    "focus": "{$moduleData.weeklyFocus}"
+                    "focus": "{$moduleData.weeklyIntention}"
                   }
                 }
               ]
@@ -1901,6 +2093,24 @@
       "events": [
         {
           "id": "checkin-commitment",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "current_screen": "checkin-commitment"
+              }
+            },
+            {
+              "type": "navigation",
+              "deeplink": "checkin-commitment"
+            }
+          ],
+          "conditions": []
+        },
+        {
+          "id": "navigate_to_checkin_commitment",
           "type": "custom",
           "action": [
             {
@@ -2086,6 +2296,24 @@
             }
           ],
           "conditions": []
+        },
+        {
+          "id": "navigate_to_notification_setup",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "current_screen": "pq-notification-setup"
+              }
+            },
+            {
+              "type": "navigation",
+              "deeplink": "pq-notification-setup"
+            }
+          ],
+          "conditions": []
         }
       ],
       "sections": [
@@ -2128,6 +2356,43 @@
                 "direction": "vertical",
                 "isFlexible": false
               }
+            },
+            {
+              "type": "largeQuestion",
+              "state": {
+                "id": "checkin_commitment_question",
+                "type": "singleSelect",
+                "copyId": null,
+                "header": {
+                  "id": "checkin_header",
+                  "title": "",
+                  "caption": null,
+                  "imageName": null,
+                  "description": null
+                },
+                "caption": null,
+                "options": [
+                  {
+                    "id": "daily",
+                    "title": "Every day",
+                    "description": "Check in daily to build a strong habit"
+                  },
+                  {
+                    "id": "few_times",
+                    "title": "A few times",
+                    "description": "Check in 3-4 times this week"
+                  },
+                  {
+                    "id": "once",
+                    "title": "Once",
+                    "description": "Check in once this week"
+                  }
+                ],
+                "category": "check-in",
+                "maxSelection": 1,
+                "allowsMultiSelection": false,
+                "currentlySelectedOptions": null
+              }
             }
           ],
           "position": "body",
@@ -2166,6 +2431,50 @@
         },
         {
           "id": "pq-plan-review",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "current_screen": "pq-plan-review"
+              }
+            },
+            {
+              "type": "navigation",
+              "deeplink": "pq-plan-review"
+            }
+          ],
+          "conditions": [
+            {
+              "rules": {
+                "and": [
+                  {
+                    "!=": [
+                      {
+                        "var": "notificationPermissions"
+                      },
+                      null
+                    ]
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "notificationPermissions"
+                      },
+                      ""
+                    ]
+                  }
+                ]
+              },
+              "state": {
+                "notificationPermissions": "{$screenState.notificationPermissions}"
+              }
+            }
+          ]
+        },
+        {
+          "id": "navigate_to_plan_review",
           "type": "custom",
           "action": [
             {
@@ -2342,6 +2651,24 @@
       "events": [
         {
           "id": "pq-start-programme",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "current_screen": "pq-start-programme"
+              }
+            },
+            {
+              "type": "navigation",
+              "deeplink": "pq-start-programme"
+            }
+          ],
+          "conditions": []
+        },
+        {
+          "id": "navigate_to_completion",
           "type": "custom",
           "action": [
             {
