@@ -93,30 +93,26 @@ async function fetchSessionAuthFromUrl(
   return parseSessionAuthPayload(payload, source, agentId);
 }
 
-function isWebRtcCompatibleAuth(auth: ElevenLabsSessionAuth | null): auth is Extract<ElevenLabsSessionAuth, { mode: 'webrtc' | 'public' }> {
-  if (!auth) return false;
-  return auth.mode === 'webrtc' || auth.mode === 'public';
+function isUsableSessionAuth(auth: ElevenLabsSessionAuth | null): auth is ElevenLabsSessionAuth {
+  return auth !== null;
 }
 
 /**
- * Fetches ElevenLabs session auth, preferring WebRTC transport only.
- * WebSocket auth responses are intentionally rejected for this app.
+ * Fetches ElevenLabs session auth.
+ * Prefers WebRTC auth for voice quality/latency, but still accepts
+ * websocket auth when that is what the session endpoint returns.
  */
 async function fetchElevenLabsSessionAuth(agentId: string): Promise<ElevenLabsSessionAuth> {
   const localPreferredUrl = `${ELEVENLABS_LOCAL_ENDPOINT}?agentId=${encodeURIComponent(agentId)}&transport=webrtc`;
-  console.log('🔑 Fetching ElevenLabs session auth from local server (WebRTC only):', localPreferredUrl);
+  console.log('🔑 Fetching ElevenLabs session auth from local server (prefer WebRTC):', localPreferredUrl);
 
   try {
     const localPreferredAuth = await fetchSessionAuthFromUrl(localPreferredUrl, 'local', agentId);
-    if (isWebRtcCompatibleAuth(localPreferredAuth)) {
+    if (isUsableSessionAuth(localPreferredAuth)) {
       console.log('🔑 Session auth received from local server:', localPreferredAuth.mode);
       return localPreferredAuth;
     }
-    if (localPreferredAuth?.mode === 'websocket') {
-      console.warn('🔑 Local server returned WebSocket auth; rejecting because WebRTC is required');
-    } else {
-      console.warn('🔑 Local preferred WebRTC auth did not return usable session auth');
-    }
+    console.warn('🔑 Local preferred WebRTC auth did not return usable session auth');
   } catch (err) {
     console.warn('🔑 Local preferred WebRTC request failed:', err);
   }
@@ -126,21 +122,17 @@ async function fetchElevenLabsSessionAuth(agentId: string): Promise<ElevenLabsSe
 
   try {
     const awsAuth = await fetchSessionAuthFromUrl(awsUrl, 'aws', agentId);
-    if (isWebRtcCompatibleAuth(awsAuth)) {
+    if (isUsableSessionAuth(awsAuth)) {
       console.log('🔑 Session auth received from AWS endpoint:', awsAuth.mode);
       return awsAuth;
     }
-    if (awsAuth?.mode === 'websocket') {
-      console.warn('🔑 AWS endpoint returned WebSocket auth; rejecting because WebRTC is required');
-    } else {
-      console.warn('🔑 AWS endpoint did not return usable session auth');
-    }
+    console.warn('🔑 AWS endpoint did not return usable session auth');
   } catch (err) {
     console.warn('🔑 AWS endpoint request failed:', err);
   }
 
-  const localFallbackUrl = `${ELEVENLABS_LOCAL_ENDPOINT}?agentId=${encodeURIComponent(agentId)}&transport=webrtc`;
-  console.log('🔑 Retrying ElevenLabs session auth from local server (WebRTC only):', localFallbackUrl);
+  const localFallbackUrl = `${ELEVENLABS_LOCAL_ENDPOINT}?agentId=${encodeURIComponent(agentId)}`;
+  console.log('🔑 Retrying ElevenLabs session auth from local server (any transport):', localFallbackUrl);
   const localFallbackResponse = await fetch(localFallbackUrl);
   if (!localFallbackResponse.ok) {
     const errorText = await localFallbackResponse.text();
@@ -149,11 +141,8 @@ async function fetchElevenLabsSessionAuth(agentId: string): Promise<ElevenLabsSe
 
   const localFallbackPayload = await localFallbackResponse.json();
   const localFallbackAuth = parseSessionAuthPayload(localFallbackPayload, 'local', agentId);
-  if (!isWebRtcCompatibleAuth(localFallbackAuth)) {
-    if (localFallbackAuth?.mode === 'websocket') {
-      throw new Error('Session endpoint returned WebSocket auth, but this app requires WebRTC');
-    }
-    throw new Error('Session endpoint did not return WebRTC conversation token or public agent configuration');
+  if (!isUsableSessionAuth(localFallbackAuth)) {
+    throw new Error('Session endpoint did not return a usable signed URL, conversation token, or public agent configuration');
   }
 
   console.log('🔑 Session auth received from local server (fallback):', localFallbackAuth.mode);

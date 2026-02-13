@@ -2,7 +2,202 @@
   "screens": [
     {
       "id": "navi-weekly-plan-start",
-      "title": "Weekly plan setup",
+      "title": "AI disclaimer",
+      "events": [
+        {
+          "id": "navigate_to_weekly_plan_intro",
+          "type": "custom",
+          "action": [
+            {
+              "type": "stateUpdate",
+              "scope": "module",
+              "updates": {
+                "current_screen": "navi-weekly-plan-intro"
+              }
+            },
+            {
+              "type": "navigation",
+              "deeplink": "navi-weekly-plan-intro"
+            }
+          ],
+          "conditions": []
+        }
+      ],
+      "sections": [
+        {
+          "id": "content_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "spacer",
+              "state": {
+                "id": "disclaimer_top_space"
+              },
+              "style": {
+                "width": null,
+                "height": 8,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "ai_disclaimer_title",
+                "text": "AI disclaimer"
+              },
+              "style": {
+                "color": "primary",
+                "style": "heading2",
+                "alignment": "leading"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "ai_disclaimer_title_gap"
+              },
+              "style": {
+                "width": null,
+                "height": 10,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "textBlock",
+              "state": {
+                "id": "ai_disclaimer_body",
+                "text": "This tool is powered by AI, not a medical or mental health professional. It may sometimes produce inaccurate or incomplete responses. Some conversations may touch on sensitive topics - you can stop at any time."
+              },
+              "style": {
+                "color": "primary",
+                "style": "body2",
+                "alignment": "leading"
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "ai_commitment_gap"
+              },
+              "style": {
+                "width": null,
+                "height": 16,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "checklistCard",
+              "state": {
+                "id": "ai_commitment_checklist",
+                "title": "Our commitment to you",
+                "itemTitles": [
+                  "Your information stays personal and private",
+                  "Your employer cannot see personal responses.",
+                  "All data is handled securely and kept confidential."
+                ]
+              },
+              "style": {
+                "backgroundColor": "backgroundLight",
+                "cornerRadius": 12
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "ai_callout_gap"
+              },
+              "style": {
+                "width": null,
+                "height": 8,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "textCard",
+              "state": {
+                "id": "ai_crisis_callout",
+                "title": "If you are in crisis",
+                "content": "If at any point you feel unsafe or need immediate help, please call or text 988 right away (Suicide and Crisis Lifeline)."
+              },
+              "style": {
+                "backgroundColor": "backgroundMistBlue",
+                "borderColor": "backgroundCerulean",
+                "textColor": "textGlobalPrimary",
+                "captionColor": "textGlobalPrimary",
+                "borderWidth": 1,
+                "cornerRadius": 12
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "disclaimer_bottom_flex_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": null,
+                "direction": "vertical",
+                "isFlexible": true
+              }
+            }
+          ],
+          "position": "body",
+          "direction": "vertical",
+          "scrollable": true
+        },
+        {
+          "id": "button_section",
+          "title": null,
+          "layout": "stack",
+          "elements": [
+            {
+              "type": "button",
+              "state": {
+                "id": "continue_to_intro_btn",
+                "title": "Continue",
+                "isDisabled": false
+              },
+              "style": {
+                "size": "large",
+                "style": "primary"
+              },
+              "events": [
+                {
+                  "id": "navigate_to_weekly_plan_intro",
+                  "type": "onSelected",
+                  "action": [
+                    {
+                      "type": "stateUpdate",
+                      "scope": "module",
+                      "updates": {
+                        "current_screen": "navi-weekly-plan-intro"
+                      }
+                    },
+                    {
+                      "type": "navigation",
+                      "deeplink": "navi-weekly-plan-intro"
+                    }
+                  ],
+                  "conditions": []
+                }
+              ]
+            }
+          ],
+          "position": "fixed-bottom",
+          "direction": "vertical",
+          "scrollable": false
+        }
+      ],
+      "hidesBackButton": true
+    },
+    {
+      "id": "navi-weekly-plan-intro",
+      "title": "Program overview",
       "events": [
         {
           "id": "navigate_to_weekly_plan_conversation",
@@ -40,11 +235,40 @@
             {
               "type": "spacer",
               "state": {
-                "id": "top_spacer"
+                "id": "weekly_plan_intro_top_space"
               },
               "style": {
                 "width": null,
-                "height": 12,
+                "height": 120,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "orb",
+              "state": {
+                "id": "weekly_plan_intro_orb",
+                "colors": [
+                  "#212633",
+                  "#E4E6EC"
+                ],
+                "iconImage": "/images/agent-orb.png",
+                "agentState": null,
+                "volumeMode": "auto"
+              },
+              "style": {
+                "size": "medium"
+              },
+              "events": []
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "weekly_plan_intro_orb_gap"
+              },
+              "style": {
+                "width": null,
+                "height": 24,
                 "direction": "vertical",
                 "isFlexible": false
               }
@@ -52,23 +276,23 @@
             {
               "type": "textBlock",
               "state": {
-                "id": "weekly_plan_title",
-                "text": "Set up your week with Navi"
+                "id": "weekly_plan_intro_greeting",
+                "text": "Hello Danielle,"
               },
               "style": {
                 "color": "primary",
-                "style": "heading2",
-                "alignment": "leading"
+                "style": "heading1",
+                "alignment": "center"
               }
             },
             {
               "type": "spacer",
               "state": {
-                "id": "title_gap"
+                "id": "weekly_plan_intro_greeting_gap"
               },
               "style": {
                 "width": null,
-                "height": 10,
+                "height": 6,
                 "direction": "vertical",
                 "isFlexible": false
               }
@@ -76,75 +300,19 @@
             {
               "type": "textBlock",
               "state": {
-                "id": "weekly_plan_description",
-                "text": "Navi will help you define one specific change, what gets in the way, and what you want back this week."
+                "id": "weekly_plan_intro_title",
+                "text": "I'm Navi, your AI onboarding assistant"
               },
               "style": {
-                "color": "secondary",
-                "style": "body2",
-                "alignment": "leading"
+                "color": "primary",
+                "style": "heading1",
+                "alignment": "center"
               }
             },
             {
               "type": "spacer",
               "state": {
-                "id": "privacy_gap"
-              },
-              "style": {
-                "width": null,
-                "height": 16,
-                "direction": "vertical",
-                "isFlexible": false
-              }
-            },
-            {
-              "type": "checklistCard",
-              "state": {
-                "id": "privacy_commitment",
-                "title": "Before you begin",
-                "itemTitles": [
-                  "This conversation is private.",
-                  "Your employer cannot see personal responses.",
-                  "You can share only what feels comfortable."
-                ]
-              },
-              "style": {
-                "backgroundColor": "backgroundLight",
-                "cornerRadius": 12
-              }
-            },
-            {
-              "type": "spacer",
-              "state": {
-                "id": "crisis_gap"
-              },
-              "style": {
-                "width": null,
-                "height": 8,
-                "direction": "vertical",
-                "isFlexible": false
-              }
-            },
-            {
-              "type": "textCard",
-              "state": {
-                "id": "crisis_support_callout",
-                "title": "If you are in crisis",
-                "content": "Call or text 988 right away for immediate support."
-              },
-              "style": {
-                "backgroundColor": "backgroundMistBlue",
-                "borderColor": "backgroundCerulean",
-                "textColor": "textGlobalPrimary",
-                "captionColor": "textGlobalPrimary",
-                "borderWidth": 1,
-                "cornerRadius": 12
-              }
-            },
-            {
-              "type": "spacer",
-              "state": {
-                "id": "bottom_flex_spacer"
+                "id": "weekly_plan_intro_bottom_flex_spacer"
               },
               "style": {
                 "width": null,
@@ -166,8 +334,8 @@
             {
               "type": "button",
               "state": {
-                "id": "start_weekly_plan_btn",
-                "title": "Continue",
+                "id": "talk_to_navi_btn",
+                "title": "Talk to Navi",
                 "isDisabled": false
               },
               "style": {
@@ -734,7 +902,8 @@
     }
   ],
   "screenPrompts": {
-    "navi-weekly-plan-start": "Screen ID: navi-weekly-plan-start\\nAvailable Events: navigate_to_weekly_plan_conversation\\n\\nPurpose: UI-only entry. User taps Continue to begin voice weekly plan setup.",
+    "navi-weekly-plan-start": "Screen ID: navi-weekly-plan-start\\nAvailable Events: navigate_to_weekly_plan_intro\\n\\nPurpose: Show AI disclaimer and privacy commitments before voice starts.\\n\\nBehavior: This is CTA-only (no voice). On Continue, navigate to navi-weekly-plan-intro.",
+    "navi-weekly-plan-intro": "Screen ID: navi-weekly-plan-intro\\nAvailable Events: navigate_to_weekly_plan_conversation\\n\\nPurpose: Show welcome/program overview UI before starting voice.\\n\\nBehavior: This is CTA-only (no voice). On Talk to Navi, enable voice and navigate to navi-weekly-plan-conversation.",
     "navi-weekly-plan-conversation": "Screen ID: navi-weekly-plan-conversation\\nAvailable Events: navigate_to_tracking_frequency\\n\\nPurpose: Run non-linear 3B conversation. Capture and confirm behavior, barrier, and benefit in member words.\\n\\nAfter confirmation, call record_input three times with store keys behavior_specific, barrier, benefit_specific, then trigger_event navigate_to_tracking_frequency.",
     "navi-tracking-frequency": "Screen ID: navi-tracking-frequency\\nAvailable Events: select_tracking_every_day, select_tracking_few_times, select_tracking_when_i_remember, navigate_to_plan_handoff\\n\\nPurpose: Ask how often to track and store the chosen frequency.\\n\\nCall one selection event based on user response, then trigger_event navigate_to_plan_handoff.",
     "navi-plan-handoff": "Screen ID: navi-plan-handoff\\nAvailable Events: navigate_to_weekly_plan_completion\\n\\nPurpose: Confirm handoff to UI and continue to completion screen.",

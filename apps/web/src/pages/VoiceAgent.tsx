@@ -140,6 +140,27 @@ const PROMPT_TOOL_NAME_CANDIDATES = [
 ];
 const LIVE_AGENT_MESSAGE_MODULE_KEY = 'agentLiveMessage';
 
+function mergeProgressiveText(previous: string, incoming: string): string {
+  const prev = previous || '';
+  const next = incoming || '';
+  if (!next) return prev;
+  if (!prev) return next;
+  if (next === prev) return prev;
+  if (next.startsWith(prev)) return next;
+  if (prev.startsWith(next)) return prev;
+  if (next.includes(prev)) return next;
+  if (prev.includes(next)) return prev;
+
+  const maxOverlap = Math.min(prev.length, next.length);
+  for (let overlap = maxOverlap; overlap >= 4; overlap -= 1) {
+    if (prev.slice(-overlap) === next.slice(0, overlap)) {
+      return `${prev}${next.slice(overlap)}`;
+    }
+  }
+
+  return next;
+}
+
 function textFromCharacterArray(value: unknown): string | null {
   if (!Array.isArray(value) || value.length === 0) return null;
   const text = value
@@ -798,6 +819,7 @@ function VoiceAgentContent() {
   const currentMessageIdsRef = useRef<{ user?: string; assistant?: string }>({});
   const lastElevenLabsModeRef = useRef<'speaking' | 'listening' | null>(null);
   const lastLiveAgentMessageRef = useRef<string | null>(null);
+  const shouldResetLiveAgentMessageOnNextAssistantTextRef = useRef(false);
   const didInitializeLiveAgentMessageRef = useRef(false);
   // Track which itemIds have been queued to prevent duplicate saves
   const queuedItemIdsRef = useRef<Set<string>>(new Set());
@@ -856,7 +878,21 @@ function VoiceAgentContent() {
   }, [applyModuleStateUpdates]);
 
   const clearLiveAgentMessage = useCallback(() => {
+    shouldResetLiveAgentMessageOnNextAssistantTextRef.current = false;
     updateLiveAgentMessage('');
+  }, [updateLiveAgentMessage]);
+
+  const updateLiveAgentMessageProgressively = useCallback((incomingMessage: string) => {
+    const rawMessage = typeof incomingMessage === 'string' ? incomingMessage : '';
+    const trimmedMessage = rawMessage.trim();
+    if (!trimmedMessage) return;
+
+    const shouldReset = shouldResetLiveAgentMessageOnNextAssistantTextRef.current;
+    const previousMessage = shouldReset ? '' : (lastLiveAgentMessageRef.current ?? '');
+    const mergedMessage = mergeProgressiveText(previousMessage, rawMessage);
+
+    shouldResetLiveAgentMessageOnNextAssistantTextRef.current = false;
+    updateLiveAgentMessage(mergedMessage);
   }, [updateLiveAgentMessage]);
 
   useEffect(() => {
@@ -3064,7 +3100,7 @@ Important guidelines:
             eventId,
             fromScreen: activeScreenId,
             nextScreen: getNavigationTargetFromEvent(requestedEventConfig),
-            currentScreen: getNavigationTargetFromEvent(requestedEventConfig) ?? activeScreenId,
+            currentScreen: activeScreenId,
             reason: 'already_scheduled_by_record_input',
             message: `Navigation "${eventId}" is already scheduled by ${pendingSource}. Wait for the screen to change and continue.`,
           });
@@ -3085,49 +3121,10 @@ Important guidelines:
       }
 
       if (activeScreen && !hasEventOnScreen(activeScreen, eventId)) {
-        const screenNavigationEvents = activeScreenEvents.filter((event: any) => isNavigationScreenEvent(event));
-        const autoRecoveryEvent = screenNavigationEvents.length === 1 ? screenNavigationEvents[0] : null;
-
-        if (autoRecoveryEvent && autoRecoveryEvent.id !== eventId) {
-          addLog('warning', `⚠️ Guardrail: "${eventId}" is not available on "${activeScreen.id}". Triggering "${autoRecoveryEvent.id}" first.`);
-          dispatchTriggerEvent(autoRecoveryEvent.id, 0, { autoRecovery: true, reason: 'invalid_event_for_screen' });
-
-          const navigationTargetScreenId = getNavigationTargetFromEvent(autoRecoveryEvent);
-          const navigationTargetScreen = navigationTargetScreenId
-            ? activeScreens.find((screen: any) => screen.id === navigationTargetScreenId)
-            : null;
-
-          if (navigationTargetScreen && hasEventOnScreen(navigationTargetScreen, eventId)) {
-            dispatchTriggerEvent(eventId, 0.9, {
-              autoRecovery: true,
-              reason: 'replay_after_recovery_navigation',
-              recoveryEventId: autoRecoveryEvent.id,
-            });
-            return buildNavigationResult({
-              success: true,
-              eventId,
-              fromScreen: activeScreen.id,
-              nextScreen: navigationTargetScreen.id,
-              currentScreen: navigationTargetScreen.id,
-              delaySeconds: 0.9,
-              reason: 'guardrail_auto_recovery_replay',
-              message: `Guardrail applied: "${eventId}" is not available on "${activeScreen.id}". Triggered "${autoRecoveryEvent.id}" and replayed "${eventId}" on "${navigationTargetScreen.id}".`,
-            });
-          }
-
-          return buildNavigationResult({
-            success: false,
-            eventId,
-            fromScreen: activeScreen.id,
-            nextScreen: getNavigationTargetFromEvent(autoRecoveryEvent),
-            currentScreen: getNavigationTargetFromEvent(autoRecoveryEvent) ?? activeScreen.id,
-            reason: 'guardrail_auto_recovery_only',
-            message: `Guardrail applied: "${eventId}" is not available on "${activeScreen.id}". Triggered "${autoRecoveryEvent.id}" first.`,
-            availableEvents: activeScreenEvents.map((event: any) => event.id),
-          });
-        }
-
         const availableEventIds = activeScreenEvents.map((event: any) => event.id);
+        const screenNavigationEvents = activeScreenEvents.filter((event: any) => isNavigationScreenEvent(event));
+        const suggestedNavigationEvent = screenNavigationEvents.length === 1 ? screenNavigationEvents[0] : null;
+        const suggestedNavigationEventId = suggestedNavigationEvent?.id;
         addLog('warning', `⚠️ Guardrail blocked invalid event "${eventId}" on screen "${activeScreen.id}".`, { availableEvents: availableEventIds });
         if (availableEventIds.length > 0) {
           return buildNavigationResult({
@@ -3136,7 +3133,9 @@ Important guidelines:
             fromScreen: activeScreen.id,
             currentScreen: activeScreen.id,
             reason: 'invalid_event_for_screen',
-            message: `Invalid event "${eventId}" for current screen "${activeScreen.id}". Available events: ${availableEventIds.join(', ')}.`,
+            message: suggestedNavigationEventId
+              ? `Invalid event "${eventId}" for "${activeScreen.id}". Call "${suggestedNavigationEventId}" first to navigate, then continue. Available events: ${availableEventIds.join(', ')}.`
+              : `Invalid event "${eventId}" for current screen "${activeScreen.id}". Available events: ${availableEventIds.join(', ')}.`,
             availableEvents: availableEventIds,
           });
         }
@@ -3208,10 +3207,10 @@ Important guidelines:
           eventId,
           fromScreen: activeScreenId,
           nextScreen: navigationTarget,
-          currentScreen: navigationTarget ?? activeScreenId,
+          currentScreen: activeScreenId,
           delaySeconds: resolvedDelay,
-          reason: 'navigation_triggered',
-          message: `Navigation "${eventId}" triggered. Screen is now changing. Continue speaking to the user about the new screen.`,
+          reason: 'navigation_scheduled',
+          message: `Navigation "${eventId}" was triggered. Wait for the UI to confirm the new screen before asking that screen's question.`,
         });
       }
       return buildNavigationResult({
@@ -3346,7 +3345,7 @@ Important guidelines:
             eventId: pendingNavigation.eventId,
             fromScreen: activeScreenId,
             nextScreen: targetScreen,
-            currentScreen: targetScreen,
+            currentScreen: activeScreenId,
             delaySeconds: 0,
             reason: 'navigation_in_progress',
             message: `Navigation to "${targetScreen}" is already in progress.`,
@@ -3430,10 +3429,10 @@ Important guidelines:
         eventId: matchingNavEvent.id,
         fromScreen: activeScreen.id,
         nextScreen: targetScreen,
-        currentScreen: targetScreen,
+        currentScreen: activeScreen.id,
         delaySeconds: resolvedDelay,
-        reason: 'navigation_triggered',
-        message: `Navigation to "${targetScreen}" triggered via event "${matchingNavEvent.id}".`,
+        reason: 'navigation_scheduled',
+        message: `Navigation to "${targetScreen}" triggered via event "${matchingNavEvent.id}". Wait for the screen change before asking the next prompt.`,
         availableNextScreens,
       });
     },
@@ -4075,6 +4074,7 @@ Important guidelines:
         setActiveSpeaker('none');
         setMemberAudioLevel(0);
         setAgentSpeechAlignment(null);
+        shouldResetLiveAgentMessageOnNextAssistantTextRef.current = false;
         lastElevenLabsModeRef.current = null;
         applyModuleStateUpdates({ agentIsSpeaking: false, agentSpeechMode: 'connecting' });
         addLog('info', `[${timestamp}] Connecting to ElevenLabs...`);
@@ -4091,6 +4091,7 @@ Important guidelines:
         setActiveSpeaker('none');
         setMemberAudioLevel(0);
         setAgentSpeechAlignment(null);
+        shouldResetLiveAgentMessageOnNextAssistantTextRef.current = false;
         lastElevenLabsModeRef.current = null;
         applyModuleStateUpdates({ agentIsSpeaking: false, agentSpeechMode: 'disconnected' });
         addLog('info', `[${timestamp}] Disconnected from ElevenLabs`);
@@ -4102,9 +4103,9 @@ Important guidelines:
       if (currentProviderRef.current !== 'elevenlabs') return;
       const isNewSpeakingTurn = mode === 'speaking' && lastElevenLabsModeRef.current !== 'speaking';
       if (isNewSpeakingTurn) {
-        // Prevent previous assistant text from flashing while new speech starts.
+        // Clear stale alignment and reset text state only when the next assistant text arrives.
         setAgentSpeechAlignment(null);
-        clearLiveAgentMessage();
+        shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
       }
       lastElevenLabsModeRef.current = mode;
       setActiveSpeaker(mode === 'speaking' ? 'agent' : 'member');
@@ -4121,7 +4122,7 @@ Important guidelines:
       });
       const alignmentText = extractAlignmentText(alignment);
       if (alignmentText !== null) {
-        updateLiveAgentMessage(alignmentText);
+        updateLiveAgentMessageProgressively(alignmentText);
       }
     },
     onVadScore: (vadScore) => {
@@ -4136,11 +4137,13 @@ Important guidelines:
       setMemberAudioLevel((previousLevel) => (previousLevel * 0.42) + (boostedScore * 0.58));
     },
     onTranscript: (role: string, text: string, isDone?: boolean) => {
+      const normalizedText = typeof text === 'string' ? text : '';
+      if (!normalizedText.trim()) return;
       const roleKey = role as 'user' | 'assistant';
       const messageId = `msg_${role}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       
       // Add message to transcript
-      addTranscriptMessage(messageId, roleKey, text, false);
+      addTranscriptMessage(messageId, roleKey, normalizedText, false);
       
       // Mark as done since ElevenLabs sends complete messages
       if (isDone !== false) {
@@ -4153,7 +4156,7 @@ Important guidelines:
             itemId: messageId,
             type: 'MESSAGE',
             role: roleKey,
-            title: text,
+            title: normalizedText,
             expanded: false,
             timestamp: new Date().toISOString(),
             createdAtMs: Date.now(),
@@ -4166,10 +4169,10 @@ Important guidelines:
       
       // Log message
       if (role === 'user') {
-        addLog('info', `User: ${text}`);
+        addLog('info', `User: ${normalizedText}`);
       } else {
-        updateLiveAgentMessage(text);
-        addLog('info', `Assistant: ${text}`);
+        updateLiveAgentMessageProgressively(normalizedText);
+        addLog('info', `Assistant: ${normalizedText}`);
       }
     },
     onConversationComplete: () => {
