@@ -437,10 +437,6 @@
 }
 
 /* Motivation summary screen parity */
-.screen-preview-container[data-screen-id="motivation"] .screen-preview-fixed-top {
-  display: none;
-}
-
 .screen-preview-container[data-screen-id="motivation"] .screen-preview-body {
   gap: 0;
   padding-top: 96px;

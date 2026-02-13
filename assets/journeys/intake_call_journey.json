@@ -2131,46 +2131,6 @@
                 "direction": "vertical",
                 "isFlexible": false
               }
-            },
-            {
-              "type": "largeQuestion",
-              "state": {
-                "id": "checkin_commitment_question",
-                "type": "singleSelect",
-                "copyId": null,
-                "header": {
-                  "id": "checkin_header",
-                  "title": "",
-                  "caption": null,
-                  "imageName": null,
-                  "description": null
-                },
-                "caption": null,
-                "options": [
-                  {
-                    "id": "daily",
-                    "title": "Every day",
-                    "description": "Check in daily to build a strong habit",
-                    "label": "1,050 pts"
-                  },
-                  {
-                    "id": "few_times",
-                    "title": "A few times",
-                    "description": "Check in 3-4 times this week",
-                    "label": "600 pts"
-                  },
-                  {
-                    "id": "once",
-                    "title": "Once",
-                    "description": "Check in once this week",
-                    "label": "150 pts"
-                  }
-                ],
-                "category": "check-in",
-                "maxSelection": 1,
-                "allowsMultiSelection": false,
-                "currentlySelectedOptions": null
-              }
             }
           ],
           "position": "body",
@@ -2811,7 +2771,7 @@
     "pq-voice-ready": "Screen ID: pq-voice-ready\nEvents: pq-program-summary | Purpose: Handoff from quiz to voice onboarding\n\nIf `{{currentScreen}}` is `pq-voice-ready`, do not ask onboarding questions yet.\nImmediately call: navigate_to({\"screen\":\"pq-program-summary\"})\nWait for navigation to complete before continuing.",
     "pq-plan-review": "Screen ID: pq-plan-review\nEvents: pq-start-programme | Purpose: Review personalized plan\n\nCRITICAL UI RULE: Do NOT use the agent message card for plan recap on this screen. The plan view uses a fixed text element plus plan cards for review.\n\nBehavior:\n1. Say: \"We've set up your plan for this week.\"\n2. Let the member briefly review the fixed text + plan cards.\n3. Ask one short confirmation only: \"Does this look good to you?\"\n4. Wait for confirmation.\n5. navigate_to({\"screen\":\"pq-start-programme\"})\n6. STOP. Do not add a second recap message.",
     "cm-rewards-intro": "Screen ID: cm-rewards-intro\nEvents: checkin-commitment | Purpose: Explain rewards visually, auto-navigate\n\nSay: \"Check-ins are quick daily reflections to track drinks and spot patterns over time. Every check-in earns points you can put toward rewards. Let's set up your check-in schedule.\"\nIf {{motivation}} includes \"saving money\", add: \"Given that saving money matters to you, those rewards can add up.\"\n\nIMMEDIATELY: navigate_to({\"screen\":\"checkin-commitment\",\"delay\":4})\nSTOP. Do NOT ask the check-in question here — it belongs on the next screen.",
-    "checkin-commitment": "Screen ID: checkin-commitment\nEvents: select_daily_commitment, select_few_times_commitment, select_once_commitment, pq-notification-setup\nPurpose: Set check-in frequency\n\nAsk: \"How often would you like to check in this week — every day, a few times, or just once?\"\n\nTWO mandatory calls:\n1. Selection: trigger_event({\"eventId\":\"select_daily_commitment\"}) OR select_few_times_commitment OR select_once_commitment\n2. Navigation: navigate_to({\"screen\":\"pq-notification-setup\"})\n\nDo NOT call set_checkin_frequency (deprecated). Selection event saves automatically.\nCall navigation BEFORE asking about reminder time.",
+    "checkin-commitment": "Screen ID: checkin-commitment\nEvents: select_daily_commitment, select_few_times_commitment, select_once_commitment, pq-notification-setup\nPurpose: Set check-in frequency\n\nCollect preferred check-in frequency conversationally (no on-screen options).\n\nTWO mandatory calls:\n1. Selection: trigger_event({\"eventId\":\"select_daily_commitment\"}) OR select_few_times_commitment OR select_once_commitment\n2. Navigation: navigate_to({\"screen\":\"pq-notification-setup\"})\n\nDo NOT call set_checkin_frequency (deprecated). Selection event saves automatically.\nCall navigation BEFORE asking about reminder time.",
     "pq-program-summary": "Screen ID: pq-program-summary\nEvents: about-you | Purpose: First voice screen — personalized program summary\n\n11Labs welcome message plays AUTOMATICALLY: \"Hey! Welcome to Pelago - I'm Navi...\"\nDO NOT greet, re-introduce, or repeat the welcome. Wait for user's \"yes\"/\"ready\" response.\n\nAfter user confirms:\n\"Great! So based on what you shared, I've put together a program for you.\"\n\"I'd love to ask you a few more questions to find out more\".\nSay\"Sound good?\"\n\nWait for confirmation, then IMMEDIATELY: navigate_to({\"screen\":\"about-you\"})\nDo NOT call record_input on this screen.",
     "pq-start-programme": "Screen ID: pq-start-programme\nEvents: complete_intake_flow | Purpose: Completion\n\nSay: \"All set! You're ready to start your program. I'm here if you need anything along the way. Take care!\"\n1. trigger_event({\"eventId\":\"complete_intake_flow\"})\n2. end_call({\"reason\":\"intake flow completed\",\"delaySeconds\":2})",
     "pq-notification-setup": "Screen ID: pq-notification-setup\nEvents: permissions_screen_event, pq-plan-review | Purpose: Set reminder time + notifications\n\nExplain value first: \"Reminders help you stay consistent with check-ins and keep your plan on track.\"\nThen ask: \"What time works best for you to receive a daily reminder?\"\n\nFOUR mandatory calls:\n1. set_reminder_time({\"time\":\"[24-hour local HH:mm, e.g. 08:30 or 20:00]\"})\n2. Confirm time: \"Got it — I'll set your reminder for [time].\" Ensure the reminder-time card reflects the chosen time.\n3. trigger_event({\"eventId\":\"permissions_screen_event\"}) — then say \"Tap Allow to turn on notifications\"\n4. Wait for user response (allowed or denied), then navigate_to({\"screen\":\"pq-plan-review\"})\n\nFallback: decline → \"Totally fine. You can turn them on later in settings.\""
