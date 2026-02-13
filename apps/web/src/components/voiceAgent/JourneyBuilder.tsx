@@ -483,7 +483,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     setAutoSaveStatus('idle');
     try {
       const saveTimeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Save timed out after 10 seconds')), 10000)
+        setTimeout(() => reject(new Error('Save timed out after 30 seconds')), 30000)
       );
       const savedJourney = await Promise.race([saveJourney(currentJourney), saveTimeout]);
       if (savedJourney) {
@@ -614,7 +614,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     console.log('🚀 Starting publish...');
     try {
       const publishTimeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Publish timed out after 15 seconds')), 15000)
+        setTimeout(() => reject(new Error('Publish timed out after 45 seconds')), 45000)
       );
 
       console.log('🚀 Saving journey before publish...');
