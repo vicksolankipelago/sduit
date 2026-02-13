@@ -38,6 +38,8 @@ export interface UpsertSessionMessageParams {
   prolificPid?: string;
   prolificStudyId?: string;
   prolificSessionId?: string;
+  events?: any[];
+  debugLogs?: any[];
 }
 
 export interface IStorage {
@@ -383,7 +385,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertSessionMessage(params: UpsertSessionMessageParams): Promise<VoiceSession> {
-    const { userId, sessionId, message, journeyId, journeyName, journeyVoice, agentId, agentName, agentPrompt, agentTools, prolificPid, prolificStudyId, prolificSessionId } = params;
+    const { userId, sessionId, message, journeyId, journeyName, journeyVoice, agentId, agentName, agentPrompt, agentTools, prolificPid, prolificStudyId, prolificSessionId, events, debugLogs } = params;
     
     const existingSession = await this.getSession(sessionId);
     
@@ -420,6 +422,8 @@ export class DatabaseStorage implements IStorage {
           statsUserMessages: userMessages.length,
           statsAssistantMessages: assistantMessages.length,
           statsBreadcrumbs: breadcrumbs.length,
+          ...(events && events.length > 0 ? { events } : {}),
+          ...(debugLogs && debugLogs.length > 0 ? { debugLogs } : {}),
         })
         .where(eq(voiceSessions.sessionId, sessionId))
         .returning();
@@ -436,8 +440,8 @@ export class DatabaseStorage implements IStorage {
           sessionId,
           exportedAt: new Date(),
           transcript: [message],
-          events: [],
-          debugLogs: [],
+          events: events || [],
+          debugLogs: debugLogs || [],
           durationStartMs: message.createdAtMs,
           durationEndMs: message.createdAtMs,
           durationTotalSeconds: 0,

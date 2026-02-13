@@ -680,6 +680,8 @@ function VoiceAgentContent() {
   const [_substance] = useState<string | null>(null);
   const [customPrompts, setCustomPrompts] = useState<Record<string, string>>({});
   const [sessionLogs, setSessionLogs] = useState<LogEntry[]>([]);
+  const sessionLogsRef = useRef<LogEntry[]>([]);
+  const loggedEventsRef = useRef(loggedEvents);
   // Testing Persona state - OFF by default
   const [personaEnabled, setPersonaEnabled] = useState(() => {
     const saved = localStorage.getItem('voice-agent-persona-enabled');
@@ -844,6 +846,8 @@ function VoiceAgentContent() {
     },
   });
 
+  loggedEventsRef.current = loggedEvents;
+
   const addLog = (type: LogEntry['type'], message: string, details?: any) => {
     const logEntry: LogEntry = {
       timestamp: new Date(),
@@ -851,6 +855,7 @@ function VoiceAgentContent() {
       message,
       details
     };
+    sessionLogsRef.current = [...sessionLogsRef.current, logEntry];
     setSessionLogs(prev => [...prev, logEntry]);
     
     const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 
@@ -2135,7 +2140,14 @@ Important guidelines:
             prompt: combinedInstructions,
             tools: azureTools,
           },
-          prolificData
+          prolificData,
+          () => loggedEventsRef.current,
+          () => sessionLogsRef.current.map(log => ({
+            timestamp: log.timestamp instanceof Date ? log.timestamp.toISOString() : String(log.timestamp),
+            type: log.type,
+            message: log.message,
+            details: log.details,
+          })),
         );
       }
     } catch (err: any) {

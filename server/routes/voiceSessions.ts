@@ -204,7 +204,7 @@ router.put("/:sessionId/message", optionalAuthenticated, async (req: Request, re
     const userId = (req.user as any)?.id || ANONYMOUS_USER_ID;
 
     const { sessionId } = req.params;
-    const { message, journey, agent, prolific } = req.body;
+    const { message, journey, agent, prolific, events, debugLogs } = req.body;
 
     if (!message || !message.itemId) {
       return apiResponse.validationError(res, "Message with itemId is required");
@@ -229,6 +229,8 @@ router.put("/:sessionId/message", optionalAuthenticated, async (req: Request, re
       prolificPid: prolific?.participantId,
       prolificStudyId: prolific?.studyId,
       prolificSessionId: prolific?.sessionId,
+      events,
+      debugLogs,
     });
 
     return apiResponse.success(res, { id: session.id });
