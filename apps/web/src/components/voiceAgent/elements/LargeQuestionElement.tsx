@@ -73,8 +73,10 @@ export const LargeQuestionElement: React.FC<LargeQuestionElementProps> = ({
 
   // Get title from either data.title or data.header.title (iOS structure)
   const getTitle = () => {
-    if (data.title) return data.title;
-    if ((data as any).header?.title) return (data as any).header.title;
+    if (typeof data.title === 'string' && data.title.trim().length > 0) return data.title.trim();
+    if (typeof (data as any).header?.title === 'string' && (data as any).header.title.trim().length > 0) {
+      return (data as any).header.title.trim();
+    }
     return '';
   };
 

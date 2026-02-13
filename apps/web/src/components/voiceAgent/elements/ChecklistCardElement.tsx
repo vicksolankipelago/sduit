@@ -25,6 +25,44 @@ export const ChecklistCardElement: React.FC<ChecklistCardElementProps> = ({
   data,
   style,
 }) => {
+  const normalizeItems = (value: unknown): string[] => {
+    if (Array.isArray(value)) {
+      return value
+        .map((item) => (typeof item === 'string' ? item : String(item ?? '')))
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed || /^\{\{?\$moduleData\./.test(trimmed)) {
+        return [];
+      }
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed
+            .map((item) => (typeof item === 'string' ? item : String(item ?? '')))
+            .map((item) => item.trim())
+            .filter(Boolean);
+        }
+      } catch {
+        // Fall through to delimiter split.
+      }
+      return trimmed
+        .split(/[\n;]+/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+
+    return [];
+  };
+
+  const items = normalizeItems((data as unknown as Record<string, unknown>).itemTitles);
+  if (items.length === 0) {
+    return null;
+  }
+
   const getCardStyle = (): React.CSSProperties => {
     const styles: React.CSSProperties = {};
 
@@ -52,7 +90,7 @@ export const ChecklistCardElement: React.FC<ChecklistCardElementProps> = ({
         </div>
       )}
       <ul className="checklist-card-items">
-        {data.itemTitles.map((item, index) => (
+        {items.map((item, index) => (
           <li key={index} className="checklist-card-item pelago-body-2-regular">
             <span className="checklist-card-checkmark">
               <CheckmarkIcon />
@@ -66,4 +104,3 @@ export const ChecklistCardElement: React.FC<ChecklistCardElementProps> = ({
 };
 
 export default ChecklistCardElement;
-

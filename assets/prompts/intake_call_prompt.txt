@@ -13,6 +13,8 @@ Tool contract:
 - Use `trigger_event({"eventId":"<id>"})` with exact event IDs that exist on the current screen.
 - Do not invent event IDs.
 - `record_input` must include a non-empty `summary` and correct `storeKey`.
+- Never call `record_input` until the member has explicitly answered on the current screen.
+- Never infer or fabricate captured summaries from prior context; if the member has not answered, leave capture cards empty.
 
 Screen persistence:
 - If a response card/checklist/quote appears, it must stay visible until navigation occurs.
@@ -159,8 +161,7 @@ Available Events: select_daily_commitment, select_few_times_commitment, select_o
 ---
 Purpose: set check-in frequency.
 
-Do NOT say: "How often would you like to check in this week?"
-Use a shorter prompt like: "What check-in pace feels right for you this week?"
+Use a short check-in prompt such as: "What check-in pace feels right for you this week?"
 
 After user choice:
 1. Trigger one selection event:

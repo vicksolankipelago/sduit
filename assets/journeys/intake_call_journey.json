@@ -1022,7 +1022,7 @@
               "type": "textBlock",
               "state": {
                 "id": "ai_disclaimer_body",
-                "text": "This tool is powered by AI, not a medical or mental health professional. It may sometimes produce inaccurate or incomplete responses. Some conversations may touch on sensitive topics \u2014 you can stop at any time."
+                "text": "This tool is powered by AI, not a medical or mental health professional. It may sometimes produce inaccurate or incomplete responses. Some conversations may touch on sensitive topics — you can stop at any time."
               },
               "style": {
                 "color": "primary",
@@ -1377,6 +1377,31 @@
                   "state": {
                     "aboutYouSummary": "{$moduleData.aboutYouSummary}"
                   }
+                },
+                {
+                  "rules": {
+                    "and": [
+                      {
+                        "!=": [
+                          {
+                            "var": "recordedInputTimestamp"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "!=": [
+                          {
+                            "var": "recordedInputTimestamp"
+                          },
+                          ""
+                        ]
+                      }
+                    ]
+                  },
+                  "state": {
+                    "recordedInputTimestamp": "{$screenState.recordedInputTimestamp}"
+                  }
                 }
               ]
             }
@@ -1578,6 +1603,31 @@
                   "state": {
                     "outcomesSummary": "{$moduleData.outcomesSummary}"
                   }
+                },
+                {
+                  "rules": {
+                    "and": [
+                      {
+                        "!=": [
+                          {
+                            "var": "recordedInputTimestamp"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "!=": [
+                          {
+                            "var": "recordedInputTimestamp"
+                          },
+                          ""
+                        ]
+                      }
+                    ]
+                  },
+                  "state": {
+                    "recordedInputTimestamp": "{$screenState.recordedInputTimestamp}"
+                  }
                 }
               ]
             },
@@ -1638,7 +1688,7 @@
                       {
                         "!=": [
                           {
-                            "var": "goals"
+                            "var": "goalFirst"
                           },
                           null
                         ]
@@ -1646,7 +1696,7 @@
                       {
                         "!=": [
                           {
-                            "var": "goals"
+                            "var": "goalFirst"
                           },
                           ""
                         ]
@@ -1654,7 +1704,20 @@
                     ]
                   },
                   "state": {
-                    "goals": "{$moduleData.goalTitles}"
+                    "goalFirst": "{$moduleData.goalTitles.0}"
+                  }
+                },
+                {
+                  "rules": {
+                    "==": [
+                      {
+                        "var": "recordedInputTitle"
+                      },
+                      "Goals"
+                    ]
+                  },
+                  "state": {
+                    "recordedInputTitle": "{$screenState.recordedInputTitle}"
                   }
                 }
               ]
@@ -1792,6 +1855,31 @@
                   },
                   "state": {
                     "yourWhySummary": "{$moduleData.yourWhySummary}"
+                  }
+                },
+                {
+                  "rules": {
+                    "and": [
+                      {
+                        "!=": [
+                          {
+                            "var": "recordedInputTimestamp"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "!=": [
+                          {
+                            "var": "recordedInputTimestamp"
+                          },
+                          ""
+                        ]
+                      }
+                    ]
+                  },
+                  "state": {
+                    "recordedInputTimestamp": "{$screenState.recordedInputTimestamp}"
                   }
                 }
               ]
@@ -1953,84 +2041,6 @@
               ]
             },
             {
-              "type": "textBlock",
-              "state": {
-                "id": "weekly_focus_caption",
-                "text": "your focus this week"
-              },
-              "style": {
-                "color": "secondary",
-                "style": "caption1",
-                "alignment": "leading"
-              },
-              "conditions": [
-                {
-                  "rules": {
-                    "and": [
-                      {
-                        "!=": [
-                          {
-                            "var": "focus"
-                          },
-                          null
-                        ]
-                      },
-                      {
-                        "!=": [
-                          {
-                            "var": "focus"
-                          },
-                          ""
-                        ]
-                      }
-                    ]
-                  },
-                  "state": {
-                    "focus": "{$moduleData.weeklyIntention}"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "spacer",
-              "state": {
-                "id": "weekly_focus_caption_spacer"
-              },
-              "style": {
-                "width": null,
-                "height": 8,
-                "direction": "vertical",
-                "isFlexible": false
-              },
-              "conditions": [
-                {
-                  "rules": {
-                    "and": [
-                      {
-                        "!=": [
-                          {
-                            "var": "focus"
-                          },
-                          null
-                        ]
-                      },
-                      {
-                        "!=": [
-                          {
-                            "var": "focus"
-                          },
-                          ""
-                        ]
-                      }
-                    ]
-                  },
-                  "state": {
-                    "focus": "{$moduleData.weeklyIntention}"
-                  }
-                }
-              ]
-            },
-            {
               "type": "quoteCard",
               "state": {
                 "id": "weekly_focus_quote",
@@ -2063,6 +2073,31 @@
                   },
                   "state": {
                     "focus": "{$moduleData.weeklyIntention}"
+                  }
+                },
+                {
+                  "rules": {
+                    "and": [
+                      {
+                        "!=": [
+                          {
+                            "var": "recordedInputTimestamp"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "!=": [
+                          {
+                            "var": "recordedInputTimestamp"
+                          },
+                          ""
+                        ]
+                      }
+                    ]
+                  },
+                  "state": {
+                    "recordedInputTimestamp": "{$screenState.recordedInputTimestamp}"
                   }
                 }
               ]
@@ -2167,18 +2202,6 @@
                 "height": null,
                 "direction": "vertical",
                 "isFlexible": true
-              }
-            },
-            {
-              "type": "textBlock",
-              "state": {
-                "id": "rewards_description",
-                "text": "Check-ins are quick daily reflections that help you track drinks and spot patterns. Every check-in earns points you can put toward rewards."
-              },
-              "style": {
-                "color": "secondary",
-                "style": "body2",
-                "alignment": "center"
               }
             },
             {
@@ -2365,7 +2388,7 @@
                 "copyId": null,
                 "header": {
                   "id": "checkin_header",
-                  "title": "",
+                  "title": null,
                   "caption": null,
                   "imageName": null,
                   "description": null
@@ -2391,7 +2414,8 @@
                 "category": "check-in",
                 "maxSelection": 1,
                 "allowsMultiSelection": false,
-                "currentlySelectedOptions": null
+                "currentlySelectedOptions": null,
+                "title": null
               }
             }
           ],
@@ -2622,6 +2646,31 @@
                   },
                   "state": {
                     "notificationTime": "{$moduleData.notificationTime}"
+                  }
+                },
+                {
+                  "rules": {
+                    "and": [
+                      {
+                        "!=": [
+                          {
+                            "var": "recordedInputTimestamp"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "!=": [
+                          {
+                            "var": "recordedInputTimestamp"
+                          },
+                          ""
+                        ]
+                      }
+                    ]
+                  },
+                  "state": {
+                    "recordedInputTimestamp": "{$screenState.recordedInputTimestamp}"
                   }
                 }
               ]

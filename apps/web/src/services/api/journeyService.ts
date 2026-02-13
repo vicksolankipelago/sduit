@@ -120,12 +120,24 @@ export async function applyJourneyAiProposal(
 // Production endpoints - fetch from Object Storage (shared between dev and prod databases)
 // These are public read-only endpoints, no credentials needed
 export async function listProductionFlows(): Promise<{ journeyId: string; name: string; description: string; publishedAt: string; agentCount?: number }[]> {
-  return api.get('/api/journeys/production/list');
+  return api.get('/api/journeys/production/list', {
+    cache: 'no-store',
+    headers: {
+      'Cache-Control': 'no-cache',
+      Pragma: 'no-cache',
+    },
+  });
 }
 
 export async function getProductionFlow(journeyId: string): Promise<PublishedJourney | null> {
   try {
-    return await api.get<PublishedJourney>(`/api/journeys/production/${journeyId}`);
+    return await api.get<PublishedJourney>(`/api/journeys/production/${journeyId}?_t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache',
+        Pragma: 'no-cache',
+      },
+    });
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       return null;

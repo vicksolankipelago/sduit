@@ -260,6 +260,89 @@ function getScreenEvents(screen: AgentScreen | undefined): AgentScreenEvent[] {
   return [...(screen.events || []), ...sectionEvents].filter(Boolean);
 }
 
+function extractModuleDataKeyFromConditionRef(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const withoutBraces =
+    trimmed.startsWith('{') && trimmed.endsWith('}')
+      ? trimmed.slice(1, -1).trim()
+      : trimmed;
+  if (!withoutBraces.startsWith('$moduleData.')) return null;
+
+  const key = withoutBraces.slice('$moduleData.'.length).trim();
+  return key.length > 0 ? key : null;
+}
+
+function collectModuleDataKeysFromConditions(conditions: unknown, target: Set<string>) {
+  if (!Array.isArray(conditions)) return;
+  for (const condition of conditions) {
+    if (!condition || typeof condition !== 'object') continue;
+    const state = (condition as Record<string, unknown>).state;
+    if (!state || typeof state !== 'object') continue;
+
+    for (const value of Object.values(state as Record<string, unknown>)) {
+      const key = extractModuleDataKeyFromConditionRef(value);
+      if (key) {
+        target.add(key);
+      }
+    }
+  }
+}
+
+function getJourneyScreensForConditionScan(journey: Journey | null | undefined): AgentScreen[] {
+  if (!journey || typeof journey !== 'object') return [];
+
+  const journeyRecord = journey as unknown as Record<string, unknown>;
+  const directScreens = Array.isArray(journeyRecord.screens)
+    ? (journeyRecord.screens as AgentScreen[])
+    : [];
+  if (directScreens.length > 0) {
+    return directScreens;
+  }
+
+  if (!Array.isArray(journey.agents)) return [];
+  return journey.agents.flatMap((agent) =>
+    Array.isArray((agent as any)?.screens) ? ((agent as any).screens as AgentScreen[]) : []
+  );
+}
+
+function collectJourneyConditionalModuleKeys(journey: Journey | null | undefined): Set<string> {
+  const keys = new Set<string>();
+  const screens = getJourneyScreensForConditionScan(journey);
+
+  for (const screen of screens) {
+    if (!screen) continue;
+    collectModuleDataKeysFromConditions((screen as any).conditions, keys);
+    collectModuleDataKeysFromConditions((screen as any).eventConditions, keys);
+
+    for (const event of getScreenEvents(screen)) {
+      collectModuleDataKeysFromConditions((event as any)?.conditions, keys);
+      const actions = Array.isArray((event as any)?.action) ? ((event as any).action as any[]) : [];
+      for (const action of actions) {
+        collectModuleDataKeysFromConditions(action?.conditions, keys);
+      }
+    }
+
+    for (const section of (screen.sections || [])) {
+      for (const element of (section?.elements || [])) {
+        collectModuleDataKeysFromConditions((element as any)?.conditions, keys);
+        const events = Array.isArray((element as any)?.events) ? ((element as any).events as any[]) : [];
+        for (const event of events) {
+          collectModuleDataKeysFromConditions(event?.conditions, keys);
+          const actions = Array.isArray(event?.action) ? (event.action as any[]) : [];
+          for (const action of actions) {
+            collectModuleDataKeysFromConditions(action?.conditions, keys);
+          }
+        }
+      }
+    }
+  }
+
+  return keys;
+}
+
 function getReachableScreenIds(screens: AgentScreen[], startScreenId: string): string[] {
   const byId = new Map<string, AgentScreen>();
   for (const screen of screens || []) {
@@ -848,6 +931,9 @@ function VoiceAgentContent() {
   // Startup guard: require at least one completed user utterance before leaving pq-program-summary.
   const userUtteranceCountRef = useRef<number>(0);
   const userUtterancesByScreenRef = useRef<Record<string, number>>({});
+  // Track keys set by record_input so stale captured responses don't pre-populate
+  // future sessions before the member explicitly answers again.
+  const recordInputDerivedKeysRef = useRef<Set<string>>(new Set());
   const lastElevenLabsModeRef = useRef<'speaking' | 'listening' | null>(null);
   const lastLiveAgentMessageRef = useRef<string | null>(null);
   const shouldResetLiveAgentMessageOnNextAssistantTextRef = useRef(false);
@@ -915,6 +1001,28 @@ function VoiceAgentContent() {
     moduleStateRef.current = { ...moduleStateRef.current, ...sanitizedUpdates };
     updateModuleState(sanitizedUpdates);
   }, [updateModuleState]);
+
+  const markCapturedModuleKeys = useCallback((updates: Record<string, any>) => {
+    const keys = Object.keys(updates || {}).filter((key) => key.trim().length > 0);
+    if (keys.length === 0) return;
+    for (const key of keys) {
+      recordInputDerivedKeysRef.current.add(key);
+    }
+  }, []);
+
+  const sanitizeSessionFlowContext = useCallback((context: Record<string, any> | null | undefined) => {
+    if (!context || typeof context !== 'object') return {};
+    const blocked = recordInputDerivedKeysRef.current;
+    return Object.fromEntries(
+      Object.entries(context).filter(([key]) => {
+        if (blocked.has(key)) return false;
+        if (key.startsWith('recordedInput')) return false;
+        if (key === LIVE_AGENT_MESSAGE_MODULE_KEY) return false;
+        if (key === 'agentIsSpeaking' || key === 'agentSpeechMode') return false;
+        return true;
+      })
+    );
+  }, []);
 
   const stripSpeechDirectives = useCallback((text: string): string => {
     return text.replace(/\[(?:slow|fast|pause|break|whisper|loud|soft|neutral|happy|sad|excited|calm|serious|cheerful|empathetic|curious|surprised|concerned|warm|gentle|firm|playful)\]/gi, '').replace(/\s{2,}/g, ' ').trim();
@@ -1285,15 +1393,15 @@ function VoiceAgentContent() {
         // Synchronously merge current moduleState with flowContext for data passing
         // This ensures all quiz answers are available to the next journey
         const mergedFlowContext = {
-          ...(flowContext || {}),
-          ...(moduleState || {}),
+          ...sanitizeSessionFlowContext(flowContext || {}),
+          ...sanitizeSessionFlowContext(moduleState || {}),
         };
         
         console.log('🔗 Merged flow context:', mergedFlowContext);
         
         // Also update the flowContext state for future use
         if (updateFlowContext && moduleState) {
-          updateFlowContext(moduleState);
+          updateFlowContext(sanitizeSessionFlowContext(moduleState));
         }
         
         addLog('info', `🔗 Merged flow context keys: ${Object.keys(mergedFlowContext).join(', ')}`);
@@ -1688,9 +1796,16 @@ function VoiceAgentContent() {
       return;
     }
 
-    // Apply prompt variable substitution using flowContext from quiz answers
+    // Apply prompt variable substitution using sanitized flowContext from quiz answers.
     // Priority: flowContextOverride (quiz answers) > pqData (manual settings) > DEFAULT_PQ_DATA
-    const contextToUse = flowContextOverride || flowContext || {};
+    const rawContextToUse = flowContextOverride || flowContext || {};
+    const journeyConditionKeys = collectJourneyConditionalModuleKeys(journeyToUse);
+    if (journeyConditionKeys.size > 0) {
+      for (const key of journeyConditionKeys) {
+        recordInputDerivedKeysRef.current.add(key);
+      }
+    }
+    const contextToUse = sanitizeSessionFlowContext(rawContextToUse);
     const pqDataToUse = { ...DEFAULT_PQ_DATA, ...pqData };
     
     console.log('📝 Prompt substitution context:', {
@@ -1854,14 +1969,15 @@ function VoiceAgentContent() {
     // Convert journey to runtime agents with flow context for {{key}} prompt interpolation
     // Use override if provided (from start_journey), otherwise use current context state
     // CRITICAL: Transform quiz option IDs to readable labels before use
-    const rawFlowContext = flowContextOverride || flowContext || {};
+    const rawFlowContext = sanitizeSessionFlowContext(flowContextOverride || flowContext || {});
+    const sessionFlowContext = { ...rawFlowContext };
     // Start each session from explicit flow context only, so stale captured UI
     // values from prior sessions cannot pre-populate current-screen cards.
-    const sessionModuleState = { ...rawFlowContext };
+    const sessionModuleState = { ...sessionFlowContext };
     replaceModuleState?.(sessionModuleState);
     moduleStateRef.current = sessionModuleState;
 
-    const effectiveFlowContext = transformQuizAnswersToLabels(rawFlowContext);
+    const effectiveFlowContext = transformQuizAnswersToLabels(sessionFlowContext);
     console.log('📊 Quiz context transformation:', {
       rawKeys: Object.keys(rawFlowContext),
       transformedSample: Object.entries(effectiveFlowContext).slice(0, 3),
@@ -2342,14 +2458,14 @@ Important guidelines:
     // Merge flow context for data passing (use transformed labels for readable prompts)
     // Include currentScreen so the agent knows where to start
     const mergedContext = {
-      ...(flowContext || {}),
-      ...transformedModuleState,
+      ...sanitizeSessionFlowContext(flowContext || {}),
+      ...sanitizeSessionFlowContext(transformedModuleState),
       ...(activeScreenId ? { currentScreen: activeScreenId } : {}),
     };
     
     // Update flowContext state for consistency
     if (updateFlowContext && moduleState) {
-      updateFlowContext(transformedModuleState);
+      updateFlowContext(sanitizeSessionFlowContext(transformedModuleState));
     }
     
     addLog('info', `🎤 Flow context keys: ${Object.keys(mergedContext).join(', ')}`);
@@ -3088,7 +3204,30 @@ Important guidelines:
       
       // Handle record_input tool specifically - update screen state
       if (toolName === 'record_input' && args.title) {
-        const { title, summary = '', description = '', storeKey } = args;
+        const activeScreenId = currentScreenIdRef.current;
+        const utterancesOnActiveScreen = activeScreenId
+          ? (userUtterancesByScreenRef.current[activeScreenId] || 0)
+          : 0;
+        const savedFromResult = resultObject?.saved;
+        const recordInputAccepted =
+          savedFromResult === true ||
+          (savedFromResult === undefined && !(typeof result === 'string' && /error/i.test(result)));
+
+        if (utterancesOnActiveScreen < 1 || !recordInputAccepted) {
+          addLog('warning', `⚠️ Ignoring record_input callback payload on "${activeScreenId ?? 'unknown'}"`, {
+            currentScreen: activeScreenId,
+            utterancesOnActiveScreen,
+            savedFromResult,
+            args,
+            result: resultObject || result,
+          });
+          return;
+        }
+
+        const title = typeof resultObject?.title === 'string' ? resultObject.title : args.title;
+        const summary = typeof resultObject?.summary === 'string' ? resultObject.summary : (args.summary || '');
+        const description = typeof resultObject?.description === 'string' ? resultObject.description : (args.description || '');
+        const storeKey = typeof resultObject?.storeKey === 'string' ? resultObject.storeKey : args.storeKey;
         const baseUpdates = deriveRecordInputModuleUpdates({ title, summary, storeKey });
         const { summary: displaySummary, updates: canonicalUpdates } = applyWeeklyFocusRecordInputPolicy(
           { title, summary, storeKey },
@@ -3117,6 +3256,7 @@ Important guidelines:
         
         // Also update persistent module state in AgentUIContext to ensure summary cards render.
         if (Object.keys(canonicalUpdates).length > 0) {
+          markCapturedModuleKeys(canonicalUpdates);
           applyModuleStateUpdates(canonicalUpdates);
           addLog('info', `✅ Updated persistent module state`, { keys: Object.keys(canonicalUpdates) });
         }
@@ -3839,6 +3979,30 @@ Important guidelines:
     }) => {
       const startedAtMs = Date.now();
       const { title, summary = '', description = '', storeKey, nextEventId, delay = 0 } = params;
+      const activeScreenId = currentScreenIdRef.current;
+      const utterancesOnActiveScreen = activeScreenId
+        ? (userUtterancesByScreenRef.current[activeScreenId] || 0)
+        : 0;
+
+      if (utterancesOnActiveScreen < 1) {
+        addLog('warning', `⚠️ record_input blocked on "${activeScreenId ?? 'unknown'}": awaiting explicit user response.`, {
+          title,
+          storeKey,
+          nextEventId,
+          currentScreen: activeScreenId,
+          startedAtMs,
+        });
+        return {
+          saved: false,
+          title,
+          summary: '',
+          storeKey: storeKey || null,
+          reason: 'awaiting_user_utterance',
+          current_screen: activeScreenId || null,
+          message: `Wait for the member to explicitly answer on "${activeScreenId ?? 'this screen'}" before calling record_input.`,
+        };
+      }
+
       const baseUpdates = deriveRecordInputModuleUpdates({ title, summary, storeKey });
       const { summary: displaySummary, updates: canonicalUpdates } = applyWeeklyFocusRecordInputPolicy(
         { title, summary, storeKey },
@@ -3867,6 +4031,7 @@ Important guidelines:
       }
 
       if (Object.keys(moduleUpdates).length > 0) {
+        markCapturedModuleKeys(moduleUpdates);
         applyModuleStateUpdates(moduleUpdates);
       }
 
@@ -4154,12 +4319,12 @@ Important guidelines:
 
       // Store both goalTitles (string[] for checklistCard) and memberGoals (full objects)
       // in module state — matches iOS stateManager.updateModuleState pattern
-      if (updateModuleState) {
-        updateModuleState({
-          goalTitles,
-          memberGoals: uniqueGoals,
-        });
-      }
+      const goalUpdates = {
+        goalTitles,
+        memberGoals: uniqueGoals,
+      };
+      markCapturedModuleKeys(goalUpdates);
+      applyModuleStateUpdates(goalUpdates);
 
       const completedAtMs = Date.now();
       addLog('tool', `🎯 set_goals result`, {
@@ -4252,6 +4417,7 @@ Important guidelines:
         stateUpdates.weeklyFocusGoal = relatedGoal;
       }
 
+      markCapturedModuleKeys(stateUpdates);
       applyModuleStateUpdates(stateUpdates);
 
       const completedAtMs = Date.now();
@@ -4320,12 +4486,12 @@ Important guidelines:
         }
       }));
 
-      if (updateModuleState) {
-        updateModuleState({
-          checkinFrequencyDays: days,
-          checkinCommitment,
-        });
-      }
+      const checkinUpdates = {
+        checkinFrequencyDays: days,
+        checkinCommitment,
+      };
+      markCapturedModuleKeys(checkinUpdates);
+      applyModuleStateUpdates(checkinUpdates);
 
       const completedAtMs = Date.now();
       addLog('tool', `📊 set_checkin_frequency result`, {
@@ -4378,13 +4544,12 @@ Important guidelines:
           detail: { title: 'Reminder time', summary: utcTime, description: `User said: ${userTime}, UTC: ${utcTime}`, storeKey: 'reminderTime', timestamp: Date.now() }
         }));
 
-        // Update module state directly
-        if (updateModuleState) {
-          updateModuleState({
-            reminderTime: utcTime,
-            notificationTime: utcTime,
-          });
-        }
+        const reminderUpdates = {
+          reminderTime: utcTime,
+          notificationTime: utcTime,
+        };
+        markCapturedModuleKeys(reminderUpdates);
+        applyModuleStateUpdates(reminderUpdates);
 
         const completedAtMs = Date.now();
         addLog('tool', `⏰ set_reminder_time result`, {

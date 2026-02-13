@@ -79,14 +79,11 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
     }
   }, [initialScreen]);
 
-  // Sync module state from props if provided
+  // Sync module state from props, including empty-state resets between sessions.
   React.useEffect(() => {
-    if (initialModuleState && Object.keys(initialModuleState).length > 0) {
-      // Merge with existing state rather than replacing completely, to preserve
-      // any state that might have been set locally before prop update
-      moduleStateRef.current = { ...moduleStateRef.current, ...initialModuleState }; // Sync ref immediately
-      setModuleState(prev => ({ ...prev, ...initialModuleState }));
-    }
+    const nextModuleState = initialModuleState || {};
+    moduleStateRef.current = nextModuleState; // Sync ref immediately
+    setModuleState(nextModuleState);
   }, [initialModuleState]);
 
   const setCurrentScreen = useCallback((screen: Screen | null) => {
