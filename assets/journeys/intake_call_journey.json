@@ -1301,14 +1301,21 @@
               "type": "textCard",
               "state": {
                 "id": "about_you_summary_card",
-                "title": "Here is what I captured",
+                "title": "About You",
                 "content": "{$moduleData.aboutYouSummary}"
               },
               "style": {
-                "backgroundColor": "backgroundLightMintGreen",
+                "backgroundColor": "backgroundMistBlue",
+                "borderColor": "backgroundMistBlue",
                 "textColor": "textGlobalPrimary",
                 "captionColor": "textGlobalPrimary",
-                "cornerRadius": 12
+                "borderWidth": 0,
+                "cornerRadius": 8,
+                "titleTextStyle": "boldBlack",
+                "showIcon": true,
+                "iconName": "checkmark",
+                "iconBackgroundColor": "primaryCTADefault",
+                "iconColor": "textGlobalLight"
               },
               "conditions": [
                 {
@@ -1794,84 +1801,6 @@
               ]
             },
             {
-              "type": "textBlock",
-              "state": {
-                "id": "weekly_focus_label",
-                "text": "Your focus this week"
-              },
-              "style": {
-                "color": "primary",
-                "style": "heading2",
-                "alignment": "leading"
-              },
-              "conditions": [
-                {
-                  "rules": {
-                    "and": [
-                      {
-                        "!=": [
-                          {
-                            "var": "focus"
-                          },
-                          null
-                        ]
-                      },
-                      {
-                        "!=": [
-                          {
-                            "var": "focus"
-                          },
-                          ""
-                        ]
-                      }
-                    ]
-                  },
-                  "state": {
-                    "focus": "{$moduleData.weeklyFocus}"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "spacer",
-              "state": {
-                "id": "weekly_focus_label_spacer"
-              },
-              "style": {
-                "width": null,
-                "height": 8,
-                "direction": "vertical",
-                "isFlexible": false
-              },
-              "conditions": [
-                {
-                  "rules": {
-                    "and": [
-                      {
-                        "!=": [
-                          {
-                            "var": "focus"
-                          },
-                          null
-                        ]
-                      },
-                      {
-                        "!=": [
-                          {
-                            "var": "focus"
-                          },
-                          ""
-                        ]
-                      }
-                    ]
-                  },
-                  "state": {
-                    "focus": "{$moduleData.weeklyFocus}"
-                  }
-                }
-              ]
-            },
-            {
               "type": "quoteCard",
               "state": {
                 "id": "weekly_focus_quote",
@@ -2235,7 +2164,7 @@
                 "copyId": null,
                 "header": {
                   "id": "checkin_header",
-                  "title": "How often would you like to check in this week?",
+                  "title": "",
                   "caption": null,
                   "imageName": null,
                   "description": null
@@ -2808,7 +2737,7 @@
   "screenPrompts": {
     "outcomes": "Screen ID: outcomes\nEvents: motivation | Purpose: Capture goals, show checklist card\n\nAsk about desired outcomes referencing {{areas_to_improve}}.\n\nTOOL: set_goals — extract 2-4 goals from what user ACTUALLY SAID. Each goal:\n- goal (string): concise, in member's words\n- categories (string[]): health, relationships, emotional_wellbeing, financial, habits, personal_growth, mindfulness\n- progress (number): always 0\n\nExample: set_goals({\"goals\":[{\"goal\":\"Drink less during the week\",\"categories\":[\"habits\",\"health\"],\"progress\":0}]})\n\nAfter response:\n1. set_goals({...}) — shows checklist card automatically\n2. Say exactly: \"Here is what I've captured.\"\n3. Ask: \"Does that look right?\"\n4. If user asks to adjust goals, call set_goals again and repeat steps 2-3 (never read the full goals list aloud).\n5. After confirmation, call navigate_to({\"screen\":\"motivation\",\"delay\":3}) so checklist stays visible.\n6. STOP. Wait for navigation. Do NOT ask the motivation question on this screen.\n\nNo record_input on this screen.",
     "pq-intro": "Screen ID: pq-intro\nAvailable Events: pq-feelings-alcohol (button tap)\n\nPurpose: Welcome screen where user taps \"Get Started\" to begin quiz setup\n\nUI Display:\n- Title: \"Welcome to Pelago\"\n- Description: \"Let's get you set up with a personalized plan\"\n- Pelago Boat animation\n- \"Get Started\" button at bottom\n\nBehavior:\n- This is a CTA-only screen (no voice interaction)\n- When user taps \"Get Started\", it navigates to pq-feelings-alcohol\n\nNo voice interaction needed on this screen.",
-    "about-you": "Screen ID: about-you\nEvents: outcomes | Purpose: What brings them to Pelago\n\nAsk based on {{feelings_alcohol}} stage - adapt tone. Example: \"curious\" -> \"You mentioned you're curious about making some changes. What's been on your mind lately?\"\n\nAfter response:\n1. record_input({\"title\":\"About You\",\"summary\":\"[1-line summary]\",\"storeKey\":\"aboutYouSummary\",\"description\":\"[brief context]\"})\n2. The TextCard under the agent card must show {$moduleData.aboutYouSummary}.\n3. Say one short reflection tied to what they said.\n4. navigate_to({\"screen\":\"outcomes\",\"delay\":3})\n5. STOP. Wait for navigation. Do NOT ask the outcomes question here.",
+    "about-you": "Screen ID: about-you\nEvents: outcomes | Purpose: What brings them to Pelago\n\nAsk based on {{feelings_alcohol}} stage - adapt tone. Example: \"curious\" -> \"You mentioned you're curious about making some changes. What's been on your mind lately?\"\n\nAfter response:\n1. record_input({\"title\":\"About You\",\"summary\":\"[1-line summary]\",\"storeKey\":\"aboutYouSummary\",\"description\":\"[brief context]\"})\n2. The blue icon TextCard (title: \"About You\") under the agent card must show {$moduleData.aboutYouSummary}.\n3. Say one short reflection tied to what they said.\n4. navigate_to({\"screen\":\"outcomes\",\"delay\":3})\n5. STOP. Wait for navigation. Do NOT ask the outcomes question here.",
     "weekly-focus": "Screen ID: weekly-focus\nEvents: cm-rewards-intro | Purpose: Capture weekly focus, show quote card\n\nOffer 2-3 personalized suggestions from {{areas_to_improve}}, {{motivation}}, {{learning_topics}}. Always end with: \"...or it could be something else entirely — whatever feels right for you this week.\"\n\nTOOL: capture_weekly_focus — stores focus and shows quote card replacing the open question.\n- focus (string, required): member's focus in their own words\n- relatedGoal (string, optional): matching goal from set_goals if relevant\n\nCRITICAL: The weekly-focus UI must show the quote card with their focus (not the goals checklist). Call `capture_weekly_focus` first so the quote card replaces prior content.\n\nAfter response:\n1. capture_weekly_focus({\"focus\":\"[their focus]\",\"relatedGoal\":\"[goal or omit]\"})\n2. record_input({\"title\":\"Weekly Focus\",\"summary\":\"[summary]\",\"storeKey\":\"weeklyIntention\",\"description\":\"[brief context]\"})\n3. navigate_to({\"screen\":\"cm-rewards-intro\",\"delay\":3})\n4. STOP — do NOT speak about rewards yet.",
     "motivation": "Screen ID: motivation\nEvents: weekly-focus | Purpose: Deep dive into motivation\n\nAsk referencing {{motivation}} from quiz — go deeper, don't just read it back.\n\nAfter response:\n1. record_input({\"title\":\"Your Why\",\"summary\":\"[1-line summary]\",\"storeKey\":\"yourWhySummary\",\"description\":\"[brief context]\"})\n2. The response should appear under the agent card as {$moduleData.yourWhySummary}.\n3. Say one short reflective acknowledgment.\n4. navigate_to({\"screen\":\"weekly-focus\",\"delay\":3})\n5. STOP. Wait for navigation. Do NOT mention weekly focus on this screen.",
     "pq-voice-ready": "Screen ID: pq-voice-ready\nEvents: pq-program-summary | Purpose: Handoff from quiz to voice onboarding\n\nIf `{{currentScreen}}` is `pq-voice-ready`, do not ask onboarding questions yet.\nImmediately call: navigate_to({\"screen\":\"pq-program-summary\"})\nWait for navigation to complete before continuing.",

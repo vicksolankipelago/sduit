@@ -95,7 +95,7 @@ Ask based on {{feelings_alcohol}} stage - adapt tone. Example: "curious" -> "You
 
 After response:
 1. record_input({"title":"About You","summary":"[1-line summary]","storeKey":"aboutYouSummary","description":"[brief context]"})
-2. The TextCard under the agent card must show {$moduleData.aboutYouSummary}.
+2. The blue icon TextCard (title: "About You") under the agent card must show {$moduleData.aboutYouSummary}.
 3. Say one short reflection tied to what they said.
 4. navigate_to({"screen":"outcomes","delay":3})
 5. STOP. Wait for navigation. Do NOT ask the outcomes question here.
