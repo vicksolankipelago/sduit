@@ -535,6 +535,33 @@ export interface TextCardElementStyle {
   captionColor?: string;
   borderWidth?: number;
   cornerRadius?: number;
+  /**
+   * Optional leading icon support.
+   * When omitted, falls back to legacy `showCheckmark`.
+   */
+  showIcon?: boolean;
+  /**
+   * Icon name for the leading icon (for example: "checkmark", "star", "heart").
+   * Defaults to "checkmark" when icon rendering is enabled.
+   */
+  iconName?: string;
+  /**
+   * Background color token for the leading icon circle.
+   * Falls back to legacy `checkmarkBackgroundColor`.
+   */
+  iconBackgroundColor?: string;
+  /**
+   * Foreground/icon color token for the leading icon glyph.
+   * Falls back to legacy `checkmarkColor`.
+   */
+  iconColor?: string;
+  /**
+   * Controls top-line typography.
+   * `boldBlack` matches the 3 colored summary cards in Figma.
+   */
+  titleTextStyle?: 'default' | 'boldBlack';
+
+  // Legacy fields retained for backwards compatibility
   showCheckmark?: boolean;
   checkmarkBackgroundColor?: string;
   checkmarkColor?: string;

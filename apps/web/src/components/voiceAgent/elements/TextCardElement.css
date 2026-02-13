@@ -1,7 +1,6 @@
 .text-card-element {
   display: flex;
   flex-direction: column;
-  gap: 4px;
   padding: 8px 16px;
   border-radius: 8px;
   background-color: var(--background-light);
@@ -11,25 +10,35 @@
   height: auto;
 }
 
-.text-card-element-with-checkmark {
+.text-card-element-with-icon {
   flex-direction: row;
   align-items: flex-start;
   gap: 8px;
 }
 
-.text-card-checkmark {
+.text-card-leading-icon {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding-top: 3px;
+  padding-top: 4px;
   flex-shrink: 0;
+  min-width: 22px;
 }
 
 .text-card-content-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 0px;
   flex: 1;
+  min-width: 0;
+}
+
+.text-card-element-with-icon .text-card-content-wrapper {
+  gap: 0;
+  padding-bottom: 4px;
+}
+
+.text-card-element:not(.text-card-element-with-icon) .text-card-content-wrapper {
+  gap: 4px;
 }
 
 .text-card-caption {

@@ -1189,9 +1189,11 @@ function createPostWebPQScreens(): Screen[] {
                 textColor: 'textGlobalPrimary',
                 borderWidth: 0,
                 cornerRadius: 8,
-                showCheckmark: true,
-                checkmarkBackgroundColor: 'primaryCTADefault',
-                checkmarkColor: 'textGlobalLight',
+                titleTextStyle: 'boldBlack',
+                showIcon: true,
+                iconName: 'checkmark',
+                iconBackgroundColor: 'primaryCTADefault',
+                iconColor: 'textGlobalLight',
               },
               conditions: [
                 {
@@ -1221,9 +1223,11 @@ function createPostWebPQScreens(): Screen[] {
                 textColor: 'textGlobalPrimary',
                 borderWidth: 0,
                 cornerRadius: 8,
-                showCheckmark: true,
-                checkmarkBackgroundColor: 'primaryCTADefault',
-                checkmarkColor: 'textGlobalLight',
+                titleTextStyle: 'boldBlack',
+                showIcon: true,
+                iconName: 'checkmark',
+                iconBackgroundColor: 'primaryCTADefault',
+                iconColor: 'textGlobalLight',
               },
               conditions: [
                 {
@@ -1253,9 +1257,11 @@ function createPostWebPQScreens(): Screen[] {
                 textColor: 'textGlobalPrimary',
                 borderWidth: 0,
                 cornerRadius: 8,
-                showCheckmark: true,
-                checkmarkBackgroundColor: 'primaryCTADefault',
-                checkmarkColor: 'textGlobalLight',
+                titleTextStyle: 'boldBlack',
+                showIcon: true,
+                iconName: 'checkmark',
+                iconBackgroundColor: 'primaryCTADefault',
+                iconColor: 'textGlobalLight',
               },
               conditions: [
                 {

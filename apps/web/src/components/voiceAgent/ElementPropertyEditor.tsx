@@ -18,6 +18,16 @@ interface ElementStyleAccessor {
   imageHeight?: ElementStyleValue;
   backgroundColor?: ElementStyleValue;
   cornerRadius?: ElementStyleValue;
+  borderWidth?: ElementStyleValue;
+  captionColor?: ElementStyleValue;
+  titleTextStyle?: ElementStyleValue;
+  showIcon?: ElementStyleValue;
+  iconName?: ElementStyleValue;
+  iconBackgroundColor?: ElementStyleValue;
+  iconColor?: ElementStyleValue;
+  showCheckmark?: ElementStyleValue;
+  checkmarkBackgroundColor?: ElementStyleValue;
+  checkmarkColor?: ElementStyleValue;
   icon?: ElementStyleValue;
   borderColor?: ElementStyleValue;
   height?: ElementStyleValue;
@@ -161,6 +171,28 @@ export const ElementPropertyEditor: React.FC<ElementPropertyEditorProps> = ({
                   ))}
                 </optgroup>
               </select>
+            </FormField>
+          </>
+        );
+
+      case 'textCard':
+        return (
+          <>
+            <FormField label="Top Text" required>
+              <input
+                type="text"
+                value={element.state.title as string || ''}
+                onChange={(e) => handleDataChange('title', e.target.value)}
+                placeholder="Top text"
+              />
+            </FormField>
+            <FormField label="Content" required>
+              <textarea
+                value={element.state.content as string || ''}
+                onChange={(e) => handleDataChange('content', e.target.value)}
+                placeholder="Card content"
+                rows={3}
+              />
             </FormField>
           </>
         );
@@ -868,6 +900,124 @@ export const ElementPropertyEditor: React.FC<ElementPropertyEditorProps> = ({
             </FormField>
           </>
         );
+
+      case 'textCard': {
+        const showIcon = (
+          (element.style?.showIcon as boolean | undefined) ??
+          (element.style?.showCheckmark as boolean | undefined) ??
+          false
+        );
+        const iconBackgroundFallback = getStyleValue(element.style, 'checkmarkBackgroundColor', 'primaryCTADefault');
+        const iconColorFallback = getStyleValue(element.style, 'checkmarkColor', 'textGlobalLight');
+
+        return (
+          <>
+            <FormField label="Top Text Style">
+              <select
+                value={getStyleValue(element.style, 'titleTextStyle', showIcon ? 'boldBlack' : 'default')}
+                onChange={(e) => handleStyleChange('titleTextStyle', e.target.value)}
+              >
+                <option value="default">Default</option>
+                <option value="boldBlack">Bold Black (Figma)</option>
+              </select>
+            </FormField>
+            <FormField label="Show Icon">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={showIcon}
+                  onChange={(e) => handleStyleChange('showIcon', e.target.checked)}
+                />
+                <span>Display leading icon</span>
+              </label>
+            </FormField>
+            {showIcon && (
+              <>
+                <FormField label="Icon Name">
+                  <input
+                    type="text"
+                    value={getStyleValue(element.style, 'iconName', 'checkmark')}
+                    onChange={(e) => handleStyleChange('iconName', e.target.value)}
+                    placeholder="checkmark"
+                  />
+                </FormField>
+                <FormField label="Icon Background Color">
+                  <input
+                    type="text"
+                    value={getStyleValue(element.style, 'iconBackgroundColor', iconBackgroundFallback)}
+                    onChange={(e) => handleStyleChange('iconBackgroundColor', e.target.value)}
+                    placeholder="e.g., primaryCTADefault"
+                  />
+                </FormField>
+                <FormField label="Icon Color">
+                  <input
+                    type="text"
+                    value={getStyleValue(element.style, 'iconColor', iconColorFallback)}
+                    onChange={(e) => handleStyleChange('iconColor', e.target.value)}
+                    placeholder="e.g., textGlobalLight"
+                  />
+                </FormField>
+              </>
+            )}
+            <FormField label="Background Color">
+              <select
+                value={getStyleValue(element.style, 'backgroundColor', '')}
+                onChange={(e) => handleStyleChange('backgroundColor', e.target.value)}
+              >
+                <option value="">Select a color...</option>
+                {BACKGROUND_COLORS.map(color => (
+                  <option key={color.value} value={color.value}>
+                    {color.label}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+            <FormField label="Border Color">
+              <input
+                type="text"
+                value={getStyleValue(element.style, 'borderColor', '')}
+                onChange={(e) => handleStyleChange('borderColor', e.target.value)}
+                placeholder="e.g., backgroundMintGreen"
+              />
+            </FormField>
+            <FormField label="Top Text Color">
+              <input
+                type="text"
+                value={getStyleValue(element.style, 'captionColor', '')}
+                onChange={(e) => handleStyleChange('captionColor', e.target.value)}
+                placeholder="e.g., textGlobalPrimary"
+              />
+            </FormField>
+            <FormField label="Content Color">
+              <input
+                type="text"
+                value={getStyleValue(element.style, 'textColor', '')}
+                onChange={(e) => handleStyleChange('textColor', e.target.value)}
+                placeholder="e.g., textGlobalPrimary"
+              />
+            </FormField>
+            <FormField label="Border Width">
+              <input
+                type="number"
+                value={getStyleValue(element.style, 'borderWidth', '')}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  handleStyleChange('borderWidth', value === '' ? null : parseInt(value));
+                }}
+                placeholder="1"
+              />
+            </FormField>
+            <FormField label="Corner Radius">
+              <input
+                type="number"
+                value={getStyleValue(element.style, 'cornerRadius', '')}
+                onChange={(e) => handleStyleChange('cornerRadius', parseInt(e.target.value) || null)}
+                placeholder="8"
+              />
+            </FormField>
+          </>
+        );
+      }
 
       case 'toggleCard':
         return (
