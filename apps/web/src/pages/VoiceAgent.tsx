@@ -2807,6 +2807,25 @@ Important guidelines:
       addLog('event', `Event: ${event.type}`, event);
       triggerEventUI(event.type, event);
     }
+
+    const knownTypes = new Set([
+      'agent_initialized', 'agent_handoff', 'tool_execution_error',
+      'agent_tool_request', 'agent_tool_response', 'handoff_attempt',
+      'conversation_complete', 'status_change', 'mode_change',
+      'can_send_feedback_change', 'interruption',
+      'substance_selected', 'motivation_logged', 'goal_logged',
+      'drink_logged', 'baseline_calculated',
+      'unhandled_client_tool_call',
+    ]);
+    const eventType = event.type || 'unknown';
+    const isDebug = typeof eventType === 'string' && eventType.startsWith('debug_');
+    const isTranscriptMessage = event.source === 'user' || event.source === 'ai';
+    if (!knownTypes.has(eventType) && !isDebug && !isTranscriptMessage) {
+      const summary = event.message
+        ? (typeof event.message === 'string' ? event.message.substring(0, 200) : JSON.stringify(event.message).substring(0, 200))
+        : '';
+      addLog('info', `📡 SDK event [${eventType}]${summary ? ': ' + summary : ''}`, event);
+    }
   };
 
   const {
