@@ -435,6 +435,10 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
           console.log('🔊 ElevenLabs mode changed:', mode);
           setIsSpeaking(mode === 'speaking');
           callbacksRef.current.onModeChange?.(mode);
+          callbacksRef.current.onEvent?.({
+            type: 'mode_change',
+            mode,
+          });
         },
         onVadScore: (vadData: any) => {
           const rawScore = Number((vadData as any)?.vadScore ?? 0);
@@ -446,6 +450,10 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         onStatusChange: (statusData: any) => {
           elevenLabsLogger.debug('Status changed:', statusData);
           console.log('📊 ElevenLabs onStatusChange:', JSON.stringify(statusData));
+          callbacksRef.current.onEvent?.({
+            type: 'status_change',
+            ...statusData,
+          });
         },
         onInterruption: (interruptionData: any) => {
           console.log('⚡ ElevenLabs onInterruption:', JSON.stringify(interruptionData));
@@ -457,6 +465,10 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         },
         onCanSendFeedbackChange: (data: any) => {
           console.log('📋 ElevenLabs onCanSendFeedbackChange:', JSON.stringify(data));
+          callbacksRef.current.onEvent?.({
+            type: 'can_send_feedback_change',
+            ...data,
+          });
         },
         onAgentToolRequest: (request: any) => {
           elevenLabsLogger.info('Agent tool request:', request);

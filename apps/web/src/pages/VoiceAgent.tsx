@@ -2903,47 +2903,47 @@ Important guidelines:
         addLog('success', `🎉 ${event.message}`, event);
         addLog('info', 'Session will automatically disconnect once audio finishes...', {});
       }
-      
-      // Log all debug events from ElevenLabs SDK (WebRTC layer)
+
+      // Log SDK status/mode changes
+      if (event.type === 'status_change') {
+        addLog('info', `📊 Status change: ${JSON.stringify(event)}`, event);
+      }
+      if (event.type === 'mode_change') {
+        addLog('info', `🔊 Mode: ${event.mode}`, event);
+      }
+      if (event.type === 'can_send_feedback_change') {
+        addLog('info', `📋 Can send feedback: ${JSON.stringify(event)}`, event);
+      }
+
+      // Log ALL debug events from ElevenLabs SDK
       if (typeof event.type === 'string' && event.type.startsWith('debug_')) {
         const debugType = event.type.replace('debug_', '');
-        if (debugType === 'conversation_metadata' || debugType === 'config') {
-          addLog('info', `⚙️ ElevenLabs config received: ${debugType}`, event);
+
+        let logType: 'info' | 'agent' | 'tool' | 'error' | 'event' = 'info';
+        let icon = '🔍';
+
+        if (debugType.includes('workflow') || debugType.includes('route') || debugType.includes('transition') || debugType.includes('node') || debugType.includes('agent') || debugType.includes('handoff') || debugType.includes('transfer')) {
+          logType = 'agent';
+          icon = '🔄';
+        } else if (debugType.includes('tool')) {
+          logType = 'tool';
+          icon = '🧰';
+        } else if (debugType === 'parsing_error' || debugType.includes('error')) {
+          logType = 'error';
+          icon = '🔴';
+        } else if (debugType === 'conversation_metadata' || debugType === 'config' || debugType === 'conversation_initiation_metadata' || debugType === 'conversation_initiation_client_data') {
+          icon = '⚙️';
+        } else if (debugType === 'audio_element_ready') {
+          icon = '🔈';
         }
-        if (debugType === 'audio_element_ready') {
-          addLog('info', '🔈 WebRTC audio element ready');
+
+        let message = `${icon} [${debugType}]`;
+        if (event.message) {
+          const msgStr = typeof event.message === 'string' ? event.message : JSON.stringify(event.message);
+          message += `: ${msgStr.substring(0, 200)}`;
         }
-        if (debugType === 'parsing_error') {
-          addLog('error', `🔴 WebRTC parsing error: ${event.message}`, event);
-        }
-        if (debugType.includes('agent') || debugType.includes('handoff') || debugType.includes('transfer')) {
-          addLog('agent', `🔄 Agent event [${debugType}]`, event);
-        }
-        if (debugType === 'agent_tool_response' || debugType === 'client_tool_call') {
-          const toolName = event.tool_name || event.toolName || '';
-          if (toolName.includes('transfer') || toolName.includes('handoff') || toolName.includes('agent')) {
-            addLog('agent', `🔄 Agent Transfer Tool [${debugType}]: ${toolName}`, event);
-          }
-        }
-        if (debugType === 'conversation_initiation_metadata') {
-          addLog('info', `📋 Conversation metadata received`, event);
-        }
-        if (debugType.includes('workflow') || debugType.includes('route') || debugType.includes('transition') || debugType.includes('node')) {
-          addLog('agent', `🔄 Workflow event [${debugType}]`, event);
-        }
-        const handledDebugTypes = [
-          'conversation_metadata', 'config', 'audio_element_ready', 'parsing_error',
-          'conversation_initiation_metadata', 'conversation_initiation_client_data',
-          'tentative_agent_response', 'agent_response', 'agent_response_correction',
-          'user_transcript', 'user_transcription',
-        ];
-        const isAlreadyHandled = handledDebugTypes.includes(debugType) ||
-          debugType.includes('agent') || debugType.includes('handoff') || debugType.includes('transfer') ||
-          debugType.includes('workflow') || debugType.includes('route') || debugType.includes('transition') || debugType.includes('node') ||
-          debugType === 'agent_tool_response' || debugType === 'client_tool_call';
-        if (!isAlreadyHandled) {
-          addLog('info', `🔍 Debug [${debugType}]: ${event.message || ''}`, event);
-        }
+
+        addLog(logType, message, event);
       }
       
       // Log interruption events
