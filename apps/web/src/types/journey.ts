@@ -801,6 +801,7 @@ export interface ElevenLabsConfig {
   agentId?: string; // ElevenLabs Agent ID from their platform
   voiceId?: string; // ElevenLabs Voice ID
   modelId?: string; // ElevenLabs model (e.g., 'eleven_multilingual_v2')
+  usePromptOverride?: boolean; // When true, send local prompt as override; when false, use 11Labs dashboard prompt
 }
 
 /**
