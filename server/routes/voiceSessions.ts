@@ -136,6 +136,7 @@ router.get("/:sessionId", isAuthenticated, async (req: Request, res: Response) =
         : undefined,
       transcript: session.transcript || [],
       events: session.events || [],
+      debugLogs: session.debugLogs || [],
       stats: {
         totalMessages: session.statsTotalMessages || 0,
         userMessages: session.statsUserMessages || 0,
@@ -180,6 +181,7 @@ router.post("/", optionalAuthenticated, async (req: Request, res: Response) => {
       agentTools: sessionData.agent?.tools || [],
       transcript: sessionData.transcript || [],
       events: sessionData.events || [],
+      debugLogs: sessionData.debugLogs || [],
       statsTotalMessages: sessionData.stats?.totalMessages || 0,
       statsUserMessages: sessionData.stats?.userMessages || 0,
       statsAssistantMessages: sessionData.stats?.assistantMessages || 0,

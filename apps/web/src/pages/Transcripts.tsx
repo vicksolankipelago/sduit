@@ -14,7 +14,7 @@ import { listNotes, getNoteCounts, TranscriptNote } from '../services/api/notesS
 import './Transcripts.css';
 
 type ViewMode = 'list' | 'detail';
-type DetailTab = 'transcript' | 'events' | 'info';
+type DetailTab = 'transcript' | 'events' | 'logs' | 'info';
 
 const PAGE_SIZE = 10;
 
@@ -520,6 +520,12 @@ export const TranscriptsPage: React.FC = () => {
               Events ({filteredEvents.length})
             </button>
             <button
+              className={`transcripts-tab ${detailTab === 'logs' ? 'active' : ''}`}
+              onClick={() => setDetailTab('logs')}
+            >
+              Logs ({(currentSession as any).debugLogs?.length || 0})
+            </button>
+            <button
               className={`transcripts-tab ${detailTab === 'info' ? 'active' : ''}`}
               onClick={() => setDetailTab('info')}
             >
@@ -601,7 +607,12 @@ export const TranscriptsPage: React.FC = () => {
               <div className="transcripts-events">
                 {filteredEvents.map((event, index) => (
                   <div key={index} className="transcripts-event">
-                    <div className="transcripts-event-name">{event.eventName}</div>
+                    <div className="transcripts-event-name">
+                      <span className={`transcripts-event-direction transcripts-event-direction-${event.direction || 'server'}`}>
+                        {event.direction || 'server'}
+                      </span>
+                      {event.eventName}
+                    </div>
                     <div className="transcripts-event-time">{event.timestamp}</div>
                     {event.eventData && (
                       <pre className="transcripts-event-data">
@@ -612,6 +623,30 @@ export const TranscriptsPage: React.FC = () => {
                 ))}
                 {filteredEvents.length === 0 && (
                   <div className="transcripts-empty-tab">No events recorded</div>
+                )}
+              </div>
+            )}
+
+            {detailTab === 'logs' && (
+              <div className="transcripts-events">
+                {((currentSession as any).debugLogs || []).map((log: any, index: number) => (
+                  <div key={index} className={`transcripts-event transcripts-log-${log.type || 'info'}`}>
+                    <div className="transcripts-event-name">
+                      <span className={`transcripts-log-badge transcripts-log-badge-${log.type || 'info'}`}>
+                        {log.type || 'info'}
+                      </span>
+                      {log.message}
+                    </div>
+                    <div className="transcripts-event-time">{log.timestamp}</div>
+                    {log.details && Object.keys(log.details).length > 0 && (
+                      <pre className="transcripts-event-data">
+                        {JSON.stringify(log.details, null, 2)}
+                      </pre>
+                    )}
+                  </div>
+                ))}
+                {((currentSession as any).debugLogs || []).length === 0 && (
+                  <div className="transcripts-empty-tab">No debug logs recorded</div>
                 )}
               </div>
             )}

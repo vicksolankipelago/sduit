@@ -2841,6 +2841,9 @@ Important guidelines:
         const logType = event.is_error ? 'error' : 'tool';
         addLog(logType, `🧰 Agent tool response: ${event.tool_name} (${status})`, event);
       }
+      if (event.type === 'agent_tool_response' && event.tool_name === 'transfer_to_agent') {
+        addLog('agent', `🔄 Agent Transfer: transfer_to_agent executed`, event);
+      }
       
       // Handle handoff attempts for debugging
       if (event.type === 'handoff_attempt') {
@@ -2870,6 +2873,15 @@ Important guidelines:
         }
         if (debugType.includes('agent') || debugType.includes('handoff') || debugType.includes('transfer')) {
           addLog('agent', `🔄 Agent event [${debugType}]`, event);
+        }
+        if (debugType === 'agent_tool_response' || debugType === 'client_tool_call') {
+          const toolName = event.tool_name || event.toolName || '';
+          if (toolName.includes('transfer') || toolName.includes('handoff') || toolName.includes('agent')) {
+            addLog('agent', `🔄 Agent Transfer Tool [${debugType}]: ${toolName}`, event);
+          }
+        }
+        if (debugType === 'conversation_initiation_metadata') {
+          addLog('info', `📋 Conversation metadata received`, event);
         }
       }
       

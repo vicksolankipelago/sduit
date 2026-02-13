@@ -437,6 +437,7 @@ export class DatabaseStorage implements IStorage {
           exportedAt: new Date(),
           transcript: [message],
           events: [],
+          debugLogs: [],
           durationStartMs: message.createdAtMs,
           durationEndMs: message.createdAtMs,
           durationTotalSeconds: 0,
