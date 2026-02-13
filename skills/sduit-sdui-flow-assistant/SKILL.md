@@ -55,7 +55,8 @@ For architecture details and rollout strategy, load:
 - Arrays in module state must be native arrays, never comma-joined strings.
 - Only use element types listed in `SDUI_PROTOCOL.md`. Made-up types crash iOS.
 - Keep `screenPrompts` keys aligned with `agent.screens[].id`.
-- Keep `trigger_event` references aligned with real event IDs defined on screens/elements.
+- Use `navigate_to` for screen-to-screen navigation in prompts.
+- Reserve `trigger_event` for element interactions (for example selection, permissions, completion) and keep those event IDs aligned with real events defined on screens/elements.
 - Keep navigation actions pointing to valid targets (`next-screen`, `prev-screen`, or real screen IDs/URLs).
 - Keep `startingAgentId` valid and handoff targets resolvable.
 - Use `apps/web/src/lib/voiceAgent/screenUtils.ts` behavior as the source of truth for placeholder deeplinks.

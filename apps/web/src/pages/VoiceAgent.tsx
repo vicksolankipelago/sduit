@@ -817,6 +817,8 @@ function VoiceAgentContent() {
   const assistantResponseBuffer = useRef<string>('');
   const assistantResponseStartTime = useRef<Date | null>(null);
   const currentMessageIdsRef = useRef<{ user?: string; assistant?: string }>({});
+  // Startup guard: require at least one completed user utterance before leaving pq-program-summary.
+  const userUtteranceCountRef = useRef<number>(0);
   const lastElevenLabsModeRef = useRef<'speaking' | 'listening' | null>(null);
   const lastLiveAgentMessageRef = useRef<string | null>(null);
   const shouldResetLiveAgentMessageOnNextAssistantTextRef = useRef(false);
@@ -1815,6 +1817,7 @@ function VoiceAgentContent() {
 
     // Clear previous session logs
     setSessionLogs([]);
+    userUtteranceCountRef.current = 0;
     addLog('info', `Initiating connection with journey: ${journeyToUse.name}`);
     addLog('info', `Starting agent: ${startingAgent.name}`);
 
@@ -2731,6 +2734,9 @@ Important guidelines:
         }
         if (isDone) {
           const fullUserText = userMessageBuffer.current.trim();
+          if (fullUserText) {
+            userUtteranceCountRef.current += 1;
+          }
           updateTranscriptItem(messageId, { status: 'DONE' });
           currentMessageIdsRef.current.user = undefined;
           // Queue completed user message for real-time saving (supports anonymous sessions)
@@ -3112,6 +3118,23 @@ Important guidelines:
       const requestedEventConfig = activeScreenEvents.find((event: any) => event.id === eventId);
       const isNavigationEvent = eventId.startsWith('navigate_') || isNavigationScreenEvent(requestedEventConfig);
 
+      // Prevent premature startup jump: do not leave pq-program-summary before the user has spoken.
+      if (
+        activeScreenId === 'pq-program-summary' &&
+        (eventId === 'about-you' || eventId === 'next_step_event') &&
+        userUtteranceCountRef.current === 0
+      ) {
+        return buildNavigationResult({
+          success: false,
+          eventId,
+          fromScreen: activeScreenId,
+          currentScreen: activeScreenId,
+          reason: 'awaiting_user_utterance',
+          message: 'Wait for an actual user response on pq-program-summary before navigating to about-you.',
+          availableEvents: activeScreenEvents.map((event: any) => event.id),
+        });
+      }
+
       // If a record_input auto-navigation is pending, ignore extra navigation tool calls.
       const pendingNavigation = pendingNavigationRef.current;
       if (
@@ -3404,6 +3427,22 @@ Important guidelines:
         });
       }
 
+      // Prevent premature startup jump when legacy prompts still call navigate_to directly.
+      if (
+        activeScreen.id === 'pq-program-summary' &&
+        targetScreen === 'about-you' &&
+        userUtteranceCountRef.current === 0
+      ) {
+        return buildResult({
+          success: false,
+          fromScreen: activeScreen.id,
+          currentScreen: activeScreen.id,
+          nextScreen: targetScreen,
+          reason: 'awaiting_user_utterance',
+          message: 'Wait for an actual user response on pq-program-summary before navigating to about-you.',
+        });
+      }
+
       const screenEvents = getScreenEvents(activeScreen);
       const navEvents = screenEvents.filter((event: any) => getNavigationTargetFromEvent(event));
       const matchingNavEvent = navEvents.find((event: any) => getNavigationTargetFromEvent(event) === targetScreen);
@@ -3507,10 +3546,30 @@ Important guidelines:
         applyModuleStateUpdates(moduleUpdates);
       }
 
+      let postRecordMessage: string | null = null;
       // Trigger next event after delay if specified
       if (nextEventId) {
         const requestedDelayMs = Math.max(0, (delay || 0) * 1000);
-        const isNavigationEvent = nextEventId.startsWith('navigate_');
+        const journey = currentJourneyRef.current;
+        const runtimeAgentName = currentAgentRef.current;
+        const activeAgent =
+          journey?.agents?.find(a => normalizeAgentNameForRuntime(a.name) === runtimeAgentName) ||
+          journey?.agents?.find(a => a.id === journey?.startingAgentId) ||
+          journey?.agents?.[0];
+        const activeScreen = activeAgent?.screens?.find((screen: any) => screen.id === currentScreenIdRef.current);
+        const activeScreenEvents = [
+          ...(activeScreen?.events || []),
+          ...((activeScreen?.sections || []).flatMap((section: any) =>
+            (section?.elements || []).flatMap((element: any) => element?.events || [])
+          )),
+        ];
+        const nextEventConfig = activeScreenEvents.find((event: any) => event?.id === nextEventId);
+        const isNavigationEvent = Boolean(
+          nextEventConfig &&
+          (nextEventConfig.action || []).some(
+            (action: any) => action?.type === 'navigation' && typeof action?.deeplink === 'string'
+          )
+        );
         // Keep behavior deterministic for spoken-answer screens:
         // capture immediately, then hold for 3 seconds before navigating.
         const delayMs = isNavigationEvent ? RECORD_INPUT_DISPLAY_MS : requestedDelayMs;
@@ -3518,8 +3577,12 @@ Important guidelines:
         const executeAtMs = nowMs + delayMs;
         if (isNavigationEvent) {
           addLog('info', `⏳ Holding "${nextEventId}" for 3s so the captured answer remains visible.`);
+          postRecordMessage = `Recorded: ${title}. Navigation "${nextEventId}" is scheduled in 3 seconds. Do not ask the next screen question until navigation completes.`;
         } else if (delayMs > 0) {
           addLog('info', `⏳ Delaying "${nextEventId}" by ${Math.round(delayMs / 1000)}s.`);
+          postRecordMessage = `Recorded: ${title}. Event "${nextEventId}" is scheduled in ${Math.round(delayMs / 1000)} seconds.`;
+        } else {
+          postRecordMessage = `Recorded: ${title}. Event "${nextEventId}" triggered.`;
         }
         pendingNavigationRef.current = {
           eventId: nextEventId,
@@ -3560,9 +3623,7 @@ Important guidelines:
         title,
         summary: displaySummary,
         storeKey: storeKey || null,
-        message: nextEventId?.startsWith('navigate_')
-          ? `Recorded: ${title}. Navigation "${nextEventId}" is scheduled in 3 seconds. Do not ask the next screen question until navigation completes.`
-          : `Recorded: ${title}`,
+        message: postRecordMessage ?? `Recorded: ${title}`,
       };
     },
 
@@ -4196,6 +4257,9 @@ Important guidelines:
       
       // Log message
       if (role === 'user') {
+        if (isDone !== false) {
+          userUtteranceCountRef.current += 1;
+        }
         addLog('info', `User: ${normalizedText}`);
       } else {
         updateLiveAgentMessageProgressively(normalizedText);

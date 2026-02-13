@@ -211,8 +211,8 @@ export class JourneyRuntime {
       .map(toolConfig => this.createRealtimeTool(toolConfig, agentName));
 
     // Add system tools available to all journeys
-    // trigger_event - for screen navigation and UI events
-    realtimeTools.push(this.createTriggerEventTool(agentName) as any);
+    // trigger_event - for UI events (and legacy navigation events)
+    realtimeTools.push(this.createTriggerEventTool(agentName, agentConfig.screens || []) as any);
     // navigate_to - navigation by target screen id (maps to current screen event)
     realtimeTools.push(this.createNavigateToTool(agentName, agentConfig.screens || []) as any);
     
@@ -416,7 +416,7 @@ export class JourneyRuntime {
   /**
    * Create the trigger_event tool for screen-based agents
    */
-  private createTriggerEventTool(agentName: string) {
+  private createTriggerEventTool(agentName: string, screens: any[]) {
     const runtime = this;
 
     interface TriggerEventParams {
@@ -424,19 +424,36 @@ export class JourneyRuntime {
       delay?: number | string;
     }
 
-    // Navigation events dynamically get a default delay to let users read content
-    // Any event starting with 'navigate_to_' will be treated as a navigation event
-    const isNavigationEvent = (eventId: string) => eventId.startsWith('navigate_to_');
+    // Navigation events dynamically get a default delay to let users read content.
+    // Detect navigation by action type instead of relying on event-id prefixes.
+    const navigationEventIds = new Set<string>();
+    for (const screen of screens || []) {
+      const allEvents = [
+        ...(screen?.events || []),
+        ...((screen?.sections || []).flatMap((section: any) =>
+          (section?.elements || []).flatMap((element: any) => element?.events || [])
+        )),
+      ];
+      for (const event of allEvents) {
+        const hasNavigationAction = (event?.action || []).some(
+          (action: any) => action?.type === 'navigation' && typeof action?.deeplink === 'string'
+        );
+        if (hasNavigationAction && typeof event?.id === 'string') {
+          navigationEventIds.add(event.id);
+        }
+      }
+    }
+    const isNavigationEvent = (eventId: string) => navigationEventIds.has(eventId);
 
     return (tool as any)({
       name: 'trigger_event',
-      description: 'Trigger a screen event to navigate or perform actions in the UI. Use this after user interactions to move through the flow.',
+      description: 'Trigger a UI event on the current screen (selection, permissions, completion). Use navigate_to for screen-to-screen navigation.',
       parameters: {
         type: 'object' as const,
         properties: {
           eventId: {
             type: 'string',
-            description: 'The ID of the event to trigger (e.g., "navigate_to_outcomes", "next_step_event")',
+            description: 'The ID of the event to trigger (e.g., "select_daily_commitment", "permissions_screen_event")',
           },
           delay: {
             type: 'number',

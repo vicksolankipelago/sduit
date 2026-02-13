@@ -449,13 +449,13 @@ const SYSTEM_TOOLS = [
   {
     id: "system_trigger_event",
     name: "trigger_event",
-    description: "Trigger a screen event to navigate to the next screen or perform a UI action. Use the eventId that matches the current screen's available events.",
+    description: "Trigger a UI event on the current screen (selection, permission prompts, completion). Use navigate_to for screen-to-screen navigation.",
     parameters: {
       type: "object" as const,
       properties: {
         eventId: {
           type: "string",
-          description: "The event ID to trigger (must match a registered event on the current screen)"
+          description: "The event ID to trigger (must match a registered event on the current screen, e.g. select_* or permissions_screen_event)"
         },
         delay: {
           type: "number",
@@ -469,7 +469,7 @@ const SYSTEM_TOOLS = [
   {
     id: "system_navigate_to",
     name: "navigate_to",
-    description: "Navigate to a target screen by screen ID. This resolves and triggers the matching navigation event on the current screen.",
+    description: "Navigate to a target screen by screen ID. Use only valid next screens for the current journey.",
     parameters: {
       type: "object" as const,
       properties: {
@@ -648,11 +648,31 @@ function injectSystemTools(agents: any[]): any[] {
   if (!agents || !Array.isArray(agents)) return agents;
 
   return agents.map((agent: any) => {
+    const screenIds = Array.from(
+      new Set(
+        (agent.screens || [])
+          .map((screen: any) => screen?.id)
+          .filter((id: unknown): id is string => typeof id === "string" && id.length > 0)
+      )
+    );
+
+    const agentScopedSystemTools = SYSTEM_TOOLS.map((tool) => {
+      if (tool.name !== "navigate_to") return tool;
+      const cloned = JSON.parse(JSON.stringify(tool));
+      if (
+        screenIds.length > 0 &&
+        cloned?.parameters?.properties?.screen
+      ) {
+        cloned.parameters.properties.screen.enum = screenIds;
+      }
+      return cloned;
+    });
+
     const existingToolNames = new Set(
       (agent.tools || []).map((t: any) => t.name)
     );
 
-    const toolsToAdd = SYSTEM_TOOLS.filter(
+    const toolsToAdd = agentScopedSystemTools.filter(
       (st) => !existingToolNames.has(st.name)
     );
 

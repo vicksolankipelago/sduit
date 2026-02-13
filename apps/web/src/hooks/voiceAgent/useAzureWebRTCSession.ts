@@ -332,10 +332,28 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                     }
                   }
                   
-                  // Apply minimal delay for voice-triggered navigation
-                  // In voice mode, the agent has already spoken the content, so long delays feel awkward
-                  // Only apply a brief delay if none is configured
-                  if (delay === 0 && eventId.startsWith('navigate_to_')) {
+                  // Apply minimal delay for voice-triggered navigation.
+                  // Detect navigation by event action (not event-id prefix).
+                  const isNavigationEvent = Boolean(
+                    screens?.some((screen: any) => {
+                      const allEvents = [
+                        ...(screen.events || []),
+                        ...((screen.sections || []).flatMap((section: any) =>
+                          (section.elements || []).flatMap((element: any) => element.events || [])
+                        )),
+                      ];
+                      const matchingEvent = allEvents.find((event: any) => event?.id === eventId);
+                      return Boolean(
+                        matchingEvent &&
+                        (matchingEvent.action || []).some(
+                          (action: any) => action?.type === 'navigation' && typeof action?.deeplink === 'string'
+                        )
+                      );
+                    })
+                  );
+                  // In voice mode, the agent has already spoken the content, so long delays feel awkward.
+                  // Only apply a brief delay if none is configured.
+                  if (delay === 0 && isNavigationEvent) {
                     delay = 0.5; // Brief 0.5s delay for smooth transition
                     console.log(`🎯 Using minimal ${delay}s delay for voice navigation event '${eventId}'`);
                   }
@@ -398,10 +416,26 @@ export function useAzureWebRTCSession(callbacks: AzureWebRTCSessionCallbacks = {
                   
                   // Handle automatic navigation if requested (journey mode handles its own navigation)
                   if (nextEventId && onEventTrigger) {
-                    // Dynamically enforce delay for navigation events (any event starting with 'navigate_to_')
-                    const enforcedDelay = delay > 0 ? delay : (
-                      nextEventId.startsWith('navigate_to_') ? 2 : 0
+                    // Dynamically enforce delay for navigation events.
+                    // Detect navigation by event action (not event-id prefix).
+                    const isNavigationNextEvent = Boolean(
+                      screens?.some((screen: any) => {
+                        const allEvents = [
+                          ...(screen.events || []),
+                          ...((screen.sections || []).flatMap((section: any) =>
+                            (section.elements || []).flatMap((element: any) => element.events || [])
+                          )),
+                        ];
+                        const matchingEvent = allEvents.find((event: any) => event?.id === nextEventId);
+                        return Boolean(
+                          matchingEvent &&
+                          (matchingEvent.action || []).some(
+                            (action: any) => action?.type === 'navigation' && typeof action?.deeplink === 'string'
+                          )
+                        );
+                      })
                     );
+                    const enforcedDelay = delay > 0 ? delay : (isNavigationNextEvent ? 2 : 0);
                     voiceAgentLogger.debug(`Auto-scheduling event '${nextEventId}' with ${enforcedDelay}s delay from record_input`);
                     setTimeout(() => {
                       voiceAgentLogger.debug(`Triggering auto-event: ${nextEventId}`);
@@ -938,4 +972,3 @@ function parseLocalTimeToUTC(timeStr: string): string {
 
   return `${String(utcHours).padStart(2, '0')}:${String(utcMinutes).padStart(2, '0')}`;
 }
-

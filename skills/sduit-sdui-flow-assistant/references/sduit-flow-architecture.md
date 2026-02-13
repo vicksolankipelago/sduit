@@ -22,7 +22,8 @@
   - `systemPrompt`
   - `agent.prompt`
   - `screenPrompts` rendered as `## SCREEN: <id>` blocks
-- `trigger_event` is a required runtime/system tool in screen-driven flows.
+- `navigate_to` and `trigger_event` are runtime/system tools in screen-driven flows.
+- Preferred split: use `navigate_to` for screen-to-screen navigation and `trigger_event` for element interactions.
 
 ## SDUI Screen Authoring + Defaults
 
