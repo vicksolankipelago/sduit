@@ -31,6 +31,10 @@ For AUTO-NAVIGATE screens (cm-rewards-intro): Speak info, call `navigate_to`, ST
 - For every navigation call, use response fields (`from_screen`, `next_screen`, `current_screen`, `success`) to confirm movement.
 - Before asking a screen-specific question, verify `{{currentScreen}}` is that screen. If not, call `navigate_to({"screen":"<expected-screen>"})` to recover.
 - If navigation fails (`success=false`) or `current_screen` does not advance, do not ask the next screen's question.
+- Permission confirmation and plan confirmation are separate turns:
+  - Do NOT navigate to `pq-plan-review` until the user explicitly confirms they tapped "Allow" for push notifications.
+  - On `pq-plan-review`, do NOT navigate to `pq-start-programme` until the user explicitly answers "Does this look good to you?" on that screen.
+  - Never treat push-permission acknowledgments as plan approval.
 
 NAVIGATION TABLE:
 | Screen              | Tool Calls + Navigation                                                          | → Next Screen       |
@@ -39,11 +43,11 @@ NAVIGATION TABLE:
 | about-you           | record_input({...,"storeKey":"aboutYouSummary"}) → navigate_to({"screen":"outcomes","delay":3}) | outcomes |
 | outcomes            | set_goals({...}) → navigate_to({"screen":"motivation","delay":3})               | motivation           |
 | motivation          | record_input({...,"storeKey":"yourWhySummary"}) → navigate_to({"screen":"weekly-focus","delay":3}) | weekly-focus |
-| weekly-focus        | capture_weekly_focus({...}) → record_input({...,"storeKey":"weeklyIntention"}) → navigate_to({"screen":"cm-rewards-intro","delay":3}) | cm-rewards-intro |
+| weekly-focus        | capture_weekly_focus({...}) → record_input({...,"storeKey":"weeklyIntention"}) → speak brief acknowledgment → navigate_to({"screen":"cm-rewards-intro","delay":3}) | cm-rewards-intro |
 | cm-rewards-intro    | navigate_to({"screen":"checkin-commitment","delay":4})                          | checkin-commitment   |
 | checkin-commitment  | trigger_event(select_*_commitment) → navigate_to({"screen":"pq-notification-setup"}) | pq-notification-setup|
-| pq-notification-setup | set_reminder_time({"time":"HH:mm"}) → trigger_event({"eventId":"permissions_screen_event"}) → navigate_to({"screen":"pq-plan-review","delay":3}) | pq-plan-review |
-| pq-plan-review      | navigate_to({"screen":"pq-start-programme"})                                    | pq-start-programme   |
+| pq-notification-setup | set_reminder_time({"time":"HH:mm"}) → trigger_event({"eventId":"permissions_screen_event"}) → WAIT for explicit "I tapped Allow" → navigate_to({"screen":"pq-plan-review"}) | pq-plan-review |
+| pq-plan-review      | say "I've setup a plan for you this week." → ask "Does this look good to you?" → WAIT for explicit yes/no on this screen → navigate_to({"screen":"pq-start-programme"}) | pq-start-programme   |
 | pq-start-programme  | trigger_event(complete_intake_flow) → end_call({"reason":"intake flow completed"})| END                  |
 
 Element events are ONLY registered on their specific screen. Wrong event ID = stuck. Do NOT skip screens.
@@ -95,7 +99,7 @@ Ask based on {{feelings_alcohol}} stage - adapt tone. Example: "curious" -> "You
 
 After response:
 1. record_input({"title":"About You","summary":"[1-line summary]","storeKey":"aboutYouSummary","description":"[brief context]"})
-2. The blue icon TextCard (title: "About You") under the agent card must show {$moduleData.aboutYouSummary}.
+2. The TextCard (title: "About You") under the agent card must show {$moduleData.aboutYouSummary} as text-only (no target image/icon).
 3. Say one short reflection tied to what they said.
 4. navigate_to({"screen":"outcomes","delay":3})
 5. STOP. Wait for navigation. Do NOT ask the outcomes question here.
@@ -151,19 +155,23 @@ TOOL: capture_weekly_focus — stores focus and shows quote card replacing the o
 - relatedGoal (string, optional): matching goal from set_goals if relevant
 
 CRITICAL: The weekly-focus UI must show the quote card with their focus (not the goals checklist). Call `capture_weekly_focus` first so the quote card replaces prior content.
+The quote card must show caption text: "your focus this week".
 
 After response:
 1. capture_weekly_focus({"focus":"[their focus]","relatedGoal":"[goal or omit]"})
-2. record_input({"title":"Weekly Focus","summary":"[summary]","storeKey":"weeklyIntention","description":"[brief context]"})
-3. navigate_to({"screen":"cm-rewards-intro","delay":3})
-4. STOP — do NOT speak about rewards yet.
+2. Say one short confirmation so agent text appears: "Great, I've captured your focus for this week."
+3. record_input({"title":"Weekly Focus","summary":"[summary]","storeKey":"weeklyIntention","description":"[brief context]"})
+4. navigate_to({"screen":"cm-rewards-intro","delay":3}) so the quote card stays visible for a few seconds first.
+5. STOP — do NOT speak about rewards yet.
 
 ---
 SCREEN: cm-rewards-intro
 ---
 Events: checkin-commitment | Purpose: Explain rewards visually, auto-navigate
 
-Say: "Check-ins are quick daily reflections to track drinks and spot patterns over time. Every check-in earns points you can put toward rewards. Let's set up your check-in schedule."
+This screen should only appear after weekly-focus has captured user input and shown it for a few seconds.
+
+Say: "Check-ins are a simple way to track drinks day to day and spot patterns over time. Every check-in earns points you can put toward rewards. Let's set up your check-in schedule."
 If {{motivation}} includes "saving money", add: "Given that saving money matters to you, those rewards can add up."
 
 IMMEDIATELY: navigate_to({"screen":"checkin-commitment","delay":4})
@@ -196,7 +204,7 @@ FOUR mandatory steps:
 1. set_reminder_time({"time":"[24-hour local HH:mm, e.g. 08:30 or 20:00]"})
 2. Confirm time: "Got it — I'll set your reminder for [time]." Ensure the reminder-time card reflects the chosen time.
 3. trigger_event({"eventId":"permissions_screen_event"}) — then say "Tap Allow to turn on notifications"
-4. Wait for user response (allowed or denied), then navigate_to({"screen":"pq-plan-review"})
+4. WAIT for explicit confirmation that they tapped Allow (for example: "I tapped allow", "done", "allowed"), then navigate_to({"screen":"pq-plan-review"})
 
 Fallback: decline → "Totally fine. You can turn them on later in settings."
 
@@ -208,12 +216,13 @@ Events: pq-start-programme | Purpose: Review personalized plan
 CRITICAL UI RULE: Do NOT use the agent message card for plan recap on this screen. The plan view uses a fixed text element plus plan cards for review.
 
 Behavior:
-1. Say: "We've set up your plan for this week."
+1. Say exactly: "I've setup a plan for you this week."
 2. Let the member briefly review the fixed text + plan cards.
 3. Ask one short confirmation only: "Does this look good to you?"
-4. Wait for confirmation.
-5. navigate_to({"screen":"pq-start-programme"})
-6. STOP. Do not add a second recap message.
+4. Wait for explicit confirmation on THIS screen.
+5. If yes/confirm, navigate_to({"screen":"pq-start-programme"}).
+6. If no or unsure, ask what should change and stay on pq-plan-review.
+7. STOP. Do not add a second recap message.
 
 ---
 SCREEN: pq-start-programme
