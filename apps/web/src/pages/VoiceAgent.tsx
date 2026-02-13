@@ -871,18 +871,22 @@ function VoiceAgentContent() {
     updateModuleState(updates);
   }, [updateModuleState]);
 
+  const stripSpeechDirectives = useCallback((text: string): string => {
+    return text.replace(/\[(?:slow|fast|pause|break|whisper|loud|soft)\]/gi, '').replace(/\s{2,}/g, ' ').trim();
+  }, []);
+
   const updateLiveAgentMessage = useCallback((message: string) => {
-    const nextMessage = typeof message === 'string' ? message : '';
+    const cleaned = stripSpeechDirectives(typeof message === 'string' ? message : '');
     if (
-      lastLiveAgentMessageRef.current === nextMessage &&
-      moduleStateRef.current?.[LIVE_AGENT_MESSAGE_MODULE_KEY] === nextMessage
+      lastLiveAgentMessageRef.current === cleaned &&
+      moduleStateRef.current?.[LIVE_AGENT_MESSAGE_MODULE_KEY] === cleaned
     ) {
       return;
     }
 
-    lastLiveAgentMessageRef.current = nextMessage;
-    applyModuleStateUpdates({ [LIVE_AGENT_MESSAGE_MODULE_KEY]: nextMessage });
-  }, [applyModuleStateUpdates]);
+    lastLiveAgentMessageRef.current = cleaned;
+    applyModuleStateUpdates({ [LIVE_AGENT_MESSAGE_MODULE_KEY]: cleaned });
+  }, [applyModuleStateUpdates, stripSpeechDirectives]);
 
   const clearLiveAgentMessage = useCallback(() => {
     shouldResetLiveAgentMessageOnNextAssistantTextRef.current = false;
@@ -2791,7 +2795,7 @@ Important guidelines:
         
         // Only log when response is complete
         if (isDone) {
-          const fullResponse = assistantResponseBuffer.current.trim();
+          const fullResponse = stripSpeechDirectives(assistantResponseBuffer.current.trim());
           if (fullResponse) {
             updateLiveAgentMessage(fullResponse);
             addLog('info', `Assistant: ${fullResponse}`);
@@ -2799,7 +2803,7 @@ Important guidelines:
             // Persona will naturally hear agent via microphone - no manual routing needed
           }
           // Mark message complete + reset buffer
-          updateTranscriptItem(messageId, { status: 'DONE' });
+          updateTranscriptItem(messageId, { status: 'DONE', title: fullResponse || undefined });
           currentMessageIdsRef.current.assistant = undefined;
           // Queue completed assistant message for real-time saving (supports anonymous sessions)
           // Construct the complete TranscriptItem directly instead of looking up from state
