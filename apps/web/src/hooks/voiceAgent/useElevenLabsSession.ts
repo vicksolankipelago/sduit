@@ -620,8 +620,9 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
     }
   }, [updateStatus]);
 
-  const disconnect = useCallback(async () => {
+  const disconnect = useCallback(async (): Promise<string | null> => {
     elevenLabsLogger.info('Disconnecting ElevenLabs session...');
+    const savedConversationId = conversationIdRef.current;
     try {
       if (conversationRef.current) {
         await conversationRef.current.endSession();
@@ -634,6 +635,7 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
     agentIdRef.current = null;
     updateStatus('DISCONNECTED');
     elevenLabsLogger.info('Disconnected');
+    return savedConversationId;
   }, [updateStatus]);
 
   const sendMessage = useCallback((message: unknown) => {

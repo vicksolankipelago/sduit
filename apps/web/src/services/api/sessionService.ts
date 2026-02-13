@@ -194,5 +194,9 @@ export class DebouncedSessionSaver {
   }
 }
 
+export async function fetchElevenLabsConversation(sessionId: string, conversationId: string): Promise<any> {
+  return api.post<any>(`/api/voice-sessions/${sessionId}/fetch-elevenlabs`, { conversationId });
+}
+
 // Re-export ApiError for consumers that need it
 export { ApiError };

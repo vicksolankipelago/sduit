@@ -39,7 +39,7 @@ import { JourneyRuntime, getStartingAgentName, setEventTriggerCallback } from '.
 import { listJourneysForRuntime, loadJourneyForRuntime } from '../services/journeyStorage';
 import { PQData, substitutePromptVariables, DEFAULT_PQ_DATA } from '../utils/promptTemplates';
 import { useAuth } from '../contexts/AuthContext';
-import { saveSession, DebouncedSessionSaver } from '../services/api/sessionService';
+import { saveSession, DebouncedSessionSaver, fetchElevenLabsConversation } from '../services/api/sessionService';
 import { captureProlificParams, storeProlificSession, getProlificSession, handleProlificCompletion, hasProlificParams, type ProlificOutcome } from '../utils/prolific';
 
 // Mapping of quiz option IDs to readable labels for prompt interpolation
@@ -2500,7 +2500,19 @@ Important guidelines:
       // Reset the real-time saver
       sessionSaverRef.current.reset();
 
-      await disconnect();
+      const elConversationId = await disconnect();
+
+      if (elConversationId && currentProviderRef.current === 'elevenlabs') {
+        const capturedSessionId = sessionIdRef.current;
+        addLog('info', 'Fetching ElevenLabs server-side conversation data...');
+        setTimeout(() => {
+          fetchElevenLabsConversation(capturedSessionId, elConversationId).then((result) => {
+            console.log('✅ ElevenLabs conversation data fetched:', result?.entriesAdded, 'entries added');
+          }).catch((err) => {
+            console.warn('⚠️ Failed to fetch ElevenLabs conversation data (non-blocking):', err);
+          });
+        }, 5000);
+      }
 
       // Disconnect persona if connected
       if (personaStatus !== 'DISCONNECTED') {
@@ -4483,11 +4495,12 @@ Important guidelines:
     return connectAzure(options);
   }, [connectAzure, connectElevenLabs]);
 
-  const disconnect = useCallback(async () => {
+  const disconnect = useCallback(async (): Promise<string | null> => {
     if (currentProviderRef.current === 'elevenlabs') {
-      await disconnectElevenLabs();
+      return await disconnectElevenLabs();
     } else {
       disconnectAzure();
+      return null;
     }
   }, [disconnectAzure, disconnectElevenLabs]);
 
