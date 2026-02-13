@@ -148,8 +148,13 @@ export const VoiceControlBar: React.FC<VoiceControlBarProps> = ({
       return [12, 12, 12, 12, 12];
     }
 
-    const baseHeight = activeSpeaker === 'none' ? 10 : 12;
-    const maxBoost = activeSpeaker === 'none' ? 6 : 8 + (liveWaveLevel * 24);
+    if (activeSpeaker === 'none') {
+      // Keep the listening state as stable dots, matching the native motivation mock.
+      return [12, 12, 12, 12, 12];
+    }
+
+    const baseHeight = 12;
+    const maxBoost = 8 + (liveWaveLevel * 24);
 
     return barProfile.map((profile, index) => {
       const phase = barPhase[index];

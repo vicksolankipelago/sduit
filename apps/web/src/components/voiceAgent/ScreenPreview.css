@@ -436,6 +436,84 @@
   letter-spacing: var(--letter-spacing-button) !important;
 }
 
+/* Motivation summary screen parity */
+.screen-preview-container[data-screen-id="motivation"] .screen-preview-fixed-top {
+  display: none;
+}
+
+.screen-preview-container[data-screen-id="motivation"] .screen-preview-body {
+  gap: 0;
+  padding-top: 96px;
+}
+
+.screen-preview-container[data-screen-id="motivation"] .screen-preview-section[data-section-id="content_section"] {
+  padding-bottom: 0;
+}
+
+.screen-preview-container[data-screen-id="motivation"] .screen-preview-section[data-section-id="content_section"] .screen-preview-section-elements {
+  gap: 0;
+}
+
+.screen-preview-container[data-screen-id="motivation"] .quote-card-element[data-element-id="motivation_summary_quote"] {
+  width: 100%;
+  max-width: 272px;
+  margin: 0 auto;
+  padding: 24px;
+  border-radius: 14px;
+  background-color: #e8eeff;
+}
+
+.screen-preview-container[data-screen-id="motivation"] .quote-card-element[data-element-id="motivation_summary_quote"] .quote-card-content {
+  gap: 0;
+}
+
+.screen-preview-container[data-screen-id="motivation"] .quote-card-element[data-element-id="motivation_summary_quote"] .quote-card-message {
+  color: #212633;
+  font-family: var(--font-family-grotesque);
+  font-size: 14px;
+  font-weight: var(--font-weight-regular);
+  line-height: 22px;
+  font-style: italic;
+}
+
+.screen-preview-container[data-screen-id="motivation"] .quote-card-element[data-element-id="motivation_summary_quote"] .quote-card-author {
+  display: none;
+}
+
+.screen-preview-container[data-screen-id="motivation"] .open-question-element {
+  min-height: auto;
+  padding: 96px 0 0;
+  justify-content: flex-start;
+}
+
+.screen-preview-container[data-screen-id="motivation"] .open-question-summary {
+  align-items: center;
+}
+
+.screen-preview-container[data-screen-id="motivation"] .open-question-summary-card {
+  width: 100%;
+  max-width: 272px;
+  margin: 0 auto;
+  padding: 24px;
+  border: none;
+  border-radius: 14px;
+  background: #e8eeff;
+  gap: 0;
+}
+
+.screen-preview-container[data-screen-id="motivation"] .open-question-title {
+  display: none;
+}
+
+.screen-preview-container[data-screen-id="motivation"] .open-question-summary-text {
+  color: #212633;
+  font-family: var(--font-family-grotesque);
+  font-size: 14px;
+  font-style: italic;
+  font-weight: var(--font-weight-regular);
+  line-height: 22px;
+}
+
 /* Text cards should span full width in grid layouts */
 .screen-preview-section-grid .screen-preview-element:has(.text-card-element) {
   grid-column: 1 / -1;

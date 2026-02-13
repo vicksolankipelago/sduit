@@ -466,7 +466,7 @@
 .agent-ui-device-bottom-bar {
   background: var(--background-light);
   border-top: none;
-  padding: 0.75rem 1.125rem 0.8rem;
+  padding: 0.85rem 1.125rem 1rem;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -487,14 +487,15 @@
 }
 
 .agent-ui-device-bottom-bar .voice-control-bar-container {
-  max-width: 300px;
-  gap: 16px;
+  max-width: 312px;
+  gap: 18px;
+  grid-template-columns: 58px minmax(0, 1fr) 58px;
 }
 
 .agent-ui-device-bottom-bar .voice-control-btn {
   width: 58px;
   height: 58px;
-  background: #e4e6ec;
+  background: #dce1eb;
   color: #212633;
 }
 
@@ -504,8 +505,13 @@
 }
 
 .agent-ui-device-bottom-bar .voice-control-mic {
-  background: #e4e6ec;
+  background: #dce1eb;
   color: #212633;
+}
+
+.agent-ui-device-bottom-bar .voice-control-wave-label {
+  font-size: 15px;
+  line-height: 22px;
 }
 
 /* Legacy classes - keep for backwards compatibility */

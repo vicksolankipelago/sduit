@@ -805,6 +805,16 @@ function VoiceAgentContent() {
     targetScreenId?: string;
     source?: 'record_input' | 'navigate_to';
   } | null>(null);
+  // Queued when the model emits a valid "next-screen" event before the pending
+  // navigation has finished. Replayed after the target screen becomes active.
+  const queuedPostNavigationEventRef = useRef<{
+    eventId: string;
+    targetScreenId: string;
+    delaySeconds: number;
+    queuedAtMs: number;
+    expiresAtMs: number;
+    sourceEventId: string;
+  } | null>(null);
   const lastRecordInputRef = useRef<{
     atMs: number;
     title: string;
@@ -935,6 +945,7 @@ function VoiceAgentContent() {
   const resetToFlowsScreen = () => {
     clearNotificationPlanReviewFallback();
     pendingNavigationRef.current = null;
+    queuedPostNavigationEventRef.current = null;
     lastRecordInputRef.current = null;
     clearLiveAgentMessage();
     setSessionStatus('DISCONNECTED');
@@ -1383,6 +1394,52 @@ function VoiceAgentContent() {
         if (navigateToScreen && toScreen) {
           navigateToScreen(toScreen);
         }
+
+        const queuedPostNavigationEvent = queuedPostNavigationEventRef.current;
+        if (queuedPostNavigationEvent && Date.now() > queuedPostNavigationEvent.expiresAtMs) {
+          addLog(
+            'warning',
+            `⚠️ Dropping expired queued event "${queuedPostNavigationEvent.eventId}" for "${queuedPostNavigationEvent.targetScreenId}".`
+          );
+          queuedPostNavigationEventRef.current = null;
+        } else if (
+          queuedPostNavigationEvent &&
+          toScreen &&
+          queuedPostNavigationEvent.targetScreenId === toScreen
+        ) {
+          const { eventId, delaySeconds, sourceEventId, targetScreenId } = queuedPostNavigationEvent;
+          const replayDelayMs = delaySeconds > 0 ? delaySeconds * 1000 : 50;
+          addLog(
+            'info',
+            `↪️ Replaying queued event "${eventId}" now that "${targetScreenId}" is active${delaySeconds > 0 ? ` (delay: ${delaySeconds}s)` : ''}.`
+          );
+          setTimeout(() => {
+            const queued = queuedPostNavigationEventRef.current;
+            if (!queued) {
+              return;
+            }
+            if (queued.eventId !== eventId || queued.targetScreenId !== targetScreenId) {
+              return;
+            }
+            if (Date.now() > queued.expiresAtMs) {
+              addLog(
+                'warning',
+                `⚠️ Skipping expired queued event "${queued.eventId}" for "${queued.targetScreenId}".`
+              );
+              queuedPostNavigationEventRef.current = null;
+              return;
+            }
+            queuedPostNavigationEventRef.current = null;
+            window.dispatchEvent(new CustomEvent('triggerEvent', {
+              detail: {
+                eventId,
+                timestamp: Date.now(),
+                replayedAfterNavigation: true,
+                sourceEventId,
+              }
+            }));
+          }, replayDelayMs);
+        }
       } else {
         addLog('error', `❌ Navigation failed: screen "${toScreen}" not found`, {
           fromScreen,
@@ -1568,6 +1625,7 @@ function VoiceAgentContent() {
     // Generate new session ID for this session
     sessionIdRef.current = `session_${Date.now()}`;
     pendingNavigationRef.current = null;
+    queuedPostNavigationEventRef.current = null;
     lastRecordInputRef.current = null;
     
     // Store session info on window for end_call tool access
@@ -2432,6 +2490,7 @@ Important guidelines:
     isDisconnectingRef.current = true;
 
     pendingNavigationRef.current = null;
+    queuedPostNavigationEventRef.current = null;
     lastRecordInputRef.current = null;
     addLog('info', 'Disconnecting from session...');
 
@@ -2709,6 +2768,17 @@ Important guidelines:
 
   const handleVoiceEvent = (event: any) => {
     logServerEvent(event);
+
+    // Fallback text path: some providers emit utterance text on generic events
+    // instead of (or before) transcript callbacks.
+    if (typeof event?.message === 'string' && event.message.trim()) {
+      if (event.source === 'ai') {
+        updateLiveAgentMessageProgressively(event.message);
+      } else if (event.source === 'user') {
+        shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
+        setAgentSpeechAlignment(null);
+      }
+    }
     
     if (event.type === 'agent_initialized') {
       addLog('agent', `Agent initialized: ${event.agentName}`, { agentName: event.agentName });
@@ -2863,7 +2933,6 @@ Important guidelines:
         const { id: messageId, isNew } = ensureMessageId();
         if (isNew) {
           setAgentSpeechAlignment(null);
-          clearLiveAgentMessage();
         }
         // Accumulate user message text
         userMessageBuffer.current += text;
@@ -2872,6 +2941,8 @@ Important guidelines:
           updateTranscriptMessage(messageId, text, true);
         }
         if (isDone) {
+          shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
+          setAgentSpeechAlignment(null);
           const fullUserText = userMessageBuffer.current.trim();
           if (fullUserText) {
             userUtteranceCountRef.current += 1;
@@ -2908,7 +2979,7 @@ Important guidelines:
         // Accumulate assistant response tokens
         if (!assistantResponseStartTime.current) {
           assistantResponseStartTime.current = new Date();
-          clearLiveAgentMessage();
+          shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
           // Don't set speaking state here - let audio element events handle it
         }
         assistantResponseBuffer.current += text;
@@ -3252,6 +3323,39 @@ Important guidelines:
         Date.now() <= pendingNavigation.expiresAtMs
       ) {
         const pendingSource = pendingNavigation.source ?? 'record_input';
+        const pendingTargetScreenId = pendingNavigation.targetScreenId;
+        if (pendingTargetScreenId && eventId !== pendingNavigation.eventId) {
+          const pendingTargetScreen = activeScreens.find((screen: any) => screen.id === pendingTargetScreenId);
+          if (pendingTargetScreen && hasEventOnScreen(pendingTargetScreen, eventId)) {
+            const nowMs = Date.now();
+            const queueLifetimeMs = Math.max(5000, resolvedDelay * 1000 + 5000);
+            queuedPostNavigationEventRef.current = {
+              eventId,
+              targetScreenId: pendingTargetScreenId,
+              delaySeconds: resolvedDelay,
+              queuedAtMs: nowMs,
+              expiresAtMs: Math.max(
+                pendingNavigation.expiresAtMs + queueLifetimeMs,
+                nowMs + queueLifetimeMs
+              ),
+              sourceEventId: pendingNavigation.eventId,
+            };
+            addLog(
+              'info',
+              `⏭️ Queued "${eventId}" until "${pendingTargetScreenId}" is active (after "${pendingNavigation.eventId}").`
+            );
+            return buildNavigationResult({
+              success: true,
+              eventId,
+              fromScreen: activeScreenId,
+              nextScreen: pendingTargetScreenId,
+              currentScreen: activeScreenId,
+              delaySeconds: resolvedDelay,
+              reason: 'queued_until_pending_navigation_completes',
+              message: `Queued "${eventId}" to run after "${pendingNavigation.eventId}" reaches "${pendingTargetScreenId}". Wait for the screen change before continuing.`,
+            });
+          }
+        }
         if (eventId === pendingNavigation.eventId) {
           addLog('warning', `⚠️ Navigation "${eventId}" ignored: already scheduled by ${pendingSource}.`);
           return buildNavigationResult({
@@ -3714,6 +3818,11 @@ Important guidelines:
             (action: any) => action?.type === 'navigation' && typeof action?.deeplink === 'string'
           )
         );
+        const targetScreenId = isNavigationEvent
+          ? (nextEventConfig?.action || []).find(
+              (action: any) => action?.type === 'navigation' && typeof action?.deeplink === 'string'
+            )?.deeplink
+          : undefined;
         // Keep behavior deterministic for spoken-answer screens:
         // capture immediately, then hold for 3 seconds before navigating.
         const delayMs = isNavigationEvent ? RECORD_INPUT_DISPLAY_MS : requestedDelayMs;
@@ -3733,6 +3842,7 @@ Important guidelines:
           executeAtMs,
           // Keep a short buffer after execute time to absorb duplicate LLM calls.
           expiresAtMs: executeAtMs + 2000,
+          targetScreenId,
           source: 'record_input',
         };
 
@@ -4339,9 +4449,11 @@ Important guidelines:
 
       if (isNewSpeakingTurn) {
         setAgentSpeechAlignment(null);
-        // Drop the previous turn immediately so stale content never flashes
-        // before the next assistant text begins streaming.
-        clearLiveAgentMessage();
+        // Prepare to replace the previous message on the first incoming
+        // assistant text/alignment chunk for this turn. We avoid clearing
+        // immediately because mode and transcript events can arrive out of
+        // order, which causes message flicker/disappearance.
+        shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
       }
       lastElevenLabsModeRef.current = mode;
       setActiveSpeaker(mode === 'speaking' ? 'agent' : 'member');
@@ -4407,6 +4519,10 @@ Important guidelines:
       // Log message
       if (role === 'user') {
         if (isDone !== false) {
+          // Ensure the next assistant turn replaces prior copy regardless
+          // of provider event ordering (transcript vs mode change timing).
+          shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
+          setAgentSpeechAlignment(null);
           userUtteranceCountRef.current += 1;
           const activeScreenId = currentScreenIdRef.current;
           if (activeScreenId) {
