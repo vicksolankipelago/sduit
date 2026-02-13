@@ -2760,6 +2760,10 @@ Important guidelines:
       // Log transcripts
       if (role === 'user') {
         const { id: messageId, isNew } = ensureMessageId();
+        if (isNew) {
+          setAgentSpeechAlignment(null);
+          clearLiveAgentMessage();
+        }
         // Accumulate user message text
         userMessageBuffer.current += text;
         // Only append if not a new message (new messages already have the text)
@@ -4316,8 +4320,10 @@ Important guidelines:
       if (currentProviderRef.current !== 'elevenlabs') return;
       const isNewSpeakingTurn = mode === 'speaking' && lastElevenLabsModeRef.current !== 'speaking';
       if (isNewSpeakingTurn) {
-        // Clear stale alignment and reset text state only when the next assistant text arrives.
+        // Hide the previous assistant turn immediately to avoid stale-message flashes
+        // before the next aligned text chunk arrives.
         setAgentSpeechAlignment(null);
+        clearLiveAgentMessage();
         shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
       }
       lastElevenLabsModeRef.current = mode;
@@ -4329,6 +4335,7 @@ Important guidelines:
     },
     onAudioAlignment: (alignment) => {
       if (currentProviderRef.current !== 'elevenlabs') return;
+      if (lastElevenLabsModeRef.current !== 'speaking') return;
       setAgentSpeechAlignment({
         raw: alignment,
         receivedAtMs: Date.now(),
@@ -4382,6 +4389,8 @@ Important guidelines:
       
       // Log message
       if (role === 'user') {
+        setAgentSpeechAlignment(null);
+        clearLiveAgentMessage();
         if (isDone !== false) {
           userUtteranceCountRef.current += 1;
           const activeScreenId = currentScreenIdRef.current;
