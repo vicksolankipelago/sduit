@@ -385,8 +385,14 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         },
         onDisconnect: (details: any) => {
           const reason = (details as any)?.reason || 'unknown';
+          const message = (details as any)?.message || '';
+          const context = (details as any)?.context;
           elevenLabsLogger.info('ElevenLabs conversation disconnected, reason:', reason);
-          console.log('🔌 ElevenLabs onDisconnect - reason:', reason);
+          console.log('🔌 ElevenLabs onDisconnect - reason:', reason, 'message:', message);
+          console.log('🔌 ElevenLabs onDisconnect - full details:', JSON.stringify(details, null, 2));
+          if (context) {
+            console.log('🔌 ElevenLabs onDisconnect - context type:', context?.type, 'reason:', context?.reason, 'code:', context?.code);
+          }
           
           const normalReasons = ['user', 'agent', 'user_ended', 'agent_ended', 'call_ended', 'normal'];
           const isNormalDisconnect = normalReasons.some(r => reason.toLowerCase().includes(r.toLowerCase()));
@@ -401,7 +407,12 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         onMessage: (message: any) => {
           elevenLabsLogger.debug('ElevenLabs message:', message);
           const msg = message as any;
-          console.log('💬 ElevenLabs message:', msg.source, msg.message?.substring?.(0, 50));
+          console.log('💬 ElevenLabs onMessage:', JSON.stringify({
+            source: msg.source,
+            role: msg.role,
+            type: msg.type,
+            message: msg.message?.substring?.(0, 100),
+          }));
           if (msg.source === 'user') {
             callbacksRef.current.onTranscript?.('user', msg.message, true);
           } else if (msg.source === 'ai') {
@@ -409,10 +420,12 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
           }
           callbacksRef.current.onEvent?.(message);
         },
-        onError: (error: any) => {
+        onError: (error: any, errorDetails?: any) => {
           const errorMessage = typeof error === 'string' ? error : ((error as any)?.message || JSON.stringify(error));
           elevenLabsLogger.error('ElevenLabs error:', error);
           console.error('🔴 ElevenLabs SDK onError callback:', error);
+          console.error('🔴 ElevenLabs SDK onError details:', errorDetails);
+          console.error('🔴 ElevenLabs SDK onError full:', JSON.stringify({ error, errorDetails }, null, 2));
           callbacksRef.current.onError?.(`SDK Error: ${errorMessage}`, error);
           updateStatus('DISCONNECTED');
         },
@@ -432,11 +445,22 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         },
         onStatusChange: (statusData: any) => {
           elevenLabsLogger.debug('Status changed:', statusData);
-          console.log('📊 ElevenLabs status changed:', (statusData as any).status);
+          console.log('📊 ElevenLabs onStatusChange:', JSON.stringify(statusData));
+        },
+        onInterruption: (interruptionData: any) => {
+          console.log('⚡ ElevenLabs onInterruption:', JSON.stringify(interruptionData));
+          elevenLabsLogger.info('Interruption event:', interruptionData);
+          callbacksRef.current.onEvent?.({
+            type: 'interruption',
+            ...interruptionData,
+          });
+        },
+        onCanSendFeedbackChange: (data: any) => {
+          console.log('📋 ElevenLabs onCanSendFeedbackChange:', JSON.stringify(data));
         },
         onAgentToolRequest: (request: any) => {
           elevenLabsLogger.info('Agent tool request:', request);
-          console.log('🧰 ElevenLabs agent_tool_request:', request);
+          console.log('🧰 ElevenLabs onAgentToolRequest:', JSON.stringify(request));
           callbacksRef.current.onEvent?.({
             type: 'agent_tool_request',
             ...request,
@@ -444,7 +468,7 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         },
         onAgentToolResponse: (response: any) => {
           elevenLabsLogger.info('Agent tool response:', response);
-          console.log('🧰 ElevenLabs agent_tool_response:', response);
+          console.log('🧰 ElevenLabs onAgentToolResponse:', JSON.stringify(response));
           callbacksRef.current.onEvent?.({
             type: 'agent_tool_response',
             ...response,
@@ -452,7 +476,7 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
         },
         onUnhandledClientToolCall: (toolCall: any) => {
           elevenLabsLogger.error('Unhandled client tool call:', toolCall);
-          console.error('🔴 ElevenLabs unhandled_client_tool_call:', toolCall);
+          console.error('🔴 ElevenLabs onUnhandledClientToolCall:', JSON.stringify(toolCall));
           callbacksRef.current.onEvent?.({
             type: 'unhandled_client_tool_call',
             ...toolCall,
@@ -463,25 +487,42 @@ export function useElevenLabsSession(callbacks: ElevenLabsSessionCallbacks = {})
           );
         },
         onDebug: (debugData: any) => {
-          if (debugData?.type === 'conversation_initiation_client_data') {
+          const eventType = debugData?.type || 'unknown';
+          console.log(`🔍 ElevenLabs onDebug [${eventType}]:`, JSON.stringify(debugData, (key, value) => {
+            if (key === 'prompt' && typeof value === 'string' && value.length > 200) return value.substring(0, 200) + '...';
+            if (key === 'audio_base_64' && typeof value === 'string') return `[audio ${value.length} chars]`;
+            return value;
+          }));
+          if (eventType === 'conversation_initiation_client_data') {
             const msg = debugData.message;
             const hasOverride = !!msg?.conversation_config_override;
             const overridePromptLen = msg?.conversation_config_override?.agent?.prompt?.prompt?.length || 0;
             const hasDynVars = !!msg?.dynamic_variables;
-            console.log('🔍 SDK DEBUG: conversation_initiation_client_data sent to ElevenLabs');
-            console.log('🔍 Has conversation_config_override:', hasOverride);
-            console.log('🔍 Override prompt length:', overridePromptLen);
-            console.log('🔍 Has dynamic_variables:', hasDynVars);
-            console.log('🔍 Override keys:', hasOverride ? Object.keys(msg.conversation_config_override) : 'none');
-            if (hasOverride) {
-              const agentOverride = msg.conversation_config_override.agent;
-              console.log('🔍 Agent override keys:', agentOverride ? Object.keys(agentOverride) : 'none');
-              console.log('🔍 Prompt override first 200 chars:', agentOverride?.prompt?.prompt?.substring(0, 200));
-            }
+            console.log('🔍 SDK INIT: override=' + hasOverride + ', promptLen=' + overridePromptLen + ', dynVars=' + hasDynVars);
             elevenLabsLogger.info('🔍 SDK INITIATION DATA: hasOverride=' + hasOverride + ', promptLen=' + overridePromptLen + ', hasDynVars=' + hasDynVars);
-          } else {
-            console.log('🔍 SDK DEBUG:', debugData?.type);
           }
+          if (eventType === 'agent_response' || eventType === 'agent_response_correction') {
+            console.log('🤖 ElevenLabs agent response event:', eventType);
+          }
+          if (eventType === 'user_transcript' || eventType === 'user_transcription') {
+            console.log('👤 ElevenLabs user transcript event:', eventType);
+          }
+          if (eventType === 'conversation_metadata' || eventType === 'config') {
+            console.log('⚙️ ElevenLabs config/metadata event:', JSON.stringify(debugData));
+          }
+          if (eventType === 'tentative_agent_response') {
+            console.log('💭 ElevenLabs tentative response:', debugData?.response?.substring?.(0, 100));
+          }
+          if (eventType === 'audio_element_ready') {
+            console.log('🔈 ElevenLabs audio element ready');
+          }
+          if (eventType === 'parsing_error') {
+            console.error('🔴 ElevenLabs parsing error:', debugData?.message, debugData?.error);
+          }
+          callbacksRef.current.onEvent?.({
+            type: 'debug_' + eventType,
+            ...debugData,
+          });
         },
       };
 
