@@ -98,6 +98,10 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
   };
 
   const handleEditScreen = (screen: Screen) => {
+    if (!journeyId) {
+      console.error('AgentNodeEditor handleEditScreen: journeyId is undefined, cannot navigate to screen editor');
+      return;
+    }
     if (onSave) {
       onSave().catch((err) => {
         console.error('AgentNodeEditor handleEditScreen: save failed', err);

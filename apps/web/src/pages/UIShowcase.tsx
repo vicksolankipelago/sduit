@@ -79,11 +79,20 @@ const UIShowcase: React.FC = () => {
       const screenId = searchParams.get('screenId')!;
 
       loadJourneyForRuntime(journeyId).then((journey) => {
-        if (!journey) return;
+        if (!journey) {
+          console.error(`[UIShowcase] Failed to load journey ${journeyId} for screen editing`);
+          return;
+        }
         const agent = journey.agents.find(a => a.id === agentId);
-        if (!agent) return;
+        if (!agent) {
+          console.error(`[UIShowcase] Agent ${agentId} not found in journey ${journeyId}`);
+          return;
+        }
         const screen = agent.screens?.find(s => s.id === screenId);
-        if (!screen) return;
+        if (!screen) {
+          console.error(`[UIShowcase] Screen ${screenId} not found in agent ${agentId}`);
+          return;
+        }
 
         const standaloneScreen: StandaloneScreen = {
           ...screen,
