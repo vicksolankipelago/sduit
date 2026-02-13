@@ -1173,6 +1173,7 @@ function VoiceAgentContent() {
     // Reset session state
     sessionSaverRef.current.reset();
     queuedItemIdsRef.current.clear();
+    sessionLogsRef.current = [];
     setSessionLogs([]);
 
     // Store all agents for non-voice navigation
@@ -1830,6 +1831,7 @@ function VoiceAgentContent() {
     }
 
     // Clear previous session logs
+    sessionLogsRef.current = [];
     setSessionLogs([]);
     userUtteranceCountRef.current = 0;
     userUtterancesByScreenRef.current = {};
