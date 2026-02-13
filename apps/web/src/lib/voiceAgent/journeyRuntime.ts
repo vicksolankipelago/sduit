@@ -1195,6 +1195,19 @@ function parseTimeToUTC(timeStr: string): string {
 function interpolatePrompt(template: string, context: Record<string, any>): string {
   // Match {{key}}, {{key.subkey}}, {{key_with_underscores}}, {{key-with-dashes}}
   return template.replace(/\{\{([\w.-]+)\}\}/g, (match, key) => {
+    // Keep runtime navigation placeholders dynamic so tool assignments can update
+    // current/next screen state during the session.
+    if (
+      key === 'currentScreen' ||
+      key === 'current_screen' ||
+      key === 'nextScreen' ||
+      key === 'next_screen' ||
+      key === 'navigation_ok' ||
+      key === 'navigation_reason'
+    ) {
+      return match;
+    }
+
     // First try direct key lookup (handles "answer_feelings" and "profile.goal" as flat keys)
     if (context[key] !== undefined && context[key] !== null) {
       return String(context[key]);

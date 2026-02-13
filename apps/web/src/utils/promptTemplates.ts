@@ -197,9 +197,20 @@ export function substitutePromptVariables(
   });
 
   let result = prompt;
+  // Keep runtime navigation placeholders dynamic so tool assignments can update
+  // current/next screen state during the session.
+  const runtimeDynamicKeys = new Set([
+    'currentScreen',
+    'current_screen',
+    'nextScreen',
+    'next_screen',
+    'navigation_ok',
+    'navigation_reason',
+  ]);
 
   // Replace all {{variableName}} patterns
   Object.entries(data).forEach(([key, value]) => {
+    if (runtimeDynamicKeys.has(key)) return;
     const pattern = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
     result = result.replace(pattern, String(value));
   });

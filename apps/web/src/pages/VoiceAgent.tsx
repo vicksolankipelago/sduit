@@ -300,8 +300,9 @@ function getPromptReferencedScreenIds(
   for (const screenId of availableScreenPromptIds) {
     const escapedId = screenId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const sectionHeaderPattern = new RegExp(`^##\\s*${escapedId}(?:\\s|$)`, 'im');
+    const screenSectionPattern = new RegExp(`^(?:##\\s*)?SCREEN:\\s*${escapedId}(?:\\s|$)`, 'im');
     const screenIdPattern = new RegExp(`Screen ID:\\s*${escapedId}(?:\\s|$)`, 'i');
-    if (sectionHeaderPattern.test(prompt) || screenIdPattern.test(prompt)) {
+    if (sectionHeaderPattern.test(prompt) || screenSectionPattern.test(prompt) || screenIdPattern.test(prompt)) {
       referenced.add(screenId);
     }
   }
@@ -340,7 +341,9 @@ function buildScreenPromptsAppendix(params: {
       includedIds = reachableIds;
     }
   }
-  if (!hasEmbeddedSections && referencedIds.size > 0) {
+
+  // Never append sections that are already present in the prompt.
+  if (referencedIds.size > 0) {
     includedIds = includedIds.filter((screenId) => !referencedIds.has(screenId));
   }
   if (includedIds.length === 0) {
@@ -356,19 +359,20 @@ function buildScreenPromptsAppendix(params: {
     .map((screenId) => `\n## SCREEN: ${screenId}\n${entryMap.get(screenId)}`)
     .join('\n\n');
   if (hasEmbeddedSections) {
-    const overrideText = [
+    // When the prompt already has embedded screen sections, append only missing screens
+    // and avoid an "authoritative override" block that can conflict with existing rules.
+    const appendixText = [
       '\n---',
-      'RUNTIME SCREEN OVERRIDES (AUTHORITATIVE)',
-      'Use the screen instructions below as the source of truth for this session.',
-      'If any earlier screen instructions conflict, follow these overrides.',
+      'RUNTIME SCREEN APPENDIX (MISSING SECTIONS)',
+      'The screens below were not found in the base prompt.',
       '---',
       screenSectionsText,
     ].join('\n');
     return {
-      text: overrideText,
+      text: appendixText,
       includedScreenIds: includedIds,
       skippedBecauseEmbedded: false,
-      appendedAsOverride: true,
+      appendedAsOverride: false,
     };
   }
 
@@ -819,6 +823,7 @@ function VoiceAgentContent() {
   const currentMessageIdsRef = useRef<{ user?: string; assistant?: string }>({});
   // Startup guard: require at least one completed user utterance before leaving pq-program-summary.
   const userUtteranceCountRef = useRef<number>(0);
+  const userUtterancesByScreenRef = useRef<Record<string, number>>({});
   const lastElevenLabsModeRef = useRef<'speaking' | 'listening' | null>(null);
   const lastLiveAgentMessageRef = useRef<string | null>(null);
   const shouldResetLiveAgentMessageOnNextAssistantTextRef = useRef(false);
@@ -1818,6 +1823,7 @@ function VoiceAgentContent() {
     // Clear previous session logs
     setSessionLogs([]);
     userUtteranceCountRef.current = 0;
+    userUtterancesByScreenRef.current = {};
     addLog('info', `Initiating connection with journey: ${journeyToUse.name}`);
     addLog('info', `Starting agent: ${startingAgent.name}`);
 
@@ -2736,6 +2742,11 @@ Important guidelines:
           const fullUserText = userMessageBuffer.current.trim();
           if (fullUserText) {
             userUtteranceCountRef.current += 1;
+            const activeScreenId = currentScreenIdRef.current;
+            if (activeScreenId) {
+              userUtterancesByScreenRef.current[activeScreenId] =
+                (userUtterancesByScreenRef.current[activeScreenId] || 0) + 1;
+            }
           }
           updateTranscriptItem(messageId, { status: 'DONE' });
           currentMessageIdsRef.current.user = undefined;
@@ -3117,6 +3128,26 @@ Important guidelines:
       const activeScreenEvents = activeScreen ? getScreenEvents(activeScreen) : [];
       const requestedEventConfig = activeScreenEvents.find((event: any) => event.id === eventId);
       const isNavigationEvent = eventId.startsWith('navigate_') || isNavigationScreenEvent(requestedEventConfig);
+      const navigationTarget = getNavigationTargetFromEvent(requestedEventConfig);
+      const hasCapturedAboutYou = (): boolean => {
+        const utterancesOnAboutYou = userUtterancesByScreenRef.current['about-you'] || 0;
+        if (utterancesOnAboutYou < 1) {
+          return false;
+        }
+
+        const savedSummary = moduleStateRef.current?.aboutYouSummary;
+        if (typeof savedSummary === 'string' && savedSummary.trim().length > 0) {
+          return true;
+        }
+
+        const lastCapture = lastRecordInputRef.current;
+        return Boolean(
+          lastCapture &&
+          normalizeRecordInputTitle(lastCapture.title) === 'about you' &&
+          typeof lastCapture.summary === 'string' &&
+          lastCapture.summary.trim().length > 0
+        );
+      };
 
       // Prevent premature startup jump: do not leave pq-program-summary before the user has spoken.
       if (
@@ -3131,6 +3162,25 @@ Important guidelines:
           currentScreen: activeScreenId,
           reason: 'awaiting_user_utterance',
           message: 'Wait for an actual user response on pq-program-summary before navigating to about-you.',
+          availableEvents: activeScreenEvents.map((event: any) => event.id),
+        });
+      }
+
+      // Guardrail: do not allow skipping about-you capture before moving to outcomes.
+      if (
+        isNavigationEvent &&
+        activeScreenId === 'about-you' &&
+        navigationTarget === 'outcomes' &&
+        !hasCapturedAboutYou()
+      ) {
+        return buildNavigationResult({
+          success: false,
+          eventId,
+          fromScreen: activeScreenId,
+          currentScreen: activeScreenId,
+          nextScreen: navigationTarget,
+          reason: 'about_you_not_captured',
+          message: 'Ask the about-you question and call record_input with storeKey "aboutYouSummary" before navigating to outcomes.',
           availableEvents: activeScreenEvents.map((event: any) => event.id),
         });
       }
@@ -3240,7 +3290,6 @@ Important guidelines:
       dispatchTriggerEvent(eventId, resolvedDelay);
 
       // Return a more informative result based on event type to guide the LLM
-      const navigationTarget = getNavigationTargetFromEvent(requestedEventConfig);
       if (eventId.startsWith('select_')) {
         return buildNavigationResult({
           success: true,
@@ -3449,6 +3498,25 @@ Important guidelines:
       const availableNextScreens = navEvents
         .map((event: any) => getNavigationTargetFromEvent(event))
         .filter((value: string | undefined): value is string => typeof value === 'string');
+      const hasCapturedAboutYou = (): boolean => {
+        const utterancesOnAboutYou = userUtterancesByScreenRef.current['about-you'] || 0;
+        if (utterancesOnAboutYou < 1) {
+          return false;
+        }
+
+        const savedSummary = moduleStateRef.current?.aboutYouSummary;
+        if (typeof savedSummary === 'string' && savedSummary.trim().length > 0) {
+          return true;
+        }
+
+        const lastCapture = lastRecordInputRef.current;
+        return Boolean(
+          lastCapture &&
+          normalizeRecordInputTitle(lastCapture.title) === 'about you' &&
+          typeof lastCapture.summary === 'string' &&
+          lastCapture.summary.trim().length > 0
+        );
+      };
 
       // Idempotency guard:
       // If the model calls navigate_to for the screen we're already on
@@ -3463,6 +3531,23 @@ Important guidelines:
           delaySeconds: 0,
           reason: 'already_on_target_screen',
           message: `Already on "${targetScreen}". No additional navigation needed.`,
+          availableNextScreens,
+        });
+      }
+
+      // Guardrail: enforce about-you capture before moving to outcomes.
+      if (
+        activeScreen.id === 'about-you' &&
+        targetScreen === 'outcomes' &&
+        !hasCapturedAboutYou()
+      ) {
+        return buildResult({
+          success: false,
+          fromScreen: activeScreen.id,
+          currentScreen: activeScreen.id,
+          nextScreen: targetScreen,
+          reason: 'about_you_not_captured',
+          message: 'Ask the about-you question and call record_input with storeKey "aboutYouSummary" before navigating to outcomes.',
           availableNextScreens,
         });
       }
@@ -4259,6 +4344,11 @@ Important guidelines:
       if (role === 'user') {
         if (isDone !== false) {
           userUtteranceCountRef.current += 1;
+          const activeScreenId = currentScreenIdRef.current;
+          if (activeScreenId) {
+            userUtterancesByScreenRef.current[activeScreenId] =
+              (userUtterancesByScreenRef.current[activeScreenId] || 0) + 1;
+          }
         }
         addLog('info', `User: ${normalizedText}`);
       } else {
