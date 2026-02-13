@@ -397,6 +397,26 @@ router.post("/:sessionId/fetch-elevenlabs", optionalAuthenticated, async (req: R
       }
     }
 
+    if (conversationData.workflow_events && Array.isArray(conversationData.workflow_events)) {
+      for (const event of conversationData.workflow_events) {
+        newDebugLogs.push({
+          timestamp: new Date().toISOString(),
+          type: "agent",
+          message: `[EL] Workflow event: ${event.type || 'route'} → ${event.target_agent || event.node_id || event.agent_name || 'unknown'}`,
+          details: event,
+        });
+      }
+    }
+
+    if (conversationData.collected_data && typeof conversationData.collected_data === 'object') {
+      newDebugLogs.push({
+        timestamp: new Date().toISOString(),
+        type: "elevenlabs",
+        message: `[EL] Collected data from conversation`,
+        details: conversationData.collected_data,
+      });
+    }
+
     // Use atomic SQL append to avoid overwriting concurrent updates
     await db.update(voiceSessions)
       .set({

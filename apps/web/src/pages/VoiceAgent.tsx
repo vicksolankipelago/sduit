@@ -2928,6 +2928,22 @@ Important guidelines:
         if (debugType === 'conversation_initiation_metadata') {
           addLog('info', `📋 Conversation metadata received`, event);
         }
+        if (debugType.includes('workflow') || debugType.includes('route') || debugType.includes('transition') || debugType.includes('node')) {
+          addLog('agent', `🔄 Workflow event [${debugType}]`, event);
+        }
+        const handledDebugTypes = [
+          'conversation_metadata', 'config', 'audio_element_ready', 'parsing_error',
+          'conversation_initiation_metadata', 'conversation_initiation_client_data',
+          'tentative_agent_response', 'agent_response', 'agent_response_correction',
+          'user_transcript', 'user_transcription',
+        ];
+        const isAlreadyHandled = handledDebugTypes.includes(debugType) ||
+          debugType.includes('agent') || debugType.includes('handoff') || debugType.includes('transfer') ||
+          debugType.includes('workflow') || debugType.includes('route') || debugType.includes('transition') || debugType.includes('node') ||
+          debugType === 'agent_tool_response' || debugType === 'client_tool_call';
+        if (!isAlreadyHandled) {
+          addLog('info', `🔍 Debug [${debugType}]: ${event.message || ''}`, event);
+        }
       }
       
       // Log interruption events
