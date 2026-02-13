@@ -413,7 +413,7 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
                     </div>
                     <div className="agent-screen-item-actions">
                       <button 
-                        onClick={() => handleEditScreen(screen)} 
+                        onClick={() => { window.alert('AgentNode Edit: ' + screen.id); handleEditScreen(screen); }} 
                         disabled={disabled}
                         type="button"
                       >

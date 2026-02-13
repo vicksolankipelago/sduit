@@ -2455,7 +2455,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
                                 </div>
                                 {isAdmin && (
                                   <div className="journey-agent-screen-item-actions">
-                                    <button onClick={() => handleEditScreen(screen)} disabled={disabled} type="button">
+                                    <button onClick={() => { window.alert('Edit clicked: ' + screen.id + ' | journey: ' + (currentJourney?.id || 'NONE') + ' | agent: ' + (selectedAgent?.id || 'NONE')); handleEditScreen(screen); }} disabled={disabled} type="button">
                                       <EditIcon size={12} /> Edit
                                     </button>
                                     <button onClick={() => handleRemoveScreen(index)} disabled={disabled} type="button">
