@@ -1,6 +1,9 @@
 import { Router, Request, Response } from "express";
+import { sql } from "drizzle-orm";
 import { isAuthenticated, optionalAuthenticated } from "../auth";
 import { storage } from "../storage";
+import { db } from "../db";
+import { voiceSessions } from "../../shared/models/voiceSessions";
 import { sessionLogger } from "../utils/logger";
 import * as apiResponse from "../utils/response";
 
@@ -269,6 +272,148 @@ router.delete("/:sessionId", isAuthenticated, async (req: Request, res: Response
   } catch (error) {
     sessionLogger.error("Error deleting session:", error);
     return apiResponse.serverError(res, "Failed to delete session");
+  }
+});
+
+router.post("/:sessionId/fetch-elevenlabs", optionalAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+    const { conversationId } = req.body;
+
+    if (!conversationId) {
+      return apiResponse.validationError(res, "conversationId is required");
+    }
+
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    if (!apiKey) {
+      sessionLogger.warn("ELEVENLABS_API_KEY not configured, skipping conversation fetch");
+      return apiResponse.serverError(res, "ElevenLabs API key not configured");
+    }
+
+    const userId = (req.user as any)?.id || ANONYMOUS_USER_ID;
+
+    let session = await storage.getSession(sessionId);
+    if (!session) {
+      session = await storage.getSessionById(sessionId);
+    }
+    if (!session) {
+      return apiResponse.notFound(res, "Session");
+    }
+
+    // Only allow the session owner (or anonymous sessions) to enrich the data
+    if (session.userId !== userId && session.userId !== ANONYMOUS_USER_ID && userId !== ANONYMOUS_USER_ID) {
+      return apiResponse.forbidden(res);
+    }
+
+    const elevenLabsUrl = `https://api.elevenlabs.io/v1/convai/conversations/${encodeURIComponent(conversationId)}`;
+    sessionLogger.info(`Fetching ElevenLabs conversation: ${conversationId}`);
+
+    const elResponse = await fetch(elevenLabsUrl, {
+      method: "GET",
+      headers: {
+        "xi-api-key": apiKey,
+      },
+    });
+
+    if (!elResponse.ok) {
+      const errorText = await elResponse.text();
+      sessionLogger.error(`ElevenLabs API error ${elResponse.status}: ${errorText}`);
+      return apiResponse.serverError(res, `ElevenLabs API error: ${elResponse.status}`);
+    }
+
+    const conversationData = await elResponse.json() as Record<string, any>;
+    const newDebugLogs: any[] = [];
+
+    newDebugLogs.push({
+      timestamp: new Date().toISOString(),
+      type: "elevenlabs",
+      message: `ElevenLabs conversation data fetched (${conversationId})`,
+      details: {
+        conversationId,
+        status: conversationData.status,
+        metadata: conversationData.metadata || null,
+        analysis: conversationData.analysis || null,
+      },
+    });
+
+    const transcript = conversationData.transcript;
+    if (Array.isArray(transcript)) {
+      for (const entry of transcript) {
+        const role = entry.role || "unknown";
+        const message = entry.message || "";
+        const timeInCall = entry.time_in_call_secs;
+        const entryStr = JSON.stringify(entry).toLowerCase();
+
+        const isToolCall = !!(entry.tool_calls || entry.tool_call || entry.type === "tool_call");
+        const isAgentTransfer = !!(
+          entry.type === "agent_transfer" ||
+          entry.type === "workflow_route" ||
+          entry.type === "transfer" ||
+          entry.handoff_to ||
+          entry.transfer_to ||
+          entry.agent_id ||
+          entry.node_id ||
+          entryStr.includes("workflow") ||
+          entryStr.includes("transfer") ||
+          entryStr.includes("handoff") ||
+          entryStr.includes("transition")
+        );
+
+        if (isToolCall) {
+          const toolName = entry.tool_call?.name || entry.tool_calls?.[0]?.name || "unknown";
+          newDebugLogs.push({
+            timestamp: new Date().toISOString(),
+            type: "tool",
+            message: `[EL] [${role}] Tool: ${toolName} at ${timeInCall}s`,
+            details: entry,
+          });
+        } else if (isAgentTransfer) {
+          const targetAgent = entry.handoff_to || entry.transfer_to || entry.agent_name || entry.agent_id || entry.node_id || "unknown";
+          newDebugLogs.push({
+            timestamp: new Date().toISOString(),
+            type: "agent",
+            message: `[EL] Workflow route: transitioned to ${targetAgent} at ${timeInCall}s`,
+            details: entry,
+          });
+        } else if (role === "user" || role === "agent") {
+          newDebugLogs.push({
+            timestamp: new Date().toISOString(),
+            type: "elevenlabs",
+            message: `[EL] [${role}] ${message.substring(0, 200)}${message.length > 200 ? "..." : ""}`,
+            details: {
+              role,
+              message,
+              time_in_call_secs: timeInCall,
+            },
+          });
+        } else {
+          newDebugLogs.push({
+            timestamp: new Date().toISOString(),
+            type: "elevenlabs",
+            message: `[EL] [${role}] ${entry.type || "event"} at ${timeInCall}s: ${message.substring(0, 150)}`,
+            details: entry,
+          });
+        }
+      }
+    }
+
+    // Use atomic SQL append to avoid overwriting concurrent updates
+    await db.update(voiceSessions)
+      .set({
+        debugLogs: sql`COALESCE(${voiceSessions.debugLogs}, '[]'::jsonb) || ${JSON.stringify(newDebugLogs)}::jsonb`,
+      })
+      .where(sql`${voiceSessions.sessionId} = ${session.sessionId}`);
+
+    sessionLogger.info(`Merged ${newDebugLogs.length} ElevenLabs log entries into session ${sessionId}`);
+
+    return apiResponse.success(res, {
+      entriesAdded: newDebugLogs.length,
+      conversationId,
+      conversationData,
+    });
+  } catch (error) {
+    sessionLogger.error("Error fetching ElevenLabs conversation:", error);
+    return apiResponse.serverError(res, "Failed to fetch ElevenLabs conversation data");
   }
 });
 
