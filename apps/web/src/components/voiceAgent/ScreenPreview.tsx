@@ -89,12 +89,12 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
   }, [interpolateString, resolveStateReference]);
 
   // Filter elements based on conditions
-  const filterElements = (elements: ElementConfig[]): ElementConfig[] => {
+  const filterElements = useCallback((elements: ElementConfig[]): ElementConfig[] => {
     return elements.filter(element => {
       if (!element.conditions || element.conditions.length === 0) return true;
       return evaluateConditions(element.conditions);
     });
-  };
+  }, [evaluateConditions]);
 
   // Handle single-select option change (for LargeQuestionElement)
   // Updates screenState.selectedOption so stateUpdate actions can read it
