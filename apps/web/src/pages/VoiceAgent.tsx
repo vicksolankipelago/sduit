@@ -684,6 +684,8 @@ function VoiceAgentContent() {
   const [_substance] = useState<string | null>(null);
   const [customPrompts, setCustomPrompts] = useState<Record<string, string>>({});
   const [sessionLogs, setSessionLogs] = useState<LogEntry[]>([]);
+  const sessionLogsRef = useRef<LogEntry[]>([]);
+  const loggedEventsRef = useRef(loggedEvents);
   // Testing Persona state - OFF by default
   const [personaEnabled, setPersonaEnabled] = useState(() => {
     const saved = localStorage.getItem('voice-agent-persona-enabled');
@@ -849,6 +851,8 @@ function VoiceAgentContent() {
     },
   });
 
+  loggedEventsRef.current = loggedEvents;
+
   const addLog = (type: LogEntry['type'], message: string, details?: any) => {
     const logEntry: LogEntry = {
       timestamp: new Date(),
@@ -856,6 +860,7 @@ function VoiceAgentContent() {
       message,
       details
     };
+    sessionLogsRef.current = [...sessionLogsRef.current, logEntry];
     setSessionLogs(prev => [...prev, logEntry]);
     
     const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 
@@ -2141,7 +2146,14 @@ Important guidelines:
             prompt: combinedInstructions,
             tools: azureTools,
           },
-          prolificData
+          prolificData,
+          () => loggedEventsRef.current,
+          () => sessionLogsRef.current.map(log => ({
+            timestamp: log.timestamp instanceof Date ? log.timestamp.toISOString() : String(log.timestamp),
+            type: log.type,
+            message: log.message,
+            details: log.details,
+          })),
         );
       }
     } catch (err: any) {
@@ -2852,6 +2864,9 @@ Important guidelines:
         const logType = event.is_error ? 'error' : 'tool';
         addLog(logType, `🧰 Agent tool response: ${event.tool_name} (${status})`, event);
       }
+      if (event.type === 'agent_tool_response' && event.tool_name === 'transfer_to_agent') {
+        addLog('agent', `🔄 Agent Transfer: transfer_to_agent executed`, event);
+      }
       
       // Handle handoff attempts for debugging
       if (event.type === 'handoff_attempt') {
@@ -2881,6 +2896,15 @@ Important guidelines:
         }
         if (debugType.includes('agent') || debugType.includes('handoff') || debugType.includes('transfer')) {
           addLog('agent', `🔄 Agent event [${debugType}]`, event);
+        }
+        if (debugType === 'agent_tool_response' || debugType === 'client_tool_call') {
+          const toolName = event.tool_name || event.toolName || '';
+          if (toolName.includes('transfer') || toolName.includes('handoff') || toolName.includes('agent')) {
+            addLog('agent', `🔄 Agent Transfer Tool [${debugType}]: ${toolName}`, event);
+          }
+        }
+        if (debugType === 'conversation_initiation_metadata') {
+          addLog('info', `📋 Conversation metadata received`, event);
         }
       }
       

@@ -136,6 +136,7 @@ router.get("/:sessionId", isAuthenticated, async (req: Request, res: Response) =
         : undefined,
       transcript: session.transcript || [],
       events: session.events || [],
+      debugLogs: session.debugLogs || [],
       stats: {
         totalMessages: session.statsTotalMessages || 0,
         userMessages: session.statsUserMessages || 0,
@@ -180,6 +181,7 @@ router.post("/", optionalAuthenticated, async (req: Request, res: Response) => {
       agentTools: sessionData.agent?.tools || [],
       transcript: sessionData.transcript || [],
       events: sessionData.events || [],
+      debugLogs: sessionData.debugLogs || [],
       statsTotalMessages: sessionData.stats?.totalMessages || 0,
       statsUserMessages: sessionData.stats?.userMessages || 0,
       statsAssistantMessages: sessionData.stats?.assistantMessages || 0,
@@ -202,7 +204,7 @@ router.put("/:sessionId/message", optionalAuthenticated, async (req: Request, re
     const userId = (req.user as any)?.id || ANONYMOUS_USER_ID;
 
     const { sessionId } = req.params;
-    const { message, journey, agent, prolific } = req.body;
+    const { message, journey, agent, prolific, events, debugLogs } = req.body;
 
     if (!message || !message.itemId) {
       return apiResponse.validationError(res, "Message with itemId is required");
@@ -227,6 +229,8 @@ router.put("/:sessionId/message", optionalAuthenticated, async (req: Request, re
       prolificPid: prolific?.participantId,
       prolificStudyId: prolific?.studyId,
       prolificSessionId: prolific?.sessionId,
+      events,
+      debugLogs,
     });
 
     return apiResponse.success(res, { id: session.id });

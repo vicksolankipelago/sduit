@@ -1022,11 +1022,15 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       clearTimeout(autoSaveTimerRef.current);
       autoSaveTimerRef.current = null;
     }
-    saveJourney(currentJourney).then(() => {
-      lastSavedJourneyRef.current = JSON.stringify(currentJourney);
-      setHasUnsavedChanges(false);
-    }).catch((err) => {
-      console.error('[EditScreen] save failed', err);
+    if (publishCheckTimerRef.current) {
+      clearTimeout(publishCheckTimerRef.current);
+      publishCheckTimerRef.current = null;
+    }
+    const previousSaved = lastSavedJourneyRef.current;
+    lastSavedJourneyRef.current = JSON.stringify(currentJourney);
+    saveJourney(currentJourney).catch((err) => {
+      console.error('[EditScreen] save failed, restoring ref for retry', err);
+      lastSavedJourneyRef.current = previousSaved;
     });
     console.log('[EditScreen] Navigating to /screens with state for screen:', screen.id);
     navigate('/screens', {
@@ -1056,7 +1060,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     setSelectedAgentId(updatedAgents.length > 0 ? updatedAgents[0].id : null);
   };
 
-  const handleAddScreen = async (templateId?: string) => {
+  const handleAddScreen = (templateId?: string) => {
     if (!selectedAgent || !currentJourney) return;
 
     let newScreen: Screen;
@@ -1090,26 +1094,37 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     };
 
     handleUpdateAgent(updatedAgent);
-    
+
     const updatedJourney = {
       ...currentJourney,
       agents: currentJourney.agents.map(a => a.id === updatedAgent.id ? updatedAgent : a),
     };
+
     if (autoSaveTimerRef.current) {
       clearTimeout(autoSaveTimerRef.current);
       autoSaveTimerRef.current = null;
     }
-    try {
-      await Promise.race([
-        saveJourney(updatedJourney),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Save timeout')), 3000)),
-      ]);
-      lastSavedJourneyRef.current = JSON.stringify(updatedJourney);
-      setHasUnsavedChanges(false);
-    } catch (err) {
-      console.error('handleAddScreen: save failed, navigating anyway', err);
+    if (publishCheckTimerRef.current) {
+      clearTimeout(publishCheckTimerRef.current);
+      publishCheckTimerRef.current = null;
     }
-    navigate(`/screens?journeyId=${currentJourney.id}&agentId=${selectedAgent.id}&screenId=${newScreen.id}`);
+
+    const previousSaved = lastSavedJourneyRef.current;
+    lastSavedJourneyRef.current = JSON.stringify(updatedJourney);
+    saveJourney(updatedJourney).catch((err) => {
+      console.error('[AddScreen] save failed, restoring ref for retry', err);
+      lastSavedJourneyRef.current = previousSaved;
+    });
+
+    console.log('[AddScreen] Navigating to /screens with state for screen:', newScreen.id);
+    navigate('/screens', {
+      state: {
+        editScreen: newScreen,
+        agentId: selectedAgent.id,
+        agentName: selectedAgent.name,
+        journeyId: currentJourney.id,
+      },
+    });
   };
 
   const handleRemoveScreen = (index: number) => {

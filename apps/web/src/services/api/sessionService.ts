@@ -35,6 +35,8 @@ export interface SaveMessageParams {
     studyId?: string;
     sessionId?: string;
   };
+  events?: any[];
+  debugLogs?: any[];
 }
 
 export async function saveSession(sessionExport: SessionExport): Promise<void> {
@@ -84,6 +86,8 @@ export async function saveSessionMessage(params: SaveMessageParams): Promise<voi
     journey: params.journey,
     agent: params.agent,
     prolific: params.prolific,
+    events: params.events,
+    debugLogs: params.debugLogs,
   });
 }
 
@@ -95,6 +99,8 @@ export class DebouncedSessionSaver {
   private journey: SaveMessageParams['journey'];
   private agent: SaveMessageParams['agent'];
   private prolific: SaveMessageParams['prolific'];
+  private getEvents?: () => any[];
+  private getDebugLogs?: () => any[];
   private isSaving = false;
   private onError?: (error: Error) => void;
 
@@ -107,12 +113,16 @@ export class DebouncedSessionSaver {
     sessionId: string,
     journey?: SaveMessageParams['journey'],
     agent?: SaveMessageParams['agent'],
-    prolific?: SaveMessageParams['prolific']
+    prolific?: SaveMessageParams['prolific'],
+    getEvents?: () => any[],
+    getDebugLogs?: () => any[],
   ): void {
     this.sessionId = sessionId;
     this.journey = journey;
     this.agent = agent;
     this.prolific = prolific;
+    this.getEvents = getEvents;
+    this.getDebugLogs = getDebugLogs;
   }
 
   queueMessage(message: TranscriptItem): void {
@@ -143,13 +153,17 @@ export class DebouncedSessionSaver {
 
     try {
       await Promise.all(
-        messagesToSave.map(message =>
+        messagesToSave.map((message, index) =>
           saveSessionMessage({
             sessionId: this.sessionId!,
             message,
             journey: this.journey,
             agent: this.agent,
             prolific: this.prolific,
+            ...(index === 0 ? {
+              events: this.getEvents?.(),
+              debugLogs: this.getDebugLogs?.(),
+            } : {}),
           }).catch(err => {
             sessionLogger.error(`Failed to save message: ${message.itemId}`, err);
             this.onError?.(err);
@@ -174,6 +188,8 @@ export class DebouncedSessionSaver {
     this.journey = undefined;
     this.agent = undefined;
     this.prolific = undefined;
+    this.getEvents = undefined;
+    this.getDebugLogs = undefined;
     this.isSaving = false;
   }
 }

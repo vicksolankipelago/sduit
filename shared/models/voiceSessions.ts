@@ -20,6 +20,7 @@ export const voiceSessions = pgTable("voice_sessions", {
   agentTools: jsonb("agent_tools").default([]),
   transcript: jsonb("transcript").notNull().default([]),
   events: jsonb("events").default([]),
+  debugLogs: jsonb("debug_logs").default([]),
   statsTotalMessages: integer("stats_total_messages").default(0),
   statsUserMessages: integer("stats_user_messages").default(0),
   statsAssistantMessages: integer("stats_assistant_messages").default(0),
