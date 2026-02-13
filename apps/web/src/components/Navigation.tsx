@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './Navigation.css';
 
@@ -96,10 +96,12 @@ export const Navigation: React.FC = () => {
             end={item.path === '/'}
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
             title={isCollapsed ? item.label : undefined}
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault();
               if (item.path === '/' && location.pathname === '/') {
                 window.dispatchEvent(new CustomEvent('resetToFlows'));
               }
+              window.location.href = item.path;
             }}
           >
             <span className="nav-icon">{item.icon}</span>
