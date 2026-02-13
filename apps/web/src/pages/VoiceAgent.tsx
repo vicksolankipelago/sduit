@@ -139,6 +139,16 @@ const PROMPT_TOOL_NAME_CANDIDATES = [
   'screen_out_participant',
 ];
 const LIVE_AGENT_MESSAGE_MODULE_KEY = 'agentLiveMessage';
+const MODULE_KEYS_ALLOW_EMPTY_OVERWRITE = new Set([
+  LIVE_AGENT_MESSAGE_MODULE_KEY,
+]);
+
+function isEmptyModuleValue(value: unknown): boolean {
+  if (value == null) return true;
+  if (typeof value === 'string') return value.trim().length === 0;
+  if (Array.isArray(value)) return value.length === 0;
+  return false;
+}
 
 function mergeProgressiveText(previous: string, incoming: string): string {
   const prev = previous || '';
@@ -882,8 +892,26 @@ function VoiceAgentContent() {
     if (!updateModuleState || Object.keys(updates).length === 0) {
       return;
     }
-    moduleStateRef.current = { ...moduleStateRef.current, ...updates };
-    updateModuleState(updates);
+
+    const sanitizedUpdates: Record<string, any> = {};
+    for (const [key, value] of Object.entries(updates)) {
+      const existingValue = moduleStateRef.current?.[key];
+      const hasPersistedValue = !isEmptyModuleValue(existingValue);
+      const incomingIsEmpty = isEmptyModuleValue(value);
+      const allowEmptyOverwrite = MODULE_KEYS_ALLOW_EMPTY_OVERWRITE.has(key);
+
+      if (incomingIsEmpty && hasPersistedValue && !allowEmptyOverwrite) {
+        continue;
+      }
+      sanitizedUpdates[key] = value;
+    }
+
+    if (Object.keys(sanitizedUpdates).length === 0) {
+      return;
+    }
+
+    moduleStateRef.current = { ...moduleStateRef.current, ...sanitizedUpdates };
+    updateModuleState(sanitizedUpdates);
   }, [updateModuleState]);
 
   const stripSpeechDirectives = useCallback((text: string): string => {
