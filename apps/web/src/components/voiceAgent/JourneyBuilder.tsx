@@ -1035,7 +1035,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       }
       const previousSaved = lastSavedJourneyRef.current;
       lastSavedJourneyRef.current = JSON.stringify(currentJourney);
-      saveJourney(currentJourney).catch((err) => {
+      saveJourney(currentJourney).catch(() => {
         lastSavedJourneyRef.current = previousSaved;
       });
     } catch (e) {
