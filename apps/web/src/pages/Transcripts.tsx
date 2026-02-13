@@ -561,7 +561,7 @@ export const TranscriptsPage: React.FC = () => {
                           <div className="transcripts-message-role">
                             {item.role === 'user' ? (sessionOwnerName || 'User') : 'Agent'}
                           </div>
-                          <div className="transcripts-message-content">{item.title?.replace(/\[(?:slow|fast|pause|break|whisper|loud|soft)\]/gi, '').replace(/\s{2,}/g, ' ').trim()}</div>
+                          <div className="transcripts-message-content">{item.title?.replace(/\[(?:slow|fast|pause|break|whisper|loud|soft|neutral|happy|sad|excited|calm|serious|cheerful|empathetic|curious|surprised|concerned|warm|gentle|firm|playful)\]/gi, '').replace(/\s{2,}/g, ' ').trim()}</div>
                           <div className="transcripts-message-footer">
                             <div className="transcripts-message-time">
                               <span 
