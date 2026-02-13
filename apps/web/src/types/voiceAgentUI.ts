@@ -107,6 +107,7 @@ export interface AgentUIContextValue {
   navigateToScreen?: (screenId: string) => void;
   moduleState?: Record<string, any>;
   updateModuleState?: (updates: Record<string, any>) => void;
+  replaceModuleState?: (nextState?: Record<string, any>) => void;
   
   // Agent management for non-voice mode
   allAgents?: Agent[];

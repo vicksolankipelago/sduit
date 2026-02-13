@@ -575,10 +575,12 @@ function VoiceAgentContent() {
     navigateToScreen,
     moduleState,
     updateModuleState,
+    replaceModuleState,
     setAgents,
     switchToAgent,
     flowContext,
     updateFlowContext,
+    clearFlowContext,
     currentScreenId,
   } = useAgentUI();
   const { user, isAdmin } = useAuth();
@@ -975,6 +977,7 @@ function VoiceAgentContent() {
     pendingNavigationRef.current = null;
     queuedPostNavigationEventRef.current = null;
     lastRecordInputRef.current = null;
+    clearFlowContext?.();
     clearLiveAgentMessage();
     setSessionStatus('DISCONNECTED');
     setActiveSpeaker('none');
@@ -1852,6 +1855,12 @@ function VoiceAgentContent() {
     // Use override if provided (from start_journey), otherwise use current context state
     // CRITICAL: Transform quiz option IDs to readable labels before use
     const rawFlowContext = flowContextOverride || flowContext || {};
+    // Start each session from explicit flow context only, so stale captured UI
+    // values from prior sessions cannot pre-populate current-screen cards.
+    const sessionModuleState = { ...rawFlowContext };
+    replaceModuleState?.(sessionModuleState);
+    moduleStateRef.current = sessionModuleState;
+
     const effectiveFlowContext = transformQuizAnswersToLabels(rawFlowContext);
     console.log('📊 Quiz context transformation:', {
       rawKeys: Object.keys(rawFlowContext),

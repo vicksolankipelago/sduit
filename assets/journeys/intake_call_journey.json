@@ -2180,7 +2180,33 @@
               "deeplink": "pq-plan-review"
             }
           ],
-          "conditions": []
+          "conditions": [
+            {
+              "rules": {
+                "and": [
+                  {
+                    "!=": [
+                      {
+                        "var": "notificationPermissions"
+                      },
+                      null
+                    ]
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "notificationPermissions"
+                      },
+                      ""
+                    ]
+                  }
+                ]
+              },
+              "state": {
+                "notificationPermissions": "{$screenState.notificationPermissions}"
+              }
+            }
+          ]
         }
       ],
       "sections": [

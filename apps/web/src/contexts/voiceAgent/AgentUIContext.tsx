@@ -144,6 +144,10 @@ export const AgentUIProvider: FC<PropsWithChildren> = ({ children }) => {
     setModuleState(prev => ({ ...prev, ...updates }));
   }, []);
 
+  const replaceModuleState = useCallback((nextState: Record<string, any> = {}) => {
+    setModuleState(nextState);
+  }, []);
+
   // Flow context methods for cross-journey state persistence
   const updateFlowContext = useCallback((updates: Record<string, any>) => {
     setFlowContext(prev => ({ ...prev, ...updates }));
@@ -207,6 +211,7 @@ export const AgentUIProvider: FC<PropsWithChildren> = ({ children }) => {
         navigateToScreen,
         moduleState,
         updateModuleState,
+        replaceModuleState,
         // Agent management for non-voice mode
         allAgents,
         currentAgentId,

@@ -2232,7 +2232,7 @@
                 "copyId": null,
                 "header": {
                   "id": "checkin_header",
-                  "title": "How often would you like to check in this week?",
+                  "title": "",
                   "caption": null,
                   "imageName": null,
                   "description": null

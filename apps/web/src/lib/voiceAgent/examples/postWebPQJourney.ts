@@ -885,7 +885,7 @@ function createPostWebPQScreens(): Screen[] {
                 caption: null,
                 header: {
                   id: 'checkin_header',
-                  title: 'How often would you like to check in this week?',
+                  title: '',
                   caption: null,
                   description: null,
                   imageName: null,
