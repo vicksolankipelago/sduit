@@ -4334,13 +4334,14 @@ Important guidelines:
     onEvent: handleVoiceEvent,
     onModeChange: (mode) => {
       if (currentProviderRef.current !== 'elevenlabs') return;
-      const isNewSpeakingTurn = mode === 'speaking' && lastElevenLabsModeRef.current !== 'speaking';
+      const previousMode = lastElevenLabsModeRef.current;
+      const isNewSpeakingTurn = mode === 'speaking' && previousMode !== 'speaking';
+
       if (isNewSpeakingTurn) {
-        // Hide the previous assistant turn immediately to avoid stale-message flashes
-        // before the next aligned text chunk arrives.
         setAgentSpeechAlignment(null);
+        // Drop the previous turn immediately so stale content never flashes
+        // before the next assistant text begins streaming.
         clearLiveAgentMessage();
-        shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
       }
       lastElevenLabsModeRef.current = mode;
       setActiveSpeaker(mode === 'speaking' ? 'agent' : 'member');
@@ -4405,8 +4406,6 @@ Important guidelines:
       
       // Log message
       if (role === 'user') {
-        setAgentSpeechAlignment(null);
-        clearLiveAgentMessage();
         if (isDone !== false) {
           userUtteranceCountRef.current += 1;
           const activeScreenId = currentScreenIdRef.current;
