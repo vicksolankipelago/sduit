@@ -1012,7 +1012,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     handleUpdateAgent({ ...selectedAgent, handoffs });
   };
 
-  const handleEditScreen = async (screen: Screen) => {
+  const handleEditScreen = (screen: Screen) => {
     console.log('[EditScreen] Clicked, screen:', screen.id);
     if (!currentJourney || !selectedAgent) {
       console.warn('[EditScreen] Missing currentJourney or selectedAgent, cannot navigate');
@@ -1022,19 +1022,21 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       clearTimeout(autoSaveTimerRef.current);
       autoSaveTimerRef.current = null;
     }
-    const targetUrl = `/screens?journeyId=${currentJourney.id}&agentId=${selectedAgent.id}&screenId=${screen.id}`;
-    try {
-      await Promise.race([
-        saveJourney(currentJourney),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Save timeout')), 3000)),
-      ]);
+    saveJourney(currentJourney).then(() => {
       lastSavedJourneyRef.current = JSON.stringify(currentJourney);
       setHasUnsavedChanges(false);
-    } catch (err) {
-      console.error('[EditScreen] save failed, navigating anyway', err);
-    }
-    console.log('[EditScreen] Navigating to:', targetUrl);
-    navigate(targetUrl);
+    }).catch((err) => {
+      console.error('[EditScreen] save failed', err);
+    });
+    console.log('[EditScreen] Navigating to /screens with state for screen:', screen.id);
+    navigate('/screens', {
+      state: {
+        editScreen: screen,
+        agentId: selectedAgent.id,
+        agentName: selectedAgent.name,
+        journeyId: currentJourney.id,
+      },
+    });
   };
 
   const handleDeleteAgent = () => {
