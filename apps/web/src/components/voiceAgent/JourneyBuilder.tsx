@@ -1013,27 +1013,34 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   };
 
   const handleEditScreen = (screen: Screen) => {
-    console.log('[EditScreen] Clicked, screen:', screen.id);
     if (!currentJourney || !selectedAgent) {
-      console.warn('[EditScreen] Missing currentJourney or selectedAgent, cannot navigate');
       return;
     }
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-      autoSaveTimerRef.current = null;
-    }
-    if (publishCheckTimerRef.current) {
-      clearTimeout(publishCheckTimerRef.current);
-      publishCheckTimerRef.current = null;
-    }
-    const previousSaved = lastSavedJourneyRef.current;
-    lastSavedJourneyRef.current = JSON.stringify(currentJourney);
-    saveJourney(currentJourney).catch((err) => {
-      console.error('[EditScreen] save failed, restoring ref for retry', err);
-      lastSavedJourneyRef.current = previousSaved;
+    navigate('/screens', {
+      state: {
+        editScreen: screen,
+        agentId: selectedAgent.id,
+        agentName: selectedAgent.name,
+        journeyId: currentJourney.id,
+      },
     });
-    console.log('[EditScreen] Navigating to /screens with query params for screen:', screen.id);
-    navigate(`/screens?journeyId=${currentJourney.id}&agentId=${selectedAgent.id}&screenId=${screen.id}`);
+    try {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+      if (publishCheckTimerRef.current) {
+        clearTimeout(publishCheckTimerRef.current);
+        publishCheckTimerRef.current = null;
+      }
+      const previousSaved = lastSavedJourneyRef.current;
+      lastSavedJourneyRef.current = JSON.stringify(currentJourney);
+      saveJourney(currentJourney).catch((err) => {
+        lastSavedJourneyRef.current = previousSaved;
+      });
+    } catch (e) {
+      // Save errors should never prevent navigation
+    }
   };
 
   const handleDeleteAgent = () => {
