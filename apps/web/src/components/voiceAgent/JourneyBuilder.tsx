@@ -1032,15 +1032,8 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       console.error('[EditScreen] save failed, restoring ref for retry', err);
       lastSavedJourneyRef.current = previousSaved;
     });
-    console.log('[EditScreen] Navigating to /screens with state for screen:', screen.id);
-    navigate('/screens', {
-      state: {
-        editScreen: screen,
-        agentId: selectedAgent.id,
-        agentName: selectedAgent.name,
-        journeyId: currentJourney.id,
-      },
-    });
+    console.log('[EditScreen] Navigating to /screens with query params for screen:', screen.id);
+    navigate(`/screens?journeyId=${currentJourney.id}&agentId=${selectedAgent.id}&screenId=${screen.id}`);
   };
 
   const handleDeleteAgent = () => {

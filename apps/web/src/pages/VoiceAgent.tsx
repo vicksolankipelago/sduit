@@ -877,7 +877,7 @@ function VoiceAgentContent() {
   }, [updateModuleState]);
 
   const stripSpeechDirectives = useCallback((text: string): string => {
-    return text.replace(/\[(?:slow|fast|pause|break|whisper|loud|soft)\]/gi, '').replace(/\s{2,}/g, ' ').trim();
+    return text.replace(/\[(?:slow|fast|pause|break|whisper|loud|soft|neutral|happy|sad|excited|calm|serious|cheerful|empathetic|curious|surprised|concerned|warm|gentle|firm|playful)\]/gi, '').replace(/\s{2,}/g, ' ').trim();
   }, []);
 
   const updateLiveAgentMessage = useCallback((message: string) => {
@@ -1162,6 +1162,7 @@ function VoiceAgentContent() {
     // Reset session state
     sessionSaverRef.current.reset();
     queuedItemIdsRef.current.clear();
+    sessionLogsRef.current = [];
     setSessionLogs([]);
 
     // Store all agents for non-voice navigation
@@ -1819,6 +1820,7 @@ function VoiceAgentContent() {
     }
 
     // Clear previous session logs
+    sessionLogsRef.current = [];
     setSessionLogs([]);
     userUtteranceCountRef.current = 0;
     userUtterancesByScreenRef.current = {};
@@ -2705,6 +2707,116 @@ Important guidelines:
   // Track which provider to use (determined by journey)
   const currentProviderRef = useRef<'azure' | 'elevenlabs'>('elevenlabs');
 
+  const handleVoiceEvent = (event: any) => {
+    logServerEvent(event);
+    
+    if (event.type === 'agent_initialized') {
+      addLog('agent', `Agent initialized: ${event.agentName}`, { agentName: event.agentName });
+    }
+    
+    if (event.type === 'agent_handoff') {
+      currentAgentRef.current = event.to;
+      addLog('success', `✅ Agent Handoff: ${event.from} → ${event.to}`, { from: event.from, to: event.to });
+    }
+    
+    if (event.type === 'tool_execution_error') {
+      addLog('error', `Tool Error: ${event.toolName} - ${event.error}`, event);
+    }
+
+    if (event.type === 'agent_tool_request' && event.tool_name) {
+      addLog('tool', `🧰 Agent requested tool: ${event.tool_name}`, event);
+    }
+    if (event.type === 'agent_tool_response' && event.tool_name) {
+      const status = event.is_error ? 'error' : event.is_called ? 'called' : 'not called';
+      const logType = event.is_error ? 'error' : 'tool';
+      addLog(logType, `🧰 Agent tool response: ${event.tool_name} (${status})`, event);
+    }
+    if (event.type === 'agent_tool_response' && event.tool_name === 'transfer_to_agent') {
+      addLog('agent', `🔄 Agent Transfer: transfer_to_agent executed`, event);
+    }
+    
+    if (event.type === 'handoff_attempt') {
+      addLog('info', `🔍 Checking Handoff: Current="${event.currentAgent}", Last Tool="${event.lastTool || 'none'}"`, event);
+    }
+    
+    if (event.type === 'conversation_complete') {
+      addLog('success', `🎉 ${event.message}`, event);
+      addLog('info', 'Session will automatically disconnect once audio finishes...', {});
+    }
+
+    if (event.type === 'status_change') {
+      addLog('info', `📊 Status change: ${JSON.stringify(event)}`, event);
+    }
+    if (event.type === 'mode_change') {
+      addLog('info', `🔊 Mode: ${event.mode}`, event);
+    }
+    if (event.type === 'can_send_feedback_change') {
+      addLog('info', `📋 Can send feedback: ${JSON.stringify(event)}`, event);
+    }
+
+    if (typeof event.type === 'string' && event.type.startsWith('debug_')) {
+      const debugType = event.type.replace('debug_', '');
+
+      let logType: 'info' | 'agent' | 'tool' | 'error' | 'event' = 'info';
+      let icon = '🔍';
+
+      if (debugType.includes('workflow') || debugType.includes('route') || debugType.includes('transition') || debugType.includes('node') || debugType.includes('agent') || debugType.includes('handoff') || debugType.includes('transfer')) {
+        logType = 'agent';
+        icon = '🔄';
+      } else if (debugType.includes('tool')) {
+        logType = 'tool';
+        icon = '🧰';
+      } else if (debugType === 'parsing_error' || debugType.includes('error')) {
+        logType = 'error';
+        icon = '🔴';
+      } else if (debugType === 'conversation_metadata' || debugType === 'config' || debugType === 'conversation_initiation_metadata' || debugType === 'conversation_initiation_client_data') {
+        icon = '⚙️';
+      } else if (debugType === 'audio_element_ready') {
+        icon = '🔈';
+      }
+
+      let message = `${icon} [${debugType}]`;
+      if (event.message) {
+        const msgStr = typeof event.message === 'string' ? event.message : JSON.stringify(event.message);
+        message += `: ${msgStr.substring(0, 200)}`;
+      }
+
+      addLog(logType, message, event);
+    }
+    
+    if (event.type === 'interruption') {
+      addLog('info', `⚡ Interruption event (id: ${event.event_id})`, event);
+    }
+
+    if (event.type === 'substance_selected' || 
+        event.type === 'motivation_logged' || 
+        event.type === 'goal_logged' ||
+        event.type === 'drink_logged' ||
+        event.type === 'baseline_calculated') {
+      addLog('event', `Event: ${event.type}`, event);
+      triggerEventUI(event.type, event);
+    }
+
+    const knownTypes = new Set([
+      'agent_initialized', 'agent_handoff', 'tool_execution_error',
+      'agent_tool_request', 'agent_tool_response', 'handoff_attempt',
+      'conversation_complete', 'status_change', 'mode_change',
+      'can_send_feedback_change', 'interruption',
+      'substance_selected', 'motivation_logged', 'goal_logged',
+      'drink_logged', 'baseline_calculated',
+      'unhandled_client_tool_call',
+    ]);
+    const eventType = event.type || 'unknown';
+    const isDebug = typeof eventType === 'string' && eventType.startsWith('debug_');
+    const isTranscriptMessage = event.source === 'user' || event.source === 'ai';
+    if (!knownTypes.has(eventType) && !isDebug && !isTranscriptMessage) {
+      const summary = event.message
+        ? (typeof event.message === 'string' ? event.message.substring(0, 200) : JSON.stringify(event.message).substring(0, 200))
+        : '';
+      addLog('info', `📡 SDK event [${eventType}]${summary ? ': ' + summary : ''}`, event);
+    }
+  };
+
   const {
     connect: connectAzure,
     disconnect: disconnectAzure,
@@ -2845,93 +2957,7 @@ Important guidelines:
         }
       }
     },
-    onEvent: (event) => {
-      logServerEvent(event);
-      
-      // Handle agent initialization
-      if (event.type === 'agent_initialized') {
-        addLog('agent', `Agent initialized: ${event.agentName}`, { agentName: event.agentName });
-      }
-      
-      // Handle agent handoffs
-      if (event.type === 'agent_handoff') {
-        currentAgentRef.current = event.to;
-        addLog('success', `✅ Agent Handoff: ${event.from} → ${event.to}`, { from: event.from, to: event.to });
-      }
-      
-      // Handle tool execution errors (logged but not shown to AI)
-      if (event.type === 'tool_execution_error') {
-        addLog('error', `Tool Error: ${event.toolName} - ${event.error}`, event);
-      }
-
-      // ElevenLabs tool lifecycle debugging (captures attempts and failures).
-      if (event.type === 'agent_tool_request' && event.tool_name) {
-        addLog('tool', `🧰 Agent requested tool: ${event.tool_name}`, event);
-      }
-      if (event.type === 'agent_tool_response' && event.tool_name) {
-        const status = event.is_error ? 'error' : event.is_called ? 'called' : 'not called';
-        const logType = event.is_error ? 'error' : 'tool';
-        addLog(logType, `🧰 Agent tool response: ${event.tool_name} (${status})`, event);
-      }
-      if (event.type === 'agent_tool_response' && event.tool_name === 'transfer_to_agent') {
-        addLog('agent', `🔄 Agent Transfer: transfer_to_agent executed`, event);
-      }
-      
-      // Handle handoff attempts for debugging
-      if (event.type === 'handoff_attempt') {
-        addLog('info', `🔍 Checking Handoff: Current="${event.currentAgent}", Last Tool="${event.lastTool || 'none'}"`, event);
-      }
-      
-      // Removed handoff_not_triggered logging - too noisy and doesn't add value to user
-      // These are expected events when no handoff criteria is met
-      
-      // Handle conversation completion
-      if (event.type === 'conversation_complete') {
-        addLog('success', `🎉 ${event.message}`, event);
-        addLog('info', 'Session will automatically disconnect once audio finishes...', {});
-      }
-      
-      // Log all debug events from ElevenLabs SDK (WebRTC layer)
-      if (typeof event.type === 'string' && event.type.startsWith('debug_')) {
-        const debugType = event.type.replace('debug_', '');
-        if (debugType === 'conversation_metadata' || debugType === 'config') {
-          addLog('info', `⚙️ ElevenLabs config received: ${debugType}`, event);
-        }
-        if (debugType === 'audio_element_ready') {
-          addLog('info', '🔈 WebRTC audio element ready');
-        }
-        if (debugType === 'parsing_error') {
-          addLog('error', `🔴 WebRTC parsing error: ${event.message}`, event);
-        }
-        if (debugType.includes('agent') || debugType.includes('handoff') || debugType.includes('transfer')) {
-          addLog('agent', `🔄 Agent event [${debugType}]`, event);
-        }
-        if (debugType === 'agent_tool_response' || debugType === 'client_tool_call') {
-          const toolName = event.tool_name || event.toolName || '';
-          if (toolName.includes('transfer') || toolName.includes('handoff') || toolName.includes('agent')) {
-            addLog('agent', `🔄 Agent Transfer Tool [${debugType}]: ${toolName}`, event);
-          }
-        }
-        if (debugType === 'conversation_initiation_metadata') {
-          addLog('info', `📋 Conversation metadata received`, event);
-        }
-      }
-      
-      // Log interruption events
-      if (event.type === 'interruption') {
-        addLog('info', `⚡ Interruption event (id: ${event.event_id})`, event);
-      }
-
-      // Handle custom events from tools (like substance_selected, drink_logged, etc.)
-      if (event.type === 'substance_selected' || 
-          event.type === 'motivation_logged' || 
-          event.type === 'goal_logged' ||
-          event.type === 'drink_logged' ||
-          event.type === 'baseline_calculated') {
-        addLog('event', `Event: ${event.type}`, event);
-        triggerEventUI(event.type, event);
-      }
-    },
+    onEvent: handleVoiceEvent,
     onToolCall: (toolName, args, result) => {
       // Check if result contains an internal error (for session log display only)
       const resultObject = result && typeof result === 'object' && !Array.isArray(result)
@@ -4305,6 +4331,7 @@ Important guidelines:
         setLoadingJourneyId(null);
       }
     },
+    onEvent: handleVoiceEvent,
     onModeChange: (mode) => {
       if (currentProviderRef.current !== 'elevenlabs') return;
       const isNewSpeakingTurn = mode === 'speaking' && lastElevenLabsModeRef.current !== 'speaking';
