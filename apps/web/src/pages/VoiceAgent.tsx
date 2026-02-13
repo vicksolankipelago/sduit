@@ -926,22 +926,11 @@ function VoiceAgentContent() {
     }
   }, []);
 
-  const scheduleNotificationPlanReviewFallback = useCallback((source: string) => {
+  const scheduleNotificationPlanReviewFallback = useCallback((_source: string) => {
+    // Disabled: plan review should only be reached after an explicit user response
+    // on notification setup (allow/deny), not via silent timeout.
     clearNotificationPlanReviewFallback();
-
-    notificationPlanReviewFallbackTimerRef.current = setTimeout(() => {
-      const activeScreen = currentScreenIdRef.current;
-      if (activeScreen !== 'pq-notification-setup') {
-        return;
-      }
-
-      addLog('warning', '⚠️ Auto-advancing from notification setup to plan review (safety fallback).', {
-        source,
-        activeScreen,
-      });
-      navigateToScreen?.('pq-plan-review');
-    }, 5000);
-  }, [addLog, clearNotificationPlanReviewFallback, navigateToScreen]);
+  }, [clearNotificationPlanReviewFallback]);
 
   const resetToFlowsScreen = () => {
     clearNotificationPlanReviewFallback();
