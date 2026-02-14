@@ -1616,13 +1616,21 @@
           "layout": "stack",
           "elements": [
             {
-              "type": "quoteCard",
+              "type": "textCard",
               "state": {
-                "id": "motivation_summary_quote",
-                "message": "{$moduleData.yourWhySummary}"
+                "id": "motivation_summary_card",
+                "title": "Your motivation",
+                "content": "{$moduleData.yourWhySummary}"
               },
               "style": {
-                "imageName": null
+                "backgroundColor": "backgroundLightMintGreen",
+                "borderColor": "backgroundLightMintGreen",
+                "captionColor": "textGlobalSecondary",
+                "textColor": "textGlobalPrimary",
+                "borderWidth": 1,
+                "cornerRadius": 16,
+                "titleTextStyle": "default",
+                "showIcon": false
               },
               "conditions": [
                 {
@@ -1759,84 +1767,6 @@
               "style": {
                 "width": null,
                 "height": 24,
-                "direction": "vertical",
-                "isFlexible": false
-              },
-              "conditions": [
-                {
-                  "rules": {
-                    "and": [
-                      {
-                        "!=": [
-                          {
-                            "var": "focus"
-                          },
-                          null
-                        ]
-                      },
-                      {
-                        "!=": [
-                          {
-                            "var": "focus"
-                          },
-                          ""
-                        ]
-                      }
-                    ]
-                  },
-                  "state": {
-                    "focus": "{$moduleData.weeklyFocus}"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "textBlock",
-              "state": {
-                "id": "weekly_focus_label",
-                "text": "Your focus this week"
-              },
-              "style": {
-                "color": "primary",
-                "style": "heading2",
-                "alignment": "leading"
-              },
-              "conditions": [
-                {
-                  "rules": {
-                    "and": [
-                      {
-                        "!=": [
-                          {
-                            "var": "focus"
-                          },
-                          null
-                        ]
-                      },
-                      {
-                        "!=": [
-                          {
-                            "var": "focus"
-                          },
-                          ""
-                        ]
-                      }
-                    ]
-                  },
-                  "state": {
-                    "focus": "{$moduleData.weeklyFocus}"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "spacer",
-              "state": {
-                "id": "weekly_focus_label_spacer"
-              },
-              "style": {
-                "width": null,
-                "height": 8,
                 "direction": "vertical",
                 "isFlexible": false
               },
