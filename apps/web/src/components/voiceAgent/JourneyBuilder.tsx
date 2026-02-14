@@ -849,7 +849,7 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   const availableHandoffTargets = currentJourney?.agents.filter(a => a.id !== selectedAgentId) || [];
   const aiFlowTargetAgent =
     currentJourney?.agents.find((agent) => agent.id === aiFlowTargetAgentId) || null;
-  const aiFlowTargetAgentScreens = aiFlowTargetAgent?.screens || [];
+  const aiFlowTargetAgentScreens = useMemo(() => aiFlowTargetAgent?.screens || [], [aiFlowTargetAgent?.screens]);
 
   const aiProposalDiffSummary = useMemo(() => {
     if (!currentJourney || !aiFlowProposal) return null;
@@ -970,28 +970,30 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   useEffect(() => {
     if (!showAiFlowEditModal) return;
     if (aiFlowScope === 'journey') {
-      setAiFlowTargetScreenIds([]);
+      setAiFlowTargetScreenIds(prev => prev.length === 0 ? prev : []);
       return;
     }
     if (!aiFlowTargetAgentId) {
-      setAiFlowTargetAgentId(selectedAgentId || currentJourney?.agents[0]?.id || '');
+      const fallback = selectedAgentId || currentJourney?.agents[0]?.id || '';
+      setAiFlowTargetAgentId(prev => prev === fallback ? prev : fallback);
     }
   }, [showAiFlowEditModal, aiFlowScope, aiFlowTargetAgentId, selectedAgentId, currentJourney?.agents]);
 
   useEffect(() => {
     if (aiFlowScope !== 'screens') {
-      setAiFlowTargetScreenIds([]);
+      setAiFlowTargetScreenIds(prev => prev.length === 0 ? prev : []);
       return;
     }
     if (!aiFlowTargetAgentScreens.length) {
-      setAiFlowTargetScreenIds([]);
+      setAiFlowTargetScreenIds(prev => prev.length === 0 ? prev : []);
       return;
     }
     const validScreenIds = new Set(aiFlowTargetAgentScreens.map((screen) => screen.id));
-    setAiFlowTargetScreenIds((previous) =>
-      previous.filter((screenId) => validScreenIds.has(screenId))
-    );
-  }, [aiFlowScope, aiFlowTargetAgentId, aiFlowTargetAgentScreens]);
+    setAiFlowTargetScreenIds((previous) => {
+      const filtered = previous.filter((screenId) => validScreenIds.has(screenId));
+      return filtered.length === previous.length ? previous : filtered;
+    });
+  }, [aiFlowScope, aiFlowTargetAgentScreens]);
 
   // Sync JSON value when selected agent or screens change
   useEffect(() => {
