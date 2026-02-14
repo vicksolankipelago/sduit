@@ -172,18 +172,17 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
    * state rather than stringifying it. Returns undefined if not a pure reference.
    */
   const resolveStateReference = useCallback((template: string): any | undefined => {
-    // Must be a single braced reference occupying the entire string
-    const pureRefPattern = /^\{(\$(?:moduleData|screenData|screenState)\.([^}]+))\}$/;
+    const pureRefPattern = /^\{(\$(?:moduleData|screenData|screenState|state)\.([^}]+))\}$/;
     const match = template.match(pureRefPattern);
     if (!match) return undefined;
 
-    const fullRef = match[1]; // e.g. "$moduleData.goalTitles"
+    const fullRef = match[1];
     const key = match[2]?.trim();
     if (!key) return undefined;
 
     if (fullRef.startsWith('$moduleData.')) {
       return getNestedValue(moduleStateRef.current, key);
-    } else if (fullRef.startsWith('$screenData.') || fullRef.startsWith('$screenState.')) {
+    } else if (fullRef.startsWith('$screenData.') || fullRef.startsWith('$screenState.') || fullRef.startsWith('$state.')) {
       return getNestedValue(screenStateRef.current, key);
     }
     return undefined;
@@ -342,19 +341,24 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
           const stateAction = action as StateUpdateAction;
           const scope = stateAction.scope || 'screen';
           
-          // CRITICAL: Interpolate values like {$screenState.selectedOption} before storing
-          // This ensures quiz answers are stored as actual values, not template strings
           const interpolatedUpdates: Record<string, any> = {};
           for (const [key, value] of Object.entries(stateAction.updates)) {
             if (typeof value === 'string') {
-              const interpolatedValue = interpolateString(value);
-              interpolatedUpdates[key] = interpolatedValue;
-              console.log(`📝 StateUpdate: ${key} = "${value}" → "${interpolatedValue}"`);
+              const nativeValue = resolveStateReference(value);
+              if (nativeValue !== undefined) {
+                interpolatedUpdates[key] = nativeValue;
+                console.log(`📝 StateUpdate (native): ${key} = "${value}" → ${JSON.stringify(nativeValue)} (${typeof nativeValue}${Array.isArray(nativeValue) ? '[]' : ''})`);
+              } else {
+                const interpolatedValue = interpolateString(value);
+                interpolatedUpdates[key] = interpolatedValue;
+                console.log(`📝 StateUpdate: ${key} = "${value}" → "${interpolatedValue}"`);
+              }
             } else if (Array.isArray(value)) {
-              // Handle arrays (for multi-select like selectedOptions)
-              interpolatedUpdates[key] = value.map(v => 
-                typeof v === 'string' ? interpolateString(v) : v
-              );
+              interpolatedUpdates[key] = value.map(v => {
+                if (typeof v !== 'string') return v;
+                const native = resolveStateReference(v);
+                return native !== undefined ? native : interpolateString(v);
+              });
               console.log(`📝 StateUpdate (array): ${key} = ${JSON.stringify(value)} → ${JSON.stringify(interpolatedUpdates[key])}`);
             } else {
               interpolatedUpdates[key] = value;
@@ -449,7 +453,7 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
           break;
       }
     }
-  }, [evaluateConditions, updateScreenState, updateModuleState, onSetVoiceEnabled]);
+  }, [evaluateConditions, updateScreenState, updateModuleState, onSetVoiceEnabled, resolveStateReference, interpolateString]);
 
   /**
    * Trigger an event by ID
