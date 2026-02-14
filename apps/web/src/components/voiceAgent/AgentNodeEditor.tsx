@@ -102,17 +102,15 @@ const AgentNodeEditor: React.FC<AgentNodeEditorProps> = ({
       console.error('AgentNodeEditor handleEditScreen: journeyId is undefined, cannot navigate to screen editor');
       return;
     }
-    navigate('/screens', {
-      state: {
-        editScreen: screen,
-        agentId: agent.id,
-        agentName: agent.name,
-        journeyId: journeyId,
-      },
-    });
     if (onSave) {
       onSave().catch(() => {});
     }
+    const params = new URLSearchParams({
+      journeyId,
+      agentId: agent.id,
+      screenId: screen.id,
+    });
+    navigate(`/screens?${params.toString()}`);
   };
 
   const handleDeleteScreen = (index: number) => {

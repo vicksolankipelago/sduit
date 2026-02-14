@@ -1016,14 +1016,6 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     if (!currentJourney || !selectedAgent) {
       return;
     }
-    navigate('/screens', {
-      state: {
-        editScreen: screen,
-        agentId: selectedAgent.id,
-        agentName: selectedAgent.name,
-        journeyId: currentJourney.id,
-      },
-    });
     try {
       if (autoSaveTimerRef.current) {
         clearTimeout(autoSaveTimerRef.current);
@@ -1041,6 +1033,12 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     } catch (e) {
       // Save errors should never prevent navigation
     }
+    const params = new URLSearchParams({
+      journeyId: currentJourney.id,
+      agentId: selectedAgent.id,
+      screenId: screen.id,
+    });
+    navigate(`/screens?${params.toString()}`);
   };
 
   const handleDeleteAgent = () => {
@@ -1116,15 +1114,13 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       lastSavedJourneyRef.current = previousSaved;
     });
 
-    console.log('[AddScreen] Navigating to /screens with state for screen:', newScreen.id);
-    navigate('/screens', {
-      state: {
-        editScreen: newScreen,
-        agentId: selectedAgent.id,
-        agentName: selectedAgent.name,
-        journeyId: currentJourney.id,
-      },
+    console.log('[AddScreen] Navigating to /screens for screen:', newScreen.id);
+    const params = new URLSearchParams({
+      journeyId: currentJourney.id,
+      agentId: selectedAgent.id,
+      screenId: newScreen.id,
     });
+    navigate(`/screens?${params.toString()}`);
   };
 
   const handleRemoveScreen = (index: number) => {
