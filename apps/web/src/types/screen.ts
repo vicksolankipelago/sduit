@@ -38,6 +38,8 @@ export interface StandaloneScreenListItem {
   elementCount: number;
   /** ISO timestamp when the screen was last updated */
   updatedAt: string;
+  /** Position index within the flow (for ordering) */
+  orderIndex?: number;
   /** Source info for screens embedded in journeys */
   source?: {
     type: 'global' | 'journey';

@@ -39,6 +39,7 @@ const UIShowcase: React.FC = () => {
   // Screens list state
   const [screensList, setScreensList] = useState<StandaloneScreenListItem[]>([]);
   const [isLoadingScreens, setIsLoadingScreens] = useState(true);
+  const [flowFilter, setFlowFilter] = useState<string>('all');
   const [editingScreenId, setEditingScreenId] = useState<string | null>(null);
   const [editingAgentInfo, setEditingAgentInfo] = useState<{ agentId?: string; agentName?: string; journeyId?: string } | null>(null);
   const [editingScreenSource, setEditingScreenSource] = useState<'new' | 'global' | 'journey'>('new');
@@ -120,6 +121,16 @@ const UIShowcase: React.FC = () => {
     loadScreensList();
   }, []);
 
+  // Reset flow filter if selected journey no longer exists
+  useEffect(() => {
+    if (flowFilter !== 'all' && flowFilter !== 'global') {
+      const exists = screensList.some(s => s.source?.journeyId === flowFilter);
+      if (!exists && screensList.length > 0) {
+        setFlowFilter('all');
+      }
+    }
+  }, [screensList, flowFilter]);
+
   const loadScreensList = async () => {
     setIsLoadingScreens(true);
     
@@ -139,7 +150,8 @@ const UIShowcase: React.FC = () => {
         if (journey?.agents) {
           for (const agent of journey.agents) {
             if (agent.screens && agent.screens.length > 0) {
-              for (const screen of agent.screens) {
+              for (let screenIndex = 0; screenIndex < agent.screens.length; screenIndex++) {
+                const screen = agent.screens[screenIndex];
                 const elementCount = screen.sections?.reduce(
                   (count, section) => count + (section.elements?.length || 0),
                   0
@@ -151,6 +163,7 @@ const UIShowcase: React.FC = () => {
                   sectionCount: screen.sections?.length || 0,
                   elementCount,
                   updatedAt: journey.updatedAt || new Date().toISOString(),
+                  orderIndex: screenIndex,
                   source: {
                     type: 'journey',
                     journeyId: journey.id,
@@ -577,68 +590,114 @@ const UIShowcase: React.FC = () => {
       </div>
 
       {/* Screens List Mode */}
-      {showcaseMode === 'screens' && (
-        <div className="ui-showcase-screens-list">
-          {isLoadingScreens ? (
-            <div className="ui-showcase-loading">Loading screens...</div>
-          ) : screensList.length === 0 ? (
-            <div className="ui-showcase-empty">
-              <h3>No screens yet</h3>
-              <p>Click "Create Screen" to get started</p>
+      {showcaseMode === 'screens' && (() => {
+        const journeyOptions = screensList
+          .filter(s => s.source?.type === 'journey' && s.source?.journeyId)
+          .reduce<{ id: string; name: string }[]>((acc, s) => {
+            const jId = s.source!.journeyId!;
+            if (!acc.some(j => j.id === jId)) {
+              acc.push({ id: jId, name: s.source!.journeyName || jId });
+            }
+            return acc;
+          }, []);
+
+        const filteredScreens = flowFilter === 'all'
+          ? screensList
+          : flowFilter === 'global'
+            ? screensList.filter(s => s.source?.type !== 'journey')
+            : screensList.filter(s => s.source?.journeyId === flowFilter);
+
+        const sortedScreens = flowFilter !== 'all' && flowFilter !== 'global'
+          ? [...filteredScreens].sort((a, b) => (a.orderIndex ?? 999) - (b.orderIndex ?? 999))
+          : filteredScreens;
+
+        return (
+          <div className="ui-showcase-screens-list">
+            <div className="ui-showcase-flow-filter">
+              <label className="ui-showcase-flow-filter-label">Filter by flow:</label>
+              <select
+                className="ui-showcase-flow-filter-select"
+                value={flowFilter}
+                onChange={(e) => setFlowFilter(e.target.value)}
+              >
+                <option value="all">All Screens</option>
+                <option value="global">Global Screens Only</option>
+                {journeyOptions.map(j => (
+                  <option key={j.id} value={j.id}>{j.name}</option>
+                ))}
+              </select>
+              {flowFilter !== 'all' && flowFilter !== 'global' && (
+                <span className="ui-showcase-flow-filter-count">
+                  {sortedScreens.length} screen{sortedScreens.length !== 1 ? 's' : ''} in flow order
+                </span>
+              )}
             </div>
-          ) : (
-            <div className="ui-showcase-screens-grid">
-              {screensList.map((screen) => {
-                const isJourneyScreen = screen.source?.type === 'journey';
-                return (
-                  <div 
-                    key={screen.id} 
-                    className="ui-showcase-screen-card ui-showcase-screen-card-clickable"
-                    onClick={() => handleEditScreen(screen.id)}
-                  >
-                    <div className="ui-showcase-screen-card-preview">
-                      <div className="ui-showcase-screen-card-icon">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                          <line x1="3" y1="9" x2="21" y2="9" />
-                          <line x1="9" y1="21" x2="9" y2="9" />
-                        </svg>
+
+            {isLoadingScreens ? (
+              <div className="ui-showcase-loading">Loading screens...</div>
+            ) : sortedScreens.length === 0 ? (
+              <div className="ui-showcase-empty">
+                <h3>No screens found</h3>
+                <p>{flowFilter === 'all' ? 'Click "Create Screen" to get started' : 'No screens match this filter'}</p>
+              </div>
+            ) : (
+              <div className="ui-showcase-screens-grid">
+                {sortedScreens.map((screen, index) => {
+                  const isJourneyScreen = screen.source?.type === 'journey';
+                  const showOrder = flowFilter !== 'all' && flowFilter !== 'global' && isJourneyScreen;
+                  return (
+                    <div 
+                      key={screen.id} 
+                      className="ui-showcase-screen-card ui-showcase-screen-card-clickable"
+                      onClick={() => handleEditScreen(screen.id)}
+                    >
+                      <div className="ui-showcase-screen-card-preview">
+                        {showOrder && (
+                          <div className="ui-showcase-screen-card-order">{index + 1}</div>
+                        )}
+                        <div className="ui-showcase-screen-card-icon">
+                          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                            <line x1="3" y1="9" x2="21" y2="9" />
+                            <line x1="9" y1="21" x2="9" y2="9" />
+                          </svg>
+                        </div>
                       </div>
-                    </div>
-                    <div className="ui-showcase-screen-card-content">
-                      <h3 className="ui-showcase-screen-card-title">{screen.title || screen.id}</h3>
-                      <p className="ui-showcase-screen-card-meta">
-                        {screen.sectionCount} sections · {screen.elementCount} elements
-                      </p>
-                      {isJourneyScreen && screen.source?.journeyName && (
-                        <p className="ui-showcase-screen-card-source">
-                          {screen.source.journeyName} → {screen.source.agentName || 'Agent'}
+                      <div className="ui-showcase-screen-card-content">
+                        <h3 className="ui-showcase-screen-card-title">{screen.title || screen.id}</h3>
+                        <p className="ui-showcase-screen-card-meta">
+                          {screen.sectionCount} sections · {screen.elementCount} elements
                         </p>
+                        {isJourneyScreen && screen.source?.journeyName && !showOrder && (
+                          <p className="ui-showcase-screen-card-source">
+                            {screen.source.journeyName} → {screen.source.agentName || 'Agent'}
+                          </p>
+                        )}
+                      </div>
+                      {!isJourneyScreen && (
+                        <div className="ui-showcase-screen-card-actions" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            className="ui-showcase-screen-card-btn"
+                            onClick={() => handleDuplicateScreen(screen.id)}
+                          >
+                            Duplicate
+                          </button>
+                          <button
+                            className="ui-showcase-screen-card-btn ui-showcase-screen-card-btn-danger"
+                            onClick={() => handleDeleteScreen(screen.id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
                       )}
                     </div>
-                    {!isJourneyScreen && (
-                      <div className="ui-showcase-screen-card-actions" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          className="ui-showcase-screen-card-btn"
-                          onClick={() => handleDuplicateScreen(screen.id)}
-                        >
-                          Duplicate
-                        </button>
-                        <button
-                          className="ui-showcase-screen-card-btn ui-showcase-screen-card-btn-danger"
-                          onClick={() => handleDeleteScreen(screen.id)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Element Gallery Mode */}
       {showcaseMode === 'elements' && (
