@@ -3236,12 +3236,13 @@ Important guidelines:
         const utterancesOnActiveScreen = activeScreenId
           ? (userUtterancesByScreenRef.current[activeScreenId] || 0)
           : 0;
+        const hasInProgressUtterance = !!userMessageBuffer.current.trim() || !!currentMessageIdsRef.current.user;
         const savedFromResult = resultObject?.saved;
         const recordInputAccepted =
           savedFromResult === true ||
           (savedFromResult === undefined && !(typeof result === 'string' && /error/i.test(result)));
 
-        if (utterancesOnActiveScreen < 1 || !recordInputAccepted) {
+        if ((utterancesOnActiveScreen < 1 && !hasInProgressUtterance) || !recordInputAccepted) {
           addLog('warning', `⚠️ Ignoring record_input callback payload on "${activeScreenId ?? 'unknown'}"`, {
             currentScreen: activeScreenId,
             utterancesOnActiveScreen,
@@ -4011,8 +4012,9 @@ Important guidelines:
       const utterancesOnActiveScreen = activeScreenId
         ? (userUtterancesByScreenRef.current[activeScreenId] || 0)
         : 0;
+      const hasInProgressUtterance = !!userMessageBuffer.current.trim() || !!currentMessageIdsRef.current.user;
 
-      if (utterancesOnActiveScreen < 1) {
+      if (utterancesOnActiveScreen < 1 && !hasInProgressUtterance) {
         addLog('warning', `⚠️ record_input blocked on "${activeScreenId ?? 'unknown'}": awaiting explicit user response.`, {
           title,
           storeKey,
