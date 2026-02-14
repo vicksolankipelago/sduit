@@ -857,6 +857,12 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
     }
   };
 
+  const rawMessage = typeof data.message === 'string' ? data.message : '';
+  const isPlaceholder = !rawMessage || rawMessage.startsWith('{$');
+  if (isPlaceholder) {
+    return null;
+  }
+
   return (
     <div 
       className="agent-message-card-element"
