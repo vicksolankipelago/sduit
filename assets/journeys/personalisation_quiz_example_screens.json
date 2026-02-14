@@ -1305,9 +1305,9 @@
                 "description": "{$moduleData.aboutYouSummary}"
               },
               "style": {
-                "imageName": "MonoTarget",
-                "imageWidth": 120,
-                "imageHeight": 120,
+                "imageName": null,
+                "imageWidth": 0,
+                "imageHeight": 0,
                 "backgroundColor": "backgroundLightMintGreen",
                 "cornerRadius": 12
               },
