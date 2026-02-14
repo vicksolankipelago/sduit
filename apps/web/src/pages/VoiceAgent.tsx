@@ -2974,6 +2974,7 @@ Important guidelines:
       } else if (event.source === 'user') {
         shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
         setAgentSpeechAlignment(null);
+        clearLiveAgentMessage();
         const activeScreenId = currentScreenIdRef.current;
         if (activeScreenId) {
           userHasSpokenOnScreenRef.current.add(activeScreenId);
@@ -3149,6 +3150,7 @@ Important guidelines:
         if (isDone) {
           shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
           setAgentSpeechAlignment(null);
+          clearLiveAgentMessage();
           const fullUserText = userMessageBuffer.current.trim();
           if (fullUserText) {
             userUtteranceCountRef.current += 1;
@@ -4753,10 +4755,9 @@ Important guidelines:
         setAgentSpeechAlignment(null);
         alignmentReceivedForTurnRef.current = false;
         pendingTranscriptTextRef.current = null;
-        // Mark that the next incoming text should replace (not append to)
-        // the previous turn's message. The old message stays visible on
-        // screen until the first chunk of new text arrives.
-        shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
+        // Clear the previous agent message immediately to prevent stale text
+        // from flashing on screen when module state updates trigger re-renders.
+        clearLiveAgentMessage();
       }
       if (previousMode === 'speaking' && mode !== 'speaking') {
         const pendingText = pendingTranscriptTextRef.current;
@@ -4835,10 +4836,9 @@ Important guidelines:
           userHasSpokenOnScreenRef.current.add(activeScreenId);
         }
         if (isDone !== false) {
-          // Ensure the next assistant turn replaces prior copy regardless
-          // of provider event ordering (transcript vs mode change timing).
           shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
           setAgentSpeechAlignment(null);
+          clearLiveAgentMessage();
           userUtteranceCountRef.current += 1;
           if (activeScreenId) {
             userUtterancesByScreenRef.current[activeScreenId] =
