@@ -1647,6 +1647,14 @@
                   "rules": {
                     "and": [
                       {
+                        "==": [
+                          {
+                            "var": "currentScreen"
+                          },
+                          "motivation"
+                        ]
+                      },
+                      {
                         "!=": [
                           {
                             "var": "yourWhySummary"
@@ -1665,7 +1673,8 @@
                     ]
                   },
                   "state": {
-                    "yourWhySummary": "{$moduleData.yourWhySummary}"
+                    "yourWhySummary": "{$moduleData.yourWhySummary}",
+                    "currentScreen": "{$moduleData.current_screen}"
                   }
                 }
               ]
