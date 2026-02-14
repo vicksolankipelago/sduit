@@ -675,6 +675,8 @@ function VoiceAgentContent() {
   const moduleStateRef = useRef<Record<string, any>>(moduleState || {});
   const ownedMicStreamRef = useRef<MediaStream | null>(null);
   const isDisconnectingRef = useRef(false);
+  const audioPlaybackRafRef = useRef<number | null>(null);
+  const agentSpeechPlaybackAnchorRef = useRef<number | null>(null);
 
   const sdkAudioElement = React.useMemo(() => {
     if (typeof window === 'undefined') return undefined;
@@ -728,6 +730,34 @@ function VoiceAgentContent() {
     }
   }, [stopMediaStreamTracks]);
 
+  const syncAgentSpeechPlaybackClock = useCallback(() => {
+    const audioElement = audioElementRef.current;
+    if (!audioElement) return;
+    const playbackMs = Math.max(0, audioElement.currentTime * 1000);
+    setAgentSpeechPlaybackMs((previous) => {
+      if (previous !== null && Math.abs(previous - playbackMs) < 10) {
+        return previous;
+      }
+      return playbackMs;
+    });
+  }, []);
+
+  const stopAgentSpeechPlaybackLoop = useCallback(() => {
+    if (audioPlaybackRafRef.current !== null) {
+      window.cancelAnimationFrame(audioPlaybackRafRef.current);
+      audioPlaybackRafRef.current = null;
+    }
+  }, []);
+
+  const startAgentSpeechPlaybackLoop = useCallback(() => {
+    stopAgentSpeechPlaybackLoop();
+    const tick = () => {
+      syncAgentSpeechPlaybackClock();
+      audioPlaybackRafRef.current = window.requestAnimationFrame(tick);
+    };
+    audioPlaybackRafRef.current = window.requestAnimationFrame(tick);
+  }, [stopAgentSpeechPlaybackLoop, syncAgentSpeechPlaybackClock]);
+
   useEffect(() => {
     if (sdkAudioElement && !audioElementRef.current) {
       audioElementRef.current = sdkAudioElement;
@@ -735,36 +765,54 @@ function VoiceAgentContent() {
       // Track actual audio playback to control speaking state
       const handleAudioPlay = () => {
         console.log('🔊 Audio started playing');
+        syncAgentSpeechPlaybackClock();
+        startAgentSpeechPlaybackLoop();
         setActiveSpeaker('agent');
       };
       
       const handleAudioEnded = () => {
         console.log('🔇 Audio ended');
+        syncAgentSpeechPlaybackClock();
+        stopAgentSpeechPlaybackLoop();
         setActiveSpeaker('member');
       };
       
       const handleAudioPause = () => {
+        syncAgentSpeechPlaybackClock();
+        stopAgentSpeechPlaybackLoop();
         // Only set speaking to false if audio is actually paused (not just buffering)
         if (sdkAudioElement.ended) {
           console.log('⏸️ Audio paused/ended');
           setActiveSpeaker('member');
         }
       };
+
+      const handleTimeUpdate = () => {
+        syncAgentSpeechPlaybackClock();
+      };
       
       sdkAudioElement.addEventListener('play', handleAudioPlay);
       sdkAudioElement.addEventListener('ended', handleAudioEnded);
       sdkAudioElement.addEventListener('pause', handleAudioPause);
+      sdkAudioElement.addEventListener('timeupdate', handleTimeUpdate);
+      sdkAudioElement.addEventListener('seeking', handleTimeUpdate);
+      sdkAudioElement.addEventListener('seeked', handleTimeUpdate);
       
       return () => {
+        stopAgentSpeechPlaybackLoop();
         sdkAudioElement.removeEventListener('play', handleAudioPlay);
         sdkAudioElement.removeEventListener('ended', handleAudioEnded);
         sdkAudioElement.removeEventListener('pause', handleAudioPause);
+        sdkAudioElement.removeEventListener('timeupdate', handleTimeUpdate);
+        sdkAudioElement.removeEventListener('seeking', handleTimeUpdate);
+        sdkAudioElement.removeEventListener('seeked', handleTimeUpdate);
       };
     }
-  }, [sdkAudioElement]);
+  }, [sdkAudioElement, startAgentSpeechPlaybackLoop, stopAgentSpeechPlaybackLoop, syncAgentSpeechPlaybackClock]);
 
   useEffect(() => {
     return () => {
+      stopAgentSpeechPlaybackLoop();
       releaseOwnedMicStream('component unmount');
       resetAudioElement(audioElementRef.current, 'primary');
       resetAudioElement(personaAudioElement, 'persona');
@@ -772,7 +820,7 @@ function VoiceAgentContent() {
         sdkAudioElement.parentNode.removeChild(sdkAudioElement);
       }
     };
-  }, [personaAudioElement, releaseOwnedMicStream, resetAudioElement, sdkAudioElement]);
+  }, [personaAudioElement, releaseOwnedMicStream, resetAudioElement, sdkAudioElement, stopAgentSpeechPlaybackLoop]);
 
   const [sessionStatus, setSessionStatus] = useState<SessionStatus>("DISCONNECTED");
   const [_shape] = useState<'oval' | 'rectangle'>('oval');
@@ -808,6 +856,8 @@ function VoiceAgentContent() {
   const [activeSpeaker, setActiveSpeaker] = useState<ActiveSpeaker>('none');
   const [memberAudioLevel, setMemberAudioLevel] = useState(0);
   const [agentSpeechAlignment, setAgentSpeechAlignment] = useState<ElevenLabsAudioAlignmentSnapshot | null>(null);
+  const [agentSpeechPlaybackMs, setAgentSpeechPlaybackMs] = useState<number | null>(null);
+  const [agentSpeechPlaybackAnchorMs, setAgentSpeechPlaybackAnchorMs] = useState<number | null>(null);
   const [_hasScreensVisible, setHasScreensVisible] = useState(false);
   const [micStream, setMicStream] = useState<MediaStream | null>(null);
   
@@ -2958,6 +3008,8 @@ Important guidelines:
       } else if (event.source === 'user') {
         shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
         setAgentSpeechAlignment(null);
+        agentSpeechPlaybackAnchorRef.current = null;
+        setAgentSpeechPlaybackAnchorMs(null);
       }
     }
     
@@ -3114,6 +3166,8 @@ Important guidelines:
         const { id: messageId, isNew } = ensureMessageId();
         if (isNew) {
           setAgentSpeechAlignment(null);
+          agentSpeechPlaybackAnchorRef.current = null;
+          setAgentSpeechPlaybackAnchorMs(null);
         }
         // Accumulate user message text
         userMessageBuffer.current += text;
@@ -3124,6 +3178,8 @@ Important guidelines:
         if (isDone) {
           shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
           setAgentSpeechAlignment(null);
+          agentSpeechPlaybackAnchorRef.current = null;
+          setAgentSpeechPlaybackAnchorMs(null);
           const fullUserText = userMessageBuffer.current.trim();
           if (fullUserText) {
             userUtteranceCountRef.current += 1;
@@ -4685,6 +4741,9 @@ Important guidelines:
         setActiveSpeaker('none');
         setMemberAudioLevel(0);
         setAgentSpeechAlignment(null);
+        agentSpeechPlaybackAnchorRef.current = null;
+        setAgentSpeechPlaybackAnchorMs(null);
+        setAgentSpeechPlaybackMs(null);
         shouldResetLiveAgentMessageOnNextAssistantTextRef.current = false;
         lastElevenLabsModeRef.current = null;
         applyModuleStateUpdates({ agentIsSpeaking: false, agentSpeechMode: 'connecting' });
@@ -4692,6 +4751,7 @@ Important guidelines:
         setConnectionError(null); // Clear any previous errors
       } else if (s === 'CONNECTED') {
         setActiveSpeaker('member');
+        setAgentSpeechPlaybackMs(0);
         lastElevenLabsModeRef.current = 'listening';
         applyModuleStateUpdates({ agentIsSpeaking: false, agentSpeechMode: 'listening' });
         addLog('success', `[${timestamp}] Connected to ElevenLabs`);
@@ -4702,6 +4762,9 @@ Important guidelines:
         setActiveSpeaker('none');
         setMemberAudioLevel(0);
         setAgentSpeechAlignment(null);
+        agentSpeechPlaybackAnchorRef.current = null;
+        setAgentSpeechPlaybackAnchorMs(null);
+        setAgentSpeechPlaybackMs(null);
         shouldResetLiveAgentMessageOnNextAssistantTextRef.current = false;
         lastElevenLabsModeRef.current = null;
         applyModuleStateUpdates({ agentIsSpeaking: false, agentSpeechMode: 'disconnected' });
@@ -4718,6 +4781,8 @@ Important guidelines:
 
       if (isNewSpeakingTurn) {
         setAgentSpeechAlignment(null);
+        agentSpeechPlaybackAnchorRef.current = null;
+        setAgentSpeechPlaybackAnchorMs(null);
         // Prepare to replace the previous message on the first incoming
         // assistant text/alignment chunk for this turn. We avoid clearing
         // immediately because mode and transcript events can arrive out of
@@ -4734,6 +4799,18 @@ Important guidelines:
     onAudioAlignment: (alignment) => {
       if (currentProviderRef.current !== 'elevenlabs') return;
       if (lastElevenLabsModeRef.current !== 'speaking') return;
+
+      const currentPlaybackMs = audioElementRef.current
+        ? Math.max(0, audioElementRef.current.currentTime * 1000)
+        : null;
+      if (currentPlaybackMs !== null) {
+        setAgentSpeechPlaybackMs(currentPlaybackMs);
+      }
+      if (agentSpeechPlaybackAnchorRef.current === null && currentPlaybackMs !== null) {
+        agentSpeechPlaybackAnchorRef.current = currentPlaybackMs;
+        setAgentSpeechPlaybackAnchorMs(currentPlaybackMs);
+      }
+
       setAgentSpeechAlignment({
         raw: alignment,
         receivedAtMs: Date.now(),
@@ -4792,6 +4869,8 @@ Important guidelines:
           // of provider event ordering (transcript vs mode change timing).
           shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
           setAgentSpeechAlignment(null);
+          agentSpeechPlaybackAnchorRef.current = null;
+          setAgentSpeechPlaybackAnchorMs(null);
           userUtteranceCountRef.current += 1;
           const activeScreenId = currentScreenIdRef.current;
           if (activeScreenId) {
@@ -5099,6 +5178,8 @@ Important guidelines:
         getOutputVolume={getElevenLabsOutputVolume}
         sessionConnected={sessionStatus === 'CONNECTED'}
         agentSpeechAlignment={agentSpeechAlignment}
+        agentSpeechPlaybackMs={agentSpeechPlaybackMs}
+        agentSpeechPlaybackAnchorMs={agentSpeechPlaybackAnchorMs}
       />
       
       {/* Header - Show when disconnected and NOT in preview mode, transitioning, or loading */}

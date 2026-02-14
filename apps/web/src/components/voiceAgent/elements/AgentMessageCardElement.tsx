@@ -8,6 +8,8 @@ export interface AgentMessageCardElementProps {
   data: AgentMessageCardElementState;
   style?: AgentMessageCardElementStyle;
   agentSpeechAlignment?: ElevenLabsAudioAlignmentSnapshot | null;
+  agentSpeechPlaybackMs?: number | null;
+  agentSpeechPlaybackAnchorMs?: number | null;
 }
 
 interface AlignmentWordTiming {
@@ -599,6 +601,8 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
   data,
   style,
   agentSpeechAlignment,
+  agentSpeechPlaybackMs,
+  agentSpeechPlaybackAnchorMs,
 }) => {
   const syncWithSpeech = data.syncWithSpeech !== false;
   const normalizedAlignment = useMemo(
@@ -648,6 +652,13 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
 
     return lastAlignedWordEndMs + (remainingWordCount * projectedAlignmentStepMs);
   }, [normalizedAlignment, projectedAlignmentStepMs, shouldUseAlignment, totalWordCount]);
+  const playbackSynchronizedElapsedSpeechMs = useMemo(() => {
+    if (!shouldUseAlignment) return null;
+    if (!Number.isFinite(agentSpeechPlaybackMs) || !Number.isFinite(agentSpeechPlaybackAnchorMs)) {
+      return null;
+    }
+    return Math.max(0, (agentSpeechPlaybackMs as number) - (agentSpeechPlaybackAnchorMs as number));
+  }, [agentSpeechPlaybackAnchorMs, agentSpeechPlaybackMs, shouldUseAlignment]);
 
   const [elapsedSpeechMs, setElapsedSpeechMs] = useState<number | null>(null);
   const [fallbackElapsedSpeechMs, setFallbackElapsedSpeechMs] = useState<number | null>(null);
@@ -695,6 +706,7 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
 
   useEffect(() => {
     if (!shouldUseAlignment || !normalizedAlignment || totalWordCount === 0) return;
+    if (playbackSynchronizedElapsedSpeechMs !== null) return;
 
     let animationFrameId = 0;
     const tick = () => {
@@ -722,7 +734,7 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
         window.cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [projectedAlignmentTailEndMs, shouldUseAlignment, totalWordCount]);
+  }, [playbackSynchronizedElapsedSpeechMs, projectedAlignmentTailEndMs, shouldUseAlignment, totalWordCount]);
 
   useEffect(() => {
     if (!syncWithSpeech || shouldUseAlignment || totalWordCount === 0) {
@@ -785,7 +797,7 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
       };
     }
 
-    const activeElapsedSpeechMs = elapsedSpeechMs ?? 0;
+    const activeElapsedSpeechMs = playbackSynchronizedElapsedSpeechMs ?? elapsedSpeechMs ?? 0;
 
     const alignmentWordCount = normalizedAlignment.words.length;
     if (alignmentWordCount === 0) {

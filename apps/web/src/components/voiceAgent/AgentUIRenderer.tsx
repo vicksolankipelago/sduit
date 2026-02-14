@@ -24,6 +24,8 @@ interface AgentUIRendererProps {
   getOutputVolume?: () => number;
   sessionConnected?: boolean;
   agentSpeechAlignment?: ElevenLabsAudioAlignmentSnapshot | null;
+  agentSpeechPlaybackMs?: number | null;
+  agentSpeechPlaybackAnchorMs?: number | null;
 }
 
 export default function AgentUIRenderer({
@@ -41,6 +43,8 @@ export default function AgentUIRenderer({
   getOutputVolume,
   sessionConnected,
   agentSpeechAlignment,
+  agentSpeechPlaybackMs,
+  agentSpeechPlaybackAnchorMs,
 }: AgentUIRendererProps) {
   const {
     screenRenderingMode,
@@ -144,6 +148,8 @@ export default function AgentUIRenderer({
                     getOutputVolume={getOutputVolume}
                     sessionConnected={sessionConnected}
                     agentSpeechAlignment={agentSpeechAlignment}
+                    agentSpeechPlaybackMs={agentSpeechPlaybackMs}
+                    agentSpeechPlaybackAnchorMs={agentSpeechPlaybackAnchorMs}
                   />
                 </ScreenProvider>
               ) : (

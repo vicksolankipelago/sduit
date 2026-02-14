@@ -20,6 +20,8 @@ export interface ScreenPreviewProps {
   getOutputVolume?: () => number;
   sessionConnected?: boolean;
   agentSpeechAlignment?: ElevenLabsAudioAlignmentSnapshot | null;
+  agentSpeechPlaybackMs?: number | null;
+  agentSpeechPlaybackAnchorMs?: number | null;
 }
 
 export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
@@ -34,6 +36,8 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
   getOutputVolume,
   sessionConnected,
   agentSpeechAlignment,
+  agentSpeechPlaybackMs,
+  agentSpeechPlaybackAnchorMs,
 }) => {
   const {
     currentScreen,
@@ -194,6 +198,8 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
             getOutputVolume={getOutputVolume}
             sessionConnected={sessionConnected}
             agentSpeechAlignment={agentSpeechAlignment}
+            agentSpeechPlaybackMs={agentSpeechPlaybackMs}
+            agentSpeechPlaybackAnchorMs={agentSpeechPlaybackAnchorMs}
             canExpand={!editable}
           />
         </ElementErrorBoundary>
