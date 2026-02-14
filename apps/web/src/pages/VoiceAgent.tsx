@@ -2974,6 +2974,10 @@ Important guidelines:
       } else if (event.source === 'user') {
         shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
         setAgentSpeechAlignment(null);
+        const activeScreenId = currentScreenIdRef.current;
+        if (activeScreenId) {
+          userHasSpokenOnScreenRef.current.add(activeScreenId);
+        }
       }
     }
     
@@ -4026,26 +4030,17 @@ Important guidelines:
       const { title, summary = '', description = '', storeKey, nextEventId, delay = 0 } = params;
       const activeScreenId = currentScreenIdRef.current;
 
-      // Guard: require the user to have started speaking on this screen.
-      // Uses "first transcript chunk" flag (set immediately when speech begins)
-      // instead of completed utterance count (which arrives too late due to
-      // transcript finalization lag).
+      // Guard: if the user has not spoken on this screen yet, still save the
+      // data (so the agent doesn't get stuck in a "saved:false" loop) but
+      // suppress any nextEventId navigation to prevent premature screen jumps.
       const userHasSpoken = activeScreenId
         ? userHasSpokenOnScreenRef.current.has(activeScreenId)
-        : false;
-      if (!userHasSpoken) {
-        addLog('warning', `⚠️ record_input deferred on "${activeScreenId ?? 'unknown'}": user has not spoken on this screen yet.`, {
+        : userUtteranceCountRef.current > 0;
+      const effectiveNextEventId = userHasSpoken ? nextEventId : undefined;
+      if (!userHasSpoken && nextEventId) {
+        addLog('warning', `⚠️ record_input: suppressing nextEventId "${nextEventId}" on "${activeScreenId ?? 'unknown'}" (user has not spoken on this screen yet). Data will still be saved.`, {
           title, storeKey, nextEventId, currentScreen: activeScreenId, startedAtMs,
         });
-        return {
-          saved: false,
-          title,
-          summary: '',
-          storeKey: storeKey || null,
-          reason: 'awaiting_user_speech',
-          current_screen: activeScreenId || null,
-          message: `The member has not spoken on "${activeScreenId ?? 'this screen'}" yet. Wait for them to respond before calling record_input.`,
-        };
       }
 
       const baseUpdates = deriveRecordInputModuleUpdates({ title, summary, storeKey });
@@ -4082,7 +4077,7 @@ Important guidelines:
 
       let postRecordMessage: string | null = null;
       // Trigger next event after delay if specified
-      if (nextEventId) {
+      if (effectiveNextEventId) {
         const requestedDelayMs = Math.max(0, (delay || 0) * 1000);
         const journey = currentJourneyRef.current;
         const runtimeAgentName = currentAgentRef.current;
@@ -4097,7 +4092,7 @@ Important guidelines:
             (section?.elements || []).flatMap((element: any) => element?.events || [])
           )),
         ];
-        const nextEventConfig = activeScreenEvents.find((event: any) => event?.id === nextEventId);
+        const nextEventConfig = activeScreenEvents.find((event: any) => event?.id === effectiveNextEventId);
         const isNavigationEvent = Boolean(
           nextEventConfig &&
           (nextEventConfig.action || []).some(
@@ -4115,16 +4110,16 @@ Important guidelines:
         const nowMs = recordedAtMs;
         const executeAtMs = nowMs + delayMs;
         if (isNavigationEvent) {
-          addLog('info', `⏳ Holding "${nextEventId}" for 3s so the captured answer remains visible.`);
-          postRecordMessage = `Recorded: ${title}. Navigation "${nextEventId}" is scheduled in 3 seconds. Do not ask the next screen question until navigation completes.`;
+          addLog('info', `⏳ Holding "${effectiveNextEventId}" for 3s so the captured answer remains visible.`);
+          postRecordMessage = `Recorded: ${title}. Navigation "${effectiveNextEventId}" is scheduled in 3 seconds. Do not ask the next screen question until navigation completes.`;
         } else if (delayMs > 0) {
-          addLog('info', `⏳ Delaying "${nextEventId}" by ${Math.round(delayMs / 1000)}s.`);
-          postRecordMessage = `Recorded: ${title}. Event "${nextEventId}" is scheduled in ${Math.round(delayMs / 1000)} seconds.`;
+          addLog('info', `⏳ Delaying "${effectiveNextEventId}" by ${Math.round(delayMs / 1000)}s.`);
+          postRecordMessage = `Recorded: ${title}. Event "${effectiveNextEventId}" is scheduled in ${Math.round(delayMs / 1000)} seconds.`;
         } else {
-          postRecordMessage = `Recorded: ${title}. Event "${nextEventId}" triggered.`;
+          postRecordMessage = `Recorded: ${title}. Event "${effectiveNextEventId}" triggered.`;
         }
         pendingNavigationRef.current = {
-          eventId: nextEventId,
+          eventId: effectiveNextEventId,
           executeAtMs,
           // Keep a short buffer after execute time to absorb duplicate LLM calls.
           expiresAtMs: executeAtMs + 2000,
@@ -4134,16 +4129,16 @@ Important guidelines:
 
         setTimeout(() => {
           const pending = pendingNavigationRef.current;
-          if (!pending || pending.eventId !== nextEventId || pending.executeAtMs !== executeAtMs) {
+          if (!pending || pending.eventId !== effectiveNextEventId || pending.executeAtMs !== executeAtMs) {
             return;
           }
           window.dispatchEvent(new CustomEvent('triggerEvent', {
-            detail: { eventId: nextEventId, timestamp: Date.now() }
+            detail: { eventId: effectiveNextEventId, timestamp: Date.now() }
           }));
           // Keep guard active briefly after dispatch, then clear.
           setTimeout(() => {
             const active = pendingNavigationRef.current;
-            if (active && active.eventId === nextEventId && active.executeAtMs === executeAtMs) {
+            if (active && active.eventId === effectiveNextEventId && active.executeAtMs === executeAtMs) {
               pendingNavigationRef.current = null;
             }
           }, 2000);
@@ -4157,12 +4152,15 @@ Important guidelines:
         completedAtMs,
         elapsedMs: completedAtMs - startedAtMs,
         nextEventId: nextEventId || null,
+        effectiveNextEventId: effectiveNextEventId || null,
+        navigationSuppressed: !userHasSpoken && !!nextEventId,
       });
       return {
         saved: true,
         title,
         summary: displaySummary,
         storeKey: storeKey || null,
+        current_screen: activeScreenId || null,
         message: postRecordMessage ?? `Recorded: ${title}`,
       };
     },
