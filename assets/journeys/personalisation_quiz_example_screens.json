@@ -2162,7 +2162,7 @@
                 "copyId": null,
                 "header": {
                   "id": "checkin_header",
-                  "title": "",
+                  "title": null,
                   "caption": null,
                   "imageName": null,
                   "description": null
