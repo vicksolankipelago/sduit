@@ -1298,17 +1298,18 @@
           "layout": "stack",
           "elements": [
             {
-              "type": "imageCard",
+              "type": "textCard",
               "state": {
                 "id": "about_you_summary_card",
                 "title": "What I heard",
-                "description": "{$moduleData.aboutYouSummary}"
+                "content": "{$moduleData.aboutYouSummary}"
               },
               "style": {
-                "imageName": null,
-                "imageWidth": 0,
-                "imageHeight": 0,
                 "backgroundColor": "backgroundLightMintGreen",
+                "borderColor": "backgroundLightMintGreen",
+                "textColor": "textGlobalPrimary",
+                "captionColor": "textGlobalPrimary",
+                "borderWidth": 0,
                 "cornerRadius": 12
               },
               "conditions": [
