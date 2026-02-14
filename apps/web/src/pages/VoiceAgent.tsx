@@ -1039,7 +1039,11 @@ function VoiceAgentContent() {
   }, []);
 
   const stripSpeechDirectives = useCallback((text: string): string => {
-    return text.replace(/\[(?:slow|fast|pause|break|whisper|loud|soft|neutral|happy|sad|excited|calm|serious|cheerful|empathetic|curious|surprised|concerned|warm|gentle|firm|playful)\]/gi, '').replace(/\s{2,}/g, ' ').trim();
+    return text
+      .replace(/\[(?:slow|fast|pause|break|whisper|loud|soft|neutral|happy|sad|excited|calm|serious|cheerful|empathetic|curious|surprised|concerned|warm|gentle|firm|playful)\]/gi, '')
+      .replace(/\b(?:Wait for (?:user |the user(?:'s)? |member(?:'s)? )?response\.?|Do not respond yet\.?|Wait for (?:their |the )?(?:reply|answer|input)\.?)\s*/gi, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
   }, []);
 
   const updateLiveAgentMessage = useCallback((message: string) => {
