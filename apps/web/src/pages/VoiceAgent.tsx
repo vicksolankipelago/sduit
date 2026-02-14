@@ -4735,11 +4735,13 @@ Important guidelines:
         setAgentSpeechAlignment(null);
         alignmentReceivedForTurnRef.current = false;
         pendingTranscriptTextRef.current = null;
-        // Prepare to replace the previous message on the first incoming
-        // assistant text/alignment chunk for this turn. We avoid clearing
-        // immediately because mode and transcript events can arrive out of
-        // order, which causes message flicker/disappearance.
-        shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
+        // Clear the previous turn's message immediately so the old text
+        // doesn't briefly flash on screen before new alignment/transcript
+        // chunks arrive. This replaces the previous deferred-reset approach
+        // which avoided clearing to prevent out-of-order event flicker, but
+        // that caused a worse UX: the old message was visible for ~100-200ms
+        // at the start of every new agent turn.
+        clearLiveAgentMessage();
       }
       if (previousMode === 'speaking' && mode !== 'speaking') {
         const pendingText = pendingTranscriptTextRef.current;
