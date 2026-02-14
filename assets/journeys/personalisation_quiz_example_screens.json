@@ -1317,6 +1317,14 @@
                   "rules": {
                     "and": [
                       {
+                        "==": [
+                          {
+                            "var": "currentScreen"
+                          },
+                          "about-you"
+                        ]
+                      },
+                      {
                         "!=": [
                           {
                             "var": "aboutYouSummary"
@@ -1335,7 +1343,8 @@
                     ]
                   },
                   "state": {
-                    "aboutYouSummary": "{$moduleData.aboutYouSummary}"
+                    "aboutYouSummary": "{$moduleData.aboutYouSummary}",
+                    "currentScreen": "{$moduleData.current_screen}"
                   }
                 }
               ]
