@@ -358,13 +358,13 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   // Track unsaved changes
   useEffect(() => {
     if (!currentJourney || !lastSavedJourneyRef.current) {
-      setHasUnsavedChanges(false);
+      setHasUnsavedChanges(prev => prev === false ? prev : false);
       return;
     }
     
     const currentJson = JSON.stringify(currentJourney);
     const hasChanges = currentJson !== lastSavedJourneyRef.current;
-    setHasUnsavedChanges(hasChanges);
+    setHasUnsavedChanges(prev => prev === hasChanges ? prev : hasChanges);
     
     if (hasChanges) {
       console.log('📝 Unsaved changes detected');
@@ -562,17 +562,19 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       if (currentJourney?.id && !currentJourney.id.startsWith('new-')) {
         try {
           const published = await getPublishedJourney(currentJourney.id);
-          setIsPublished(!!published);
+          const isPub = !!published;
+          setIsPublished(prev => prev === isPub ? prev : isPub);
           if (published) {
             const journeyJson = toPublishComparable(currentJourney);
             const publishedJson = toPublishComparable(published);
-            setHasUnpublishedChanges(journeyJson !== publishedJson);
+            const hasChanges = journeyJson !== publishedJson;
+            setHasUnpublishedChanges(prev => prev === hasChanges ? prev : hasChanges);
           } else {
-            setHasUnpublishedChanges(false);
+            setHasUnpublishedChanges(prev => prev === false ? prev : false);
           }
         } catch {
-          setIsPublished(false);
-          setHasUnpublishedChanges(false);
+          setIsPublished(prev => prev === false ? prev : false);
+          setHasUnpublishedChanges(prev => prev === false ? prev : false);
         }
       }
     }, 2000);
@@ -845,11 +847,23 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     onLaunchJourney(currentJourney);
   };
 
-  const selectedAgent = currentJourney?.agents.find(a => a.id === selectedAgentId) || null;
-  const availableHandoffTargets = currentJourney?.agents.filter(a => a.id !== selectedAgentId) || [];
-  const aiFlowTargetAgent =
-    currentJourney?.agents.find((agent) => agent.id === aiFlowTargetAgentId) || null;
-  const aiFlowTargetAgentScreens = useMemo(() => aiFlowTargetAgent?.screens || [], [aiFlowTargetAgent?.screens]);
+  const selectedAgent = useMemo(
+    () => currentJourney?.agents.find(a => a.id === selectedAgentId) || null,
+    [currentJourney?.agents, selectedAgentId]
+  );
+  const availableHandoffTargets = useMemo(
+    () => currentJourney?.agents.filter(a => a.id !== selectedAgentId) || [],
+    [currentJourney?.agents, selectedAgentId]
+  );
+  const aiFlowTargetAgent = useMemo(
+    () => currentJourney?.agents.find((agent) => agent.id === aiFlowTargetAgentId) || null,
+    [currentJourney?.agents, aiFlowTargetAgentId]
+  );
+  const aiFlowTargetAgentScreens = useMemo(() => {
+    const screens = aiFlowTargetAgent?.screens;
+    if (!screens || screens.length === 0) return [];
+    return screens;
+  }, [aiFlowTargetAgent]);
 
   const aiProposalDiffSummary = useMemo(() => {
     if (!currentJourney || !aiFlowProposal) return null;
@@ -975,12 +989,15 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
     }
     if (!aiFlowTargetAgentId) {
       const fallback = selectedAgentId || currentJourney?.agents[0]?.id || '';
-      setAiFlowTargetAgentId(prev => prev === fallback ? prev : fallback);
+      if (fallback) {
+        setAiFlowTargetAgentId(fallback);
+      }
     }
-  }, [showAiFlowEditModal, aiFlowScope, aiFlowTargetAgentId, selectedAgentId, currentJourney?.agents]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAiFlowEditModal, aiFlowScope]);
 
   useEffect(() => {
-    if (aiFlowScope !== 'screens') {
+    if (!showAiFlowEditModal || aiFlowScope !== 'screens') {
       setAiFlowTargetScreenIds(prev => prev.length === 0 ? prev : []);
       return;
     }
@@ -993,18 +1010,22 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
       const filtered = previous.filter((screenId) => validScreenIds.has(screenId));
       return filtered.length === previous.length ? previous : filtered;
     });
-  }, [aiFlowScope, aiFlowTargetAgentScreens]);
+  }, [showAiFlowEditModal, aiFlowScope, aiFlowTargetAgentScreens]);
 
   // Sync JSON value when selected agent or screens change
+  const selectedAgentScreens = selectedAgent?.screens;
+  const selectedAgentScreenPrompts = selectedAgent?.screenPrompts;
+  const selectedAgentIdStable = selectedAgent?.id;
   useEffect(() => {
-    if (selectedAgent && showScreensJsonView) {
+    if (selectedAgentIdStable && showScreensJsonView) {
       const jsonObj = {
-        screens: selectedAgent.screens || [],
-        screenPrompts: selectedAgent.screenPrompts || {},
+        screens: selectedAgentScreens || [],
+        screenPrompts: selectedAgentScreenPrompts || {},
       };
-      setScreensJsonValue(JSON.stringify(jsonObj, null, 2));
+      const newValue = JSON.stringify(jsonObj, null, 2);
+      setScreensJsonValue(prev => prev === newValue ? prev : newValue);
     }
-  }, [selectedAgent?.id, selectedAgent?.screens, selectedAgent?.screenPrompts, showScreensJsonView]);
+  }, [selectedAgentIdStable, selectedAgentScreens, selectedAgentScreenPrompts, showScreensJsonView]);
 
   const handleToggleHandoff = (targetAgentId: string) => {
     if (!selectedAgent) return;
