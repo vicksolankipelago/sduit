@@ -942,6 +942,8 @@ function VoiceAgentContent() {
   const lastElevenLabsModeRef = useRef<'speaking' | 'listening' | null>(null);
   const lastLiveAgentMessageRef = useRef<string | null>(null);
   const shouldResetLiveAgentMessageOnNextAssistantTextRef = useRef(false);
+  const alignmentReceivedForTurnRef = useRef(false);
+  const pendingTranscriptTextRef = useRef<string | null>(null);
   const didInitializeLiveAgentMessageRef = useRef(false);
   // Track which itemIds have been queued to prevent duplicate saves
   const queuedItemIdsRef = useRef<Set<string>>(new Set());
@@ -2963,7 +2965,11 @@ Important guidelines:
         const isElevenLabsProvider = currentProviderRef.current === 'elevenlabs';
         const canApplyElevenLabsFallback = !isElevenLabsProvider || lastElevenLabsModeRef.current === 'speaking';
         if (canApplyElevenLabsFallback) {
-          updateLiveAgentMessageProgressively(event.message);
+          if (isElevenLabsProvider && alignmentReceivedForTurnRef.current) {
+            pendingTranscriptTextRef.current = event.message;
+          } else {
+            updateLiveAgentMessageProgressively(event.message);
+          }
         }
       } else if (event.source === 'user') {
         shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
@@ -4729,11 +4735,21 @@ Important guidelines:
 
       if (isNewSpeakingTurn) {
         setAgentSpeechAlignment(null);
+        alignmentReceivedForTurnRef.current = false;
+        pendingTranscriptTextRef.current = null;
         // Prepare to replace the previous message on the first incoming
         // assistant text/alignment chunk for this turn. We avoid clearing
         // immediately because mode and transcript events can arrive out of
         // order, which causes message flicker/disappearance.
         shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
+      }
+      if (previousMode === 'speaking' && mode !== 'speaking') {
+        const pendingText = pendingTranscriptTextRef.current;
+        if (pendingText) {
+          pendingTranscriptTextRef.current = null;
+          updateLiveAgentMessageProgressively(pendingText);
+        }
+        alignmentReceivedForTurnRef.current = false;
       }
       lastElevenLabsModeRef.current = mode;
       setActiveSpeaker(mode === 'speaking' ? 'agent' : 'member');
@@ -4745,6 +4761,7 @@ Important guidelines:
     onAudioAlignment: (alignment) => {
       if (currentProviderRef.current !== 'elevenlabs') return;
       if (lastElevenLabsModeRef.current !== 'speaking') return;
+      alignmentReceivedForTurnRef.current = true;
       setAgentSpeechAlignment({
         raw: alignment,
         receivedAtMs: Date.now(),
@@ -4812,7 +4829,11 @@ Important guidelines:
         }
         addLog('info', `User: ${normalizedText}`);
       } else {
-        updateLiveAgentMessageProgressively(normalizedText);
+        if (alignmentReceivedForTurnRef.current) {
+          pendingTranscriptTextRef.current = normalizedText;
+        } else {
+          updateLiveAgentMessageProgressively(normalizedText);
+        }
         addLog('info', `Assistant: ${normalizedText}`);
       }
     },
