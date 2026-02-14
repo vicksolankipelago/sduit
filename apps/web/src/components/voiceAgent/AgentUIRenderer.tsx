@@ -126,7 +126,7 @@ export default function AgentUIRenderer({
             <div className="agent-ui-device-screen">
               {currentScreen && currentScreen.id ? (
                 <ScreenProvider
-                  key={`screen-provider-${currentAgentScreens.length}-${currentAgentScreens[0]?.id || 'none'}`}
+                  key={`screen-provider-${currentScreen.id}-${currentAgentScreens.length}`}
                   initialScreen={currentScreen}
                   initialModuleState={moduleState}
                   allScreens={currentAgentScreens}
