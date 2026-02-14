@@ -89,11 +89,20 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
   }, [interpolateString, resolveStateReference]);
 
   // Filter elements based on conditions
+  // In editor mode, keep all elements but tag which ones would be hidden
   const filterElements = useCallback((elements: ElementConfig[]): ElementConfig[] => {
+    if (editable) {
+      return elements;
+    }
     return elements.filter(element => {
       if (!element.conditions || element.conditions.length === 0) return true;
       return evaluateConditions(element.conditions);
     });
+  }, [evaluateConditions, editable]);
+
+  const isElementConditionHidden = useCallback((element: ElementConfig): boolean => {
+    if (!element.conditions || element.conditions.length === 0) return false;
+    return !evaluateConditions(element.conditions);
   }, [evaluateConditions]);
 
   // Handle single-select option change (for LargeQuestionElement)
@@ -147,6 +156,7 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
 
     const elementId = element.state.id as string;
     const isSelected = editable && selectedElementId === elementId;
+    const conditionHidden = editable && isElementConditionHidden(element);
 
     const handleClick = (e: React.MouseEvent) => {
       if (editable && onElementSelect) {
@@ -160,10 +170,11 @@ export const ScreenPreview: React.FC<ScreenPreviewProps> = ({
     return (
       <div
         key={`element-${elementId || index}`}
-        className={`screen-preview-element ${editable ? 'screen-preview-element-editable' : ''} ${isSelected ? 'screen-preview-element-selected' : ''}`}
+        className={`screen-preview-element ${editable ? 'screen-preview-element-editable' : ''} ${isSelected ? 'screen-preview-element-selected' : ''} ${conditionHidden ? 'screen-preview-element-condition-hidden' : ''}`}
         onClick={handleClick}
         data-element-id={elementId}
         style={{ animationDelay: `${totalIndex * 0.3 + 0.2}s` }}
+        title={conditionHidden ? 'Hidden by condition' : undefined}
       >
         <ElementErrorBoundary elementType={element.type} elementId={elementId}>
           <Component

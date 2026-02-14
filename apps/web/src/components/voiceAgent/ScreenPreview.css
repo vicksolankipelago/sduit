@@ -571,6 +571,30 @@
   box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.5);
 }
 
+.screen-preview-element-condition-hidden {
+  opacity: 0.35;
+  position: relative;
+  border: 1px dashed rgba(150, 150, 170, 0.5);
+  border-radius: 8px;
+  pointer-events: auto;
+}
+
+.screen-preview-element-condition-hidden::after {
+  content: 'Conditional';
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 9px;
+  font-weight: 600;
+  color: #888;
+  background: rgba(240, 240, 245, 0.9);
+  padding: 1px 5px;
+  border-radius: 4px;
+  z-index: 10;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
 .screen-preview-element-selected-indicator {
   position: absolute;
   top: 0;
