@@ -115,6 +115,27 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
     }
   }, [onModuleStateChange]);
 
+  // Keep both screen pointer keys in sync for prompt/runtime compatibility.
+  React.useEffect(() => {
+    const screenId = currentScreen?.id;
+    if (!screenId) return;
+
+    const moduleCurrentScreen = typeof moduleStateRef.current.currentScreen === 'string'
+      ? moduleStateRef.current.currentScreen
+      : '';
+    const moduleCurrentScreenLegacy = typeof moduleStateRef.current.current_screen === 'string'
+      ? moduleStateRef.current.current_screen
+      : '';
+    if (moduleCurrentScreen === screenId && moduleCurrentScreenLegacy === screenId) {
+      return;
+    }
+
+    updateModuleState({
+      currentScreen: screenId,
+      current_screen: screenId,
+    });
+  }, [currentScreen?.id, updateModuleState]);
+
   // Listen for record_input events from voice agent
   React.useEffect(() => {
     const handleRecordInput = (event: Event) => {

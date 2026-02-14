@@ -1024,6 +1024,20 @@ function VoiceAgentContent() {
     );
   }, []);
 
+  const normalizeFlowScreenContext = useCallback((context: Record<string, any>) => {
+    const normalized = { ...(context || {}) };
+    const camel = typeof normalized.currentScreen === 'string' ? normalized.currentScreen.trim() : '';
+    const snake = typeof normalized.current_screen === 'string' ? normalized.current_screen.trim() : '';
+    const resolved = camel || snake;
+
+    if (resolved) {
+      normalized.currentScreen = resolved;
+      normalized.current_screen = resolved;
+    }
+
+    return normalized;
+  }, []);
+
   const stripSpeechDirectives = useCallback((text: string): string => {
     return text.replace(/\[(?:slow|fast|pause|break|whisper|loud|soft|neutral|happy|sad|excited|calm|serious|cheerful|empathetic|curious|surprised|concerned|warm|gentle|firm|playful)\]/gi, '').replace(/\s{2,}/g, ' ').trim();
   }, []);
@@ -1527,6 +1541,14 @@ function VoiceAgentContent() {
         if (toScreen && toScreen !== 'pq-notification-setup') {
           clearNotificationPlanReviewFallback();
         }
+        if (toScreen) {
+          const screenPointerUpdates = {
+            currentScreen: toScreen,
+            current_screen: toScreen,
+          };
+          applyModuleStateUpdates(screenPointerUpdates);
+          updateFlowContext?.(screenPointerUpdates);
+        }
         addLog('success', `✅ Navigated: "${fromScreen}" → "${toScreen}"`);
         // CRITICAL FIX: Sync the navigation result back to AgentUIContext
         // This ensures currentScreenIdRef stays in sync with ScreenContext's navigation
@@ -1596,7 +1618,7 @@ function VoiceAgentContent() {
       window.removeEventListener('screenNavigation', handleNavigation as EventListener);
       window.removeEventListener('screenNavigationResult', handleNavigationResult as EventListener);
     };
-  }, [addLog, navigateToScreen, clearNotificationPlanReviewFallback]);
+  }, [addLog, applyModuleStateUpdates, clearNotificationPlanReviewFallback, navigateToScreen, updateFlowContext]);
 
   // Listen for tool-dispatched events and connect them to screen context functions
   // This bridges the gap between ElevenLabs client tool calls and UI navigation
@@ -1970,7 +1992,7 @@ function VoiceAgentContent() {
     // Use override if provided (from start_journey), otherwise use current context state
     // CRITICAL: Transform quiz option IDs to readable labels before use
     const rawFlowContext = sanitizeSessionFlowContext(flowContextOverride || flowContext || {});
-    const sessionFlowContext = { ...rawFlowContext };
+    const sessionFlowContext = normalizeFlowScreenContext({ ...rawFlowContext });
     // Start each session from explicit flow context only, so stale captured UI
     // values from prior sessions cannot pre-populate current-screen cards.
     const sessionModuleState = { ...sessionFlowContext };
@@ -2457,15 +2479,17 @@ Important guidelines:
     
     // Merge flow context for data passing (use transformed labels for readable prompts)
     // Include currentScreen so the agent knows where to start
-    const mergedContext = {
+    const mergedContext = normalizeFlowScreenContext({
       ...sanitizeSessionFlowContext(flowContext || {}),
       ...sanitizeSessionFlowContext(transformedModuleState),
-      ...(activeScreenId ? { currentScreen: activeScreenId } : {}),
-    };
+      ...(activeScreenId ? { currentScreen: activeScreenId, current_screen: activeScreenId } : {}),
+    });
     
     // Update flowContext state for consistency
     if (updateFlowContext && moduleState) {
-      updateFlowContext(sanitizeSessionFlowContext(transformedModuleState));
+      updateFlowContext(
+        normalizeFlowScreenContext(sanitizeSessionFlowContext(transformedModuleState))
+      );
     }
     
     addLog('info', `🎤 Flow context keys: ${Object.keys(mergedContext).join(', ')}`);
@@ -2494,7 +2518,7 @@ Important guidelines:
       addLog('error', `Failed to enable voice: ${err}`);
       setIsTransitioningJourney(false);
     }
-  }, [addLog, flowContext, moduleState, updateFlowContext, user]);
+  }, [addLog, flowContext, moduleState, normalizeFlowScreenContext, sanitizeSessionFlowContext, updateFlowContext, user]);
 
   // Export transcript when session ends
   const getCurrentAgentFromJourney = () => {
@@ -2926,7 +2950,11 @@ Important guidelines:
     // instead of (or before) transcript callbacks.
     if (typeof event?.message === 'string' && event.message.trim()) {
       if (event.source === 'ai') {
-        updateLiveAgentMessageProgressively(event.message);
+        const isElevenLabsProvider = currentProviderRef.current === 'elevenlabs';
+        const canApplyElevenLabsFallback = !isElevenLabsProvider || lastElevenLabsModeRef.current === 'speaking';
+        if (canApplyElevenLabsFallback) {
+          updateLiveAgentMessageProgressively(event.message);
+        }
       } else if (event.source === 'user') {
         shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
         setAgentSpeechAlignment(null);

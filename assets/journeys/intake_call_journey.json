@@ -1377,31 +1377,6 @@
                   "state": {
                     "aboutYouSummary": "{$moduleData.aboutYouSummary}"
                   }
-                },
-                {
-                  "rules": {
-                    "and": [
-                      {
-                        "!=": [
-                          {
-                            "var": "recordedInputTimestamp"
-                          },
-                          null
-                        ]
-                      },
-                      {
-                        "!=": [
-                          {
-                            "var": "recordedInputTimestamp"
-                          },
-                          ""
-                        ]
-                      }
-                    ]
-                  },
-                  "state": {
-                    "recordedInputTimestamp": "{$screenState.recordedInputTimestamp}"
-                  }
                 }
               ]
             }
@@ -1603,31 +1578,6 @@
                   "state": {
                     "outcomesSummary": "{$moduleData.outcomesSummary}"
                   }
-                },
-                {
-                  "rules": {
-                    "and": [
-                      {
-                        "!=": [
-                          {
-                            "var": "recordedInputTimestamp"
-                          },
-                          null
-                        ]
-                      },
-                      {
-                        "!=": [
-                          {
-                            "var": "recordedInputTimestamp"
-                          },
-                          ""
-                        ]
-                      }
-                    ]
-                  },
-                  "state": {
-                    "recordedInputTimestamp": "{$screenState.recordedInputTimestamp}"
-                  }
                 }
               ]
             },
@@ -1688,7 +1638,7 @@
                       {
                         "!=": [
                           {
-                            "var": "goalFirst"
+                            "var": "goals"
                           },
                           null
                         ]
@@ -1696,7 +1646,7 @@
                       {
                         "!=": [
                           {
-                            "var": "goalFirst"
+                            "var": "goals"
                           },
                           ""
                         ]
@@ -1704,20 +1654,7 @@
                     ]
                   },
                   "state": {
-                    "goalFirst": "{$moduleData.goalTitles.0}"
-                  }
-                },
-                {
-                  "rules": {
-                    "==": [
-                      {
-                        "var": "recordedInputTitle"
-                      },
-                      "Goals"
-                    ]
-                  },
-                  "state": {
-                    "recordedInputTitle": "{$screenState.recordedInputTitle}"
+                    "goals": "{$moduleData.goalTitles}"
                   }
                 }
               ]
@@ -1855,31 +1792,6 @@
                   },
                   "state": {
                     "yourWhySummary": "{$moduleData.yourWhySummary}"
-                  }
-                },
-                {
-                  "rules": {
-                    "and": [
-                      {
-                        "!=": [
-                          {
-                            "var": "recordedInputTimestamp"
-                          },
-                          null
-                        ]
-                      },
-                      {
-                        "!=": [
-                          {
-                            "var": "recordedInputTimestamp"
-                          },
-                          ""
-                        ]
-                      }
-                    ]
-                  },
-                  "state": {
-                    "recordedInputTimestamp": "{$screenState.recordedInputTimestamp}"
                   }
                 }
               ]
@@ -2073,31 +1985,6 @@
                   },
                   "state": {
                     "focus": "{$moduleData.weeklyIntention}"
-                  }
-                },
-                {
-                  "rules": {
-                    "and": [
-                      {
-                        "!=": [
-                          {
-                            "var": "recordedInputTimestamp"
-                          },
-                          null
-                        ]
-                      },
-                      {
-                        "!=": [
-                          {
-                            "var": "recordedInputTimestamp"
-                          },
-                          ""
-                        ]
-                      }
-                    ]
-                  },
-                  "state": {
-                    "recordedInputTimestamp": "{$screenState.recordedInputTimestamp}"
                   }
                 }
               ]
@@ -2646,31 +2533,6 @@
                   },
                   "state": {
                     "notificationTime": "{$moduleData.notificationTime}"
-                  }
-                },
-                {
-                  "rules": {
-                    "and": [
-                      {
-                        "!=": [
-                          {
-                            "var": "recordedInputTimestamp"
-                          },
-                          null
-                        ]
-                      },
-                      {
-                        "!=": [
-                          {
-                            "var": "recordedInputTimestamp"
-                          },
-                          ""
-                        ]
-                      }
-                    ]
-                  },
-                  "state": {
-                    "recordedInputTimestamp": "{$screenState.recordedInputTimestamp}"
                   }
                 }
               ]

@@ -47,75 +47,83 @@ async function main() {
   // Public routes for production runtime - must be registered before authenticated routes
   const { publishedFlowStorage } = await import("./services/publishedFlowStorage");
   
-  app.get("/api/journeys/environment", (req, res) => {
+  const setNoStoreHeaders = (res: Response) => {
+    res.setHeader("Cache-Control", "no-store, max-age=0");
+    res.setHeader("Pragma", "no-cache");
+  };
+
+  const environmentHandler = (_req: Request, res: Response) => {
+    setNoStoreHeaders(res);
     res.json({
       isProduction: process.env.NODE_ENV === "production",
       environment: process.env.NODE_ENV || "development",
     });
-  });
-  
-  app.get("/api/journeys/production/list", async (req, res) => {
+  };
+
+  const listProductionFlowsHandler = async (_req: Request, res: Response) => {
     try {
       const flows = await publishedFlowStorage.listPublishedFlows();
+      setNoStoreHeaders(res);
       res.json(flows);
     } catch (error) {
       console.error("Error listing production flows:", error);
       res.status(500).json({ message: "Failed to list production flows" });
     }
-  });
-  
-  app.get("/api/journeys/production/:journeyId", async (req, res) => {
+  };
+
+  const getProductionFlowHandler = async (req: Request, res: Response) => {
     try {
       const flow = await publishedFlowStorage.getPublishedFlow(req.params.journeyId);
       if (!flow) {
         return res.status(404).json({ message: "Flow not found in production" });
       }
+      setNoStoreHeaders(res);
       res.json(flow);
     } catch (error) {
       console.error("Error getting production flow:", error);
       res.status(500).json({ message: "Failed to get production flow" });
     }
-  });
+  };
 
   // Production DELETE - removes flow directly from Object Storage (ADMIN ONLY)
   // This works even when the journey isn't in the local database
-  app.delete("/api/journeys/production/:journeyId", isAdmin, async (req, res) => {
+  const deleteProductionFlowHandler = async (req: Request, res: Response) => {
     try {
       const journeyId = req.params.journeyId as string;
-      
+
       // First check if flow exists in Object Storage
       const flow = await publishedFlowStorage.getPublishedFlow(journeyId);
       if (!flow) {
         return res.status(404).json({ success: false, error: { message: "Flow not found in production" } });
       }
-      
+
       // Delete from Object Storage
       const deleted = await publishedFlowStorage.deletePublishedFlow(journeyId);
       if (!deleted) {
         return res.status(500).json({ success: false, error: { message: "Failed to delete from production" } });
       }
-      
+
       console.log(`Deleted flow ${flow.name} from production Object Storage`);
-      res.json({ success: true, data: { deleted: true } });
+      return res.json({ success: true, data: { deleted: true } });
     } catch (error) {
       console.error("Error deleting production flow:", error);
-      res.status(500).json({ success: false, error: { message: "Failed to delete production flow" } });
+      return res.status(500).json({ success: false, error: { message: "Failed to delete production flow" } });
     }
-  });
+  };
 
   // Production UPDATE - updates flow directly in Object Storage (ADMIN ONLY)
   // This works even when the journey isn't in the local database
-  app.put("/api/journeys/production/:journeyId", isAdmin, async (req, res) => {
+  const updateProductionFlowHandler = async (req: Request, res: Response) => {
     try {
       const journeyId = req.params.journeyId as string;
       const updates = req.body;
-      
+
       // Get existing flow from Object Storage
       const existingFlow = await publishedFlowStorage.getPublishedFlow(journeyId);
       if (!existingFlow) {
         return res.status(404).json({ success: false, error: { message: "Flow not found in production" } });
       }
-      
+
       // Only allow updating specific fields to protect data integrity
       const allowedFields = ['name', 'description', 'systemPrompt', 'voice', 'voiceEnabled', 'ttsProvider', 'elevenLabsConfig', 'agents', 'startingAgentId', 'version'];
       const safeUpdates: Record<string, any> = {};
@@ -124,7 +132,7 @@ async function main() {
           safeUpdates[field] = updates[field];
         }
       }
-      
+
       // Merge safe updates with existing flow
       const updatedFlow = {
         ...existingFlow,
@@ -135,28 +143,29 @@ async function main() {
         publishedAt: existingFlow.publishedAt,
         publishedByUserId: existingFlow.publishedByUserId,
       };
-      
+
       // Save back to Object Storage
       await publishedFlowStorage.savePublishedFlow(updatedFlow);
-      
+
       console.log(`Updated flow ${updatedFlow.name} in production Object Storage`);
-      res.json({ success: true, data: updatedFlow });
+      return res.json({ success: true, data: updatedFlow });
     } catch (error) {
       console.error("Error updating production flow:", error);
-      res.status(500).json({ success: false, error: { message: "Failed to update production flow" } });
+      return res.status(500).json({ success: false, error: { message: "Failed to update production flow" } });
     }
-  });
-  
+  };
+
   // Public preview endpoint - registered BEFORE authenticated routes
   // This allows the start_journey flow to fetch journey data without auth
-  app.get("/api/journeys/preview/:id", async (req, res) => {
+  const previewJourneyHandler = async (req: Request, res: Response) => {
     try {
       const journey = await storage.getJourney(req.params.id as string);
-      
+
       if (!journey) {
         return res.status(404).json({ success: false, error: { message: "Journey not found", code: "NOT_FOUND" } });
       }
 
+      setNoStoreHeaders(res);
       // Return only the data needed for preview rendering
       return res.json({
         id: journey.id,
@@ -173,12 +182,22 @@ async function main() {
       console.error("Error fetching journey preview:", error);
       return res.status(500).json({ success: false, error: { message: "Failed to load journey preview", code: "SERVER_ERROR" } });
     }
-  });
+  };
+
+  for (const prefix of ["/api/journeys", "/api/flows"]) {
+    app.get(`${prefix}/environment`, environmentHandler);
+    app.get(`${prefix}/production/list`, listProductionFlowsHandler);
+    app.get(`${prefix}/production/:journeyId`, getProductionFlowHandler);
+    app.delete(`${prefix}/production/:journeyId`, isAdmin, deleteProductionFlowHandler);
+    app.put(`${prefix}/production/:journeyId`, isAdmin, updateProductionFlowHandler);
+    app.get(`${prefix}/preview/:id`, previewJourneyHandler);
+  }
 
   // Mobile API routes - public endpoints for iOS/Android apps
   app.use("/api/mobile", mobileRouter);
 
   app.use("/api/journeys", isAuthenticated, journeysRouter);
+  app.use("/api/flows", isAuthenticated, journeysRouter);
   app.use("/api/voice-sessions", isAuthenticated, voiceSessionsRouter);
   app.use("/api/feedback", isAuthenticated, feedbackRouter);
   app.use("/api/screens", isAuthenticated, screensRouter);
