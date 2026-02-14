@@ -4815,13 +4815,16 @@ Important guidelines:
       
       // Log message
       if (role === 'user') {
+        const activeScreenId = currentScreenIdRef.current;
+        if (activeScreenId && normalizedText.trim()) {
+          userHasSpokenOnScreenRef.current.add(activeScreenId);
+        }
         if (isDone !== false) {
           // Ensure the next assistant turn replaces prior copy regardless
           // of provider event ordering (transcript vs mode change timing).
           shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
           setAgentSpeechAlignment(null);
           userUtteranceCountRef.current += 1;
-          const activeScreenId = currentScreenIdRef.current;
           if (activeScreenId) {
             userUtterancesByScreenRef.current[activeScreenId] =
               (userUtterancesByScreenRef.current[activeScreenId] || 0) + 1;
