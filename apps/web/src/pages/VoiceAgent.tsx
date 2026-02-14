@@ -4127,22 +4127,27 @@ Important guidelines:
           source: 'record_input',
         };
 
-        setTimeout(() => {
+        const dispatchNavigation = () => {
           const pending = pendingNavigationRef.current;
           if (!pending || pending.eventId !== effectiveNextEventId || pending.executeAtMs !== executeAtMs) {
+            return;
+          }
+          if (lastElevenLabsModeRef.current === 'speaking') {
+            addLog('info', `⏳ Agent still speaking — deferring navigation "${effectiveNextEventId}" by 500ms`);
+            setTimeout(dispatchNavigation, 500);
             return;
           }
           window.dispatchEvent(new CustomEvent('triggerEvent', {
             detail: { eventId: effectiveNextEventId, timestamp: Date.now() }
           }));
-          // Keep guard active briefly after dispatch, then clear.
           setTimeout(() => {
             const active = pendingNavigationRef.current;
             if (active && active.eventId === effectiveNextEventId && active.executeAtMs === executeAtMs) {
               pendingNavigationRef.current = null;
             }
           }, 2000);
-        }, delayMs);
+        };
+        setTimeout(dispatchNavigation, delayMs);
       }
 
       const completedAtMs = Date.now();
