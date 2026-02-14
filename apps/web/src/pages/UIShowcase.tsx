@@ -54,6 +54,7 @@ const UIShowcase: React.FC = () => {
   const [showCodeView, setShowCodeView] = useState(false);
 
   // Check for navigation state or URL query params with a screen to edit
+  const hasHandledEditParamsRef = React.useRef(false);
   useEffect(() => {
     const state = location.state as LocationState | null;
     if (state?.editScreen) {
@@ -74,24 +75,32 @@ const UIShowcase: React.FC = () => {
       setShowcaseMode('builder');
       
       window.history.replaceState({}, document.title);
-    } else if (searchParams.get('journeyId') && searchParams.get('agentId') && searchParams.get('screenId')) {
-      const journeyId = searchParams.get('journeyId')!;
-      const agentId = searchParams.get('agentId')!;
-      const screenId = searchParams.get('screenId')!;
+      return;
+    }
+
+    const journeyId = searchParams.get('journeyId');
+    const agentId = searchParams.get('agentId');
+    const screenId = searchParams.get('screenId');
+
+    if (journeyId && agentId && screenId && !hasHandledEditParamsRef.current) {
+      hasHandledEditParamsRef.current = true;
 
       loadJourneyForRuntime(journeyId).then((journey) => {
         if (!journey) {
           console.error(`[UIShowcase] Failed to load journey ${journeyId} for screen editing`);
+          hasHandledEditParamsRef.current = false;
           return;
         }
         const agent = journey.agents.find(a => a.id === agentId);
         if (!agent) {
           console.error(`[UIShowcase] Agent ${agentId} not found in journey ${journeyId}`);
+          hasHandledEditParamsRef.current = false;
           return;
         }
         const screen = agent.screens?.find(s => s.id === screenId);
         if (!screen) {
           console.error(`[UIShowcase] Screen ${screenId} not found in agent ${agentId}`);
+          hasHandledEditParamsRef.current = false;
           return;
         }
 
@@ -113,6 +122,8 @@ const UIShowcase: React.FC = () => {
 
         setSearchParams({}, { replace: true });
       });
+    } else if (!journeyId && !agentId && !screenId) {
+      hasHandledEditParamsRef.current = false;
     }
   }, [location.state, searchParams]);
 

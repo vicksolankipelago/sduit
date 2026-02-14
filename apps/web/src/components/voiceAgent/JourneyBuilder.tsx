@@ -1013,7 +1013,9 @@ const JourneyBuilder: React.FC<JourneyBuilderProps> = ({
   };
 
   const handleEditScreen = (screen: Screen) => {
+    console.log('[handleEditScreen] called', screen.id, 'journey:', currentJourney?.id, 'agent:', selectedAgent?.id);
     if (!currentJourney || !selectedAgent) {
+      console.warn('[handleEditScreen] early return: currentJourney or selectedAgent is null');
       return;
     }
     try {
