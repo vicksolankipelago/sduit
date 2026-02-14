@@ -942,7 +942,6 @@ function VoiceAgentContent() {
   const lastElevenLabsModeRef = useRef<'speaking' | 'listening' | null>(null);
   const lastLiveAgentMessageRef = useRef<string | null>(null);
   const shouldResetLiveAgentMessageOnNextAssistantTextRef = useRef(false);
-  const deferredClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const alignmentReceivedForTurnRef = useRef(false);
   const pendingTranscriptTextRef = useRef<string | null>(null);
   const didInitializeLiveAgentMessageRef = useRef(false);
@@ -1076,11 +1075,6 @@ function VoiceAgentContent() {
     const rawMessage = typeof incomingMessage === 'string' ? incomingMessage : '';
     const trimmedMessage = rawMessage.trim();
     if (!trimmedMessage) return;
-
-    if (deferredClearTimerRef.current) {
-      clearTimeout(deferredClearTimerRef.current);
-      deferredClearTimerRef.current = null;
-    }
 
     const shouldReset = shouldResetLiveAgentMessageOnNextAssistantTextRef.current;
     const previousMessage = shouldReset ? '' : (lastLiveAgentMessageRef.current ?? '');
@@ -4747,24 +4741,9 @@ Important guidelines:
         alignmentReceivedForTurnRef.current = false;
         pendingTranscriptTextRef.current = null;
         // Mark that the next incoming text should replace (not append to)
-        // the previous turn's message.
+        // the previous turn's message. The old message stays visible on
+        // screen until the first chunk of new text arrives.
         shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
-        // Start a short deferred clear: if no new text arrives within 200ms,
-        // wipe the old message to prevent stale text from lingering. If new
-        // text DOES arrive (via alignment or transcript), the timer is
-        // cancelled and the reset flag handles the replacement instead.
-        // This avoids both problems:
-        //  - Immediate clear caused message disappearance on rapid mode flickers
-        //  - No clear at all caused old message to flash before new text arrived
-        if (deferredClearTimerRef.current) {
-          clearTimeout(deferredClearTimerRef.current);
-        }
-        deferredClearTimerRef.current = setTimeout(() => {
-          deferredClearTimerRef.current = null;
-          if (shouldResetLiveAgentMessageOnNextAssistantTextRef.current) {
-            clearLiveAgentMessage();
-          }
-        }, 200);
       }
       if (previousMode === 'speaking' && mode !== 'speaking') {
         const pendingText = pendingTranscriptTextRef.current;
