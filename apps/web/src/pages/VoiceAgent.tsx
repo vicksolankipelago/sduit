@@ -2974,7 +2974,6 @@ Important guidelines:
       } else if (event.source === 'user') {
         shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
         setAgentSpeechAlignment(null);
-        clearLiveAgentMessage();
         const activeScreenId = currentScreenIdRef.current;
         if (activeScreenId) {
           userHasSpokenOnScreenRef.current.add(activeScreenId);
@@ -3150,7 +3149,6 @@ Important guidelines:
         if (isDone) {
           shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
           setAgentSpeechAlignment(null);
-          clearLiveAgentMessage();
           const fullUserText = userMessageBuffer.current.trim();
           if (fullUserText) {
             userUtteranceCountRef.current += 1;
@@ -4086,6 +4084,7 @@ Important guidelines:
       }
 
       if (Object.keys(moduleUpdates).length > 0) {
+        clearLiveAgentMessage();
         markCapturedModuleKeys(moduleUpdates);
         applyModuleStateUpdates(moduleUpdates);
       }
@@ -4755,9 +4754,7 @@ Important guidelines:
         setAgentSpeechAlignment(null);
         alignmentReceivedForTurnRef.current = false;
         pendingTranscriptTextRef.current = null;
-        // Clear the previous agent message immediately to prevent stale text
-        // from flashing on screen when module state updates trigger re-renders.
-        clearLiveAgentMessage();
+        shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
       }
       if (previousMode === 'speaking' && mode !== 'speaking') {
         const pendingText = pendingTranscriptTextRef.current;
@@ -4838,7 +4835,6 @@ Important guidelines:
         if (isDone !== false) {
           shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
           setAgentSpeechAlignment(null);
-          clearLiveAgentMessage();
           userUtteranceCountRef.current += 1;
           if (activeScreenId) {
             userUtterancesByScreenRef.current[activeScreenId] =
