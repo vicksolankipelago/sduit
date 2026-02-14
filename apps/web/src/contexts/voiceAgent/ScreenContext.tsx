@@ -79,11 +79,34 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
     }
   }, [initialScreen]);
 
-  // Sync module state from props, including empty-state resets between sessions.
+  // Sync module state from parent props.
+  // CRITICAL: Merge instead of replace to avoid wiping locally-set keys
+  // (e.g. aboutYouSummary set via record_input) when the parent pushes
+  // an unrelated update (e.g. agentLiveMessage).
+  const prevInitialModuleStateRef = React.useRef<Record<string, AnyCodable>>(initialModuleState);
   React.useEffect(() => {
     const nextModuleState = initialModuleState || {};
-    moduleStateRef.current = nextModuleState; // Sync ref immediately
-    setModuleState(nextModuleState);
+    const prev = prevInitialModuleStateRef.current || {};
+    prevInitialModuleStateRef.current = nextModuleState;
+
+    // Compute only the keys that actually changed in the parent
+    const delta: Record<string, AnyCodable> = {};
+    for (const key of Object.keys(nextModuleState)) {
+      if (nextModuleState[key] !== prev[key]) {
+        delta[key] = nextModuleState[key];
+      }
+    }
+    // Also detect keys removed in the parent
+    for (const key of Object.keys(prev)) {
+      if (!(key in nextModuleState)) {
+        delta[key] = undefined as any;
+      }
+    }
+
+    if (Object.keys(delta).length === 0) return;
+
+    moduleStateRef.current = { ...moduleStateRef.current, ...delta };
+    setModuleState(s => ({ ...s, ...delta }));
   }, [initialModuleState]);
 
   const setCurrentScreen = useCallback((screen: Screen | null) => {
