@@ -931,6 +931,11 @@ function VoiceAgentContent() {
   // Startup guard: require at least one completed user utterance before leaving pq-program-summary.
   const userUtteranceCountRef = useRef<number>(0);
   const userUtterancesByScreenRef = useRef<Record<string, number>>({});
+  // Tracks screens where the user has started speaking (first transcript chunk).
+  // Unlike utterancesByScreen (incremented on completion), this is set immediately
+  // when the first transcript arrives — avoiding the race where the AI calls
+  // record_input while the user is mid-sentence.
+  const userHasSpokenOnScreenRef = useRef<Set<string>>(new Set());
   // Track keys set by record_input so stale captured responses don't pre-populate
   // future sessions before the member explicitly answers again.
   const recordInputDerivedKeysRef = useRef<Set<string>>(new Set());
@@ -2061,6 +2066,7 @@ function VoiceAgentContent() {
     setSessionLogs([]);
     userUtteranceCountRef.current = 0;
     userUtterancesByScreenRef.current = {};
+    userHasSpokenOnScreenRef.current.clear();
     addLog('info', `Initiating connection with journey: ${journeyToUse.name}`);
     addLog('info', `Starting agent: ${startingAgent.name}`);
 
@@ -3119,6 +3125,11 @@ Important guidelines:
         if (isNew) {
           setAgentSpeechAlignment(null);
         }
+        // Mark that the user has started speaking on this screen
+        const activeScreenId = currentScreenIdRef.current;
+        if (activeScreenId && text.trim()) {
+          userHasSpokenOnScreenRef.current.add(activeScreenId);
+        }
         // Accumulate user message text
         userMessageBuffer.current += text;
         // Only append if not a new message (new messages already have the text)
@@ -4008,6 +4019,28 @@ Important guidelines:
       const startedAtMs = Date.now();
       const { title, summary = '', description = '', storeKey, nextEventId, delay = 0 } = params;
       const activeScreenId = currentScreenIdRef.current;
+
+      // Guard: require the user to have started speaking on this screen.
+      // Uses "first transcript chunk" flag (set immediately when speech begins)
+      // instead of completed utterance count (which arrives too late due to
+      // transcript finalization lag).
+      const userHasSpoken = activeScreenId
+        ? userHasSpokenOnScreenRef.current.has(activeScreenId)
+        : false;
+      if (!userHasSpoken) {
+        addLog('warning', `⚠️ record_input deferred on "${activeScreenId ?? 'unknown'}": user has not spoken on this screen yet.`, {
+          title, storeKey, nextEventId, currentScreen: activeScreenId, startedAtMs,
+        });
+        return {
+          saved: false,
+          title,
+          summary: '',
+          storeKey: storeKey || null,
+          reason: 'awaiting_user_speech',
+          current_screen: activeScreenId || null,
+          message: `The member has not spoken on "${activeScreenId ?? 'this screen'}" yet. Wait for them to respond before calling record_input.`,
+        };
+      }
 
       const baseUpdates = deriveRecordInputModuleUpdates({ title, summary, storeKey });
       const { summary: displaySummary, updates: canonicalUpdates } = applyWeeklyFocusRecordInputPolicy(
