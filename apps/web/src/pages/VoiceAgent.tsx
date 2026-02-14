@@ -4030,17 +4030,30 @@ Important guidelines:
       const { title, summary = '', description = '', storeKey, nextEventId, delay = 0 } = params;
       const activeScreenId = currentScreenIdRef.current;
 
-      // Guard: if the user has not spoken on this screen yet, still save the
-      // data (so the agent doesn't get stuck in a "saved:false" loop) but
-      // suppress any nextEventId navigation to prevent premature screen jumps.
-      const userHasSpoken = activeScreenId
+      // Guard: if the user has not spoken on this screen yet AND the agent
+      // hasn't provided a meaningful summary, suppress navigation to prevent
+      // premature screen jumps. However, if record_input includes a non-empty
+      // summary, the agent clearly heard the user speak (the LLM processed
+      // their audio) even if the transcript event hasn't arrived on the web
+      // client yet — so allow navigation in that case.
+      const userHasSpokenLocally = activeScreenId
         ? userHasSpokenOnScreenRef.current.has(activeScreenId)
         : userUtteranceCountRef.current > 0;
+      const agentHeardUser = summary.trim().length > 0;
+      const userHasSpoken = userHasSpokenLocally || agentHeardUser;
       const effectiveNextEventId = userHasSpoken ? nextEventId : undefined;
       if (!userHasSpoken && nextEventId) {
-        addLog('warning', `⚠️ record_input: suppressing nextEventId "${nextEventId}" on "${activeScreenId ?? 'unknown'}" (user has not spoken on this screen yet). Data will still be saved.`, {
+        addLog('warning', `⚠️ record_input: suppressing nextEventId "${nextEventId}" on "${activeScreenId ?? 'unknown'}" (user has not spoken on this screen yet and no summary provided). Data will still be saved.`, {
           title, storeKey, nextEventId, currentScreen: activeScreenId, startedAtMs,
         });
+      }
+      if (!userHasSpokenLocally && agentHeardUser && nextEventId) {
+        addLog('info', `✅ record_input: allowing navigation via "${nextEventId}" — agent provided summary "${summary.slice(0, 60)}..." implying user spoke.`, {
+          currentScreen: activeScreenId,
+        });
+        if (activeScreenId) {
+          userHasSpokenOnScreenRef.current.add(activeScreenId);
+        }
       }
 
       const baseUpdates = deriveRecordInputModuleUpdates({ title, summary, storeKey });
