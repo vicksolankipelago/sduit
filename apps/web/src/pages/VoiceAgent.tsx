@@ -3233,19 +3233,14 @@ Important guidelines:
       // Handle record_input tool specifically - update screen state
       if (toolName === 'record_input' && args.title) {
         const activeScreenId = currentScreenIdRef.current;
-        const utterancesOnActiveScreen = activeScreenId
-          ? (userUtterancesByScreenRef.current[activeScreenId] || 0)
-          : 0;
-        const hasInProgressUtterance = !!userMessageBuffer.current.trim() || !!currentMessageIdsRef.current.user;
         const savedFromResult = resultObject?.saved;
         const recordInputAccepted =
           savedFromResult === true ||
           (savedFromResult === undefined && !(typeof result === 'string' && /error/i.test(result)));
 
-        if ((utterancesOnActiveScreen < 1 && !hasInProgressUtterance) || !recordInputAccepted) {
+        if (!recordInputAccepted) {
           addLog('warning', `⚠️ Ignoring record_input callback payload on "${activeScreenId ?? 'unknown'}"`, {
             currentScreen: activeScreenId,
-            utterancesOnActiveScreen,
             savedFromResult,
             args,
             result: resultObject || result,
@@ -4009,29 +4004,6 @@ Important guidelines:
       const startedAtMs = Date.now();
       const { title, summary = '', description = '', storeKey, nextEventId, delay = 0 } = params;
       const activeScreenId = currentScreenIdRef.current;
-      const utterancesOnActiveScreen = activeScreenId
-        ? (userUtterancesByScreenRef.current[activeScreenId] || 0)
-        : 0;
-      const hasInProgressUtterance = !!userMessageBuffer.current.trim() || !!currentMessageIdsRef.current.user;
-
-      if (utterancesOnActiveScreen < 1 && !hasInProgressUtterance) {
-        addLog('warning', `⚠️ record_input blocked on "${activeScreenId ?? 'unknown'}": awaiting explicit user response.`, {
-          title,
-          storeKey,
-          nextEventId,
-          currentScreen: activeScreenId,
-          startedAtMs,
-        });
-        return {
-          saved: false,
-          title,
-          summary: '',
-          storeKey: storeKey || null,
-          reason: 'awaiting_user_utterance',
-          current_screen: activeScreenId || null,
-          message: `Wait for the member to explicitly answer on "${activeScreenId ?? 'this screen'}" before calling record_input.`,
-        };
-      }
 
       const baseUpdates = deriveRecordInputModuleUpdates({ title, summary, storeKey });
       const { summary: displaySummary, updates: canonicalUpdates } = applyWeeklyFocusRecordInputPolicy(
