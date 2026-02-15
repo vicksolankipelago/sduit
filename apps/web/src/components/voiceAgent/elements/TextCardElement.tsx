@@ -127,7 +127,7 @@ export const TextCardElement: React.FC<TextCardElementProps> = ({
 
   const captionTypographyClass =
     titleTextStyle === 'boldBlack' ? 'pelago-body-2-bold' : 'pelago-caption-2-regular';
-  const contentTypographyClass = shouldRenderIcon ? 'pelago-body-2-regular' : 'pelago-header-2';
+  const contentTypographyClass = 'pelago-body-2-regular';
 
   return (
     <div

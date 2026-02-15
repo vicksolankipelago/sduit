@@ -1265,7 +1265,33 @@
               "deeplink": "outcomes"
             }
           ],
-          "conditions": []
+          "conditions": [
+            {
+              "rules": {
+                "and": [
+                  {
+                    "!=": [
+                      {
+                        "var": "aboutYouSummary"
+                      },
+                      null
+                    ]
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "aboutYouSummary"
+                      },
+                      ""
+                    ]
+                  }
+                ]
+              },
+              "state": {
+                "aboutYouSummary": "{$moduleData.aboutYouSummary}"
+              }
+            }
+          ]
         }
       ],
       "sections": [
@@ -1382,7 +1408,33 @@
               "deeplink": "motivation"
             }
           ],
-          "conditions": []
+          "conditions": [
+            {
+              "rules": {
+                "and": [
+                  {
+                    "!=": [
+                      {
+                        "var": "firstGoal"
+                      },
+                      null
+                    ]
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "firstGoal"
+                      },
+                      ""
+                    ]
+                  }
+                ]
+              },
+              "state": {
+                "firstGoal": "{$moduleData.goalTitles.0}"
+              }
+            }
+          ]
         }
       ],
       "sections": [
@@ -1598,7 +1650,33 @@
               "deeplink": "weekly-focus"
             }
           ],
-          "conditions": []
+          "conditions": [
+            {
+              "rules": {
+                "and": [
+                  {
+                    "!=": [
+                      {
+                        "var": "yourWhySummary"
+                      },
+                      null
+                    ]
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "yourWhySummary"
+                      },
+                      ""
+                    ]
+                  }
+                ]
+              },
+              "state": {
+                "yourWhySummary": "{$moduleData.yourWhySummary}"
+              }
+            }
+          ]
         }
       ],
       "sections": [
@@ -1706,7 +1784,33 @@
               "deeplink": "cm-rewards-intro"
             }
           ],
-          "conditions": []
+          "conditions": [
+            {
+              "rules": {
+                "and": [
+                  {
+                    "!=": [
+                      {
+                        "var": "weeklyFocus"
+                      },
+                      null
+                    ]
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "weeklyFocus"
+                      },
+                      ""
+                    ]
+                  }
+                ]
+              },
+              "state": {
+                "weeklyFocus": "{$moduleData.weeklyFocus}"
+              }
+            }
+          ]
         }
       ],
       "sections": [
@@ -1856,13 +1960,21 @@
               ]
             },
             {
-              "type": "quoteCard",
+              "type": "textCard",
               "state": {
-                "id": "weekly_focus_quote",
-                "message": "{$moduleData.weeklyFocus}"
+                "id": "weekly_focus_card",
+                "title": "your focus for this week",
+                "content": "{$moduleData.weeklyFocus}"
               },
               "style": {
-                "imageName": null
+                "textColor": "textGlobalPrimary",
+                "borderColor": "backgroundMistBlue",
+                "borderWidth": 0,
+                "captionColor": "textGlobalPrimary",
+                "cornerRadius": 8,
+                "backgroundColor": "backgroundMistBlue",
+                "titleTextStyle": "boldBlack",
+                "showIcon": false
               },
               "conditions": [
                 {
@@ -2321,7 +2433,33 @@
               "deeplink": "pq-start-programme"
             }
           ],
-          "conditions": []
+          "conditions": [
+            {
+              "rules": {
+                "and": [
+                  {
+                    "!=": [
+                      {
+                        "var": "planReviewConfirmation"
+                      },
+                      null
+                    ]
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "planReviewConfirmation"
+                      },
+                      ""
+                    ]
+                  }
+                ]
+              },
+              "state": {
+                "planReviewConfirmation": "{$moduleData.planReviewConfirmation}"
+              }
+            }
+          ]
         }
       ],
       "sections": [

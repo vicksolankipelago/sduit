@@ -3551,61 +3551,6 @@ Important guidelines:
       const requestedEventConfig = activeScreenEvents.find((event: any) => event.id === eventId);
       const isNavigationEvent = eventId.startsWith('navigate_') || isNavigationScreenEvent(requestedEventConfig);
       const navigationTarget = getNavigationTargetFromEvent(requestedEventConfig);
-      const hasCapturedAboutYou = (): boolean => {
-        const utterancesOnAboutYou = userUtterancesByScreenRef.current['about-you'] || 0;
-        if (utterancesOnAboutYou < 1) {
-          return false;
-        }
-
-        const savedSummary = moduleStateRef.current?.aboutYouSummary;
-        if (typeof savedSummary === 'string' && savedSummary.trim().length > 0) {
-          return true;
-        }
-
-        const lastCapture = lastRecordInputRef.current;
-        return Boolean(
-          lastCapture &&
-          normalizeRecordInputTitle(lastCapture.title) === 'about you' &&
-          typeof lastCapture.summary === 'string' &&
-          lastCapture.summary.trim().length > 0
-        );
-      };
-
-      // Prevent premature startup jump: do not leave pq-program-summary before the user has spoken.
-      if (
-        activeScreenId === 'pq-program-summary' &&
-        (eventId === 'about-you' || eventId === 'next_step_event') &&
-        userUtteranceCountRef.current === 0
-      ) {
-        return buildNavigationResult({
-          success: false,
-          eventId,
-          fromScreen: activeScreenId,
-          currentScreen: activeScreenId,
-          reason: 'awaiting_user_utterance',
-          message: 'Wait for an actual user response on pq-program-summary before navigating to about-you.',
-          availableEvents: activeScreenEvents.map((event: any) => event.id),
-        });
-      }
-
-      // Guardrail: do not allow skipping about-you capture before moving to outcomes.
-      if (
-        isNavigationEvent &&
-        activeScreenId === 'about-you' &&
-        navigationTarget === 'outcomes' &&
-        !hasCapturedAboutYou()
-      ) {
-        return buildNavigationResult({
-          success: false,
-          eventId,
-          fromScreen: activeScreenId,
-          currentScreen: activeScreenId,
-          nextScreen: navigationTarget,
-          reason: 'about_you_not_captured',
-          message: 'Ask the about-you question and call record_input with storeKey "aboutYouSummary" before navigating to outcomes.',
-          availableEvents: activeScreenEvents.map((event: any) => event.id),
-        });
-      }
 
       // If a record_input auto-navigation is pending, ignore extra navigation tool calls.
       const pendingNavigation = pendingNavigationRef.current;
@@ -3942,47 +3887,12 @@ Important guidelines:
         });
       }
 
-      // Prevent premature startup jump when legacy prompts still call navigate_to directly.
-      if (
-        activeScreen.id === 'pq-program-summary' &&
-        targetScreen === 'about-you' &&
-        userUtteranceCountRef.current === 0
-      ) {
-        return buildResult({
-          success: false,
-          fromScreen: activeScreen.id,
-          currentScreen: activeScreen.id,
-          nextScreen: targetScreen,
-          reason: 'awaiting_user_utterance',
-          message: 'Wait for an actual user response on pq-program-summary before navigating to about-you.',
-        });
-      }
-
       const screenEvents = getScreenEvents(activeScreen);
       const navEvents = screenEvents.filter((event: any) => getNavigationTargetFromEvent(event));
       const matchingNavEvent = navEvents.find((event: any) => getNavigationTargetFromEvent(event) === targetScreen);
       const availableNextScreens = navEvents
         .map((event: any) => getNavigationTargetFromEvent(event))
         .filter((value: string | undefined): value is string => typeof value === 'string');
-      const hasCapturedAboutYou = (): boolean => {
-        const utterancesOnAboutYou = userUtterancesByScreenRef.current['about-you'] || 0;
-        if (utterancesOnAboutYou < 1) {
-          return false;
-        }
-
-        const savedSummary = moduleStateRef.current?.aboutYouSummary;
-        if (typeof savedSummary === 'string' && savedSummary.trim().length > 0) {
-          return true;
-        }
-
-        const lastCapture = lastRecordInputRef.current;
-        return Boolean(
-          lastCapture &&
-          normalizeRecordInputTitle(lastCapture.title) === 'about you' &&
-          typeof lastCapture.summary === 'string' &&
-          lastCapture.summary.trim().length > 0
-        );
-      };
 
       // Idempotency guard:
       // If the model calls navigate_to for the screen we're already on
@@ -3997,23 +3907,6 @@ Important guidelines:
           delaySeconds: 0,
           reason: 'already_on_target_screen',
           message: `Already on "${targetScreen}". No additional navigation needed.`,
-          availableNextScreens,
-        });
-      }
-
-      // Guardrail: enforce about-you capture before moving to outcomes.
-      if (
-        activeScreen.id === 'about-you' &&
-        targetScreen === 'outcomes' &&
-        !hasCapturedAboutYou()
-      ) {
-        return buildResult({
-          success: false,
-          fromScreen: activeScreen.id,
-          currentScreen: activeScreen.id,
-          nextScreen: targetScreen,
-          reason: 'about_you_not_captured',
-          message: 'Ask the about-you question and call record_input with storeKey "aboutYouSummary" before navigating to outcomes.',
           availableNextScreens,
         });
       }
