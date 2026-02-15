@@ -1843,45 +1843,6 @@
           "layout": "stack",
           "elements": [
             {
-              "type": "textBlock",
-              "state": {
-                "id": "weekly_focus_question",
-                "text": "What would you like to focus on?"
-              },
-              "style": {
-                "color": "primary",
-                "style": "heading2",
-                "alignment": "center"
-              },
-              "conditions": [
-                {
-                  "rules": {
-                    "or": [
-                      {
-                        "==": [
-                          {
-                            "var": "focus"
-                          },
-                          null
-                        ]
-                      },
-                      {
-                        "==": [
-                          {
-                            "var": "focus"
-                          },
-                          ""
-                        ]
-                      }
-                    ]
-                  },
-                  "state": {
-                    "focus": "{$moduleData.weeklyIntention}"
-                  }
-                }
-              ]
-            },
-            {
               "type": "spacer",
               "state": {
                 "id": "top_spacer"
@@ -2278,7 +2239,7 @@
                 "copyId": null,
                 "header": {
                   "id": "checkin_header",
-                  "title": "How often do you want to aim to track this week?",
+                  "title": null,
                   "caption": null,
                   "imageName": null,
                   "description": null

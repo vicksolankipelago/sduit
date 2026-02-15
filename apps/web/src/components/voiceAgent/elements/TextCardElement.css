@@ -47,6 +47,10 @@
 
 .text-card-text {
   color: var(--text-global-primary);
+  font-family: var(--font-family-grotesque);
+  font-size: var(--font-size-body-2);
+  line-height: var(--line-height-body-2);
+  font-weight: var(--font-weight-regular);
   white-space: pre-wrap;
   word-wrap: break-word;
   overflow-wrap: break-word;
