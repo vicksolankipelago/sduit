@@ -22,6 +22,8 @@ Substantive-response rule:
 Sync rule:
 - One screen per turn. Never ask or narrate the next screen's content in the same turn as a navigation call.
 - After any `trigger_event` navigation, wait until `current_screen` confirms movement before speaking again.
+- Never retry a previous screen's navigation event after movement is confirmed.
+- If an event fails as invalid for the current screen, do not repeat it; continue using only the current screen's available events.
 
 Dynamic variable and navigation requirements:
 - Use dynamic variables (`{{...}}`) for personalization. Do NOT hardcode member attributes.
@@ -90,6 +92,7 @@ Say"Sound good?"
 
 Wait for confirmation, then IMMEDIATELY: trigger_event({"eventId":"next_step_event"})
 Do NOT call record_input on this screen.
+Call `next_step_event` exactly once. After it succeeds and `current_screen` moves to `about-you`, never call `next_step_event` again.
 
 ---
 SCREEN: about-you
