@@ -5,7 +5,7 @@
       "title": "Welcome",
       "events": [
         {
-          "id": "pq-feelings-alcohol",
+          "id": "navigate_to_feelings",
           "type": "custom",
           "action": [
             {
@@ -116,7 +116,7 @@
               },
               "events": [
                 {
-                  "id": "pq-feelings-alcohol",
+                  "id": "navigate_to_feelings",
                   "type": "onSelected",
                   "action": [
                     {
@@ -144,7 +144,7 @@
       "title": "Personalization",
       "events": [
         {
-          "id": "pq-goal-alcohol",
+          "id": "navigate_to_goal",
           "type": "custom",
           "action": [
             {
@@ -239,7 +239,7 @@
               },
               "events": [
                 {
-                  "id": "pq-goal-alcohol",
+                  "id": "navigate_to_goal",
                   "type": "onSelected",
                   "action": [
                     {
@@ -274,7 +274,7 @@
       "title": "Goals",
       "events": [
         {
-          "id": "pq-areas-to-improve",
+          "id": "navigate_to_areas",
           "type": "custom",
           "action": [
             {
@@ -373,7 +373,7 @@
               },
               "events": [
                 {
-                  "id": "pq-areas-to-improve",
+                  "id": "navigate_to_areas",
                   "type": "onSelected",
                   "action": [
                     {
@@ -408,7 +408,7 @@
       "title": "Goals",
       "events": [
         {
-          "id": "pq-motivation",
+          "id": "navigate_to_pq_motivation",
           "type": "custom",
           "action": [
             {
@@ -503,7 +503,7 @@
               },
               "events": [
                 {
-                  "id": "pq-motivation",
+                  "id": "navigate_to_pq_motivation",
                   "type": "onSelected",
                   "action": [
                     {
@@ -538,7 +538,7 @@
       "title": "Motivation",
       "events": [
         {
-          "id": "pq-learning-topics",
+          "id": "navigate_to_learning",
           "type": "custom",
           "action": [
             {
@@ -641,7 +641,7 @@
               },
               "events": [
                 {
-                  "id": "pq-learning-topics",
+                  "id": "navigate_to_learning",
                   "type": "onSelected",
                   "action": [
                     {
@@ -676,7 +676,7 @@
       "title": "Learning",
       "events": [
         {
-          "id": "pq-setting-up-goals",
+          "id": "navigate_to_setting_up",
           "type": "custom",
           "action": [
             {
@@ -799,7 +799,7 @@
               },
               "events": [
                 {
-                  "id": "pq-setting-up-goals",
+                  "id": "navigate_to_setting_up",
                   "type": "onSelected",
                   "action": [
                     {
@@ -947,7 +947,7 @@
               },
               "events": [
                 {
-                  "id": "pq-voice-ready",
+                  "id": "navigate_to_completion",
                   "type": "onSelected",
                   "action": [
                     {
@@ -1054,8 +1054,8 @@
                 ]
               },
               "style": {
-                "backgroundColor": "backgroundLight",
-                "cornerRadius": 0
+                "cornerRadius": 0,
+                "backgroundColor": "backgroundLight"
               }
             },
             {
@@ -1078,12 +1078,12 @@
                 "content": "If at any point you feel unsafe or need immediate help, please call or text 988 right away (Suicide and Crisis Lifeline)."
               },
               "style": {
-                "backgroundColor": "backgroundMistBlue",
-                "borderColor": "backgroundCerulean",
                 "textColor": "textGlobalPrimary",
-                "captionColor": "textGlobalPrimary",
+                "borderColor": "backgroundCerulean",
                 "borderWidth": 1,
-                "cornerRadius": 12
+                "captionColor": "textGlobalPrimary",
+                "cornerRadius": 12,
+                "backgroundColor": "backgroundMistBlue"
               }
             },
             {
@@ -1121,7 +1121,7 @@
               },
               "events": [
                 {
-                  "id": "pq-program-summary",
+                  "id": "navigate_to_program_summary",
                   "type": "onSelected",
                   "action": [
                     {
@@ -1167,24 +1167,6 @@
       "title": "Your program, based on what you shared",
       "events": [
         {
-          "id": "about-you",
-          "type": "custom",
-          "action": [
-            {
-              "type": "stateUpdate",
-              "scope": "module",
-              "updates": {
-                "current_screen": "about-you"
-              }
-            },
-            {
-              "type": "navigation",
-              "deeplink": "about-you"
-            }
-          ],
-          "conditions": []
-        },
-        {
           "id": "next_step_event",
           "type": "custom",
           "action": [
@@ -1218,8 +1200,8 @@
                 "syncWithSpeech": true
               },
               "style": {
-                "backgroundColor": "backgroundLight",
-                "cornerRadius": 0
+                "cornerRadius": 0,
+                "backgroundColor": "backgroundLight"
               }
             }
           ],
@@ -1268,24 +1250,6 @@
       "title": null,
       "events": [
         {
-          "id": "outcomes",
-          "type": "custom",
-          "action": [
-            {
-              "type": "stateUpdate",
-              "scope": "module",
-              "updates": {
-                "current_screen": "outcomes"
-              }
-            },
-            {
-              "type": "navigation",
-              "deeplink": "outcomes"
-            }
-          ],
-          "conditions": []
-        },
-        {
           "id": "navigate_to_outcomes",
           "type": "custom",
           "action": [
@@ -1319,8 +1283,8 @@
                 "syncWithSpeech": true
               },
               "style": {
-                "backgroundColor": "backgroundLight",
-                "cornerRadius": 0
+                "cornerRadius": 0,
+                "backgroundColor": "backgroundLight"
               }
             }
           ],
@@ -1337,18 +1301,19 @@
               "type": "textCard",
               "state": {
                 "id": "about_you_summary_card",
-                "title": "About You",
+                "title": "About you",
                 "content": "{$moduleData.aboutYouSummary}"
               },
               "style": {
-                "backgroundColor": "backgroundMistBlue",
-                "borderColor": "backgroundMistBlue",
+                "backgroundColor": "backgroundTeaGreen",
+                "borderColor": "backgroundTeaGreen",
                 "textColor": "textGlobalPrimary",
                 "captionColor": "textGlobalPrimary",
                 "borderWidth": 0,
                 "cornerRadius": 8,
                 "titleTextStyle": "boldBlack",
                 "showIcon": false,
+                "iconName": "checkmark",
                 "iconBackgroundColor": "primaryCTADefault",
                 "iconColor": "textGlobalLight"
               },
@@ -1402,42 +1367,6 @@
       "title": null,
       "events": [
         {
-          "id": "motivation",
-          "type": "custom",
-          "action": [
-            {
-              "type": "stateUpdate",
-              "scope": "module",
-              "updates": {
-                "current_screen": "motivation"
-              }
-            },
-            {
-              "type": "navigation",
-              "deeplink": "motivation"
-            }
-          ],
-          "conditions": []
-        },
-        {
-          "id": "navigate_to_motivation",
-          "type": "custom",
-          "action": [
-            {
-              "type": "stateUpdate",
-              "scope": "module",
-              "updates": {
-                "current_screen": "motivation"
-              }
-            },
-            {
-              "type": "navigation",
-              "deeplink": "motivation"
-            }
-          ],
-          "conditions": []
-        },
-        {
           "id": "navigate_to_voice_motivation",
           "type": "custom",
           "action": [
@@ -1471,8 +1400,8 @@
                 "syncWithSpeech": true
               },
               "style": {
-                "backgroundColor": "backgroundLight",
-                "cornerRadius": 0
+                "cornerRadius": 0,
+                "backgroundColor": "backgroundLight"
               }
             }
           ],
@@ -1501,23 +1430,11 @@
                   "rules": {
                     "and": [
                       {
-                        "or": [
+                        "==": [
                           {
-                            "==": [
-                              {
-                                "var": "goals"
-                              },
-                              null
-                            ]
+                            "var": "currentScreen"
                           },
-                          {
-                            "==": [
-                              {
-                                "var": "goals"
-                              },
-                              ""
-                            ]
-                          }
+                          "outcomes"
                         ]
                       },
                       {
@@ -1525,7 +1442,7 @@
                           {
                             "==": [
                               {
-                                "var": "outcomesSummary"
+                                "var": "goals"
                               },
                               null
                             ]
@@ -1533,7 +1450,7 @@
                           {
                             "==": [
                               {
-                                "var": "outcomesSummary"
+                                "var": "goals"
                               },
                               ""
                             ]
@@ -1544,48 +1461,7 @@
                   },
                   "state": {
                     "goals": "{$moduleData.goalTitles}",
-                    "outcomesSummary": "{$moduleData.outcomesSummary}"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "textCard",
-              "state": {
-                "id": "outcomes_summary_card",
-                "title": "What I heard",
-                "content": "{$moduleData.outcomesSummary}"
-              },
-              "style": {
-                "backgroundColor": "backgroundLight",
-                "textColor": "textGlobalPrimary",
-                "captionColor": "textGlobalPrimary",
-                "cornerRadius": 12
-              },
-              "conditions": [
-                {
-                  "rules": {
-                    "and": [
-                      {
-                        "!=": [
-                          {
-                            "var": "outcomesSummary"
-                          },
-                          null
-                        ]
-                      },
-                      {
-                        "!=": [
-                          {
-                            "var": "outcomesSummary"
-                          },
-                          ""
-                        ]
-                      }
-                    ]
-                  },
-                  "state": {
-                    "outcomesSummary": "{$moduleData.outcomesSummary}"
+                    "currentScreen": "{$moduleData.current_screen}"
                   }
                 }
               ]
@@ -1606,25 +1482,38 @@
                   "rules": {
                     "and": [
                       {
-                        "!=": [
+                        "==": [
                           {
-                            "var": "goals"
+                            "var": "currentScreen"
                           },
-                          null
+                          "outcomes"
                         ]
                       },
                       {
-                        "!=": [
+                        "and": [
                           {
-                            "var": "goals"
+                            "!=": [
+                              {
+                                "var": "goals"
+                              },
+                              null
+                            ]
                           },
-                          ""
+                          {
+                            "!=": [
+                              {
+                                "var": "goals"
+                              },
+                              ""
+                            ]
+                          }
                         ]
                       }
                     ]
                   },
                   "state": {
-                    "goals": "{$moduleData.goalTitles}"
+                    "goals": "{$moduleData.goalTitles}",
+                    "currentScreen": "{$moduleData.current_screen}"
                   }
                 }
               ]
@@ -1637,33 +1526,46 @@
                 "itemTitles": "{$moduleData.goalTitles}"
               },
               "style": {
-                "backgroundColor": "backgroundLight",
-                "cornerRadius": 16
+                "cornerRadius": 16,
+                "backgroundColor": "backgroundLight"
               },
               "conditions": [
                 {
                   "rules": {
                     "and": [
                       {
-                        "!=": [
+                        "==": [
                           {
-                            "var": "goals"
+                            "var": "currentScreen"
                           },
-                          null
+                          "outcomes"
                         ]
                       },
                       {
-                        "!=": [
+                        "and": [
                           {
-                            "var": "goals"
+                            "!=": [
+                              {
+                                "var": "goals"
+                              },
+                              null
+                            ]
                           },
-                          ""
+                          {
+                            "!=": [
+                              {
+                                "var": "goals"
+                              },
+                              ""
+                            ]
+                          }
                         ]
                       }
                     ]
                   },
                   "state": {
-                    "goals": "{$moduleData.goalTitles}"
+                    "goals": "{$moduleData.goalTitles}",
+                    "currentScreen": "{$moduleData.current_screen}"
                   }
                 }
               ]
@@ -1680,42 +1582,6 @@
       "id": "motivation",
       "title": null,
       "events": [
-        {
-          "id": "weekly-focus",
-          "type": "custom",
-          "action": [
-            {
-              "type": "stateUpdate",
-              "scope": "module",
-              "updates": {
-                "current_screen": "weekly-focus"
-              }
-            },
-            {
-              "type": "navigation",
-              "deeplink": "weekly-focus"
-            }
-          ],
-          "conditions": []
-        },
-        {
-          "id": "navigate_to_intention",
-          "type": "custom",
-          "action": [
-            {
-              "type": "stateUpdate",
-              "scope": "module",
-              "updates": {
-                "current_screen": "weekly-focus"
-              }
-            },
-            {
-              "type": "navigation",
-              "deeplink": "weekly-focus"
-            }
-          ],
-          "conditions": []
-        },
         {
           "id": "navigate_to_weekly_focus",
           "type": "custom",
@@ -1750,8 +1616,8 @@
                 "syncWithSpeech": true
               },
               "style": {
-                "backgroundColor": "backgroundLight",
-                "cornerRadius": 0
+                "cornerRadius": 0,
+                "backgroundColor": "backgroundLight"
               }
             }
           ],
@@ -1767,15 +1633,22 @@
             {
               "type": "textCard",
               "state": {
-                "id": "motivation_summary_text",
-                "title": "What I heard",
+                "id": "motivation_summary_quote",
+                "title": "Your why",
                 "content": "{$moduleData.yourWhySummary}"
               },
               "style": {
-                "backgroundColor": "backgroundLight",
+                "backgroundColor": "backgroundLightPunchPink",
+                "borderColor": "backgroundLightPunchPink",
                 "textColor": "textGlobalPrimary",
                 "captionColor": "textGlobalPrimary",
-                "cornerRadius": 12
+                "borderWidth": 0,
+                "cornerRadius": 8,
+                "titleTextStyle": "boldBlack",
+                "showIcon": false,
+                "iconName": "checkmark",
+                "iconBackgroundColor": "primaryCTADefault",
+                "iconColor": "textGlobalLight"
               },
               "conditions": [
                 {
@@ -1818,24 +1691,6 @@
       "title": null,
       "events": [
         {
-          "id": "cm-rewards-intro",
-          "type": "custom",
-          "action": [
-            {
-              "type": "stateUpdate",
-              "scope": "module",
-              "updates": {
-                "current_screen": "cm-rewards-intro"
-              }
-            },
-            {
-              "type": "navigation",
-              "deeplink": "cm-rewards-intro"
-            }
-          ],
-          "conditions": []
-        },
-        {
           "id": "navigate_to_cm_rewards_intro",
           "type": "custom",
           "action": [
@@ -1869,8 +1724,8 @@
                 "syncWithSpeech": true
               },
               "style": {
-                "backgroundColor": "backgroundLight",
-                "cornerRadius": 0
+                "cornerRadius": 0,
+                "backgroundColor": "backgroundLight"
               }
             }
           ],
@@ -1956,7 +1811,7 @@
                     ]
                   },
                   "state": {
-                    "focus": "{$moduleData.weeklyIntention}"
+                    "focus": "{$moduleData.weeklyFocus}"
                   }
                 }
               ]
@@ -1995,7 +1850,7 @@
                     ]
                   },
                   "state": {
-                    "focus": "{$moduleData.weeklyIntention}"
+                    "focus": "{$moduleData.weeklyFocus}"
                   }
                 }
               ]
@@ -2004,7 +1859,7 @@
               "type": "quoteCard",
               "state": {
                 "id": "weekly_focus_quote",
-                "message": "{$moduleData.weeklyIntention}"
+                "message": "{$moduleData.weeklyFocus}"
               },
               "style": {
                 "imageName": null
@@ -2032,7 +1887,7 @@
                     ]
                   },
                   "state": {
-                    "focus": "{$moduleData.weeklyIntention}"
+                    "focus": "{$moduleData.weeklyFocus}"
                   }
                 }
               ]
@@ -2059,26 +1914,8 @@
     },
     {
       "id": "cm-rewards-intro",
-      "title": null,
+      "title": "Introducing Rewards",
       "events": [
-        {
-          "id": "checkin-commitment",
-          "type": "custom",
-          "action": [
-            {
-              "type": "stateUpdate",
-              "scope": "module",
-              "updates": {
-                "current_screen": "checkin-commitment"
-              }
-            },
-            {
-              "type": "navigation",
-              "deeplink": "checkin-commitment"
-            }
-          ],
-          "conditions": []
-        },
         {
           "id": "navigate_to_checkin_commitment",
           "type": "custom",
@@ -2113,8 +1950,8 @@
                 "syncWithSpeech": true
               },
               "style": {
-                "backgroundColor": "backgroundLight",
-                "cornerRadius": 0
+                "cornerRadius": 0,
+                "backgroundColor": "backgroundLight"
               }
             }
           ],
@@ -2137,6 +1974,30 @@
                 "height": null,
                 "direction": "vertical",
                 "isFlexible": true
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "mid_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 8,
+                "direction": "vertical",
+                "isFlexible": false
+              }
+            },
+            {
+              "type": "spacer",
+              "state": {
+                "id": "carousel_spacer"
+              },
+              "style": {
+                "width": null,
+                "height": 24,
+                "direction": "vertical",
+                "isFlexible": false
               }
             },
             {
@@ -2206,7 +2067,7 @@
               "type": "stateUpdate",
               "scope": "module",
               "updates": {
-                "checkinCommitment": "A few times",
+                "checkinCommitment": "A few times a week",
                 "checkinFrequencyDays": 4
               }
             }
@@ -2230,27 +2091,9 @@
               "type": "stateUpdate",
               "scope": "module",
               "updates": {
-                "checkinCommitment": "Once",
+                "checkinCommitment": "When I remember",
                 "checkinFrequencyDays": 1
               }
-            }
-          ],
-          "conditions": []
-        },
-        {
-          "id": "pq-notification-setup",
-          "type": "custom",
-          "action": [
-            {
-              "type": "stateUpdate",
-              "scope": "module",
-              "updates": {
-                "current_screen": "pq-notification-setup"
-              }
-            },
-            {
-              "type": "navigation",
-              "deeplink": "pq-notification-setup"
             }
           ],
           "conditions": []
@@ -2289,8 +2132,8 @@
                 "syncWithSpeech": true
               },
               "style": {
-                "backgroundColor": "backgroundLight",
-                "cornerRadius": 0
+                "cornerRadius": 0,
+                "backgroundColor": "backgroundLight"
               }
             }
           ],
@@ -2323,7 +2166,7 @@
                 "copyId": null,
                 "header": {
                   "id": "checkin_header",
-                  "title": null,
+                  "title": "How often do you want to aim to track this week?",
                   "caption": null,
                   "imageName": null,
                   "description": null
@@ -2332,25 +2175,27 @@
                 "options": [
                   {
                     "id": "daily",
+                    "label": "1,050 pts",
                     "title": "Every day",
                     "description": "Check in daily to build a strong habit"
                   },
                   {
                     "id": "few_times",
-                    "title": "A few times",
+                    "label": "600 pts",
+                    "title": "A few times a week",
                     "description": "Check in 3-4 times this week"
                   },
                   {
                     "id": "once",
-                    "title": "Once",
-                    "description": "Check in once this week"
+                    "label": "150 pts",
+                    "title": "When I remember",
+                    "description": "Track when it works for me this week"
                   }
                 ],
                 "category": "check-in",
                 "maxSelection": 1,
                 "allowsMultiSelection": false,
-                "currentlySelectedOptions": null,
-                "title": null
+                "currentlySelectedOptions": null
               }
             }
           ],
@@ -2381,56 +2226,12 @@
               "serviceName": "pushNotificationService",
               "functionName": "requestPermissions",
               "responseMapping": {
-                "stateKey": "notificationPermissions",
-                "scope": "screen"
+                "scope": "screen",
+                "stateKey": "notificationPermissions"
               }
             }
           ],
           "conditions": []
-        },
-        {
-          "id": "pq-plan-review",
-          "type": "custom",
-          "action": [
-            {
-              "type": "stateUpdate",
-              "scope": "module",
-              "updates": {
-                "current_screen": "pq-plan-review"
-              }
-            },
-            {
-              "type": "navigation",
-              "deeplink": "pq-plan-review"
-            }
-          ],
-          "conditions": [
-            {
-              "rules": {
-                "and": [
-                  {
-                    "!=": [
-                      {
-                        "var": "notificationPermissions"
-                      },
-                      null
-                    ]
-                  },
-                  {
-                    "!=": [
-                      {
-                        "var": "notificationPermissions"
-                      },
-                      ""
-                    ]
-                  }
-                ]
-              },
-              "state": {
-                "notificationPermissions": "{$screenState.notificationPermissions}"
-              }
-            }
-          ]
         },
         {
           "id": "navigate_to_plan_review",
@@ -2451,27 +2252,15 @@
           "conditions": [
             {
               "rules": {
-                "and": [
+                "!=": [
                   {
-                    "!=": [
-                      {
-                        "var": "notificationPermissions"
-                      },
-                      null
-                    ]
+                    "var": "permissionStatus"
                   },
-                  {
-                    "!=": [
-                      {
-                        "var": "notificationPermissions"
-                      },
-                      ""
-                    ]
-                  }
+                  null
                 ]
               },
               "state": {
-                "notificationPermissions": "{$screenState.notificationPermissions}"
+                "permissionStatus": "{$screenData.notificationPermissions}"
               }
             }
           ]
@@ -2492,8 +2281,8 @@
                 "syncWithSpeech": true
               },
               "style": {
-                "backgroundColor": "backgroundLight",
-                "cornerRadius": 0
+                "cornerRadius": 0,
+                "backgroundColor": "backgroundLight"
               }
             }
           ],
@@ -2505,99 +2294,7 @@
           "id": "content_section",
           "title": null,
           "layout": "stack",
-          "elements": [
-            {
-              "type": "spacer",
-              "state": {
-                "id": "notification_top_spacer"
-              },
-              "style": {
-                "width": null,
-                "height": 24,
-                "direction": "vertical",
-                "isFlexible": false
-              }
-            },
-            {
-              "type": "textBlock",
-              "state": {
-                "id": "notification_benefit_text",
-                "text": "Reminders help you stay consistent with check-ins and keep your plan on track."
-              },
-              "style": {
-                "color": "secondary",
-                "style": "body2",
-                "alignment": "center"
-              }
-            },
-            {
-              "type": "spacer",
-              "state": {
-                "id": "notification_card_spacer"
-              },
-              "style": {
-                "width": null,
-                "height": 16,
-                "direction": "vertical",
-                "isFlexible": false
-              }
-            },
-            {
-              "type": "textCard",
-              "state": {
-                "id": "notification_time_card",
-                "title": "Reminder time",
-                "content": "{$moduleData.notificationTime}"
-              },
-              "style": {
-                "textColor": "textGlobalPrimary",
-                "borderColor": "backgroundLightMintGreen",
-                "borderWidth": 1,
-                "captionColor": "textGlobalSecondary",
-                "cornerRadius": 16,
-                "backgroundColor": "backgroundLightMintGreen"
-              },
-              "conditions": [
-                {
-                  "rules": {
-                    "and": [
-                      {
-                        "!=": [
-                          {
-                            "var": "notificationTime"
-                          },
-                          null
-                        ]
-                      },
-                      {
-                        "!=": [
-                          {
-                            "var": "notificationTime"
-                          },
-                          ""
-                        ]
-                      }
-                    ]
-                  },
-                  "state": {
-                    "notificationTime": "{$moduleData.notificationTime}"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "spacer",
-              "state": {
-                "id": "notification_bottom_spacer"
-              },
-              "style": {
-                "width": null,
-                "height": null,
-                "direction": "vertical",
-                "isFlexible": true
-              }
-            }
-          ],
+          "elements": [],
           "position": "body",
           "direction": "vertical",
           "scrollable": true
@@ -2608,24 +2305,6 @@
       "id": "pq-plan-review",
       "title": null,
       "events": [
-        {
-          "id": "pq-start-programme",
-          "type": "custom",
-          "action": [
-            {
-              "type": "stateUpdate",
-              "scope": "module",
-              "updates": {
-                "current_screen": "pq-start-programme"
-              }
-            },
-            {
-              "type": "navigation",
-              "deeplink": "pq-start-programme"
-            }
-          ],
-          "conditions": []
-        },
         {
           "id": "navigate_to_completion",
           "type": "custom",
@@ -2706,11 +2385,16 @@
               },
               "style": {
                 "textColor": "textGlobalPrimary",
-                "borderColor": "backgroundLightMintGreen",
-                "borderWidth": 1,
-                "captionColor": "textGlobalSecondary",
-                "cornerRadius": 16,
-                "backgroundColor": "backgroundLightMintGreen"
+                "borderColor": "backgroundTeaGreen",
+                "borderWidth": 0,
+                "captionColor": "textGlobalPrimary",
+                "cornerRadius": 8,
+                "backgroundColor": "backgroundTeaGreen",
+                "titleTextStyle": "boldBlack",
+                "showIcon": false,
+                "iconName": "checkmark",
+                "iconBackgroundColor": "primaryCTADefault",
+                "iconColor": "textGlobalLight"
               },
               "conditions": [
                 {
@@ -2744,16 +2428,21 @@
               "type": "textCard",
               "state": {
                 "id": "your_why_card",
-                "title": "your why",
+                "title": "Your why",
                 "content": "{$moduleData.yourWhySummary}"
               },
               "style": {
                 "textColor": "textGlobalPrimary",
-                "borderColor": "backgroundLightMintGreen",
-                "borderWidth": 1,
-                "captionColor": "textGlobalSecondary",
-                "cornerRadius": 16,
-                "backgroundColor": "backgroundLightMintGreen"
+                "borderColor": "backgroundLightPunchPink",
+                "borderWidth": 0,
+                "captionColor": "textGlobalPrimary",
+                "cornerRadius": 8,
+                "backgroundColor": "backgroundLightPunchPink",
+                "titleTextStyle": "boldBlack",
+                "showIcon": false,
+                "iconName": "checkmark",
+                "iconBackgroundColor": "primaryCTADefault",
+                "iconColor": "textGlobalLight"
               },
               "conditions": [
                 {
@@ -2792,11 +2481,16 @@
               },
               "style": {
                 "textColor": "textGlobalPrimary",
-                "borderColor": "backgroundLightMintGreen",
-                "borderWidth": 1,
-                "captionColor": "textGlobalSecondary",
-                "cornerRadius": 16,
-                "backgroundColor": "backgroundLightMintGreen"
+                "borderColor": "backgroundMistBlue",
+                "borderWidth": 0,
+                "captionColor": "textGlobalPrimary",
+                "cornerRadius": 8,
+                "backgroundColor": "backgroundMistBlue",
+                "titleTextStyle": "boldBlack",
+                "showIcon": false,
+                "iconName": "checkmark",
+                "iconBackgroundColor": "primaryCTADefault",
+                "iconColor": "textGlobalLight"
               },
               "conditions": [
                 {
@@ -2866,9 +2560,9 @@
                 "content": "Day streak"
               },
               "style": {
+                "textColor": "textGlobalPrimary",
                 "cornerRadius": 8,
-                "backgroundColor": "backgroundCerulean",
-                "textColor": "textGlobalPrimary"
+                "backgroundColor": "backgroundCerulean"
               }
             },
             {
@@ -2879,9 +2573,9 @@
                 "content": "Your focus"
               },
               "style": {
+                "textColor": "textGlobalPrimary",
                 "cornerRadius": 8,
-                "backgroundColor": "backgroundLightMintGreen",
-                "textColor": "textGlobalPrimary"
+                "backgroundColor": "backgroundLightMintGreen"
               }
             },
             {
@@ -2892,9 +2586,9 @@
                 "content": "Check-ins this week"
               },
               "style": {
+                "textColor": "textGlobalPrimary",
                 "cornerRadius": 8,
-                "backgroundColor": "backgroundMistBlue",
-                "textColor": "textGlobalPrimary"
+                "backgroundColor": "backgroundMistBlue"
               }
             },
             {
@@ -2905,11 +2599,11 @@
                 "content": "CBT session"
               },
               "style": {
+                "textColor": "textGlobalPrimary",
                 "borderColor": "secondaryDefault",
                 "borderDashed": true,
                 "cornerRadius": 8,
-                "backgroundColor": "backgroundLight",
-                "textColor": "textGlobalPrimary"
+                "backgroundColor": "backgroundLight"
               }
             }
           ],
@@ -3070,5 +2764,19 @@
       ],
       "hidesBackButton": true
     }
-  ]
+  ],
+  "screenPrompts": {
+    "outcomes": "Screen ID: outcomes\nAvailable Events: navigate_to_voice_motivation\n\nPurpose: Capture desired outcomes as goals and show them in the checklist.\n\nCRITICAL: You MUST ask the question FIRST and wait for the user to respond BEFORE calling set_goals. Do NOT show the checklist before asking.\n\nBehavior:\n1. Ask about desired outcomes: \"What outcomes are you hoping to see for yourself?\"\n2. Wait for the user to respond.\n3. Brief acknowledgment: \"Those are really meaningful goals.\"\n4. Call: set_goals with arguments {\"goals\": [{\"goal\": \"[goal text]\", \"categories\": [\"health\"], \"progress\": 0}, ...]}. Use 2-4 goals. Valid categories: health, relationships, emotional_wellbeing, financial, habits, personal_growth, mindfulness, other. Do NOT speak while the checklist appears.\n5. Pause 3 seconds so the checklist is visible.\n6. Say: \"I've captured those for you.\" Then IMMEDIATELY call navigate_to {\"screen\": \"motivation\"}.\n7. STOP. Wait for navigation. Do NOT ask the motivation question on this screen.\n\nNo record_input on this screen.",
+    "pq-intro": "Screen ID: pq-intro\nAvailable Events: navigate_to_feelings (button tap)\n\nPurpose: Welcome screen where user taps \"Get Started\" to begin quiz setup\n\nUI Display:\n- Title: \"Welcome to Pelago\"\n- Description: \"Let's get you set up with a personalized plan\"\n- Pelago Boat animation\n- \"Get Started\" button at bottom\n\nBehavior:\n- This is a CTA-only screen (no voice interaction)\n- When user taps \"Get Started\", it navigates to pq-feelings-alcohol\n\nNo voice interaction needed on this screen.",
+    "about-you": "Screen ID: about-you\nAvailable Events: navigate_to_outcomes\n\nPurpose: Understand what brings them here. This is a sensitive moment - be gentle and create a safe space.\n\nQuestion (adapt based on {{feelings_alcohol}}):\n- curious: \"So tell me a bit about what's been on your mind around your drinking.\"\n- planning steps: \"It sounds like you've been thinking about making some changes. What's been going on?\"\n- recently cut down: \"That's amazing that you've already started making changes. What prompted that for you?\"\n- not interested: \"No pressure at all. What made you want to check out Pelago?\"\n\nAfter response:\n1. Call record_input IMMEDIATELY with ALL required parameters: {\"title\": \"About You\", \"summary\": \"[one-line summary]\", \"storeKey\": \"aboutYouSummary\", \"description\": \"[brief context about their response]\", \"nextEventId\": \"navigate_to_outcomes\", \"delay\": 3}\n2. The about-you text card should display the captured summary with a small caption style.\n3. Give one short personalized reflection tied to a concrete detail they shared.\n4. STOP. Wait for navigation. Do NOT ask about outcomes or goals here.",
+    "motivation": "Screen ID: motivation\nAvailable Events: navigate_to_weekly_focus\n\nPurpose: Understand what feels most motivating to them right now.\n\nBehavior:\n1. On screen load, ask: \"What about this feels most motivating for you right now?\"\n2. Wait for the user to respond.\n3. Call record_input IMMEDIATELY with ALL required parameters: {\"title\": \"Motivation\", \"summary\": \"[one-line summary]\", \"storeKey\": \"yourWhySummary\", \"description\": \"[brief context about their motivation]\", \"nextEventId\": \"navigate_to_weekly_focus\"}\n4. Give a brief content-specific acknowledgment that mirrors their reason (for example, reference sleep, family, confidence, or health if they said it). Do NOT default to \"That's really meaningful.\"\n5. STOP. Wait for navigation. Do NOT mention weekly focus here.",
+    "weekly-focus": "Screen ID: weekly-focus\nAvailable Events: navigate_to_cm_rewards_intro\n\nPurpose: Capture a concise weekly focus and display it in the quote card.\n\nUI: Agent message card remains visible. Show label + quote card after capture_weekly_focus.\n\nOnly ask about weekly focus AFTER arriving on this screen. Connect suggestions to their goals when possible.\n\nExample: \"Now let's pick a focus for this week. Something like cutting back on weeknight drinks or being more mindful before reaching for a drink. What feels right for you?\"\n\nIf user says \"okay\" or \"thanks\" without giving a focus, gently prompt: \"What comes to mind as something you'd like to work on this week?\"\n\nAfter user gives a clear focus:\n1. Call capture_weekly_focus IMMEDIATELY: {\"focus\": \"[short focus phrase]\", \"relatedGoal\": \"[matching goal or omit]\"}.\n2. Keep focus in the member's own words as much as possible (light cleanup only, no heavy paraphrasing).\n3. Brief acknowledgment: \"Great focus for the week.\"\n4. Call record_input IMMEDIATELY with ALL required parameters: {\"title\": \"Weekly Focus\", \"summary\": \"[one-line summary]\", \"storeKey\": \"weeklyIntention\", \"description\": \"[brief context about their focus]\", \"nextEventId\": \"navigate_to_cm_rewards_intro\"}.\n5. STOP. Both calls are mandatory — record_input triggers navigation. Do NOT speak about rewards here.\n\nCRITICAL: Do NOT call navigate_to_checkin_commitment from this screen.",
+    "pq-plan-review": "Screen ID: pq-plan-review\nAvailable Events: navigate_to_completion\n\nPurpose: Final quick recap.\n\nBehavior:\n1. Say: \"We've put together a plan for you — take a look.\"\n2. Pause 2-3 seconds for user to review the summary cards.\n3. Say: \"Your focus this week is [weeklyIntention], with [commitment] check-ins to keep you on track. Ready to get started?\"\n4. After confirmation, say: \"Let's make a start.\"\n5. Call: trigger_event with arguments {\"eventId\": \"navigate_to_completion\"}.",
+    "pq-voice-ready": "Screen ID: pq-voice-ready\nAvailable Events: navigate_to_program_summary\n\nPurpose: Share a clear AI disclaimer and privacy commitments before starting voice intake.\n\nUI Display:\n- Header: \"AI disclaimer\"\n- Disclaimer paragraph about AI limitations and sensitive topics\n- \"Our commitment to you\" checklist with privacy assurances\n- Crisis support callout with 988 guidance\n\nBehavior:\n- This is still a CTA-only screen (no voice interaction)\n- When user taps \"Continue\", the button automatically enables voice and navigates to pq-program-summary\n\nNo voice interaction needed on this screen.",
+    "cm-rewards-intro": "Screen ID: cm-rewards-intro\nAvailable Events: navigate_to_checkin_commitment\n\nPurpose: Introduce check-ins in plain language, then move to check-in selection.\n\nBehavior:\n1. Say: \"One thing that'll help you stay on track is a feature we call check-ins. Each time you open the app, you'll see a quick question: did you have a drink yesterday? If yes, you log how many. If no, we celebrate that. It takes about 5 seconds.\"\n2. Do NOT say \"gift cards\" — just say \"rewards\".\n3. Call: trigger_event with arguments {\"eventId\": \"navigate_to_checkin_commitment\"}.\n4. STOP SPEAKING. Do NOT ask the tracking-frequency question here.\n\nCRITICAL: The tracking-frequency question belongs on the NEXT screen (checkin-commitment).",
+    "checkin-commitment": "Screen ID: checkin-commitment\nAvailable Events: select_daily_commitment, select_few_times_commitment, select_once_commitment, navigate_to_notification_setup\n\n**CRITICAL: This screen requires TWO function calls - selection AND navigation. Both are MANDATORY.**\n\nBehavior:\n1. ON SCREEN LOAD, ask: \"How often do you want to aim to track this week — every day, or a few times?\"\n2. Wait for their choice, then IMMEDIATELY call the matching selection event:\n   - \"every day\"/\"daily\" → trigger_event {\"eventId\": \"select_daily_commitment\"}\n   - \"a few times a week\"/\"few times\" → trigger_event {\"eventId\": \"select_few_times_commitment\"}\n   - \"when I remember\"/\"once\" → trigger_event {\"eventId\": \"select_once_commitment\"}\n3. This first selection call updates the selected commitment option in the UI on the current screen.\n4. Then call trigger_event with arguments {\"eventId\": \"navigate_to_notification_setup\"} and STOP speaking.\n5. Do NOT ask the reminder-time question on this screen.\n\nNote: The selection event saves both checkinCommitment and checkinFrequencyDays automatically.\n\nWARNING: Ask reminder time only after pq-notification-setup is active. Never combine navigation and next-screen question in one turn.",
+    "pq-program-summary": "Screen ID: pq-program-summary\nAvailable Events: next_step_event\n\nPurpose: Transition from quiz into voice intake. Explain features and privacy before asking if they're ready.\n\nCRITICAL:\n- ElevenLabs first message is already played automatically when the session connects.\n- Do NOT repeat greetings or re-introduce yourself.\n- Ask \"Ready to get started?\" exactly once.\n\nBehavior:\n1. Wait for the user's response to the automatic welcome.\n2. Give a brief personalized overview of Pelago features — 1-2 sentences connecting their goal to tools like check-ins, exercises, lessons. Rephrase {{goal_alcohol}} naturally (e.g. \"drink_less\" → \"cutting back on drinking\", \"learn_explore\" → \"exploring what works for you\"). NEVER read the raw quiz option text.\n3. End the intro with the privacy disclaimer: \"Just so you know, everything we talk about is completely private and won't be shared with your employer.\"\n4. Then ask: \"I'd love to ask you a few quick questions so we can build your plan together. Ready to get started?\"\n5. WAIT for their reply. Do not add another question or filler before they answer.\n6. After any affirmative response, immediately call: trigger_event with arguments {\"eventId\": \"next_step_event\"}.\n7. Do NOT call record_input on this screen.\n\nIMPORTANT: Steps 2-4 happen in one turn BEFORE asking if ready. Step 6 only after they confirm.",
+    "pq-start-programme": "Screen ID: pq-start-programme\nAvailable Events: complete_intake_flow\n\nPurpose: Completion\n\nScript:\n\"All set! Your program is ready. I'm here whenever you need support. Take care!\"\n\nBehavior:\n1. Say the closing message\n2. Call: trigger_event with arguments {\"eventId\": \"complete_intake_flow\"}\n3. Call: end_call with arguments {\"reason\": \"journey completed\"}",
+    "pq-notification-setup": "Screen ID: pq-notification-setup\nAvailable Events: permissions_screen_event, navigate_to_plan_review\n\nPurpose: Save reminder time, confirm it back, and enable notifications.\n\nBehavior:\n1. Sell value first: \"Reminders are one of the strongest predictors of consistent check-ins.\"\n2. Then ask: \"What time works best for a daily nudge?\"\n3. After user gives a time, call: set_reminder_time with arguments {\"time\": \"[time exactly as user said it]\"}.\n4. Confirm the exact time back: \"Got it, I've set your reminder for [time].\"\n5. Call: trigger_event with arguments {\"eventId\": \"permissions_screen_event\"}.\n6. Say: \"Tap Allow to turn on notifications.\" If they say no prompt appeared, reassure them and continue.\n7. Wait for a response to the OS permission prompt (allow or deny), or user confirmation that no prompt appeared.\n8. Then call trigger_event with arguments {\"eventId\": \"navigate_to_plan_review\"}.\n\nCRITICAL: Do NOT navigate to pq-plan-review until there is a response/confirmation after the permission step."
+  }
 }
