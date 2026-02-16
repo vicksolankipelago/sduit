@@ -947,7 +947,7 @@
               },
               "events": [
                 {
-                  "id": "navigate_to_completion",
+                  "id": "navigate_to_voice_ready",
                   "type": "onSelected",
                   "action": [
                     {
@@ -2005,7 +2005,21 @@
               "deeplink": "checkin-intro"
             }
           ],
-          "conditions": []
+          "conditions": [
+            {
+              "rules": {
+                "==": [
+                  {
+                    "var": "currentScreen"
+                  },
+                  "cm-rewards-intro"
+                ]
+              },
+              "state": {
+                "currentScreen": "{$moduleData.current_screen}"
+              }
+            }
+          ]
         }
       ],
       "sections": [
@@ -2187,7 +2201,46 @@
               "deeplink": "pq-notification-setup"
             }
           ],
-          "conditions": []
+          "conditions": [
+            {
+              "rules": {
+                "and": [
+                  {
+                    "==": [
+                      {
+                        "var": "currentScreen"
+                      },
+                      "checkin-intro"
+                    ]
+                  },
+                  {
+                    "and": [
+                      {
+                        "!=": [
+                          {
+                            "var": "selectedCommitment"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "!=": [
+                          {
+                            "var": "selectedCommitment"
+                          },
+                          []
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              "state": {
+                "currentScreen": "{$moduleData.current_screen}",
+                "selectedCommitment": "{$screenData.selectedCommitment}"
+              }
+            }
+          ]
         }
       ],
       "sections": [
@@ -2299,12 +2352,26 @@
               "serviceName": "pushNotificationService",
               "functionName": "requestPermissions",
               "responseMapping": {
-                "scope": "screen",
+                "scope": "module",
                 "stateKey": "notificationPermissions"
               }
             }
           ],
-          "conditions": []
+          "conditions": [
+            {
+              "rules": {
+                "==": [
+                  {
+                    "var": "currentScreen"
+                  },
+                  "pq-notification-setup"
+                ]
+              },
+              "state": {
+                "currentScreen": "{$moduleData.current_screen}"
+              }
+            }
+          ]
         },
         {
           "id": "navigate_to_plan_review",
@@ -2325,15 +2392,28 @@
           "conditions": [
             {
               "rules": {
-                "!=": [
+                "and": [
                   {
-                    "var": "permissionStatus"
+                    "==": [
+                      {
+                        "var": "currentScreen"
+                      },
+                      "pq-notification-setup"
+                    ]
                   },
-                  null
+                  {
+                    "!=": [
+                      {
+                        "var": "permissionStatus"
+                      },
+                      null
+                    ]
+                  }
                 ]
               },
               "state": {
-                "permissionStatus": "{$screenData.notificationPermissions}"
+                "currentScreen": "{$moduleData.current_screen}",
+                "permissionStatus": "{$moduleData.notificationPermissions}"
               }
             }
           ]
@@ -2397,14 +2477,27 @@
           "conditions": [
             {
               "rules": {
-                "==": [
+                "and": [
                   {
-                    "var": "planReviewApproval"
+                    "==": [
+                      {
+                        "var": "currentScreen"
+                      },
+                      "pq-plan-review"
+                    ]
                   },
-                  "approved"
+                  {
+                    "==": [
+                      {
+                        "var": "planReviewApproval"
+                      },
+                      "approved"
+                    ]
+                  }
                 ]
               },
               "state": {
+                "currentScreen": "{$moduleData.current_screen}",
                 "planReviewApproval": "{$moduleData.planReviewApproval}"
               }
             }
