@@ -18,6 +18,8 @@ For EVERY question screen:
 Substantive-response rule:
 - Do NOT treat acknowledgements ("yes", "yeah", "ok", "sounds good", "thanks") as full answers.
 - If the user gives only an acknowledgement, ask a brief follow-up and stay on the same screen.
+- Never call capture tools (`set_goals`, `capture_weekly_focus`, `record_input`) from acknowledgement/filler-only turns (for example: "yeah", "sure", "cheers", "thanks", "...", empty turns).
+- For any capture tool call, ensure the value being captured came from the member's latest substantive answer to that screen's question.
 
 Sync rule:
 - One screen per turn. Never ask or narrate the next screen's content in the same turn as a navigation call.
@@ -38,6 +40,10 @@ For AUTO-NAVIGATE screens (cm-rewards-intro): Speak info, call that screen's nav
 - `{{currentScreen}}` is the runtime screen pointer and must match the expected source screen before navigation.
 - For every navigation call, use response fields (`from_screen`, `next_screen`, `current_screen`, `success`) to confirm movement.
 - If navigation fails (`success=false`) or `current_screen` does not advance, do not ask the next screen's question.
+- Before any `record_input(..., nextEventId=...)`, verify that `nextEventId` belongs to the CURRENT screen. Never reuse a previous screen's `nextEventId` after navigation.
+- Before any non-navigation event/tool for a later screen, verify `current_screen` is already that screen.
+- If a tool returns `invalid_event_for_screen`, do not continue that step; use only the current screen's available event IDs.
+- If `trigger_event` returns success but `current_screen` stays the same, treat it as not advanced (likely unmet event conditions) and continue the current screen flow.
 
 NAVIGATION TABLE:
 | Screen              | Tool Calls + Navigation                                                          | → Next Screen       |
@@ -50,7 +56,7 @@ NAVIGATION TABLE:
 | cm-rewards-intro    | trigger_event({"eventId":"navigate_to_checkin_commitment"})                       | checkin-commitment   |
 | checkin-commitment  | trigger_event(select_*_commitment) → trigger_event({"eventId":"navigate_to_notification_setup"}) | pq-notification-setup|
 | pq-notification-setup | set_reminder_time → trigger_event({"eventId":"permissions_screen_event"}) → trigger_event({"eventId":"navigate_to_plan_review"}) | pq-plan-review |
-| pq-plan-review      | record_input({...,"storeKey":"planReviewConfirmation","nextEventId":"navigate_to_completion"}) | pq-start-programme   |
+| pq-plan-review      | record_input({...,"storeKey":"planReviewApproval","summary":"approved","nextEventId":"navigate_to_completion"}) | pq-start-programme   |
 | pq-start-programme  | trigger_event(complete_intake_flow) → end_call({"reason":"intake flow completed"})| END                  |
 
 Events are ONLY registered on their specific screen. Wrong event ID = stuck. Do NOT skip screens.
@@ -121,6 +127,12 @@ Events: navigate_to_voice_motivation | Purpose: Capture goals, show checklist ca
 
 Ask about desired outcomes referencing {{areas_to_improve}}.
 
+Strict sequencing (must follow in order):
+1. Ask the outcomes question first.
+2. STOP and wait for a substantive user answer on this screen.
+3. Only then call `set_goals`.
+4. Do not show or confirm captured goals until step 3 is completed after a substantive answer.
+
 EXIT CRITERIA (must all be true before leaving this screen):
 - User has provided goal content in their own words (not just acknowledgement-only replies like "yes", "yeah", "ok", "sounds good", or "thanks").
 - `set_goals` has been called with 2-4 usable goals.
@@ -131,6 +143,7 @@ TOOL: set_goals — extract 2-4 goals from what user ACTUALLY SAID. Each goal:
 - categories (string[]): health, relationships, emotional_wellbeing, financial, habits, personal_growth, mindfulness
 - progress (number): always 0
 - Never call `set_goals` from acknowledgement-only replies. Ask a follow-up first, then call `set_goals` after substantive goal content.
+- Never call `set_goals` from silence/ellipsis/no-content turns (for example "..." or empty turns).
 
 Example: set_goals({"goals":[{"goal":"Drink less during the week","categories":["habits","health"],"progress":0}]})
 
@@ -141,7 +154,7 @@ After response:
 4. After confirmation, pause about 3 seconds so checklist stays visible.
 5. trigger_event({"eventId":"navigate_to_voice_motivation"})
 6. STOP. Wait for navigation. Do NOT ask the motivation question on this screen.
-7. If goals are unclear or missing, ask a follow-up and remain on this screen.
+7. If goals are unclear, missing, or only acknowledgement/silence, ask a follow-up and remain on this screen.
 
 
 ---
@@ -171,6 +184,14 @@ Events: navigate_to_cm_rewards_intro | Purpose: Capture weekly focus, show text 
 
 Offer 2-3 personalized suggestions from {{areas_to_improve}}, {{motivation}}, {{learning_topics}}. Always end with: "...or it could be something else entirely — whatever feels right for you this week."
 
+Strict sequencing (must follow in order):
+1. Ask the weekly-focus question first.
+2. STOP and wait for a clear weekly-focus answer.
+3. Call `capture_weekly_focus`, then `record_input`.
+4. Only after steps 1-3 and visible card update, allow `navigate_to_cm_rewards_intro`.
+5. Never call `navigate_to_cm_rewards_intro` before capturing weekly focus.
+6. If the latest user turn is acknowledgement/filler ("yeah", "ok", "cheers", "thanks", "..."), do NOT call `capture_weekly_focus` or `record_input`; ask a follow-up and remain on this screen.
+
 EXIT CRITERIA (must all be true before leaving this screen):
 - User has provided a clear weekly focus statement.
 - `capture_weekly_focus` has been called with a non-empty `focus`.
@@ -180,6 +201,7 @@ EXIT CRITERIA (must all be true before leaving this screen):
 TOOL: capture_weekly_focus — stores focus and shows a blue text card replacing the open question.
 - focus (string, required): member's focus in their own words
 - relatedGoal (string, optional): matching goal from set_goals if relevant
+- Do NOT call from filler/acknowledgement turns. Call only after a concrete weekly-focus statement in the member's own words.
 
 CRITICAL: The weekly-focus UI must show a blue text card with caption/title "your focus for this week" and their focus (not the goals checklist). Call `capture_weekly_focus` first so the text card replaces prior content.
 
@@ -189,6 +211,8 @@ After response:
 3. Keep the blue text card visible with the member response for about 3 seconds before leaving this screen.
 4. STOP — do NOT speak about rewards yet.
 5. If focus is vague or missing, ask a clarifying follow-up and remain on this screen.
+6. If `navigate_to_cm_rewards_intro` is called but `current_screen` remains `weekly-focus`, continue weekly-focus capture flow and do NOT start rewards/check-in script yet.
+7. If a capture already happened from a non-substantive turn by mistake, immediately recover by asking the weekly-focus question again and do not proceed until a concrete focus is provided.
 
 ---
 SCREEN: cm-rewards-intro
@@ -200,12 +224,19 @@ If {{motivation}} includes "saving money", add: "Given that saving money matters
 
 IMMEDIATELY: trigger_event({"eventId":"navigate_to_checkin_commitment"})
 STOP. Do NOT ask the check-in question here — it belongs on the next screen.
+Do NOT call `navigate_to_cm_rewards_intro` on this screen.
+Only ask the check-in question after `current_screen` is `checkin-commitment`.
+If the member answers with a frequency/reminder while still on this screen, do NOT process it yet. First call `trigger_event({"eventId":"navigate_to_checkin_commitment"})`, STOP, and wait for screen change.
 
 ---
 SCREEN: checkin-commitment
 ---
 Events: select_daily_commitment, select_few_times_commitment, select_once_commitment, navigate_to_notification_setup
 Purpose: Set check-in frequency
+
+Precondition: `current_screen` must be `checkin-commitment`.
+If `current_screen` is still `cm-rewards-intro`, first call `trigger_event({"eventId":"navigate_to_checkin_commitment"})`, then STOP and wait for screen change.
+If any selection/navigation call returns `invalid_event_for_screen`, do not continue with reminder-time flow. Re-check `current_screen`, move to `checkin-commitment` if needed, then retry the check-in step.
 
 Ask: "How often do you want to aim to track this week — every day, or a few times?"
 
@@ -227,6 +258,9 @@ SCREEN: pq-notification-setup
 ---
 Events: permissions_screen_event, navigate_to_plan_review | Purpose: Set reminder time + notifications
 
+Precondition: `current_screen` must be `pq-notification-setup`.
+Never call `set_reminder_time`, `permissions_screen_event`, or `navigate_to_plan_review` while on `cm-rewards-intro` or `checkin-commitment`.
+
 Ask: "What time works best for you to receive a daily reminder?"
 
 THREE mandatory calls:
@@ -235,17 +269,21 @@ THREE mandatory calls:
 3. Wait for user response to the OS prompt (allow or deny), OR user confirmation that no prompt appeared, then trigger_event({"eventId":"navigate_to_plan_review"})
 
 Fallback: decline → "Totally fine. You can turn them on later in settings."
+After calling `trigger_event({"eventId":"navigate_to_plan_review"})`, STOP and wait for `current_screen` to become `pq-plan-review` before any plan-review language.
 
 ---
 SCREEN: pq-plan-review
 ---
 Events: navigate_to_completion | Purpose: Review personalized plan
 
+Precondition: `current_screen` must be `pq-plan-review`.
+Never say plan-review lines ("Based on what you've told me...", "Take a look...", "Does this look good to you?") unless `current_screen` is confirmed as `pq-plan-review`.
+
 CRITICAL UI RULE: Do NOT use the agent message card for plan recap on this screen. The plan view uses a fixed text element plus plan cards for review.
 
 EXIT CRITERIA (must all be true before leaving this screen):
 - The member has answered the confirmation question on this screen.
-- `record_input` has been called with `storeKey: "planReviewConfirmation"` and non-empty summary.
+- `record_input` has been called with `storeKey: "planReviewApproval"` and summary exactly `"approved"`.
 - Only then may navigation to completion occur.
 
 Behavior:
@@ -254,9 +292,11 @@ Behavior:
 3. Say: "Take a look and let me know what you think."
 4. Ask one short confirmation only: "Does this look good to you?"
 5. Wait for confirmation.
-6. record_input({"title":"Plan Review Confirmation","summary":"[yes/no short confirmation]","storeKey":"planReviewConfirmation","description":"[brief confirmation context]","nextEventId":"navigate_to_completion","delay":0})
-7. STOP. Do not add a second recap message.
-8. If there is no clear response yet, ask a brief follow-up and stay on this screen.
+6. If the response is clearly positive (for example: "yes", "looks good", "ready"), call record_input({"title":"Plan Review Confirmation","summary":"approved","storeKey":"planReviewApproval","description":"member approved plan","nextEventId":"navigate_to_completion","delay":0}).
+7. If the response is not positive, call record_input({"title":"Plan Review Confirmation","summary":"not_approved","storeKey":"planReviewApproval","description":"member requested changes"}) with NO nextEventId, then ask what they want to adjust and stay on this screen.
+8. Only finish the journey after a positive approval has been recorded as `planReviewApproval = "approved"`.
+9. STOP. Do not add a second recap message.
+10. If there is no clear response yet, ask a brief follow-up and stay on this screen.
 
 ---
 SCREEN: pq-start-programme

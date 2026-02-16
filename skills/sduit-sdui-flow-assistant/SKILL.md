@@ -45,6 +45,32 @@ For architecture details and rollout strategy, load:
    - `node skills/sduit-sdui-flow-assistant/scripts/flow_snapshot.mjs snapshot <path/to/journey.json> [label]`
 7. Apply changes only after preview/review; if regression appears, restore:
    - `node skills/sduit-sdui-flow-assistant/scripts/flow_snapshot.mjs restore <path/to/journey.json> <snapshot-path>`
+8. If a prompt or prompt-screen regression is fixed, append a memory entry to:
+   - `skills/sduit-sdui-flow-assistant/PROMPT_ISSUES.md`
+
+## Prompt Regression Memory (Required)
+
+Use this section whenever debugging real runs/transcripts.
+
+### When to update memory
+
+Update `PROMPT_ISSUES.md` when ALL are true:
+
+1. A real transcript/log shows a prompt-flow failure (wrong-screen event, stale event reuse, premature/late navigation, screen mismatch, etc.).
+2. A fix is made in prompt text, screen prompts, or runtime guardrails.
+3. The fix changes expected agent behavior.
+
+### Entry template
+
+Add one concise entry per issue:
+
+- Date
+- Symptom (what happened in transcript)
+- Root cause (prompt ambiguity / screen mismatch / stale event / timing)
+- Fix applied (exact files + key rule text)
+- Verification evidence (what log pattern should disappear, what should appear instead)
+
+Keep entries short and practical. Prefer patterns and rules over one-off anecdotes.
 
 ## Guardrails
 
@@ -73,3 +99,7 @@ When asked to add AI editing in the app, follow this baseline:
 5. Offer one-click rollback via existing journey version endpoints.
 
 Use `references/ai-editing-integration.md` for the concrete phased design.
+
+## Additional Resources
+
+- Prompt regression history and reusable fixes: `PROMPT_ISSUES.md`

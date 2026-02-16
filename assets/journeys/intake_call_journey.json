@@ -2397,27 +2397,15 @@
           "conditions": [
             {
               "rules": {
-                "and": [
+                "==": [
                   {
-                    "!=": [
-                      {
-                        "var": "planReviewConfirmation"
-                      },
-                      null
-                    ]
+                    "var": "planReviewApproval"
                   },
-                  {
-                    "!=": [
-                      {
-                        "var": "planReviewConfirmation"
-                      },
-                      ""
-                    ]
-                  }
+                  "approved"
                 ]
               },
               "state": {
-                "planReviewConfirmation": "{$moduleData.planReviewConfirmation}"
+                "planReviewApproval": "{$moduleData.planReviewApproval}"
               }
             }
           ]
@@ -2615,6 +2603,51 @@
                   },
                   "state": {
                     "summary": "{$moduleData.outcomesSummary}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "textCard",
+              "state": {
+                "id": "weekly_focus_plan_card",
+                "title": "Your focus this week",
+                "content": "{$moduleData.weeklyFocus}"
+              },
+              "style": {
+                "textColor": "textGlobalPrimary",
+                "borderColor": "backgroundLightMintGreen",
+                "borderWidth": 0,
+                "captionColor": "textGlobalPrimary",
+                "cornerRadius": 8,
+                "backgroundColor": "backgroundLightMintGreen",
+                "titleTextStyle": "boldBlack",
+                "showIcon": false
+              },
+              "conditions": [
+                {
+                  "rules": {
+                    "and": [
+                      {
+                        "!=": [
+                          {
+                            "var": "focus"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "!=": [
+                          {
+                            "var": "focus"
+                          },
+                          ""
+                        ]
+                      }
+                    ]
+                  },
+                  "state": {
+                    "focus": "{$moduleData.weeklyFocus}"
                   }
                 }
               ]
@@ -2870,7 +2903,7 @@
     "about-you": "Screen ID: about-you\nAvailable Events: navigate_to_outcomes\n\nPurpose: Understand what brings them here. This is a sensitive moment - be gentle and create a safe space.\n\nQuestion (adapt based on {{feelings_alcohol}}):\n- curious: \"So tell me a bit about what's been on your mind around your drinking.\"\n- planning steps: \"It sounds like you've been thinking about making some changes. What's been going on?\"\n- recently cut down: \"That's amazing that you've already started making changes. What prompted that for you?\"\n- not interested: \"No pressure at all. What made you want to check out Pelago?\"\n\nAfter response:\n1. Call record_input IMMEDIATELY with ALL required parameters: {\"title\": \"About You\", \"summary\": \"[one-line summary]\", \"storeKey\": \"aboutYouSummary\", \"description\": \"[brief context about their response]\", \"nextEventId\": \"navigate_to_outcomes\", \"delay\": 3}\n2. The about-you text card should display the captured summary with a small caption style.\n3. Give one short personalized reflection tied to a concrete detail they shared.\n4. STOP. Wait for navigation. Do NOT ask about outcomes or goals here.",
     "motivation": "Screen ID: motivation\nAvailable Events: navigate_to_weekly_focus\n\nPurpose: Understand what feels most motivating to them right now.\n\nBehavior:\n1. On screen load, ask: \"What about this feels most motivating for you right now?\"\n2. Wait for the user to respond.\n3. Call record_input IMMEDIATELY with ALL required parameters: {\"title\": \"Motivation\", \"summary\": \"[one-line summary]\", \"storeKey\": \"yourWhySummary\", \"description\": \"[brief context about their motivation]\", \"nextEventId\": \"navigate_to_weekly_focus\"}\n4. Give a brief content-specific acknowledgment that mirrors their reason (for example, reference sleep, family, confidence, or health if they said it). Do NOT default to \"That's really meaningful.\"\n5. STOP. Wait for navigation. Do NOT mention weekly focus here.",
     "weekly-focus": "Screen ID: weekly-focus\nAvailable Events: navigate_to_cm_rewards_intro\n\nPurpose: Capture a concise weekly focus and display it in the quote card.\n\nUI: Agent message card remains visible. Show label + quote card after capture_weekly_focus.\n\nOnly ask about weekly focus AFTER arriving on this screen. Connect suggestions to their goals when possible.\n\nExample: \"Now let's pick a focus for this week. Something like cutting back on weeknight drinks or being more mindful before reaching for a drink. What feels right for you?\"\n\nIf user says \"okay\" or \"thanks\" without giving a focus, gently prompt: \"What comes to mind as something you'd like to work on this week?\"\n\nAfter user gives a clear focus:\n1. Call capture_weekly_focus IMMEDIATELY: {\"focus\": \"[short focus phrase]\", \"relatedGoal\": \"[matching goal or omit]\"}.\n2. Keep focus in the member's own words as much as possible (light cleanup only, no heavy paraphrasing).\n3. Brief acknowledgment: \"Great focus for the week.\"\n4. Call record_input IMMEDIATELY with ALL required parameters: {\"title\": \"Weekly Focus\", \"summary\": \"[one-line summary]\", \"storeKey\": \"weeklyIntention\", \"description\": \"[brief context about their focus]\", \"nextEventId\": \"navigate_to_cm_rewards_intro\"}.\n5. STOP. Both calls are mandatory — record_input triggers navigation. Do NOT speak about rewards here.\n\nCRITICAL: Do NOT call navigate_to_checkin_commitment from this screen.",
-    "pq-plan-review": "Screen ID: pq-plan-review\nAvailable Events: navigate_to_completion\n\nPurpose: Final quick recap.\n\nBehavior:\n1. Say: \"We've put together a plan for you — take a look.\"\n2. Pause 2-3 seconds for user to review the summary cards.\n3. Say: \"Your focus this week is [weeklyIntention], with [commitment] check-ins to keep you on track. Ready to get started?\"\n4. After confirmation, say: \"Let's make a start.\"\n5. Call: trigger_event with arguments {\"eventId\": \"navigate_to_completion\"}.",
+    "pq-plan-review": "Screen ID: pq-plan-review\nAvailable Events: navigate_to_completion\n\nPurpose: Final quick recap.\n\nBehavior:\n1. Let the member review the fixed text + plan cards for 2-3 seconds.\n2. Say: \"Based on what you've told me, I've put together a plan for you this week.\"\n3. Say: \"Take a look and let me know what you think.\"\n4. Ask: \"Does this look good to you?\"\n5. If positive, call record_input with arguments {\"title\":\"Plan Review Confirmation\",\"summary\":\"approved\",\"storeKey\":\"planReviewApproval\",\"description\":\"member approved plan\",\"nextEventId\":\"navigate_to_completion\",\"delay\":0}.\n6. If not positive, call record_input with arguments {\"title\":\"Plan Review Confirmation\",\"summary\":\"not_approved\",\"storeKey\":\"planReviewApproval\",\"description\":\"member requested changes\"} and remain on this screen.",
     "pq-voice-ready": "Screen ID: pq-voice-ready\nAvailable Events: navigate_to_program_summary\n\nPurpose: Share a clear AI disclaimer and privacy commitments before starting voice intake.\n\nUI Display:\n- Header: \"AI disclaimer\"\n- Disclaimer paragraph about AI limitations and sensitive topics\n- \"Our commitment to you\" checklist with privacy assurances\n- Crisis support callout with 988 guidance\n\nBehavior:\n- This is still a CTA-only screen (no voice interaction)\n- When user taps \"Continue\", the button automatically enables voice and navigates to pq-program-summary\n\nNo voice interaction needed on this screen.",
     "cm-rewards-intro": "Screen ID: cm-rewards-intro\nAvailable Events: navigate_to_checkin_commitment\n\nPurpose: Introduce check-ins in plain language, then move to check-in selection.\n\nBehavior:\n1. Say: \"One thing that'll help you stay on track is a feature we call check-ins. Each time you open the app, you'll see a quick question: did you have a drink yesterday? If yes, you log how many. If no, we celebrate that. It takes about 5 seconds.\"\n2. Do NOT say \"gift cards\" — just say \"rewards\".\n3. Call: trigger_event with arguments {\"eventId\": \"navigate_to_checkin_commitment\"}.\n4. STOP SPEAKING. Do NOT ask the tracking-frequency question here.\n\nCRITICAL: The tracking-frequency question belongs on the NEXT screen (checkin-commitment).",
     "checkin-commitment": "Screen ID: checkin-commitment\nAvailable Events: select_daily_commitment, select_few_times_commitment, select_once_commitment, navigate_to_notification_setup\n\n**CRITICAL: This screen requires TWO function calls - selection AND navigation. Both are MANDATORY.**\n\nBehavior:\n1. ON SCREEN LOAD, ask: \"How often do you want to aim to track this week — every day, or a few times?\"\n2. Wait for their choice, then IMMEDIATELY call the matching selection event:\n   - \"every day\"/\"daily\" → trigger_event {\"eventId\": \"select_daily_commitment\"}\n   - \"a few times a week\"/\"few times\" → trigger_event {\"eventId\": \"select_few_times_commitment\"}\n   - \"when I remember\"/\"once\" → trigger_event {\"eventId\": \"select_once_commitment\"}\n3. This first selection call updates the selected commitment option in the UI on the current screen.\n4. Then call trigger_event with arguments {\"eventId\": \"navigate_to_notification_setup\"} and STOP speaking.\n5. Do NOT ask the reminder-time question on this screen.\n\nNote: The selection event saves both checkinCommitment and checkinFrequencyDays automatically.\n\nWARNING: Ask reminder time only after pq-notification-setup is active. Never combine navigation and next-screen question in one turn.",

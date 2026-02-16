@@ -950,8 +950,8 @@ function VoiceAgentContent() {
     targetScreenId?: string;
     source?: 'record_input' | 'navigate_to';
   } | null>(null);
-  // Queued when the model emits a valid "next-screen" event before the pending
-  // navigation has finished. Replayed after the target screen becomes active.
+  // Legacy queue for post-navigation events. Kept only for compatibility;
+  // runtime now rejects cross-screen chaining instead of replaying queued events.
   const queuedPostNavigationEventRef = useRef<{
     eventId: string;
     targetScreenId: string;
@@ -1618,49 +1618,12 @@ function VoiceAgentContent() {
         }
 
         const queuedPostNavigationEvent = queuedPostNavigationEventRef.current;
-        if (queuedPostNavigationEvent && Date.now() > queuedPostNavigationEvent.expiresAtMs) {
-          addLog(
-            'warning',
-            `⚠️ Dropping expired queued event "${queuedPostNavigationEvent.eventId}" for "${queuedPostNavigationEvent.targetScreenId}".`
-          );
-          queuedPostNavigationEventRef.current = null;
-        } else if (
-          queuedPostNavigationEvent &&
-          toScreen &&
-          queuedPostNavigationEvent.targetScreenId === toScreen
-        ) {
-          const { eventId, delaySeconds, sourceEventId, targetScreenId } = queuedPostNavigationEvent;
-          const replayDelayMs = delaySeconds > 0 ? delaySeconds * 1000 : 50;
+        if (queuedPostNavigationEvent) {
           addLog(
             'info',
-            `↪️ Replaying queued event "${eventId}" now that "${targetScreenId}" is active${delaySeconds > 0 ? ` (delay: ${delaySeconds}s)` : ''}.`
+            `↪️ Clearing queued event "${queuedPostNavigationEvent.eventId}" after navigation completion.`
           );
-          setTimeout(() => {
-            const queued = queuedPostNavigationEventRef.current;
-            if (!queued) {
-              return;
-            }
-            if (queued.eventId !== eventId || queued.targetScreenId !== targetScreenId) {
-              return;
-            }
-            if (Date.now() > queued.expiresAtMs) {
-              addLog(
-                'warning',
-                `⚠️ Skipping expired queued event "${queued.eventId}" for "${queued.targetScreenId}".`
-              );
-              queuedPostNavigationEventRef.current = null;
-              return;
-            }
-            queuedPostNavigationEventRef.current = null;
-            window.dispatchEvent(new CustomEvent('triggerEvent', {
-              detail: {
-                eventId,
-                timestamp: Date.now(),
-                replayedAfterNavigation: true,
-                sourceEventId,
-              }
-            }));
-          }, replayDelayMs);
+          queuedPostNavigationEventRef.current = null;
         }
       } else {
         addLog('error', `❌ Navigation failed: screen "${toScreen}" not found`, {
@@ -3561,38 +3524,6 @@ Important guidelines:
       ) {
         const pendingSource = pendingNavigation.source ?? 'record_input';
         const pendingTargetScreenId = pendingNavigation.targetScreenId;
-        if (pendingTargetScreenId && eventId !== pendingNavigation.eventId) {
-          const pendingTargetScreen = activeScreens.find((screen: any) => screen.id === pendingTargetScreenId);
-          if (pendingTargetScreen && hasEventOnScreen(pendingTargetScreen, eventId)) {
-            const nowMs = Date.now();
-            const queueLifetimeMs = Math.max(5000, resolvedDelay * 1000 + 5000);
-            queuedPostNavigationEventRef.current = {
-              eventId,
-              targetScreenId: pendingTargetScreenId,
-              delaySeconds: resolvedDelay,
-              queuedAtMs: nowMs,
-              expiresAtMs: Math.max(
-                pendingNavigation.expiresAtMs + queueLifetimeMs,
-                nowMs + queueLifetimeMs
-              ),
-              sourceEventId: pendingNavigation.eventId,
-            };
-            addLog(
-              'info',
-              `⏭️ Queued "${eventId}" until "${pendingTargetScreenId}" is active (after "${pendingNavigation.eventId}").`
-            );
-            return buildNavigationResult({
-              success: true,
-              eventId,
-              fromScreen: activeScreenId,
-              nextScreen: pendingTargetScreenId,
-              currentScreen: activeScreenId,
-              delaySeconds: resolvedDelay,
-              reason: 'queued_until_pending_navigation_completes',
-              message: `Queued "${eventId}" to run after "${pendingNavigation.eventId}" reaches "${pendingTargetScreenId}". Wait for the screen change before continuing.`,
-            });
-          }
-        }
         if (eventId === pendingNavigation.eventId) {
           addLog('warning', `⚠️ Navigation "${eventId}" ignored: already scheduled by ${pendingSource}.`);
           return buildNavigationResult({
@@ -3615,8 +3546,9 @@ Important guidelines:
           eventId,
           fromScreen: activeScreenId,
           currentScreen: activeScreenId,
-          reason: 'different_navigation_already_scheduled',
-          message: `Navigation "${pendingNavigation.eventId}" is already scheduled by ${pendingSource}. Do NOT trigger "${eventId}" now; wait for navigation to complete.`,
+          nextScreen: pendingTargetScreenId,
+          reason: 'wait_for_pending_navigation',
+          message: `Navigation "${pendingNavigation.eventId}" is already scheduled by ${pendingSource}. Do NOT trigger "${eventId}" now; wait for the screen transition and then continue from the new current_screen.`,
         });
       }
 
@@ -4908,9 +4840,25 @@ Important guidelines:
       });
     };
 
+    const handleCheckinCommitmentTap = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const text = customEvent.detail?.text;
+      if (typeof text !== 'string' || !text.trim()) return;
+
+      sendUiResponseToSession(text, {
+        source: customEvent.detail?.source || 'checkinCommitment',
+        metadata: {
+          ...(customEvent.detail?.metadata || {}),
+          forwardedFrom: 'uiCheckinCommitmentTap',
+        },
+      });
+    };
+
     window.addEventListener('uiUserResponse', handleUiUserResponse as EventListener);
+    window.addEventListener('uiCheckinCommitmentTap', handleCheckinCommitmentTap as EventListener);
     return () => {
       window.removeEventListener('uiUserResponse', handleUiUserResponse as EventListener);
+      window.removeEventListener('uiCheckinCommitmentTap', handleCheckinCommitmentTap as EventListener);
     };
   }, [sendUiResponseToSession]);
 

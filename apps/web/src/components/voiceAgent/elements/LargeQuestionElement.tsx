@@ -92,6 +92,22 @@ export const LargeQuestionElement: React.FC<LargeQuestionElementProps> = ({
       },
     }));
   };
+
+  const isCheckinCommitmentQuestion =
+    data.id === 'checkin_commitment_question' || (data as any).category === 'check-in';
+
+  const getCheckinTapUtterance = (optionId: string, fallbackTitle?: string) => {
+    switch (optionId) {
+      case 'daily':
+        return 'Every day works for me.';
+      case 'few_times':
+        return 'A few times a week works for me.';
+      case 'once':
+        return 'When I remember works for me.';
+      default:
+        return fallbackTitle || optionId;
+    }
+  };
   
   // Single select state
   const [selectedId, setSelectedId] = useState(data.selectedOptionId);
@@ -147,7 +163,27 @@ export const LargeQuestionElement: React.FC<LargeQuestionElementProps> = ({
         question: questionTitle || undefined,
         optionId,
         optionTitle: selectedOption?.title || optionId,
+        category: (data as any).category || undefined,
+        interactionType: 'tap',
       });
+
+      // Dedicated event for check-in commitment taps so VoiceAgent can
+      // always forward the member's selected option as a user message.
+      if (isCheckinCommitmentQuestion && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('uiCheckinCommitmentTap', {
+          detail: {
+            text: getCheckinTapUtterance(optionId, selectedOption?.title),
+            source: 'checkinCommitment',
+            metadata: {
+              elementId: data.id,
+              optionId,
+              optionTitle: selectedOption?.title || optionId,
+              category: (data as any).category || 'check-in',
+              interactionType: 'tap',
+            },
+          },
+        }));
+      }
     }
     
     const event = events?.find(e => e.type === 'onSelected');
