@@ -38,7 +38,7 @@
 }
 
 .text-card-element:not(.text-card-element-with-icon) .text-card-content-wrapper {
-  gap: 8px;
+  gap: 4px;
 }
 
 .text-card-caption {

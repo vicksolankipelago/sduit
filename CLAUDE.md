@@ -52,6 +52,11 @@ conditions, or prompt–screen references. Key invariants:
 - Only use element types defined in the protocol
 - Event `conditions` must always be present (`[]` if empty)
 
+## Architecture Rules
+
+- `apps/web/src/pages/VoiceAgent.tsx` must remain flow-agnostic. Do not add flow-specific implementation logic, hardcoded screen IDs, or journey-specific branching in this file.
+- Flow-specific behavior belongs in journey JSON (`assets/journeys/*`), prompt files (`assets/prompts/*`), or reusable generic runtime helpers that work across any journey configuration.
+
 ## Skills
 
 - `/commit` - Create a JIRA-formatted git commit

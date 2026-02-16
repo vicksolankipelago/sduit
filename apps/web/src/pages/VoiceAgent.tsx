@@ -907,8 +907,6 @@ function VoiceAgentContent() {
     moduleStateRef.current = moduleState || {};
   }, [moduleState]);
 
-  // Ref to store the voice intake navigator journey (for quiz-to-voice transitions)
-  const intakeNavigatorJourneyRef = useRef<Journey | null>(null);
   
   // Notification permission popup state
   const [showNotificationPopup, setShowNotificationPopup] = useState(false);
@@ -986,7 +984,8 @@ function VoiceAgentContent() {
   const assistantResponseBuffer = useRef<string>('');
   const assistantResponseStartTime = useRef<Date | null>(null);
   const currentMessageIdsRef = useRef<{ user?: string; assistant?: string }>({});
-  // Startup guard: require at least one completed user utterance before leaving pq-program-summary.
+  // Startup guard: require at least one completed user utterance before
+  // allowing record_input-driven progression on the active screen.
   const userUtteranceCountRef = useRef<number>(0);
   const userUtterancesByScreenRef = useRef<Record<string, number>>({});
   // Tracks screens where the user has started speaking (first transcript chunk).
@@ -1214,16 +1213,6 @@ function VoiceAgentContent() {
         console.log('📋 Available journeys on mount:', journeyList.map(j => `${j.name} (${j.id})`));
         setAvailableJourneys(journeyList);
         
-        // Preload the Intake Navigator journey for quiz-to-voice transitions
-        const intakeNavigator = journeyList.find(j => j.name === 'Intake Flow - Navigator');
-        if (intakeNavigator) {
-          const intakeJourney = await loadJourneyForRuntime(intakeNavigator.id);
-          if (intakeJourney) {
-            intakeNavigatorJourneyRef.current = intakeJourney;
-            console.log('📋 Preloaded Intake Navigator for voice transitions:', intakeJourney.name);
-          }
-        }
-
         // Check URL params for journey ID (for Prolific/external links)
         // Supports: ?journey=ID or ?flow=ID
         const urlParams = new URLSearchParams(window.location.search);
@@ -3448,6 +3437,8 @@ Important guidelines:
     return true;
   }, [getActiveScreenContext]);
 
+  // Architecture rule reminder (see CLAUDE.md):
+  // keep this runtime/tooling layer flow-agnostic; put flow-specific behavior in journey configs/prompts.
   // Define ElevenLabs client tools at component level for SDK initialization
   // These tools call through refs to avoid stale closures and circular dependencies
   // The actual implementations are updated via refs when they're available
@@ -3907,30 +3898,23 @@ Important guidelines:
       const { title, summary = '', description = '', storeKey, nextEventId, delay = 0 } = params;
       const activeScreenId = currentScreenIdRef.current;
 
-      // Guard: if the user has not spoken on this screen yet AND the agent
-      // hasn't provided a meaningful summary, suppress navigation to prevent
-      // premature screen jumps. However, if record_input includes a non-empty
-      // summary, the agent clearly heard the user speak (the LLM processed
-      // their audio) even if the transcript event hasn't arrived on the web
-      // client yet — so allow navigation in that case.
+      // Guard: only allow record_input once we have local evidence that the
+      // user actually spoke on this screen.
       const userHasSpokenLocally = activeScreenId
         ? userHasSpokenOnScreenRef.current.has(activeScreenId)
         : userUtteranceCountRef.current > 0;
-      const agentHeardUser = summary.trim().length > 0;
-      const userHasSpoken = userHasSpokenLocally || agentHeardUser;
-      const effectiveNextEventId = userHasSpoken ? nextEventId : undefined;
-      if (!userHasSpoken && nextEventId) {
-        addLog('warning', `⚠️ record_input: suppressing nextEventId "${nextEventId}" on "${activeScreenId ?? 'unknown'}" (user has not spoken on this screen yet and no summary provided). Data will still be saved.`, {
+      const canPersistCapture = userHasSpokenLocally;
+      const effectiveNextEventId = canPersistCapture ? nextEventId : undefined;
+      if (!canPersistCapture && nextEventId) {
+        addLog('warning', `⚠️ record_input: suppressing nextEventId "${nextEventId}" on "${activeScreenId ?? 'unknown'}" (user has not spoken on this screen yet).`, {
           title, storeKey, nextEventId, currentScreen: activeScreenId, startedAtMs,
         });
       }
-      if (!userHasSpokenLocally && agentHeardUser && nextEventId) {
-        addLog('info', `✅ record_input: allowing navigation via "${nextEventId}" — agent provided summary "${summary.slice(0, 60)}..." implying user spoke.`, {
-          currentScreen: activeScreenId,
+      if (!canPersistCapture) {
+        addLog('warning', `⚠️ record_input: ignored for "${storeKey || title}" until a member answer is received on "${activeScreenId ?? 'unknown'}".`, {
+          userHasSpokenLocally,
         });
-        if (activeScreenId) {
-          userHasSpokenOnScreenRef.current.add(activeScreenId);
-        }
+        return `Skipped record_input for "${title}" because no user response was detected on this screen yet. Ask a follow-up and try again after the member answers.`;
       }
 
       const baseUpdates = deriveRecordInputModuleUpdates({ title, summary, storeKey });
@@ -5027,11 +5011,6 @@ Important guidelines:
         // Update state for UI
         setCurrentJourney(journey);
         
-        // Set initial module state for testing
-        updateModuleState?.({
-          checkInStreak: '7', // Simulate 7-day streak
-        });
-        
         // Check if this is a voice-enabled journey or non-voice
         const isVoiceJourney = journey.voiceEnabled !== false;
         console.log('🚀 handleStartJourney voice check:', {
@@ -5112,7 +5091,7 @@ Important guidelines:
             source: 'notification_permission',
             allowed: true,
           });
-          const advanced = triggerNavigationFromCurrentScreen(['navigate_to_plan_review']);
+          const advanced = triggerNavigationFromCurrentScreen();
           if (advanced) {
             addLog('info', '🔀 Auto-advanced after notification approval using current screen navigation event');
           }
@@ -5126,7 +5105,7 @@ Important guidelines:
             source: 'notification_permission',
             allowed: false,
           });
-          const advanced = triggerNavigationFromCurrentScreen(['navigate_to_plan_review']);
+          const advanced = triggerNavigationFromCurrentScreen();
           if (advanced) {
             addLog('info', '🔀 Auto-advanced after notification denial using current screen navigation event');
           }
