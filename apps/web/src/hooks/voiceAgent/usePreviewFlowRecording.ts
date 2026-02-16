@@ -4,7 +4,7 @@ type PreviewRecordingStatus = 'idle' | 'starting' | 'recording' | 'stopping' | '
 
 interface StartPreviewRecordingOptions {
   previewElement: HTMLElement;
-  agentAudioStream: MediaStream;
+  agentAudioStream?: MediaStream | null;
   micStream?: MediaStream | null;
 }
 
@@ -203,10 +203,6 @@ export function usePreviewFlowRecording(): UsePreviewFlowRecordingResult {
     if (!previewElement) {
       throw new Error('Preview element is not available.');
     }
-    if (!agentAudioStream || agentAudioStream.getAudioTracks().length === 0) {
-      throw new Error('Agent audio stream is not available yet.');
-    }
-
     clearRecording();
     setState((prev) => ({ ...prev, status: 'starting', error: null, elapsedMs: 0 }));
 
@@ -217,7 +213,9 @@ export function usePreviewFlowRecording(): UsePreviewFlowRecordingResult {
           width: { ideal: 1920 },
           height: { ideal: 1080 },
         },
-        audio: false,
+        // In browsers where SDK audio is not exposed as srcObject (e.g. ElevenLabs),
+        // tab-share audio can provide the agent track for recording.
+        audio: true,
       });
       displayStreamRef.current = displayStream;
 
@@ -312,8 +310,24 @@ export function usePreviewFlowRecording(): UsePreviewFlowRecordingResult {
       audioContextRef.current = context;
       const audioDestination = context.createMediaStreamDestination();
 
-      const remoteSource = context.createMediaStreamSource(agentAudioStream);
-      remoteSource.connect(audioDestination);
+      let hasAgentAudio = false;
+      const explicitAgentAudioStream =
+        agentAudioStream && agentAudioStream.getAudioTracks().length > 0
+          ? agentAudioStream
+          : null;
+      const tabAudioStream = displayStream.getAudioTracks().length > 0
+        ? new MediaStream(displayStream.getAudioTracks())
+        : null;
+
+      if (explicitAgentAudioStream) {
+        const remoteSource = context.createMediaStreamSource(explicitAgentAudioStream);
+        remoteSource.connect(audioDestination);
+        hasAgentAudio = true;
+      } else if (tabAudioStream) {
+        const tabSource = context.createMediaStreamSource(tabAudioStream);
+        tabSource.connect(audioDestination);
+        hasAgentAudio = true;
+      }
 
       let mixedMicStream = micStream ?? null;
       if (!mixedMicStream || mixedMicStream.getAudioTracks().length === 0) {
@@ -329,6 +343,10 @@ export function usePreviewFlowRecording(): UsePreviewFlowRecordingResult {
       if (mixedMicStream.getAudioTracks().length > 0) {
         const micSource = context.createMediaStreamSource(mixedMicStream);
         micSource.connect(audioDestination);
+      }
+
+      if (!hasAgentAudio) {
+        throw new Error('No agent audio source detected. Share this browser tab with audio enabled, then try again.');
       }
 
       const finalTracks: MediaStreamTrack[] = [];

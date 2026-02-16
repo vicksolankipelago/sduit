@@ -2877,17 +2877,11 @@ Important guidelines:
       return;
     }
     const agentAudioStream = getAgentAudioStreamForPreviewRecording();
-    if (!agentAudioStream) {
-      const message = 'Agent audio is not available yet. Start recording after audio playback begins.';
-      addLog('warning', message);
-      setPreviewRecordingNotice({ kind: 'error', message });
-      return;
-    }
 
     try {
       setPreviewRecordingNotice({
         kind: 'info',
-        message: 'Preparing recording. Select this browser tab in the share dialog to capture preview video.',
+        message: 'Preparing recording. Select this browser tab and enable Share tab audio in the share dialog.',
       });
       await startPreviewRecording({
         previewElement,
