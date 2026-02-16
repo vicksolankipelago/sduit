@@ -780,24 +780,15 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
     if (wordIndex === null) return { opacity: 1, filter: 'blur(0px)' };
 
     if (!shouldUseAlignment || !normalizedAlignment) {
-      if (!syncWithSpeech || fallbackElapsedSpeechMs === null) {
-        return { opacity: 1, filter: 'blur(0px)' };
-      }
-
-      const fallbackStartMs = wordIndex * FALLBACK_WORD_STEP_MS;
-      const fallbackProgress = clamp01(
-        (fallbackElapsedSpeechMs - fallbackStartMs) / FALLBACK_WORD_REVEAL_DURATION_MS
-      );
-      const opacity = BASE_WORD_OPACITY + ((1 - BASE_WORD_OPACITY) * fallbackProgress);
-      const blurPx = (1 - fallbackProgress) * 1.2;
-
-      return {
-        opacity,
-        filter: `blur(${blurPx.toFixed(2)}px)`,
-      };
+      // Keep text visible when we do not have trusted alignment data.
+      return { opacity: 1, filter: 'blur(0px)' };
     }
 
-    const activeElapsedSpeechMs = playbackSynchronizedElapsedSpeechMs ?? elapsedSpeechMs ?? 0;
+    // Animate only when playback timing from the SDK is available.
+    if (playbackSynchronizedElapsedSpeechMs === null) {
+      return { opacity: 1, filter: 'blur(0px)' };
+    }
+    const activeElapsedSpeechMs = playbackSynchronizedElapsedSpeechMs;
 
     const alignmentWordCount = normalizedAlignment.words.length;
     if (alignmentWordCount === 0) {
@@ -805,23 +796,8 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
     }
 
     if (wordIndex >= alignmentWordCount) {
-      const lastAlignedWordEndMs = normalizedAlignment.words[alignmentWordCount - 1]?.endMs ?? 0;
-      const extrapolatedWordIndex = wordIndex - alignmentWordCount;
-      const extrapolatedStartMs = lastAlignedWordEndMs + (extrapolatedWordIndex * projectedAlignmentStepMs);
-      const extrapolatedDurationMs = Math.max(
-        MIN_WORD_REVEAL_DURATION_MS,
-        projectedAlignmentStepMs * 0.92
-      );
-      const extrapolatedProgress = clamp01(
-        (activeElapsedSpeechMs - extrapolatedStartMs) / extrapolatedDurationMs
-      );
-      const opacity = BASE_WORD_OPACITY + ((1 - BASE_WORD_OPACITY) * extrapolatedProgress);
-      const blurPx = (1 - extrapolatedProgress) * 1.4;
-
-      return {
-        opacity,
-        filter: `blur(${blurPx.toFixed(2)}px)`,
-      };
+      // If alignment has fewer words than rendered text, avoid synthetic timing.
+      return { opacity: 1, filter: 'blur(0px)' };
     }
 
     const mappedAlignmentWordIndex = wordIndex;
