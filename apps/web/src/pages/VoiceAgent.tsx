@@ -960,10 +960,7 @@ function VoiceAgentContent() {
   const disconnectFromRealtimeRef = useRef<((forceShowFeedback?: boolean) => Promise<void>) | null>(null);
   // Track Prolific outcome for proper redirect (completed vs screened_out)
   const prolificOutcomeRef = useRef<ProlificOutcome>('completed');
-  // Deduplication guard: tracks recent non-navigation event timestamps to prevent LLM loops
-  const recentEventTimestamps = useRef<Map<string, number>>(new Map());
-  // Guardrail: when record_input schedules auto-navigation, block duplicate/conflicting
-  // trigger_event navigation calls until the scheduled navigation has completed.
+  // Tracks delayed navigation scheduled by runtime tools (record_input/navigate_to/capture_weekly_focus).
   const pendingNavigationRef = useRef<{
     eventId: string;
     executeAtMs: number;
@@ -1628,6 +1625,10 @@ function VoiceAgentContent() {
       const customEvent = event as CustomEvent;
       const { success, fromScreen, toScreen, availableScreens } = customEvent.detail;
       if (success) {
+        if (toScreen) {
+          // Keep tool-time screen guards in sync immediately before React state propagation.
+          currentScreenIdRef.current = toScreen;
+        }
         pendingNavigationRef.current = null;
         if (toScreen) {
           clearNotificationPlanReviewFallback();
@@ -3666,10 +3667,6 @@ Important guidelines:
         }
       };
 
-      const hasEventOnScreen = (screen: AgentScreen | undefined, targetEventId: string): boolean => {
-        return getScreenEvents(screen).some((event) => event.id === targetEventId);
-      };
-
       const isNavigationScreenEvent = (event: AgentScreenEvent | undefined): boolean => {
         if (!event) return false;
         if (typeof event.id === 'string' && event.id.startsWith('navigate_')) return true;
@@ -3681,138 +3678,11 @@ Important guidelines:
       };
 
       const activeScreenId = currentScreenIdRef.current || undefined;
-      const { activeScreen, activeScreenEvents } = getActiveScreenContext();
+      const { activeScreenEvents } = getActiveScreenContext();
       const requestedEventConfig = activeScreenEvents.find((event) => event.id === eventId);
       const isNavigationEvent = eventId.startsWith('navigate_') || isNavigationScreenEvent(requestedEventConfig);
       const navigationTarget = getNavigationTargetFromEvent(requestedEventConfig);
       const isSelectionEvent = eventId.startsWith('select_');
-
-      // If a record_input auto-navigation is pending, ignore extra navigation tool calls.
-      const pendingNavigation = pendingNavigationRef.current;
-      if (
-        isNavigationEvent &&
-        pendingNavigation &&
-        Date.now() <= pendingNavigation.expiresAtMs
-      ) {
-        const pendingSource = pendingNavigation.source ?? 'record_input';
-        const pendingTargetScreenId = pendingNavigation.targetScreenId;
-        if (eventId === pendingNavigation.eventId) {
-          addLog('warning', `⚠️ Navigation "${eventId}" ignored: already scheduled by ${pendingSource}.`);
-          return buildNavigationResult({
-            success: true,
-            eventId,
-            fromScreen: activeScreenId,
-            nextScreen: getNavigationTargetFromEvent(requestedEventConfig),
-            currentScreen: activeScreenId,
-            reason: 'already_scheduled_by_record_input',
-            message: `Navigation "${eventId}" is already scheduled by ${pendingSource}. Wait for the screen to change and continue.`,
-          });
-        }
-
-        addLog(
-          'warning',
-          `⚠️ Navigation "${eventId}" ignored: "${pendingNavigation.eventId}" is already scheduled by ${pendingSource}.`
-        );
-        return buildNavigationResult({
-          success: false,
-          eventId,
-          fromScreen: activeScreenId,
-          currentScreen: activeScreenId,
-          nextScreen: pendingTargetScreenId,
-          reason: 'wait_for_pending_navigation',
-          message: `Navigation "${pendingNavigation.eventId}" is already scheduled by ${pendingSource}. Do NOT trigger "${eventId}" now; wait for the screen transition and then continue from the new current_screen.`,
-        });
-      }
-
-      if (activeScreen && !hasEventOnScreen(activeScreen, eventId)) {
-        const availableEventIds = activeScreenEvents.map((event) => event.id);
-        const screenNavigationEvents = activeScreenEvents.filter((event) => isNavigationScreenEvent(event));
-        const suggestedNavigationEvent = screenNavigationEvents.length === 1 ? screenNavigationEvents[0] : null;
-        const suggestedNavigationEventId = suggestedNavigationEvent?.id;
-        addLog('warning', `⚠️ Guardrail blocked invalid event "${eventId}" on screen "${activeScreen.id}".`, { availableEvents: availableEventIds });
-        if (availableEventIds.length > 0) {
-          return buildNavigationResult({
-            success: false,
-            eventId,
-            fromScreen: activeScreen.id,
-            currentScreen: activeScreen.id,
-            reason: 'invalid_event_for_screen',
-            message: suggestedNavigationEventId
-              ? `Invalid event "${eventId}" for "${activeScreen.id}". Call "${suggestedNavigationEventId}" first to navigate, then continue. Available events: ${availableEventIds.join(', ')}.`
-              : `Invalid event "${eventId}" for current screen "${activeScreen.id}". Available events: ${availableEventIds.join(', ')}.`,
-            availableEvents: availableEventIds,
-          });
-        }
-        return buildNavigationResult({
-          success: false,
-          eventId,
-          fromScreen: activeScreen.id,
-          currentScreen: activeScreen.id,
-          reason: 'invalid_event_for_screen',
-          message: `Invalid event "${eventId}" for current screen "${activeScreen.id}".`,
-        });
-      }
-
-      // Deduplication guard: prevent the same non-navigation event from firing
-      // multiple times within a 2-second window (prevents LLM looping)
-      if (!isNavigationEvent) {
-        const now = Date.now();
-        const lastFired = recentEventTimestamps.current.get(eventId);
-        if (lastFired && now - lastFired < 2000) {
-          addLog('tool', `⚡ trigger_event: ${eventId} BLOCKED (duplicate within 2s)`);
-          return buildNavigationResult({
-            success: false,
-            eventId,
-            fromScreen: activeScreenId,
-            currentScreen: activeScreenId,
-            reason: 'duplicate_non_navigation_event',
-            message: `Event "${eventId}" was already triggered. Do NOT call this again. Proceed to the next required action.`,
-          });
-        }
-        recentEventTimestamps.current.set(eventId, now);
-      }
-
-      // Guardrail: on selection-based screens, require an option selection before navigation.
-      if (isNavigationEvent && activeScreen) {
-        const selectionEventIds = activeScreenEvents
-          .map((event) => event.id)
-          .filter((id): id is string => typeof id === 'string' && id.startsWith('select_'));
-        if (selectionEventIds.length > 0) {
-          const now = Date.now();
-          const selectionTimestamps = selectionEventIds
-            .map((id) => recentEventTimestamps.current.get(id))
-            .filter((value): value is number => typeof value === 'number');
-          const lastSelectionAt = selectionTimestamps.length > 0 ? Math.max(...selectionTimestamps) : null;
-
-          if (!lastSelectionAt) {
-            return buildNavigationResult({
-              success: false,
-              eventId,
-              fromScreen: activeScreen.id,
-              currentScreen: activeScreen.id,
-              nextScreen: navigationTarget,
-              reason: 'selection_required_before_navigation',
-              message: `Select an option on "${activeScreen.id}" before navigating. Call one of: ${selectionEventIds.join(', ')}.`,
-              availableEvents: activeScreenEvents.map((event) => event.id),
-            });
-          }
-
-          // Give the selected state a brief moment to render before leaving the screen.
-          const elapsedSinceSelectionMs = Math.max(0, now - lastSelectionAt);
-          const minimumSelectionVisibleMs = 1200;
-          const remainingMs = minimumSelectionVisibleMs - elapsedSinceSelectionMs;
-          if (remainingMs > 0) {
-            const minimumDelaySeconds = Number((remainingMs / 1000).toFixed(1));
-            if (resolvedDelay < minimumDelaySeconds) {
-              resolvedDelay = minimumDelaySeconds;
-              addLog(
-                'info',
-                `⏳ Holding navigation "${eventId}" for ${minimumDelaySeconds}s so the selection state is visible.`
-              );
-            }
-          }
-        }
-      }
 
       if (isNavigationEvent && lastRecordInputRef.current) {
         const elapsedMs = Date.now() - lastRecordInputRef.current.atMs;
@@ -3834,10 +3704,6 @@ Important guidelines:
       addLog('tool', `⚡ trigger_event: ${eventId}${resolvedDelay ? ` (delay: ${resolvedDelay}s)` : ''}`);
 
       dispatchTriggerEvent(eventId, resolvedDelay);
-
-      if (eventId === 'permissions_screen_event') {
-        addLog('info', `🔔 Waiting for explicit permission response on "${activeScreenId ?? 'unknown'}" before plan review navigation.`);
-      }
 
       // Return a more informative result based on event type to guide the LLM
       if (isSelectionEvent) {
@@ -4232,7 +4098,7 @@ Important guidelines:
         elapsedMs: completedAtMs - startedAtMs,
         nextEventId: nextEventId || null,
         effectiveNextEventId: effectiveNextEventId || null,
-        navigationSuppressed: !userHasSpoken && !!nextEventId,
+        navigationSuppressed: !userHasSpokenLocally && !!nextEventId,
       });
       return {
         saved: true,
