@@ -3293,7 +3293,6 @@ Important guidelines:
         }
         if (isDone) {
           shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
-          clearLiveAgentMessage();
           setAgentSpeechAlignment(null);
           agentSpeechPlaybackAnchorRef.current = null;
           setAgentSpeechPlaybackAnchorMs(null);
@@ -3680,9 +3679,25 @@ Important guidelines:
       const activeScreenId = currentScreenIdRef.current || undefined;
       const { activeScreenEvents } = getActiveScreenContext();
       const requestedEventConfig = activeScreenEvents.find((event) => event.id === eventId);
-      const isNavigationEvent = eventId.startsWith('navigate_') || isNavigationScreenEvent(requestedEventConfig);
+      const availableEventIds = activeScreenEvents
+        .map((event) => event?.id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0);
+
+      if (!requestedEventConfig) {
+        return buildNavigationResult({
+          success: false,
+          eventId,
+          fromScreen: activeScreenId,
+          currentScreen: activeScreenId,
+          reason: 'event_not_available_on_current_screen',
+          message: `Event "${eventId}" is not available on screen "${activeScreenId ?? 'unknown'}". Use one of: ${availableEventIds.join(', ') || 'no events available'}.`,
+          availableEvents: availableEventIds,
+        });
+      }
+
+      const isNavigationEvent = isNavigationScreenEvent(requestedEventConfig);
       const navigationTarget = getNavigationTargetFromEvent(requestedEventConfig);
-      const isSelectionEvent = eventId.startsWith('select_');
+      const isSelectionEvent = requestedEventConfig.id.startsWith('select_');
 
       if (isNavigationEvent && lastRecordInputRef.current) {
         const elapsedMs = Date.now() - lastRecordInputRef.current.atMs;
@@ -4857,7 +4872,6 @@ Important guidelines:
         }
         if (isDone !== false) {
           shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
-          clearLiveAgentMessage();
           setAgentSpeechAlignment(null);
           agentSpeechPlaybackAnchorRef.current = null;
           setAgentSpeechPlaybackAnchorMs(null);
@@ -5210,8 +5224,8 @@ Important guidelines:
             allowed: true,
           });
           const advanced =
-            triggerNavigationFromCurrentScreen(['navigate_to_plan_review']) ||
-            directNavigateFromCurrentScreen(['navigate_to_plan_review']);
+            triggerNavigationFromCurrentScreen() ||
+            directNavigateFromCurrentScreen();
           if (advanced) {
             addLog('info', '🔀 Auto-advanced after notification approval using current screen navigation event');
           }
@@ -5226,8 +5240,8 @@ Important guidelines:
             allowed: false,
           });
           const advanced =
-            triggerNavigationFromCurrentScreen(['navigate_to_plan_review']) ||
-            directNavigateFromCurrentScreen(['navigate_to_plan_review']);
+            triggerNavigationFromCurrentScreen() ||
+            directNavigateFromCurrentScreen();
           if (advanced) {
             addLog('info', '🔀 Auto-advanced after notification denial using current screen navigation event');
           }

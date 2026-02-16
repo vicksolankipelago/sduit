@@ -1200,7 +1200,21 @@
               "deeplink": "about-you"
             }
           ],
-          "conditions": []
+          "conditions": [
+            {
+              "rules": {
+                "==": [
+                  {
+                    "var": "currentScreen"
+                  },
+                  "pq-program-summary"
+                ]
+              },
+              "state": {
+                "currentScreen": "{$moduleData.current_screen}"
+              }
+            }
+          ]
         }
       ],
       "sections": [
@@ -1431,6 +1445,14 @@
               "rules": {
                 "and": [
                   {
+                    "==": [
+                      {
+                        "var": "currentScreen"
+                      },
+                      "outcomes"
+                    ]
+                  },
+                  {
                     "!=": [
                       {
                         "var": "firstGoal"
@@ -1449,6 +1471,7 @@
                 ]
               },
               "state": {
+                "currentScreen": "{$moduleData.current_screen}",
                 "firstGoal": "{$moduleData.goalTitles.0}"
               }
             }
@@ -1751,6 +1774,14 @@
                   "rules": {
                     "and": [
                       {
+                        "==": [
+                          {
+                            "var": "currentScreen"
+                          },
+                          "motivation"
+                        ]
+                      },
+                      {
                         "!=": [
                           {
                             "var": "yourWhySummary"
@@ -1769,7 +1800,8 @@
                     ]
                   },
                   "state": {
-                    "yourWhySummary": "{$moduleData.yourWhySummary}"
+                    "yourWhySummary": "{$moduleData.yourWhySummary}",
+                    "currentScreen": "{$moduleData.current_screen}"
                   }
                 }
               ]
@@ -1874,27 +1906,40 @@
               "conditions": [
                 {
                   "rules": {
-                    "or": [
+                    "and": [
                       {
                         "==": [
                           {
-                            "var": "focus"
+                            "var": "currentScreen"
                           },
-                          null
+                          "weekly-focus"
                         ]
                       },
                       {
-                        "==": [
+                        "or": [
                           {
-                            "var": "focus"
+                            "==": [
+                              {
+                                "var": "focus"
+                              },
+                              null
+                            ]
                           },
-                          ""
+                          {
+                            "==": [
+                              {
+                                "var": "focus"
+                              },
+                              ""
+                            ]
+                          }
                         ]
                       }
                     ]
                   },
                   "state": {
-                    "focus": "{$moduleData.weeklyFocus}"
+                    "focus": "{$moduleData.weeklyFocus}",
+                    "currentScreen": "{$moduleData.current_screen}"
                   }
                 }
               ]
@@ -1915,6 +1960,14 @@
                   "rules": {
                     "and": [
                       {
+                        "==": [
+                          {
+                            "var": "currentScreen"
+                          },
+                          "weekly-focus"
+                        ]
+                      },
+                      {
                         "!=": [
                           {
                             "var": "focus"
@@ -1933,7 +1986,8 @@
                     ]
                   },
                   "state": {
-                    "focus": "{$moduleData.weeklyFocus}"
+                    "focus": "{$moduleData.weeklyFocus}",
+                    "currentScreen": "{$moduleData.current_screen}"
                   }
                 }
               ]
@@ -1960,6 +2014,14 @@
                   "rules": {
                     "and": [
                       {
+                        "==": [
+                          {
+                            "var": "currentScreen"
+                          },
+                          "weekly-focus"
+                        ]
+                      },
+                      {
                         "!=": [
                           {
                             "var": "focus"
@@ -1978,7 +2040,8 @@
                     ]
                   },
                   "state": {
-                    "focus": "{$moduleData.weeklyFocus}"
+                    "focus": "{$moduleData.weeklyFocus}",
+                    "currentScreen": "{$moduleData.current_screen}"
                   }
                 }
               ]
@@ -2340,7 +2403,22 @@
                 "maxSelection": 1,
                 "allowsMultiSelection": false,
                 "currentlySelectedOptions": null
-              }
+              },
+              "conditions": [
+                {
+                  "rules": {
+                    "==": [
+                      {
+                        "var": "currentScreen"
+                      },
+                      "checkin-intro"
+                    ]
+                  },
+                  "state": {
+                    "currentScreen": "{$moduleData.current_screen}"
+                  }
+                }
+              ]
             }
           ],
           "position": "body",
@@ -2622,6 +2700,14 @@
                   "rules": {
                     "and": [
                       {
+                        "==": [
+                          {
+                            "var": "currentScreen"
+                          },
+                          "pq-plan-review"
+                        ]
+                      },
+                      {
                         "!=": [
                           {
                             "var": "summary"
@@ -2640,7 +2726,8 @@
                     ]
                   },
                   "state": {
-                    "summary": "{$moduleData.aboutYouSummary}"
+                    "summary": "{$moduleData.aboutYouSummary}",
+                    "currentScreen": "{$moduleData.current_screen}"
                   }
                 }
               ]
@@ -2670,6 +2757,14 @@
                   "rules": {
                     "and": [
                       {
+                        "==": [
+                          {
+                            "var": "currentScreen"
+                          },
+                          "pq-plan-review"
+                        ]
+                      },
+                      {
                         "!=": [
                           {
                             "var": "summary"
@@ -2688,7 +2783,8 @@
                     ]
                   },
                   "state": {
-                    "summary": "{$moduleData.yourWhySummary}"
+                    "summary": "{$moduleData.yourWhySummary}",
+                    "currentScreen": "{$moduleData.current_screen}"
                   }
                 }
               ]
@@ -2718,6 +2814,14 @@
                   "rules": {
                     "and": [
                       {
+                        "==": [
+                          {
+                            "var": "currentScreen"
+                          },
+                          "pq-plan-review"
+                        ]
+                      },
+                      {
                         "!=": [
                           {
                             "var": "summary"
@@ -2736,7 +2840,8 @@
                     ]
                   },
                   "state": {
-                    "summary": "{$moduleData.outcomesSummary}"
+                    "summary": "{$moduleData.outcomesSummary}",
+                    "currentScreen": "{$moduleData.current_screen}"
                   }
                 }
               ]
@@ -2763,6 +2868,14 @@
                   "rules": {
                     "and": [
                       {
+                        "==": [
+                          {
+                            "var": "currentScreen"
+                          },
+                          "pq-plan-review"
+                        ]
+                      },
+                      {
                         "!=": [
                           {
                             "var": "focus"
@@ -2781,7 +2894,8 @@
                     ]
                   },
                   "state": {
-                    "focus": "{$moduleData.weeklyFocus}"
+                    "focus": "{$moduleData.weeklyFocus}",
+                    "currentScreen": "{$moduleData.current_screen}"
                   }
                 }
               ]
@@ -3032,7 +3146,7 @@
     }
   ],
   "screenPrompts": {
-    "outcomes": "Screen ID: outcomes\nAvailable Events: navigate_to_voice_motivation\n\nPurpose: Capture desired outcomes as goals and show them in the checklist.\n\nCRITICAL: You MUST ask the question FIRST and wait for the user to respond BEFORE calling set_goals. Do NOT show the checklist before asking.\n\nBehavior:\n1. Ask outcomes using quiz context:\n   - if areas_to_improve=frequency: ask about fewer drinking days/times\n   - if areas_to_improve=moderation: ask about fewer drinks on drinking days\n   - if areas_to_improve=intensity: ask about avoiding heavy episodes\n   - if areas_to_improve=explore: ask what they want to notice/learn first\n2. Rephrase goal_alcohol naturally (drink_less, quit_eventually, track_consumption, learn_explore, maintain_sobriety).\n3. Wait for the user to respond.\n4. Brief acknowledgment.\n5. Call: set_goals with arguments {\"goals\": [{\"goal\": \"[goal text]\", \"categories\": [\"health\"], \"progress\": 0}, ...]}. Use 2-4 goals. Valid categories: health, relationships, emotional_wellbeing, financial, habits, personal_growth, mindfulness, other. Do NOT speak while the checklist appears.\n6. Pause 3 seconds so the checklist is visible.\n7. Say: \"I've captured those for you.\" Then IMMEDIATELY call navigate_to {\"screen\": \"motivation\"}.\n8. STOP. Wait for navigation. Do NOT ask the motivation question on this screen.\n\nNo record_input on this screen.",
+    "outcomes": "Screen ID: outcomes\nAvailable Events: navigate_to_voice_motivation\n\nPurpose: Capture desired outcomes as goals and show them in the checklist.\n\nCritical sequencing:\n1. Ask outcomes question first, then wait for a substantive response.\n2. Call set_goals with 2-4 goals from what the member actually said.\n3. Say exactly: \"Here is what I've captured. Does that look right?\"\n4. STOP. Do NOT navigate in the same turn as step 3.\n5. Wait for explicit confirmation on the next turn.\n6. Only after confirmation, call trigger_event {\"eventId\":\"navigate_to_voice_motivation\"} and stop.\n7. If user says filler/unclear (for example: \"...\", \"yeah\", silence), re-ask the confirmation and stay on outcomes.\n8. If user requests edits, update goals with set_goals and repeat steps 3-7.\n\nNo record_input on this screen.",
     "pq-intro": "Screen ID: pq-intro\nAvailable Events: navigate_to_feelings (button tap)\n\nPurpose: Welcome screen where user taps \"Get Started\" to begin quiz setup\n\nUI Display:\n- Title: \"Welcome to Pelago\"\n- Description: \"Let's get you set up with a personalized plan\"\n- Pelago Boat animation\n- \"Get Started\" button at bottom\n\nBehavior:\n- This is a CTA-only screen (no voice interaction)\n- When user taps \"Get Started\", it navigates to pq-feelings-alcohol\n\nNo voice interaction needed on this screen.",
     "about-you": "Screen ID: about-you\nAvailable Events: navigate_to_outcomes\n\nPurpose: Understand what brings them here. This is a sensitive moment - be gentle and create a safe space.\n\nQuestion (adapt based on feelings_alcohol + goal_alcohol):\n- i_recently_cut_down_or_quit: celebrate progress, ask what prompted the recent change\n- i_plan_to_take_steps_very_soon: action-oriented, ask why now feels like the right time\n- i_am_curious_about_changing: exploratory, ask what they are noticing/wondering\n- i_am_not_interested_in_changing: no-pressure, ask what made them open Pelago today\nGoal anchor examples:\n- drink_less/quit_eventually/track_consumption/learn_explore/maintain_sobriety -> phrase naturally, never read raw IDs.\n\nAfter response:\n1. Call record_input IMMEDIATELY with ALL required parameters: {\"title\": \"About You\", \"summary\": \"[one-line summary]\", \"storeKey\": \"aboutYouSummary\", \"description\": \"[brief context about their response]\", \"nextEventId\": \"navigate_to_outcomes\", \"delay\": 3}\n2. The about-you text card should display the captured summary with a small caption style.\n3. Give one short personalized reflection tied to a concrete detail they shared.\n4. STOP. Wait for navigation. Do NOT ask about outcomes or goals here.",
     "motivation": "Screen ID: motivation\nAvailable Events: navigate_to_weekly_focus\n\nPurpose: Understand what feels most motivating to them right now.\n\nCritical sequencing:\n1. Ask one motivation follow-up question first.\n2. Wait for a complete, substantive response in the member's own words.\n3. If the response is filler/acknowledgement/partial (for example: \"yeah\", \"ok\", \"...\", \"I think most...\"), ask a brief follow-up and stay on this screen.\n4. Only after a complete response, call record_input with: {\"title\": \"Your Why\", \"summary\": \"[one-line summary]\", \"storeKey\": \"yourWhySummary\", \"description\": \"[brief context]\", \"nextEventId\": \"navigate_to_weekly_focus\", \"delay\": 3}\n5. Give one short reflective acknowledgment only (no question mark, no weekly-focus ask).\n6. STOP. Wait for navigation before any weekly-focus language.\n\nNever use prefilled context (like weeklyFocusSummary) as motivation capture content.",
