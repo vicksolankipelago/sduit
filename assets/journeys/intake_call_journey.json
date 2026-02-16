@@ -1990,19 +1990,19 @@
       "title": "Introducing Rewards",
       "events": [
         {
-          "id": "navigate_to_checkin_commitment",
+          "id": "navigate_to_checkin_intro",
           "type": "custom",
           "action": [
             {
               "type": "stateUpdate",
               "scope": "module",
               "updates": {
-                "current_screen": "checkin-commitment"
+                "current_screen": "checkin-intro"
               }
             },
             {
               "type": "navigation",
-              "deeplink": "checkin-commitment"
+              "deeplink": "checkin-intro"
             }
           ],
           "conditions": []
@@ -2093,14 +2093,14 @@
       ]
     },
     {
-      "id": "checkin-commitment",
+      "id": "checkin-intro",
       "state": {
         "selectedCommitment": null
       },
       "title": null,
       "events": [
         {
-          "id": "select_daily_commitment",
+          "id": "select_daily_checkin",
           "type": "custom",
           "action": [
             {
@@ -2124,7 +2124,7 @@
           "conditions": []
         },
         {
-          "id": "select_few_times_commitment",
+          "id": "select_few_times_checkin",
           "type": "custom",
           "action": [
             {
@@ -2148,7 +2148,7 @@
           "conditions": []
         },
         {
-          "id": "select_once_commitment",
+          "id": "select_once_checkin",
           "type": "custom",
           "action": [
             {
@@ -2192,14 +2192,14 @@
       ],
       "sections": [
         {
-          "id": "checkin-commitment_agent_message_section",
+          "id": "checkin-intro_agent_message_section",
           "title": null,
           "layout": "stack",
           "elements": [
             {
               "type": "agentMessageCard",
               "state": {
-                "id": "checkin-commitment_agent_message",
+                "id": "checkin-intro_agent_message",
                 "message": "{$moduleData.agentLiveMessage}",
                 "agentName": "Navi",
                 "syncWithSpeech": true
@@ -2234,7 +2234,7 @@
             {
               "type": "largeQuestion",
               "state": {
-                "id": "checkin_commitment_question",
+                "id": "checkin_intro_question",
                 "type": "singleSelect",
                 "copyId": null,
                 "header": {
@@ -2713,7 +2713,7 @@
             {
               "type": "miniWidget",
               "state": {
-                "id": "checkin_commitment_widget",
+                "id": "checkin_intro_widget",
                 "title": "{$moduleData.checkinCommitment}",
                 "content": "Check-ins this week"
               },
@@ -2902,11 +2902,11 @@
     "pq-intro": "Screen ID: pq-intro\nAvailable Events: navigate_to_feelings (button tap)\n\nPurpose: Welcome screen where user taps \"Get Started\" to begin quiz setup\n\nUI Display:\n- Title: \"Welcome to Pelago\"\n- Description: \"Let's get you set up with a personalized plan\"\n- Pelago Boat animation\n- \"Get Started\" button at bottom\n\nBehavior:\n- This is a CTA-only screen (no voice interaction)\n- When user taps \"Get Started\", it navigates to pq-feelings-alcohol\n\nNo voice interaction needed on this screen.",
     "about-you": "Screen ID: about-you\nAvailable Events: navigate_to_outcomes\n\nPurpose: Understand what brings them here. This is a sensitive moment - be gentle and create a safe space.\n\nQuestion (adapt based on feelings_alcohol + goal_alcohol):\n- i_recently_cut_down_or_quit: celebrate progress, ask what prompted the recent change\n- i_plan_to_take_steps_very_soon: action-oriented, ask why now feels like the right time\n- i_am_curious_about_changing: exploratory, ask what they are noticing/wondering\n- i_am_not_interested_in_changing: no-pressure, ask what made them open Pelago today\nGoal anchor examples:\n- drink_less/quit_eventually/track_consumption/learn_explore/maintain_sobriety -> phrase naturally, never read raw IDs.\n\nAfter response:\n1. Call record_input IMMEDIATELY with ALL required parameters: {\"title\": \"About You\", \"summary\": \"[one-line summary]\", \"storeKey\": \"aboutYouSummary\", \"description\": \"[brief context about their response]\", \"nextEventId\": \"navigate_to_outcomes\", \"delay\": 3}\n2. The about-you text card should display the captured summary with a small caption style.\n3. Give one short personalized reflection tied to a concrete detail they shared.\n4. STOP. Wait for navigation. Do NOT ask about outcomes or goals here.",
     "motivation": "Screen ID: motivation\nAvailable Events: navigate_to_weekly_focus\n\nPurpose: Understand what feels most motivating to them right now.\n\nBehavior:\n1. On screen load, ask a motivation-specific follow-up:\n   - physical_health -> ask what body/health change they want to notice\n   - wellbeing -> ask what better day-to-day wellbeing looks like\n   - personal_growth -> ask what growth means in their words\n   - relationships -> ask which relationship they most want to improve\n   - saving_money -> ask what financial win matters most\n   - incentive -> acknowledge rewards neutrally, then ask for one personal reason beyond rewards\n2. Wait for the user to respond.\n3. Call record_input IMMEDIATELY with ALL required parameters: {\"title\": \"Motivation\", \"summary\": \"[one-line summary]\", \"storeKey\": \"yourWhySummary\", \"description\": \"[brief context about their motivation]\", \"nextEventId\": \"navigate_to_weekly_focus\"}\n4. Give a brief content-specific acknowledgment mirroring their reason.\n5. STOP. Wait for navigation. Do NOT mention weekly focus here.",
-    "weekly-focus": "Screen ID: weekly-focus\nAvailable Events: navigate_to_cm_rewards_intro\n\nPurpose: Capture a concise weekly focus and display it in the quote card.\n\nUI: Agent message card remains visible. Show label + quote card after capture_weekly_focus.\n\nOnly ask about weekly focus AFTER arriving on this screen. Connect suggestions to areas_to_improve + motivation + learning_topics.\n\nSuggestion shaping:\n- frequency/moderation/intensity/explore -> shape suggestion accordingly\n- learning hooks: mindfulness, cravings_support, self_confidence, habits, emotional_stability, sleep_quality, decision_making, relationships, financial_stability, diet_nutrition, meditation\n\nIf user says \"okay\" or \"thanks\" without giving a focus, gently prompt: \"What comes to mind as something you'd like to work on this week?\"\n\nAfter user gives a clear focus:\n1. Call capture_weekly_focus IMMEDIATELY: {\"focus\": \"[short focus phrase]\", \"relatedGoal\": \"[matching goal or omit]\"}.\n2. Keep focus in the member's own words as much as possible (light cleanup only, no heavy paraphrasing).\n3. Brief acknowledgment.\n4. Call record_input IMMEDIATELY with ALL required parameters: {\"title\": \"Weekly Focus\", \"summary\": \"[one-line summary]\", \"storeKey\": \"weeklyIntention\", \"description\": \"[brief context about their focus]\", \"nextEventId\": \"navigate_to_cm_rewards_intro\"}.\n5. STOP. Both calls are mandatory — record_input triggers navigation. Do NOT speak about rewards here.\n\nCRITICAL: Do NOT call navigate_to_checkin_commitment from this screen.",
+    "weekly-focus": "Screen ID: weekly-focus\nAvailable Events: navigate_to_cm_rewards_intro\n\nPurpose: Capture a concise weekly focus and display it in the quote card.\n\nUI: Agent message card remains visible. Show label + quote card after capture_weekly_focus.\n\nOnly ask about weekly focus AFTER arriving on this screen. Connect suggestions to areas_to_improve + motivation + learning_topics.\n\nSuggestion shaping:\n- frequency/moderation/intensity/explore -> shape suggestion accordingly\n- learning hooks: mindfulness, cravings_support, self_confidence, habits, emotional_stability, sleep_quality, decision_making, relationships, financial_stability, diet_nutrition, meditation\n\nIf user says \"okay\" or \"thanks\" without giving a focus, gently prompt: \"What comes to mind as something you'd like to work on this week?\"\n\nAfter user gives a clear focus:\n1. Call capture_weekly_focus IMMEDIATELY: {\"focus\": \"[short focus phrase]\", \"relatedGoal\": \"[matching goal or omit]\"}.\n2. Keep focus in the member's own words as much as possible (light cleanup only, no heavy paraphrasing).\n3. Brief acknowledgment.\n4. Call record_input IMMEDIATELY with ALL required parameters: {\"title\": \"Weekly Focus\", \"summary\": \"[one-line summary]\", \"storeKey\": \"weeklyIntention\", \"description\": \"[brief context about their focus]\", \"nextEventId\": \"navigate_to_cm_rewards_intro\"}.\n5. STOP. Both calls are mandatory — record_input triggers navigation. Do NOT speak about rewards here.\n\nCRITICAL: Do NOT call navigate_to_checkin_intro from this screen.",
     "pq-plan-review": "Screen ID: pq-plan-review\nAvailable Events: navigate_to_completion\n\nPurpose: Final quick recap.\n\nBehavior:\n1. Let the member review the fixed text + plan cards for 2-3 seconds.\n2. Say: \"Based on what you've told me, I've put together a plan for you this week.\"\n3. Say: \"Take a look and let me know what you think.\"\n4. Ask: \"Does this look good to you?\"\n5. If positive, call record_input with arguments {\"title\":\"Plan Review Confirmation\",\"summary\":\"approved\",\"storeKey\":\"planReviewApproval\",\"description\":\"member approved plan\",\"nextEventId\":\"navigate_to_completion\",\"delay\":0}.\n6. If not positive, call record_input with arguments {\"title\":\"Plan Review Confirmation\",\"summary\":\"not_approved\",\"storeKey\":\"planReviewApproval\",\"description\":\"member requested changes\"} and remain on this screen.",
     "pq-voice-ready": "Screen ID: pq-voice-ready\nAvailable Events: navigate_to_program_summary\n\nPurpose: Share a clear AI disclaimer and privacy commitments before starting voice intake.\n\nUI Display:\n- Header: \"AI disclaimer\"\n- Disclaimer paragraph about AI limitations and sensitive topics\n- \"Our commitment to you\" checklist with privacy assurances\n- Crisis support callout with 988 guidance\n\nBehavior:\n- This is still a CTA-only screen (no voice interaction)\n- When user taps \"Continue\", the button automatically enables voice and navigates to pq-program-summary\n\nNo voice interaction needed on this screen.",
-    "cm-rewards-intro": "Screen ID: cm-rewards-intro\nAvailable Events: navigate_to_checkin_commitment\n\nPurpose: Introduce check-ins in plain language, then move to check-in selection.\n\nBehavior:\n1. Say: \"One thing that'll help you stay on track is a feature we call check-ins. Each time you open the app, you'll see a quick question: did you have a drink yesterday? If yes, you log how many. If no, we celebrate that. It takes about 5 seconds.\"\n2. Add at most one motivation-aligned line (no stats/research claims):\n   - physical_health/wellbeing -> noticing health or mood changes\n   - personal_growth -> seeing progress over time\n   - relationships -> staying aligned with relationship goals\n   - saving_money -> spotting spending patterns\n   - incentive -> rewards can help consistency\n3. Do NOT ask commitment frequency here.\n4. Call: trigger_event with arguments {\"eventId\": \"navigate_to_checkin_commitment\"}.\n5. STOP SPEAKING.\n\nCRITICAL: The tracking-frequency question belongs on the NEXT screen (checkin-commitment).",
-    "checkin-commitment": "Screen ID: checkin-commitment\nAvailable Events: select_daily_commitment, select_few_times_commitment, select_once_commitment, navigate_to_notification_setup\n\n**CRITICAL: This screen requires TWO function calls - selection AND navigation. Both are MANDATORY.**\n\nBehavior:\n1. ON SCREEN LOAD, ask: \"How often do you want to aim to track this week — every day, or a few times?\"\n2. Wait for their choice, then IMMEDIATELY call the matching selection event:\n   - \"every day\"/\"daily\" → trigger_event {\"eventId\": \"select_daily_commitment\"}\n   - \"a few times a week\"/\"few times\" → trigger_event {\"eventId\": \"select_few_times_commitment\"}\n   - \"when I remember\"/\"once\" → trigger_event {\"eventId\": \"select_once_commitment\"}\n3. This first selection call updates the selected commitment option in the UI on the current screen.\n4. Then call trigger_event with arguments {\"eventId\": \"navigate_to_notification_setup\"} and STOP speaking.\n5. Do NOT ask the reminder-time question on this screen.\n\nNote: The selection event saves both checkinCommitment and checkinFrequencyDays automatically.\n\nWARNING: Ask reminder time only after pq-notification-setup is active. Never combine navigation and next-screen question in one turn.",
+    "cm-rewards-intro": "Screen ID: cm-rewards-intro\nAvailable Events: navigate_to_checkin_intro\n\nPurpose: Introduce check-ins in plain language, then move to check-in selection.\n\nBehavior:\n1. Say: \"One thing that'll help you stay on track is a feature we call check-ins. Each time you open the app, you'll see a quick question: did you have a drink yesterday? If yes, you log how many. If no, we celebrate that. It takes about 5 seconds.\"\n2. Add at most one motivation-aligned line (no stats/research claims):\n   - physical_health/wellbeing -> noticing health or mood changes\n   - personal_growth -> seeing progress over time\n   - relationships -> staying aligned with relationship goals\n   - saving_money -> spotting spending patterns\n   - incentive -> rewards can help consistency\n3. Do NOT ask commitment frequency here.\n4. Call: trigger_event with arguments {\"eventId\": \"navigate_to_checkin_intro\"}.\n5. STOP SPEAKING.\n\nCRITICAL: The tracking-frequency question belongs on the NEXT screen (checkin-intro).",
+    "checkin-intro": "Screen ID: checkin-intro\nAvailable Events: select_daily_checkin, select_few_times_checkin, select_once_checkin, navigate_to_notification_setup\n\n**CRITICAL: This screen requires TWO function calls - selection AND navigation. Both are MANDATORY.**\n\nBehavior:\n1. ON SCREEN LOAD, ask: \"How often do you want to aim to track this week — every day, or a few times?\"\n2. Wait for their choice, then IMMEDIATELY call the matching selection event:\n   - \"every day\"/\"daily\" → trigger_event {\"eventId\": \"select_daily_checkin\"}\n   - \"a few times a week\"/\"few times\" → trigger_event {\"eventId\": \"select_few_times_checkin\"}\n   - \"when I remember\"/\"once\" → trigger_event {\"eventId\": \"select_once_checkin\"}\n3. This first selection call updates the selected commitment option in the UI on the current screen.\n4. Then call trigger_event with arguments {\"eventId\": \"navigate_to_notification_setup\"} and STOP speaking.\n5. Do NOT ask the reminder-time question on this screen.\n\nNote: The selection event saves both checkinCommitment and checkinFrequencyDays automatically.\n\nWARNING: Ask reminder time only after pq-notification-setup is active. Never combine navigation and next-screen question in one turn.",
     "pq-program-summary": "Screen ID: pq-program-summary\nAvailable Events: next_step_event\n\nPurpose: Transition from quiz into voice intake. Explain features and privacy before asking if they're ready.\n\nCRITICAL:\n- ElevenLabs first message is already played automatically when the session connects.\n- Do NOT repeat greetings or re-introduce yourself.\n- Ask \"Ready to get started?\" exactly once.\n\nBehavior:\n1. Wait for the user's response to the automatic welcome.\n2. Give a brief personalized overview tied to goal_alcohol:\n   - drink_less -> cutting back support\n   - quit_eventually -> gradual quit support\n   - track_consumption -> pattern-tracking support\n   - learn_explore -> exploration-first support\n   - maintain_sobriety -> sobriety-maintenance support\n3. End the intro with the privacy disclaimer: \"Just so you know, everything we talk about is completely private and won't be shared with your employer.\"\n4. Then ask: \"I'd love to ask you a few quick questions so we can build your plan together. Ready to get started?\"\n5. WAIT for their reply. Do not add another question or filler before they answer.\n6. After any affirmative response, immediately call: trigger_event with arguments {\"eventId\": \"next_step_event\"}.\n7. Do NOT call record_input on this screen.\n\nIMPORTANT: Steps 2-4 happen in one turn BEFORE asking if ready. Step 6 only after they confirm.",
     "pq-start-programme": "Screen ID: pq-start-programme\nAvailable Events: complete_intake_flow\n\nPurpose: Completion\n\nScript:\n\"All set! Your program is ready. I'm here whenever you need support. Take care!\"\n\nBehavior:\n1. Say the closing message\n2. Call: trigger_event with arguments {\"eventId\": \"complete_intake_flow\"}\n3. Call: end_call with arguments {\"reason\": \"journey completed\"}",
     "pq-notification-setup": "Screen ID: pq-notification-setup\nAvailable Events: permissions_screen_event, navigate_to_plan_review\n\nPurpose: Save reminder time, confirm it back, and enable notifications.\n\nBehavior:\n1. Give one plain-language value line (no stats): \"Reminders make it easier to stay consistent with your plan.\"\n2. Then ask: \"What time works best for a daily nudge?\"\n3. After user gives a time, call: set_reminder_time with arguments {\"time\": \"[time exactly as user said it]\"}.\n4. Confirm the exact time back: \"Got it, I've set your reminder for [time].\"\n5. Call: trigger_event with arguments {\"eventId\": \"permissions_screen_event\"}.\n6. Say: \"Tap Allow to turn on notifications.\" If they say no prompt appeared, reassure them and continue.\n7. Wait for a response to the OS permission prompt (allow or deny), or user confirmation that no prompt appeared.\n8. Then call trigger_event with arguments {\"eventId\": \"navigate_to_plan_review\"}.\n\nCRITICAL: Do NOT navigate to pq-plan-review until there is a response/confirmation after the permission step."
