@@ -1182,3 +1182,46 @@
 }
 
 /* Dark theme specific overrides can be added here if needed */
+
+.voice-agent-preview-record-btn {
+  min-width: 56px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.voice-agent-preview-record-btn.is-recording {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.voice-agent-preview-download-btn,
+.voice-agent-preview-clear-btn {
+  min-width: 52px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.voice-agent-preview-recording-timer {
+  align-self: center;
+  color: var(--text-global-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  min-width: 56px;
+  text-align: center;
+}
+
+.voice-agent-preview-recording-error {
+  position: fixed;
+  top: 3.75rem;
+  right: 1rem;
+  z-index: 1200;
+  max-width: 360px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.32);
+  color: #b91c1c;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+}

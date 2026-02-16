@@ -15,6 +15,7 @@ import { useAzureWebRTCSession } from '../hooks/voiceAgent/useAzureWebRTCSession
 import { useElevenLabsSession } from '../hooks/voiceAgent/useElevenLabsSession';
 import useAudioDownload from '../hooks/voiceAgent/useAudioDownload';
 import { useStreamingRecording } from '../hooks/voiceAgent/useStreamingRecording';
+import { usePreviewFlowRecording } from '../hooks/voiceAgent/usePreviewFlowRecording';
 import { VoiceAgentAudioRouter } from '../utils/voiceAgent/audioRouting';
 
 // Components
@@ -120,6 +121,13 @@ function normalizeAgentNameForRuntime(name: string): string {
   return name
     .replace(/[^a-zA-Z0-9]+(.)/g, (_, char) => char.toUpperCase())
     .replace(/^(.)/, (char) => char.toLowerCase());
+}
+
+function formatRecordingDuration(elapsedMs: number): string {
+  const totalSeconds = Math.floor(elapsedMs / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
 const RECORD_INPUT_DISPLAY_MS = 3000;
@@ -678,6 +686,7 @@ function VoiceAgentContent() {
   const navigate = useNavigate();
 
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
+  const previewCaptureElementRef = useRef<HTMLDivElement | null>(null);
   const currentAgentRef = useRef<string>('greeter');
   const currentScreenIdRef = useRef<string | null>(null);
   const moduleStateRef = useRef<Record<string, any>>(moduleState || {});
@@ -1022,6 +1031,18 @@ function VoiceAgentContent() {
       addLog('warning', `Recording upload error: ${error.message}`);
     },
   });
+
+  const {
+    status: previewRecordingStatus,
+    isRecording: isPreviewRecording,
+    elapsedMs: previewRecordingElapsedMs,
+    error: previewRecordingError,
+    recordingUrl: previewRecordingUrl,
+    startRecording: startPreviewRecording,
+    stopRecording: stopPreviewRecording,
+    downloadRecording: downloadPreviewRecording,
+    clearRecording: clearPreviewRecording,
+  } = usePreviewFlowRecording();
 
   loggedEventsRef.current = loggedEvents;
 
@@ -2815,6 +2836,65 @@ Important guidelines:
 
   // Audio is handled by the WebSocket client (Azure) or internally by SDK (ElevenLabs)
 
+  const setPreviewCaptureElement = useCallback((element: HTMLDivElement | null) => {
+    previewCaptureElementRef.current = element;
+  }, []);
+
+  const getAgentAudioStreamForPreviewRecording = useCallback((): MediaStream | null => {
+    const audioElement = audioElementRef.current;
+    if (!audioElement) return null;
+
+    if (audioElement.srcObject instanceof MediaStream && audioElement.srcObject.getAudioTracks().length > 0) {
+      return audioElement.srcObject;
+    }
+
+    const streamFactory = (
+      (audioElement as HTMLAudioElement & { captureStream?: () => MediaStream }).captureStream
+      || (audioElement as HTMLAudioElement & { mozCaptureStream?: () => MediaStream }).mozCaptureStream
+    );
+    if (streamFactory) {
+      const captured = streamFactory.call(audioElement);
+      if (captured.getAudioTracks().length > 0) {
+        return captured;
+      }
+    }
+
+    return null;
+  }, []);
+
+  const handleStartPreviewRecording = useCallback(async () => {
+    const previewElement = previewCaptureElementRef.current;
+    if (!previewElement) {
+      addLog('warning', 'Preview recorder is not ready yet.');
+      return;
+    }
+    const agentAudioStream = getAgentAudioStreamForPreviewRecording();
+    if (!agentAudioStream) {
+      addLog('warning', 'Agent audio is not available yet. Start recording after audio playback begins.');
+      return;
+    }
+
+    try {
+      await startPreviewRecording({
+        previewElement,
+        agentAudioStream,
+        micStream,
+      });
+      addLog('info', 'Started preview recording');
+    } catch (error) {
+      addLog('warning', `Failed to start preview recording: ${(error as Error).message}`);
+    }
+  }, [addLog, getAgentAudioStreamForPreviewRecording, micStream, startPreviewRecording]);
+
+  const handleStopPreviewRecording = useCallback(async () => {
+    const blob = await stopPreviewRecording();
+    if (blob) {
+      addLog('success', 'Preview recording completed');
+      return;
+    }
+    addLog('warning', 'Preview recording stopped without media output');
+  }, [addLog, stopPreviewRecording]);
+
   useEffect(() => {
     if (sessionStatus === "CONNECTED") {
       // ElevenLabs handles audio internally via WebRTC - no need to set up audio element
@@ -2884,6 +2964,12 @@ Important guidelines:
       stopStreamingRecording().catch((error) => {
         console.error('Failed to stop streaming recording:', error);
       });
+
+      if (isPreviewRecording || previewRecordingStatus === 'starting' || previewRecordingStatus === 'stopping') {
+        stopPreviewRecording().catch((error) => {
+          console.error('Failed to stop preview recording:', error);
+        });
+      }
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -5057,6 +5143,40 @@ Important guidelines:
   return (
     <div className="voice-agent">
       <AgentUIRenderer
+        topControlsExtra={sessionStatus === 'CONNECTED' ? (
+          <>
+            <button
+              className={`agent-ui-control-btn voice-agent-preview-record-btn${isPreviewRecording ? ' is-recording' : ''}`}
+              onClick={isPreviewRecording ? handleStopPreviewRecording : handleStartPreviewRecording}
+              title={isPreviewRecording ? 'Stop preview recording' : 'Record preview video'}
+            >
+              {isPreviewRecording ? 'Stop' : 'Rec'}
+            </button>
+            {previewRecordingUrl && !isPreviewRecording && (
+              <button
+                className="agent-ui-control-btn voice-agent-preview-download-btn"
+                onClick={downloadPreviewRecording}
+                title="Download preview recording"
+              >
+                Save
+              </button>
+            )}
+            {!isPreviewRecording && previewRecordingUrl && (
+              <button
+                className="agent-ui-control-btn voice-agent-preview-clear-btn"
+                onClick={clearPreviewRecording}
+                title="Clear preview recording"
+              >
+                Clear
+              </button>
+            )}
+            {(isPreviewRecording || previewRecordingStatus === 'starting') && (
+              <div className="voice-agent-preview-recording-timer" aria-live="polite">
+                {previewRecordingStatus === 'starting' ? 'Starting...' : formatRecordingDuration(previewRecordingElapsedMs)}
+              </div>
+            )}
+          </>
+        ) : undefined}
         bottomBar={sessionStatus === 'CONNECTED' && !isNonVoiceMode ? (
           <VoiceControlBar
             isMuted={isMicMuted}
@@ -5119,7 +5239,13 @@ Important guidelines:
         agentSpeechAlignment={agentSpeechAlignment}
         agentSpeechPlaybackMs={agentSpeechPlaybackMs}
         agentSpeechPlaybackAnchorMs={agentSpeechPlaybackAnchorMs}
+        onPreviewContainerReady={setPreviewCaptureElement}
       />
+      {previewRecordingError && sessionStatus === 'CONNECTED' && (
+        <div className="voice-agent-preview-recording-error" role="status">
+          {previewRecordingError}
+        </div>
+      )}
       
       {/* Header - Show when disconnected and NOT in preview mode, transitioning, or loading */}
       {sessionStatus === 'DISCONNECTED' && !isPreviewMode && !isTransitioningJourney && !loadingJourneyId && !showFeedbackForm && (

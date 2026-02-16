@@ -11,10 +11,12 @@ const uiLogger = logger.namespace('AgentUIRenderer');
 
 interface AgentUIRendererProps {
   bottomBar?: React.ReactNode;
+  topControlsExtra?: React.ReactNode;
   helpOverlay?: React.ReactNode;
   onOpenHelp?: () => void;
   onOpenSettings?: () => void;
   onExit?: () => void;
+  onPreviewContainerReady?: (element: HTMLDivElement | null) => void;
   showNotificationPopup?: boolean;
   onNotificationAllow?: () => void;
   onNotificationDeny?: () => void;
@@ -30,10 +32,12 @@ interface AgentUIRendererProps {
 
 export default function AgentUIRenderer({
   bottomBar,
+  topControlsExtra,
   helpOverlay,
   onOpenHelp,
   onOpenSettings,
   onExit,
+  onPreviewContainerReady,
   showNotificationPopup,
   onNotificationAllow,
   onNotificationDeny,
@@ -53,6 +57,13 @@ export default function AgentUIRenderer({
     moduleState,
     updateModuleState
   } = useAgentUI();
+
+  const handlePreviewContainerRef = React.useCallback(
+    (element: HTMLDivElement | null) => {
+      onPreviewContainerReady?.(element);
+    },
+    [onPreviewContainerReady]
+  );
 
   // Debug logging - also log to console for debugging
   React.useEffect(() => {
@@ -83,6 +94,7 @@ export default function AgentUIRenderer({
       <div className="agent-ui-overlay agent-ui-screen-mode">
         {/* Top right controls - Settings and Exit */}
         <div className="agent-ui-top-controls">
+          {topControlsExtra}
           {onOpenSettings && (
             <button
               className="agent-ui-control-btn agent-ui-settings-btn"
@@ -113,7 +125,11 @@ export default function AgentUIRenderer({
 
         {/* Device frame containing screen and bottom bar */}
         <div className="agent-ui-device-frame">
-          <div className="agent-ui-device-screen-wrapper">
+          <div
+            ref={handlePreviewContainerRef}
+            className="agent-ui-device-screen-wrapper"
+            data-preview-capture-target="true"
+          >
             {onOpenHelp && currentScreen?.id !== 'pq-voice-ready' && (
               <button
                 className="agent-ui-device-help-btn"
