@@ -34,7 +34,7 @@
 
 .text-card-element-with-icon .text-card-content-wrapper {
   gap: 0;
-  padding-bottom: 4px;
+  padding-bottom: 8px;
 }
 
 .text-card-element:not(.text-card-element-with-icon) .text-card-content-wrapper {

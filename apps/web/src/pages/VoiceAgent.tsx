@@ -257,7 +257,15 @@ function getScreenEvents(screen: AgentScreen | undefined): AgentScreenEvent[] {
   const sectionEvents = (screen.sections || []).flatMap((section) =>
     (section?.elements || []).flatMap((element) => element?.events || [])
   );
-  return [...(screen.events || []), ...sectionEvents].filter(Boolean);
+  const allEvents = [...(screen.events || []), ...sectionEvents]
+    .filter((event): event is AgentScreenEvent => Boolean(event) && typeof event.id === 'string');
+  const dedupedById = new Map<string, AgentScreenEvent>();
+  for (const event of allEvents) {
+    if (event.id && !dedupedById.has(event.id)) {
+      dedupedById.set(event.id, event);
+    }
+  }
+  return Array.from(dedupedById.values());
 }
 
 function extractModuleDataKeyFromConditionRef(value: unknown): string | null {
@@ -948,7 +956,7 @@ function VoiceAgentContent() {
     executeAtMs: number;
     expiresAtMs: number;
     targetScreenId?: string;
-    source?: 'record_input' | 'navigate_to';
+    source?: 'record_input' | 'navigate_to' | 'capture_weekly_focus';
   } | null>(null);
   // Legacy queue for post-navigation events. Kept only for compatibility;
   // runtime now rejects cross-screen chaining instead of replaying queued events.
@@ -1141,6 +1149,12 @@ function VoiceAgentContent() {
     didInitializeLiveAgentMessageRef.current = true;
     clearLiveAgentMessage();
   }, [clearLiveAgentMessage]);
+
+  // Prevent stale agent text from flashing when a navigation changes screens.
+  useEffect(() => {
+    if (!currentScreenId) return;
+    clearLiveAgentMessage();
+  }, [currentScreenId, clearLiveAgentMessage]);
 
   const clearNotificationPlanReviewFallback = useCallback(() => {
     if (notificationPlanReviewFallbackTimerRef.current) {
@@ -1599,7 +1613,7 @@ function VoiceAgentContent() {
       const { success, fromScreen, toScreen, availableScreens } = customEvent.detail;
       if (success) {
         pendingNavigationRef.current = null;
-        if (toScreen && toScreen !== 'pq-notification-setup') {
+        if (toScreen) {
           clearNotificationPlanReviewFallback();
         }
         if (toScreen) {
@@ -3165,6 +3179,7 @@ Important guidelines:
         }
         if (isDone) {
           shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
+          clearLiveAgentMessage();
           setAgentSpeechAlignment(null);
           agentSpeechPlaybackAnchorRef.current = null;
           setAgentSpeechPlaybackAnchorMs(null);
@@ -3388,6 +3403,51 @@ Important guidelines:
     },
   });
 
+  const getActiveAgentScreens = useCallback((): AgentScreen[] => {
+    const journey = currentJourneyRef.current;
+    if (!journey?.agents?.length) return [];
+    const runtimeAgentName = currentAgentRef.current;
+    const activeAgent =
+      journey.agents.find((agent) => normalizeAgentNameForRuntime(agent.name) === runtimeAgentName) ||
+      journey.agents.find((agent) => agent.id === journey.startingAgentId) ||
+      journey.agents[0];
+    return ((activeAgent?.screens || []) as AgentScreen[]);
+  }, []);
+
+  const getActiveScreenContext = useCallback(() => {
+    const activeScreenId = currentScreenIdRef.current || undefined;
+    const activeScreens = getActiveAgentScreens();
+    const activeScreen = activeScreens.find((screen) => screen.id === activeScreenId);
+    const activeScreenEvents = getScreenEvents(activeScreen);
+    return { activeScreenId, activeScreens, activeScreen, activeScreenEvents };
+  }, [getActiveAgentScreens]);
+
+  const triggerNavigationFromCurrentScreen = useCallback((preferredEventIds: string[] = []): boolean => {
+    const { activeScreen, activeScreenEvents } = getActiveScreenContext();
+    if (!activeScreen) return false;
+
+    const navigationEvents = activeScreenEvents.filter((event) => {
+      const navigationTargets = collectNavigationTargetsFromEvent(event);
+      return (typeof event.id === 'string' && event.id.startsWith('navigate_')) || navigationTargets.length > 0;
+    });
+    if (navigationEvents.length === 0) return false;
+
+    const preferredMatch = preferredEventIds
+      .map((eventId) => navigationEvents.find((event) => event.id === eventId))
+      .find((event): event is AgentScreenEvent => Boolean(event));
+    const selectedEvent = preferredMatch || (navigationEvents.length === 1 ? navigationEvents[0] : null);
+    if (!selectedEvent?.id) return false;
+
+    window.dispatchEvent(new CustomEvent('triggerEvent', {
+      detail: {
+        eventId: selectedEvent.id,
+        timestamp: Date.now(),
+        source: 'runtime_navigation_assist',
+      },
+    }));
+    return true;
+  }, [getActiveScreenContext]);
+
   // Define ElevenLabs client tools at component level for SDK initialization
   // These tools call through refs to avoid stale closures and circular dependencies
   // The actual implementations are updated via refs when they're available
@@ -3463,55 +3523,23 @@ Important guidelines:
         }
       };
 
-      const getScreenEvents = (screen: any): any[] => {
-        if (!screen) return [];
-        const allEvents = [
-          ...(screen.events || []),
-          ...(screen.sections || []).flatMap((section: any) =>
-            (section.elements || []).flatMap((element: any) => element.events || [])
-          ),
-        ].filter((event: any) => event && typeof event.id === 'string');
-
-        const dedupedById = new Map<string, any>();
-        for (const event of allEvents) {
-          if (!dedupedById.has(event.id)) {
-            dedupedById.set(event.id, event);
-          }
-        }
-        return Array.from(dedupedById.values());
+      const hasEventOnScreen = (screen: AgentScreen | undefined, targetEventId: string): boolean => {
+        return getScreenEvents(screen).some((event) => event.id === targetEventId);
       };
 
-      const hasEventOnScreen = (screen: any, targetEventId: string): boolean => {
-        return getScreenEvents(screen).some((event: any) => event.id === targetEventId);
-      };
-
-      const isNavigationScreenEvent = (event: any): boolean => {
+      const isNavigationScreenEvent = (event: AgentScreenEvent | undefined): boolean => {
         if (!event) return false;
         if (typeof event.id === 'string' && event.id.startsWith('navigate_')) return true;
-        return (event.action || []).some((action: any) => action?.type === 'navigation' && typeof action?.deeplink === 'string');
+        return collectNavigationTargetsFromEvent(event).length > 0;
       };
 
-      const getNavigationTargetFromEvent = (event: any): string | undefined => {
-        const navAction = (event?.action || []).find((action: any) => action?.type === 'navigation' && typeof action?.deeplink === 'string');
-        return navAction?.deeplink;
-      };
-
-      const getActiveAgentScreens = (): any[] => {
-        const journey = currentJourneyRef.current;
-        if (!journey?.agents?.length) return [];
-        const runtimeAgentName = currentAgentRef.current;
-        const activeAgent =
-          journey.agents.find(a => normalizeAgentNameForRuntime(a.name) === runtimeAgentName) ||
-          journey.agents.find(a => a.id === journey.startingAgentId) ||
-          journey.agents[0];
-        return activeAgent?.screens || [];
+      const getNavigationTargetFromEvent = (event: AgentScreenEvent | undefined): string | undefined => {
+        return collectNavigationTargetsFromEvent(event)[0];
       };
 
       const activeScreenId = currentScreenIdRef.current || undefined;
-      const activeScreens = getActiveAgentScreens();
-      const activeScreen = activeScreens.find((screen: any) => screen.id === activeScreenId);
-      const activeScreenEvents = activeScreen ? getScreenEvents(activeScreen) : [];
-      const requestedEventConfig = activeScreenEvents.find((event: any) => event.id === eventId);
+      const { activeScreen, activeScreenEvents } = getActiveScreenContext();
+      const requestedEventConfig = activeScreenEvents.find((event) => event.id === eventId);
       const isNavigationEvent = eventId.startsWith('navigate_') || isNavigationScreenEvent(requestedEventConfig);
       const navigationTarget = getNavigationTargetFromEvent(requestedEventConfig);
 
@@ -3553,8 +3581,8 @@ Important guidelines:
       }
 
       if (activeScreen && !hasEventOnScreen(activeScreen, eventId)) {
-        const availableEventIds = activeScreenEvents.map((event: any) => event.id);
-        const screenNavigationEvents = activeScreenEvents.filter((event: any) => isNavigationScreenEvent(event));
+        const availableEventIds = activeScreenEvents.map((event) => event.id);
+        const screenNavigationEvents = activeScreenEvents.filter((event) => isNavigationScreenEvent(event));
         const suggestedNavigationEvent = screenNavigationEvents.length === 1 ? screenNavigationEvents[0] : null;
         const suggestedNavigationEventId = suggestedNavigationEvent?.id;
         addLog('warning', `⚠️ Guardrail blocked invalid event "${eventId}" on screen "${activeScreen.id}".`, { availableEvents: availableEventIds });
@@ -3741,42 +3769,10 @@ Important guidelines:
         }
       };
 
-      const getScreenEvents = (currentScreen: any): any[] => {
-        if (!currentScreen) return [];
-        const allEvents = [
-          ...(currentScreen.events || []),
-          ...(currentScreen.sections || []).flatMap((section: any) =>
-            (section.elements || []).flatMap((element: any) => element.events || [])
-          ),
-        ].filter((event: any) => event && typeof event.id === 'string');
+      const getNavigationTargetFromEvent = (event: AgentScreenEvent | undefined): string | undefined =>
+        collectNavigationTargetsFromEvent(event)[0];
 
-        const dedupedById = new Map<string, any>();
-        for (const event of allEvents) {
-          if (!dedupedById.has(event.id)) dedupedById.set(event.id, event);
-        }
-        return Array.from(dedupedById.values());
-      };
-
-      const getNavigationTargetFromEvent = (event: any): string | undefined => {
-        const navAction = (event?.action || []).find(
-          (action: any) => action?.type === 'navigation' && typeof action?.deeplink === 'string'
-        );
-        return navAction?.deeplink;
-      };
-
-      const getActiveAgentScreens = (): any[] => {
-        const journey = currentJourneyRef.current;
-        if (!journey?.agents?.length) return [];
-        const runtimeAgentName = currentAgentRef.current;
-        const activeAgent =
-          journey.agents.find(a => normalizeAgentNameForRuntime(a.name) === runtimeAgentName) ||
-          journey.agents.find(a => a.id === journey.startingAgentId) ||
-          journey.agents[0];
-        return activeAgent?.screens || [];
-      };
-
-      const activeScreens = getActiveAgentScreens();
-      const activeScreen = activeScreens.find((s: any) => s.id === activeScreenId);
+      const { activeScreen, activeScreenEvents } = getActiveScreenContext();
 
       const pendingNavigation = pendingNavigationRef.current;
       if (pendingNavigation && Date.now() <= pendingNavigation.expiresAtMs) {
@@ -3819,7 +3815,7 @@ Important guidelines:
         });
       }
 
-      const screenEvents = getScreenEvents(activeScreen);
+      const screenEvents = activeScreenEvents;
       const navEvents = screenEvents.filter((event: any) => getNavigationTargetFromEvent(event));
       const matchingNavEvent = navEvents.find((event: any) => getNavigationTargetFromEvent(event) === targetScreen);
       const availableNextScreens = navEvents
@@ -4363,6 +4359,66 @@ Important guidelines:
       markCapturedModuleKeys(stateUpdates);
       applyModuleStateUpdates(stateUpdates);
 
+      // Keep captured focus visible briefly, then advance using the current screen's
+      // single available navigation event (flow-agnostic behavior).
+      const { activeScreen, activeScreenEvents } = getActiveScreenContext();
+      const navigationEvents = activeScreenEvents.filter((event) =>
+        (typeof event.id === 'string' && event.id.startsWith('navigate_')) ||
+        collectNavigationTargetsFromEvent(event).length > 0
+      );
+      const autoNavigationEvent = navigationEvents.length === 1 ? navigationEvents[0] : null;
+      const autoNavigationEventId = autoNavigationEvent?.id;
+      const autoNavigationTarget = collectNavigationTargetsFromEvent(autoNavigationEvent)[0];
+
+      if (activeScreen && autoNavigationEventId) {
+        const delayMs = RECORD_INPUT_DISPLAY_MS;
+        const executeAtMs = Date.now() + delayMs;
+        pendingNavigationRef.current = {
+          eventId: autoNavigationEventId,
+          executeAtMs,
+          expiresAtMs: executeAtMs + 2000,
+          targetScreenId: autoNavigationTarget,
+          source: 'capture_weekly_focus',
+        };
+        addLog('info', `⏳ Holding "${autoNavigationEventId}" for 3s so the captured focus card remains visible.`);
+
+        const dispatchWeeklyFocusNavigation = () => {
+          const pending = pendingNavigationRef.current;
+          if (
+            !pending ||
+            pending.eventId !== autoNavigationEventId ||
+            pending.executeAtMs !== executeAtMs
+          ) {
+            return;
+          }
+          if (lastElevenLabsModeRef.current === 'speaking') {
+            addLog('info', `⏳ Agent still speaking — deferring navigation "${autoNavigationEventId}" by 500ms`);
+            setTimeout(dispatchWeeklyFocusNavigation, 500);
+            return;
+          }
+          window.dispatchEvent(new CustomEvent('triggerEvent', {
+            detail: { eventId: autoNavigationEventId, timestamp: Date.now() },
+          }));
+          setTimeout(() => {
+            const activePending = pendingNavigationRef.current;
+            if (
+              activePending &&
+              activePending.eventId === autoNavigationEventId &&
+              activePending.executeAtMs === executeAtMs
+            ) {
+              pendingNavigationRef.current = null;
+            }
+          }, 2000);
+        };
+
+        setTimeout(dispatchWeeklyFocusNavigation, delayMs);
+      } else if (activeScreen) {
+        addLog(
+          'warning',
+          `⚠️ capture_weekly_focus saved data on "${activeScreen.id}" but could not determine a single navigation event to auto-advance.`
+        );
+      }
+
       const completedAtMs = Date.now();
       addLog('tool', `🎯 capture_weekly_focus result`, {
         currentScreen: currentScreenIdRef.current,
@@ -4457,6 +4513,8 @@ Important guidelines:
     set_reminder_time: async (params: any) => {
       const startedAtMs = Date.now();
       try {
+        const activeScreenId = currentScreenIdRef.current;
+
         // Defensive: extract time from various param shapes the LLM might send
         const userTime = typeof params === 'string' ? params
           : params?.time ?? params?.reminder_time ?? params?.reminderTime ?? String(params);
@@ -4476,6 +4534,20 @@ Important guidelines:
         }
 
         const utcTime = parseLocalTimeToUTC(userTime);
+        const validUtcTimePattern = /^\d{2}:\d{2}$/;
+        if (!validUtcTimePattern.test(utcTime)) {
+          addLog('warning', '⚠️ set_reminder_time: unable to parse a concrete time value', {
+            userTime,
+            utcTime,
+            currentScreen: currentScreenIdRef.current,
+          });
+          return {
+            saved: false,
+            current_screen: activeScreenId ?? null,
+            reason: 'invalid_time_value',
+            message: `Could not parse "${userTime}" into a valid time. Ask for a specific time like "9 PM" or "8:30 AM".`,
+          };
+        }
         addLog('tool', `⏰ set_reminder_time parsed`, {
           userTime,
           utcTime,
@@ -4736,6 +4808,7 @@ Important guidelines:
         }
         if (isDone !== false) {
           shouldResetLiveAgentMessageOnNextAssistantTextRef.current = true;
+          clearLiveAgentMessage();
           setAgentSpeechAlignment(null);
           agentSpeechPlaybackAnchorRef.current = null;
           setAgentSpeechPlaybackAnchorMs(null);
@@ -5039,9 +5112,9 @@ Important guidelines:
             source: 'notification_permission',
             allowed: true,
           });
-          if (currentScreenIdRef.current === 'pq-notification-setup') {
-            addLog('info', '🔀 Auto-advancing to plan review after notification approval');
-            navigateToScreen?.('pq-plan-review');
+          const advanced = triggerNavigationFromCurrentScreen(['navigate_to_plan_review']);
+          if (advanced) {
+            addLog('info', '🔀 Auto-advanced after notification approval using current screen navigation event');
           }
           console.log('🔔 Notifications enabled');
         }}
@@ -5053,9 +5126,9 @@ Important guidelines:
             source: 'notification_permission',
             allowed: false,
           });
-          if (currentScreenIdRef.current === 'pq-notification-setup') {
-            addLog('info', '🔀 Auto-advancing to plan review after notification denial');
-            navigateToScreen?.('pq-plan-review');
+          const advanced = triggerNavigationFromCurrentScreen(['navigate_to_plan_review']);
+          if (advanced) {
+            addLog('info', '🔀 Auto-advanced after notification denial using current screen navigation event');
           }
           console.log('🔔 Notifications denied');
         }}
