@@ -59,6 +59,7 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
     initialScreen ? [initialScreen.id] : []
   );
   const [eventQueue, setEventQueue] = useState<ScreenEvent[]>([]);
+  const previousScreenIdRef = React.useRef<string | null>(initialScreen?.id || null);
   
   // CRITICAL: Use refs to store the latest screen state immediately (synchronously)
   // This fixes the race condition where stateUpdate reads from screenState before React's async state update
@@ -66,18 +67,20 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
   const moduleStateRef = React.useRef<Record<string, AnyCodable>>(initialModuleState);
 
   // Update current screen when initialScreen prop changes.
-  // IMPORTANT: only switch screens when the ID actually changes.
-  // Reapplying the same screen object on each render can pin voice flows
-  // to the old screen and hide captured UI cards that depend on current_screen.
+  // IMPORTANT: only react to actual prop ID changes from parent.
+  // If this effect runs on local currentScreen changes, it can "snap back"
+  // to an old initialScreen and break text-card visibility after record_input.
+  const prevInitialScreenIdRef = React.useRef<string | null>(initialScreen?.id ?? null);
   React.useEffect(() => {
-    if (!initialScreen) return;
-    if (initialScreen.id === currentScreen?.id) return;
+    const nextInitialId = initialScreen?.id ?? null;
+    if (!initialScreen || nextInitialId === prevInitialScreenIdRef.current) return;
 
+    prevInitialScreenIdRef.current = nextInitialId;
     setCurrentScreenState(initialScreen);
     const newState = initialScreen.state || {};
     screenStateRef.current = newState; // Sync ref immediately
     setScreenState(newState);
-  }, [initialScreen, currentScreen?.id]);
+  }, [initialScreen]);
 
   // Sync module state from parent props.
   // CRITICAL: Merge instead of replace to avoid wiping locally-set keys
@@ -158,6 +161,29 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
       current_screen: screenId,
     });
   }, [currentScreen?.id, updateModuleState]);
+
+  // Emit a dedicated event whenever the active screen actually changes.
+  // This powers flow-level logs for transition debugging.
+  React.useEffect(() => {
+    const currentScreenId = currentScreen?.id || null;
+    const previousScreenId = previousScreenIdRef.current;
+
+    if (!currentScreenId || currentScreenId === previousScreenId) {
+      return;
+    }
+
+    previousScreenIdRef.current = currentScreenId;
+
+    window.dispatchEvent(new CustomEvent('screenChanged', {
+      detail: {
+        type: 'screen_changed',
+        fromScreen: previousScreenId,
+        toScreen: currentScreenId,
+        navigationDepth: navigationStack.length,
+        timestamp: Date.now(),
+      },
+    }));
+  }, [currentScreen?.id, navigationStack.length]);
 
   // Listen for record_input events from voice agent
   React.useEffect(() => {
@@ -476,7 +502,16 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
           break;
       }
     }
-  }, [evaluateConditions, updateScreenState, updateModuleState, onSetVoiceEnabled, resolveStateReference, interpolateString]);
+  }, [
+    currentScreen,
+    evaluateConditions,
+    interpolateString,
+    navigateToScreen,
+    onSetVoiceEnabled,
+    resolveStateReference,
+    updateModuleState,
+    updateScreenState,
+  ]);
 
   /**
    * Trigger an event by ID

@@ -1663,17 +1663,47 @@ function VoiceAgentContent() {
         });
       }
     };
+
+    const handleScreenChanged = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const {
+        fromScreen,
+        toScreen,
+        navigationDepth,
+        timestamp,
+      } = customEvent.detail || {};
+
+      if (!toScreen || fromScreen === toScreen) {
+        return;
+      }
+
+      addLog('event', `🪟 Screen changed: "${fromScreen ?? 'unknown'}" → "${toScreen}"`, {
+        fromScreen,
+        toScreen,
+        navigationDepth,
+      });
+
+      logServerEvent({
+        type: 'screen_changed',
+        from_screen: fromScreen ?? null,
+        to_screen: toScreen,
+        navigation_depth: navigationDepth,
+        event_timestamp: timestamp ?? Date.now(),
+      });
+    };
     
     window.addEventListener('eventTriggered', handleEventTriggered as EventListener);
     window.addEventListener('screenNavigation', handleNavigation as EventListener);
     window.addEventListener('screenNavigationResult', handleNavigationResult as EventListener);
+    window.addEventListener('screenChanged', handleScreenChanged as EventListener);
     
     return () => {
       window.removeEventListener('eventTriggered', handleEventTriggered as EventListener);
       window.removeEventListener('screenNavigation', handleNavigation as EventListener);
       window.removeEventListener('screenNavigationResult', handleNavigationResult as EventListener);
+      window.removeEventListener('screenChanged', handleScreenChanged as EventListener);
     };
-  }, [addLog, applyModuleStateUpdates, clearNotificationPlanReviewFallback, navigateToScreen, updateFlowContext]);
+  }, [addLog, applyModuleStateUpdates, clearNotificationPlanReviewFallback, logServerEvent, navigateToScreen, updateFlowContext]);
 
   // Listen for tool-dispatched events and connect them to screen context functions
   // This bridges the gap between ElevenLabs client tool calls and UI navigation

@@ -780,15 +780,26 @@ export const AgentMessageCardElement: React.FC<AgentMessageCardElementProps> = (
     if (wordIndex === null) return { opacity: 1, filter: 'blur(0px)' };
 
     if (!shouldUseAlignment || !normalizedAlignment) {
-      // Keep text visible when we do not have trusted alignment data.
-      return { opacity: 1, filter: 'blur(0px)' };
+      if (!syncWithSpeech || fallbackElapsedSpeechMs === null) {
+        return { opacity: 1, filter: 'blur(0px)' };
+      }
+
+      const revealStartMs = wordIndex * FALLBACK_WORD_STEP_MS;
+      const revealProgress = clamp01((fallbackElapsedSpeechMs - revealStartMs) / FALLBACK_WORD_REVEAL_DURATION_MS);
+      const opacity = BASE_WORD_OPACITY + ((1 - BASE_WORD_OPACITY) * revealProgress);
+      const blurPx = (1 - revealProgress) * 1.4;
+      return {
+        opacity,
+        filter: `blur(${blurPx.toFixed(2)}px)`,
+      };
     }
 
-    // Animate only when playback timing from the SDK is available.
-    if (playbackSynchronizedElapsedSpeechMs === null) {
-      return { opacity: 1, filter: 'blur(0px)' };
+    // Prefer playback-synchronized timing when available, and fall back to
+    // alignment-relative elapsed time so SDK timestamps still drive reveal.
+    const activeElapsedSpeechMs = playbackSynchronizedElapsedSpeechMs ?? elapsedSpeechMs;
+    if (activeElapsedSpeechMs === null) {
+      return { opacity: BASE_WORD_OPACITY, filter: 'blur(1.4px)' };
     }
-    const activeElapsedSpeechMs = playbackSynchronizedElapsedSpeechMs;
 
     const alignmentWordCount = normalizedAlignment.words.length;
     if (alignmentWordCount === 0) {
