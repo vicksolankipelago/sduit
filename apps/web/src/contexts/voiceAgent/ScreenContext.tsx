@@ -348,6 +348,37 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
   }, []); // No dependencies - refs are stable and always have latest values
 
   /**
+   * Navigate to a screen by ID
+   */
+  const navigateToScreen = useCallback((screenId: string, screens: Screen[]) => {
+    console.log(`🧭 navigateToScreen called: screenId="${screenId}", screens.length=${screens.length}`);
+    const screen = screens.find(s => s.id === screenId);
+    if (screen) {
+      console.log(`✅ Screen found: "${screenId}" - navigating from "${currentScreen?.id}" to "${screen.id}"`);
+      setCurrentScreen(screen);
+      
+      window.dispatchEvent(new CustomEvent('screenNavigationResult', {
+        detail: {
+          success: true,
+          fromScreen: currentScreen?.id,
+          toScreen: screen.id,
+        }
+      }));
+    } else {
+      console.warn(`❌ Screen not found: "${screenId}". Available screens: [${screens.map(s => s.id).join(', ')}]`);
+      
+      window.dispatchEvent(new CustomEvent('screenNavigationResult', {
+        detail: {
+          success: false,
+          fromScreen: currentScreen?.id,
+          toScreen: screenId,
+          availableScreens: screens.map(s => s.id),
+        }
+      }));
+    }
+  }, [setCurrentScreen, currentScreen]);
+
+  /**
    * Execute event actions
    */
   const executeActions = useCallback((actions: EventAction[], screens: Screen[]) => {
@@ -580,39 +611,6 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
       console.warn('Event not found:', eventId);
     }
   }, [currentScreen, evaluateConditions, executeActions, updateModuleState]);
-
-  /**
-   * Navigate to a screen by ID
-   */
-  const navigateToScreen = useCallback((screenId: string, screens: Screen[]) => {
-    console.log(`🧭 navigateToScreen called: screenId="${screenId}", screens.length=${screens.length}`);
-    const screen = screens.find(s => s.id === screenId);
-    if (screen) {
-      console.log(`✅ Screen found: "${screenId}" - navigating from "${currentScreen?.id}" to "${screen.id}"`);
-      setCurrentScreen(screen);
-      
-      // Dispatch success event for logging
-      window.dispatchEvent(new CustomEvent('screenNavigationResult', {
-        detail: {
-          success: true,
-          fromScreen: currentScreen?.id,
-          toScreen: screen.id,
-        }
-      }));
-    } else {
-      console.warn(`❌ Screen not found: "${screenId}". Available screens: [${screens.map(s => s.id).join(', ')}]`);
-      
-      // Dispatch failure event for logging
-      window.dispatchEvent(new CustomEvent('screenNavigationResult', {
-        detail: {
-          success: false,
-          fromScreen: currentScreen?.id,
-          toScreen: screenId,
-          availableScreens: screens.map(s => s.id),
-        }
-      }));
-    }
-  }, [setCurrentScreen, currentScreen]);
 
   /**
    * Go back to previous screen

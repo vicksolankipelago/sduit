@@ -1,0 +1,55 @@
+Flow Builder
+
+Flows
+Screens
+Transcripts
+Settings
+V
+vick.solanki@gmail.com
+ADMIN
+
+Sign out
+⚠️
+Error in VoiceAgent
+Cannot access uninitialized variable.
+
+Try Again
+Error Details
+ScreenProvider@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/src/contexts/voiceAgent/ScreenContext.tsx:342:23
+react_stack_bottom_frame@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/node_modules/.vite/deps/react-dom_client.js:18509:29
+renderWithHooks@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/node_modules/.vite/deps/react-dom_client.js:5654:42
+updateFunctionComponent@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/node_modules/.vite/deps/react-dom_client.js:7475:36
+runWithFiberInDEV@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/node_modules/.vite/deps/react-dom_client.js:999:23
+performUnitOfWork@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/node_modules/.vite/deps/react-dom_client.js:12561:115
+workLoopSync@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/node_modules/.vite/deps/react-dom_client.js:12424:60
+renderRootSync@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/node_modules/.vite/deps/react-dom_client.js:12408:25
+performWorkOnRoot@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/node_modules/.vite/deps/react-dom_client.js:11827:51
+performWorkOnRootViaSchedulerTask@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/node_modules/.vite/deps/react-dom_client.js:13505:26
+performWorkUntilDeadline@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/node_modules/.vite/deps/react-dom_client.js:36:58
+
+ScreenProvider@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/src/contexts/voiceAgent/ScreenContext.tsx:8:16
+div@unknown:0:0
+div@unknown:0:0
+div@unknown:0:0
+div@unknown:0:0
+AgentUIRenderer@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/src/components/voiceAgent/AgentUIRenderer.tsx:18:26
+div@unknown:0:0
+VoiceAgentContent@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/src/pages/VoiceAgent.tsx:498:20
+AgentUIProvider@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/src/contexts/voiceAgent/AgentUIContext.tsx:9:5
+EventProvider@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/src/contexts/voiceAgent/EventContext.tsx:7:5
+TranscriptProvider@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/src/contexts/voiceAgent/TranscriptContext.tsx:11:5
+ErrorBoundary@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/src/components/voiceAgent/ErrorBoundary.tsx:6:10
+VoiceAgent@unknown:0:0
+RenderedRoute@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/node_modules/.vite/deps/react-router-dom.js:6293:33
+Outlet@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/node_modules/.vite/deps/react-router-dom.js:7067:25
+main@unknown:0:0
+div@unknown:0:0
+Layout@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/src/components/Layout.tsx:11:31
+ProtectedRoute@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/src/components/ProtectedRoute.tsx:6:5
+RenderedRoute@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/node_modules/.vite/deps/react-router-dom.js:6293:33
+Routes@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/node_modules/.vite/deps/react-router-dom.js:7138:19
+AuthProvider@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/src/contexts/AuthContext.tsx:25:5
+Router@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/node_modules/.vite/deps/react-router-dom.js:7079:17
+BrowserRouter@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/node_modules/.vite/deps/react-router-dom.js:10237:26
+QueryClientProvider@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/node_modules/.vite/deps/@tanstack_react-query.js:3090:9
+ErrorBoundary@https://ec2b459a-25f7-46c6-9356-542a2f8f82ab-00-1vy2x4jjxsyuu.riker.replit.dev/src/components/voiceAgent/ErrorBoundary.tsx:6:10
