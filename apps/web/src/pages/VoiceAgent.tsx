@@ -130,6 +130,11 @@ function formatRecordingDuration(elapsedMs: number): string {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
+type PreviewRecordingNotice = {
+  kind: 'error' | 'info' | 'success';
+  message: string;
+};
+
 const RECORD_INPUT_DISPLAY_MS = 3000;
 const RECENT_RECORD_INPUT_WINDOW_MS = 15000;
 const PROMPT_TOOL_NAME_CANDIDATES = [
@@ -864,6 +869,7 @@ function VoiceAgentContent() {
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showVoiceHelp, setShowVoiceHelp] = useState(false);
+  const [previewRecordingNotice, setPreviewRecordingNotice] = useState<PreviewRecordingNotice | null>(null);
   const [currentJourney, setCurrentJourney] = useState<Journey | null>(null);
   const [availableJourneys, setAvailableJourneys] = useState<JourneyListItem[]>([]);
   const [journeysLoading, setJourneysLoading] = useState(true);
@@ -2865,35 +2871,73 @@ Important guidelines:
   const handleStartPreviewRecording = useCallback(async () => {
     const previewElement = previewCaptureElementRef.current;
     if (!previewElement) {
-      addLog('warning', 'Preview recorder is not ready yet.');
+      const message = 'Preview recorder is not ready yet.';
+      addLog('warning', message);
+      setPreviewRecordingNotice({ kind: 'error', message });
       return;
     }
     const agentAudioStream = getAgentAudioStreamForPreviewRecording();
     if (!agentAudioStream) {
-      addLog('warning', 'Agent audio is not available yet. Start recording after audio playback begins.');
+      const message = 'Agent audio is not available yet. Start recording after audio playback begins.';
+      addLog('warning', message);
+      setPreviewRecordingNotice({ kind: 'error', message });
       return;
     }
 
     try {
+      setPreviewRecordingNotice({
+        kind: 'info',
+        message: 'Preparing recording. Select this browser tab in the share dialog to capture preview video.',
+      });
       await startPreviewRecording({
         previewElement,
         agentAudioStream,
         micStream,
       });
       addLog('info', 'Started preview recording');
+      setPreviewRecordingNotice({
+        kind: 'success',
+        message: 'Recording started.',
+      });
     } catch (error) {
-      addLog('warning', `Failed to start preview recording: ${(error as Error).message}`);
+      const message = `Failed to start preview recording: ${(error as Error).message}`;
+      addLog('warning', message);
+      setPreviewRecordingNotice({ kind: 'error', message });
     }
   }, [addLog, getAgentAudioStreamForPreviewRecording, micStream, startPreviewRecording]);
 
   const handleStopPreviewRecording = useCallback(async () => {
+    setPreviewRecordingNotice({
+      kind: 'info',
+      message: 'Finalizing recording...',
+    });
     const blob = await stopPreviewRecording();
     if (blob) {
       addLog('success', 'Preview recording completed');
+      setPreviewRecordingNotice({
+        kind: 'success',
+        message: 'Recording saved in this session. Tap Save to download.',
+      });
       return;
     }
-    addLog('warning', 'Preview recording stopped without media output');
+    const message = 'Preview recording stopped without media output';
+    addLog('warning', message);
+    setPreviewRecordingNotice({ kind: 'error', message });
   }, [addLog, stopPreviewRecording]);
+
+  useEffect(() => {
+    if (!previewRecordingError) return;
+    setPreviewRecordingNotice({
+      kind: 'error',
+      message: previewRecordingError,
+    });
+  }, [previewRecordingError]);
+
+  useEffect(() => {
+    if (sessionStatus !== 'CONNECTED') {
+      setPreviewRecordingNotice(null);
+    }
+  }, [sessionStatus]);
 
   useEffect(() => {
     if (sessionStatus === "CONNECTED") {
@@ -3523,6 +3567,34 @@ Important guidelines:
     return true;
   }, [getActiveScreenContext]);
 
+  const directNavigateFromCurrentScreen = useCallback((preferredEventIds: string[] = []): boolean => {
+    const { activeScreen, activeScreenEvents } = getActiveScreenContext();
+    if (!activeScreen) return false;
+
+    const navigationEvents = activeScreenEvents.filter((event) => {
+      const navigationTargets = collectNavigationTargetsFromEvent(event);
+      return (typeof event.id === 'string' && event.id.startsWith('navigate_')) || navigationTargets.length > 0;
+    });
+    if (navigationEvents.length === 0) return false;
+
+    const preferredMatch = preferredEventIds
+      .map((eventId) => navigationEvents.find((event) => event.id === eventId))
+      .find((event): event is AgentScreenEvent => Boolean(event));
+    const selectedEvent = preferredMatch || (navigationEvents.length === 1 ? navigationEvents[0] : null);
+    const targetScreenId = collectNavigationTargetsFromEvent(selectedEvent)[0];
+    if (!selectedEvent?.id || !targetScreenId || !navigateToScreen) return false;
+
+    navigateToScreen(targetScreenId);
+    const screenPointerUpdates = {
+      currentScreen: targetScreenId,
+      current_screen: targetScreenId,
+    };
+    applyModuleStateUpdates(screenPointerUpdates);
+    updateFlowContext?.(screenPointerUpdates);
+    addLog('info', `🧭 Direct navigation fallback: "${activeScreen.id}" → "${targetScreenId}" via "${selectedEvent.id}"`);
+    return true;
+  }, [addLog, applyModuleStateUpdates, getActiveScreenContext, navigateToScreen, updateFlowContext]);
+
   // Architecture rule reminder (see CLAUDE.md):
   // keep this runtime/tooling layer flow-agnostic; put flow-specific behavior in journey configs/prompts.
   // Define ElevenLabs client tools at component level for SDK initialization
@@ -3619,6 +3691,7 @@ Important guidelines:
       const requestedEventConfig = activeScreenEvents.find((event) => event.id === eventId);
       const isNavigationEvent = eventId.startsWith('navigate_') || isNavigationScreenEvent(requestedEventConfig);
       const navigationTarget = getNavigationTargetFromEvent(requestedEventConfig);
+      const isSelectionEvent = eventId.startsWith('select_');
 
       // If a record_input auto-navigation is pending, ignore extra navigation tool calls.
       const pendingNavigation = pendingNavigationRef.current;
@@ -3705,6 +3778,48 @@ Important guidelines:
         recentEventTimestamps.current.set(eventId, now);
       }
 
+      // Guardrail: on selection-based screens, require an option selection before navigation.
+      if (isNavigationEvent && activeScreen) {
+        const selectionEventIds = activeScreenEvents
+          .map((event) => event.id)
+          .filter((id): id is string => typeof id === 'string' && id.startsWith('select_'));
+        if (selectionEventIds.length > 0) {
+          const now = Date.now();
+          const selectionTimestamps = selectionEventIds
+            .map((id) => recentEventTimestamps.current.get(id))
+            .filter((value): value is number => typeof value === 'number');
+          const lastSelectionAt = selectionTimestamps.length > 0 ? Math.max(...selectionTimestamps) : null;
+
+          if (!lastSelectionAt) {
+            return buildNavigationResult({
+              success: false,
+              eventId,
+              fromScreen: activeScreen.id,
+              currentScreen: activeScreen.id,
+              nextScreen: navigationTarget,
+              reason: 'selection_required_before_navigation',
+              message: `Select an option on "${activeScreen.id}" before navigating. Call one of: ${selectionEventIds.join(', ')}.`,
+              availableEvents: activeScreenEvents.map((event) => event.id),
+            });
+          }
+
+          // Give the selected state a brief moment to render before leaving the screen.
+          const elapsedSinceSelectionMs = Math.max(0, now - lastSelectionAt);
+          const minimumSelectionVisibleMs = 1200;
+          const remainingMs = minimumSelectionVisibleMs - elapsedSinceSelectionMs;
+          if (remainingMs > 0) {
+            const minimumDelaySeconds = Number((remainingMs / 1000).toFixed(1));
+            if (resolvedDelay < minimumDelaySeconds) {
+              resolvedDelay = minimumDelaySeconds;
+              addLog(
+                'info',
+                `⏳ Holding navigation "${eventId}" for ${minimumDelaySeconds}s so the selection state is visible.`
+              );
+            }
+          }
+        }
+      }
+
       if (isNavigationEvent && lastRecordInputRef.current) {
         const elapsedMs = Date.now() - lastRecordInputRef.current.atMs;
         if (elapsedMs >= 0 && elapsedMs <= RECENT_RECORD_INPUT_WINDOW_MS) {
@@ -3726,8 +3841,12 @@ Important guidelines:
 
       dispatchTriggerEvent(eventId, resolvedDelay);
 
+      if (eventId === 'permissions_screen_event') {
+        addLog('info', `🔔 Waiting for explicit permission response on "${activeScreenId ?? 'unknown'}" before plan review navigation.`);
+      }
+
       // Return a more informative result based on event type to guide the LLM
-      if (eventId.startsWith('select_')) {
+      if (isSelectionEvent) {
         return buildNavigationResult({
           success: true,
           eventId,
@@ -5148,14 +5267,27 @@ Important guidelines:
             <button
               className={`agent-ui-control-btn voice-agent-preview-record-btn${isPreviewRecording ? ' is-recording' : ''}`}
               onClick={isPreviewRecording ? handleStopPreviewRecording : handleStartPreviewRecording}
+              disabled={previewRecordingStatus === 'starting' || previewRecordingStatus === 'stopping'}
               title={isPreviewRecording ? 'Stop preview recording' : 'Record preview video'}
             >
-              {isPreviewRecording ? 'Stop' : 'Rec'}
+              {previewRecordingStatus === 'starting'
+                ? 'Starting'
+                : previewRecordingStatus === 'stopping'
+                ? 'Stopping'
+                : isPreviewRecording
+                ? 'Stop'
+                : 'Rec'}
             </button>
             {previewRecordingUrl && !isPreviewRecording && (
               <button
                 className="agent-ui-control-btn voice-agent-preview-download-btn"
-                onClick={downloadPreviewRecording}
+                onClick={() => {
+                  downloadPreviewRecording();
+                  setPreviewRecordingNotice({
+                    kind: 'success',
+                    message: 'Recording download started.',
+                  });
+                }}
                 title="Download preview recording"
               >
                 Save
@@ -5164,7 +5296,13 @@ Important guidelines:
             {!isPreviewRecording && previewRecordingUrl && (
               <button
                 className="agent-ui-control-btn voice-agent-preview-clear-btn"
-                onClick={clearPreviewRecording}
+                onClick={() => {
+                  clearPreviewRecording();
+                  setPreviewRecordingNotice({
+                    kind: 'info',
+                    message: 'Recording cleared from this session.',
+                  });
+                }}
                 title="Clear preview recording"
               >
                 Clear
@@ -5206,12 +5344,14 @@ Important guidelines:
         onNotificationAllow={() => {
           setShowNotificationPopup(false);
           clearNotificationPlanReviewFallback();
-          updateModuleState?.({ notificationsEnabled: true });
+          updateModuleState?.({ notificationsEnabled: true, notificationPermissions: 'allowed' });
           sendUiResponseToSession('I allowed notifications', {
             source: 'notification_permission',
             allowed: true,
           });
-          const advanced = triggerNavigationFromCurrentScreen();
+          const advanced =
+            triggerNavigationFromCurrentScreen(['navigate_to_plan_review']) ||
+            directNavigateFromCurrentScreen(['navigate_to_plan_review']);
           if (advanced) {
             addLog('info', '🔀 Auto-advanced after notification approval using current screen navigation event');
           }
@@ -5220,12 +5360,14 @@ Important guidelines:
         onNotificationDeny={() => {
           setShowNotificationPopup(false);
           clearNotificationPlanReviewFallback();
-          updateModuleState?.({ notificationsEnabled: false });
+          updateModuleState?.({ notificationsEnabled: false, notificationPermissions: 'denied' });
           sendUiResponseToSession("I don't want notifications", {
             source: 'notification_permission',
             allowed: false,
           });
-          const advanced = triggerNavigationFromCurrentScreen();
+          const advanced =
+            triggerNavigationFromCurrentScreen(['navigate_to_plan_review']) ||
+            directNavigateFromCurrentScreen(['navigate_to_plan_review']);
           if (advanced) {
             addLog('info', '🔀 Auto-advanced after notification denial using current screen navigation event');
           }
@@ -5241,9 +5383,13 @@ Important guidelines:
         agentSpeechPlaybackAnchorMs={agentSpeechPlaybackAnchorMs}
         onPreviewContainerReady={setPreviewCaptureElement}
       />
-      {previewRecordingError && sessionStatus === 'CONNECTED' && (
-        <div className="voice-agent-preview-recording-error" role="status">
-          {previewRecordingError}
+      {previewRecordingNotice && sessionStatus === 'CONNECTED' && (
+        <div
+          className={`voice-agent-preview-recording-notice voice-agent-preview-recording-notice-${previewRecordingNotice.kind}`}
+          role="status"
+          aria-live="polite"
+        >
+          {previewRecordingNotice.message}
         </div>
       )}
       
