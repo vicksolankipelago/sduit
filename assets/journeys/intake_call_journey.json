@@ -1200,21 +1200,7 @@
               "deeplink": "about-you"
             }
           ],
-          "conditions": [
-            {
-              "rules": {
-                "==": [
-                  {
-                    "var": "currentScreen"
-                  },
-                  "pq-program-summary"
-                ]
-              },
-              "state": {
-                "currentScreen": "{$moduleData.current_screen}"
-              }
-            }
-          ]
+          "conditions": []
         }
       ],
       "sections": [
@@ -1302,6 +1288,14 @@
               "rules": {
                 "and": [
                   {
+                    "==": [
+                      {
+                        "var": "currentScreen"
+                      },
+                      "about-you"
+                    ]
+                  },
+                  {
                     "!=": [
                       {
                         "var": "aboutYouSummary"
@@ -1320,7 +1314,8 @@
                 ]
               },
               "state": {
-                "aboutYouSummary": "{$moduleData.aboutYouSummary}"
+                "aboutYouSummary": "{$moduleData.aboutYouSummary}",
+                "currentScreen": "{$moduleData.current_screen}"
               }
             }
           ]
@@ -1696,6 +1691,14 @@
               "rules": {
                 "and": [
                   {
+                    "==": [
+                      {
+                        "var": "currentScreen"
+                      },
+                      "motivation"
+                    ]
+                  },
+                  {
                     "!=": [
                       {
                         "var": "yourWhySummary"
@@ -1714,7 +1717,8 @@
                 ]
               },
               "state": {
-                "yourWhySummary": "{$moduleData.yourWhySummary}"
+                "yourWhySummary": "{$moduleData.yourWhySummary}",
+                "currentScreen": "{$moduleData.current_screen}"
               }
             }
           ]
@@ -1839,6 +1843,14 @@
               "rules": {
                 "and": [
                   {
+                    "==": [
+                      {
+                        "var": "currentScreen"
+                      },
+                      "weekly-focus"
+                    ]
+                  },
+                  {
                     "!=": [
                       {
                         "var": "weeklyFocus"
@@ -1857,7 +1869,8 @@
                 ]
               },
               "state": {
-                "weeklyFocus": "{$moduleData.weeklyFocus}"
+                "weeklyFocus": "{$moduleData.weeklyFocus}",
+                "currentScreen": "{$moduleData.current_screen}"
               }
             }
           ]

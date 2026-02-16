@@ -2140,19 +2140,11 @@ function VoiceAgentContent() {
         startingAgentConfigForConnect.prompt,
       ];
       
-      // If voice is enabled mid-flow, add instruction to start at the current screen
-      const currentScreenFromContext = effectiveFlowContext?.currentScreen as string | undefined;
-      if (currentScreenFromContext) {
-        const startingScreenInstruction = `\n---\nCRITICAL: STARTING SCREEN\n---\n\nYou are starting on screen "${currentScreenFromContext}". Begin the conversation using the instructions for that specific screen. Do NOT start from the first screen - the user has already completed previous screens.\n`;
-        instructionParts.unshift(startingScreenInstruction);
-        console.log('🎤 Added starting screen instruction:', currentScreenFromContext);
-      }
-
       const screenPromptAppendix = buildScreenPromptsAppendix({
         agentPrompt: startingAgentConfigForConnect.prompt,
         screenPrompts: startingAgentConfigForConnect.screenPrompts,
         screens: startingAgentConfigForConnect.screens as AgentScreen[] | undefined,
-        startScreenId: currentScreenFromContext,
+        startScreenId: undefined,
       });
       if (screenPromptAppendix.text) {
         instructionParts.push(screenPromptAppendix.text);
@@ -2165,7 +2157,7 @@ function VoiceAgentContent() {
         } else if (totalScreenPrompts > screenPromptAppendix.includedScreenIds.length) {
           addLog(
             'info',
-            `🧭 Appended ${screenPromptAppendix.includedScreenIds.length}/${totalScreenPrompts} screen prompts reachable from "${currentScreenFromContext}".`
+            `🧭 Appended ${screenPromptAppendix.includedScreenIds.length}/${totalScreenPrompts} screen prompts.`
           );
         }
       } else if (screenPromptAppendix.skippedBecauseEmbedded) {
@@ -2178,8 +2170,9 @@ function VoiceAgentContent() {
       // Add personalization quiz answers as context for the AI
       // This provides the AI with user's quiz responses for reference during conversation
       if (Object.keys(effectiveFlowContext).length > 0) {
+        const excludedPromptContextKeys = new Set(['currentScreen', 'current_screen']);
         const quizContextLines = Object.entries(effectiveFlowContext)
-          .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+          .filter(([key, value]) => !excludedPromptContextKeys.has(key) && value !== undefined && value !== null && value !== '')
           .map(([key, value]) => `- ${key}: ${typeof value === 'object' ? JSON.stringify(value) : value}`);
         
         if (quizContextLines.length > 0) {
@@ -2295,6 +2288,7 @@ function VoiceAgentContent() {
         // Convert flow context to string values for ElevenLabs dynamic variables
         const dynamicVariables: Record<string, string> = {};
         Object.entries(effectiveFlowContext).forEach(([key, value]) => {
+          if (key === 'currentScreen' || key === 'current_screen') return;
           if (value !== undefined && value !== null) {
             dynamicVariables[key] = typeof value === 'object' ? JSON.stringify(value) : String(value);
           }
@@ -2363,6 +2357,7 @@ Important guidelines:
         // Convert flow context to string values for ElevenLabs dynamic variables
         const dynamicVariables: Record<string, string> = {};
         Object.entries(effectiveFlowContext).forEach(([key, value]) => {
+          if (key === 'currentScreen' || key === 'current_screen') return;
           if (value !== undefined && value !== null) {
             dynamicVariables[key] = typeof value === 'object' ? JSON.stringify(value) : String(value);
           }
@@ -2529,16 +2524,10 @@ Important guidelines:
       transformedModuleState.memberName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
     }
     
-    // Get current screen ID to tell agent where we are in the flow
-    const activeScreenId = currentScreenIdRef.current;
-    console.log('🎤 Current screen when enabling voice:', activeScreenId);
-    
     // Merge flow context for data passing (use transformed labels for readable prompts)
-    // Include currentScreen so the agent knows where to start
     const mergedContext = normalizeFlowScreenContext({
       ...sanitizeSessionFlowContext(flowContext || {}),
       ...sanitizeSessionFlowContext(transformedModuleState),
-      ...(activeScreenId ? { currentScreen: activeScreenId, current_screen: activeScreenId } : {}),
     });
     
     // Update flowContext state for consistency
@@ -3665,39 +3654,9 @@ Important guidelines:
           trigger();
         }
       };
-
-      const isNavigationScreenEvent = (event: AgentScreenEvent | undefined): boolean => {
-        if (!event) return false;
-        if (typeof event.id === 'string' && event.id.startsWith('navigate_')) return true;
-        return collectNavigationTargetsFromEvent(event).length > 0;
-      };
-
-      const getNavigationTargetFromEvent = (event: AgentScreenEvent | undefined): string | undefined => {
-        return collectNavigationTargetsFromEvent(event)[0];
-      };
-
       const activeScreenId = currentScreenIdRef.current || undefined;
-      const { activeScreenEvents } = getActiveScreenContext();
-      const requestedEventConfig = activeScreenEvents.find((event) => event.id === eventId);
-      const availableEventIds = activeScreenEvents
-        .map((event) => event?.id)
-        .filter((id): id is string => typeof id === 'string' && id.length > 0);
-
-      if (!requestedEventConfig) {
-        return buildNavigationResult({
-          success: false,
-          eventId,
-          fromScreen: activeScreenId,
-          currentScreen: activeScreenId,
-          reason: 'event_not_available_on_current_screen',
-          message: `Event "${eventId}" is not available on screen "${activeScreenId ?? 'unknown'}". Use one of: ${availableEventIds.join(', ') || 'no events available'}.`,
-          availableEvents: availableEventIds,
-        });
-      }
-
-      const isNavigationEvent = isNavigationScreenEvent(requestedEventConfig);
-      const navigationTarget = getNavigationTargetFromEvent(requestedEventConfig);
-      const isSelectionEvent = requestedEventConfig.id.startsWith('select_');
+      const isNavigationEvent = eventId.startsWith('navigate_');
+      const isSelectionEvent = eventId.startsWith('select_');
 
       if (isNavigationEvent && lastRecordInputRef.current) {
         const elapsedMs = Date.now() - lastRecordInputRef.current.atMs;
@@ -3720,7 +3679,7 @@ Important guidelines:
 
       dispatchTriggerEvent(eventId, resolvedDelay);
 
-      // Return a more informative result based on event type to guide the LLM
+      // Return a simple result and let prompt sequencing control behavior.
       if (isSelectionEvent) {
         return buildNavigationResult({
           success: true,
@@ -3736,11 +3695,10 @@ Important guidelines:
           success: true,
           eventId,
           fromScreen: activeScreenId,
-          nextScreen: navigationTarget,
           currentScreen: activeScreenId,
           delaySeconds: resolvedDelay,
           reason: 'navigation_scheduled',
-          message: `Navigation "${eventId}" was triggered. Wait for the UI to confirm the new screen before asking that screen's question.`,
+          message: `Navigation "${eventId}" triggered.${resolvedDelay ? ` (after ${resolvedDelay}s delay)` : ''}`,
         });
       }
       return buildNavigationResult({
@@ -3754,214 +3712,82 @@ Important guidelines:
       });
     },
 
-    // Navigate directly by target screen id.
-    // This resolves the matching navigation event on the CURRENT screen, then triggers it.
+    // Navigate directly by target screen id without runtime transition gating.
     navigate_to: async (params: { screen?: string; screen_id?: string; delay?: number | string }) => {
       const startedAtMs = Date.now();
       const targetScreen = params?.screen ?? params?.screen_id;
       const { delay = 0 } = params ?? {};
       const parseDelaySeconds = (value: unknown): number => {
-        if (typeof value === 'number' && Number.isFinite(value)) {
-          return Math.max(0, value);
-        }
+        if (typeof value === 'number' && Number.isFinite(value)) return Math.max(0, value);
         if (typeof value === 'string') {
           const parsed = Number(value.trim());
           return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
         }
         return 0;
       };
-      let resolvedDelay = parseDelaySeconds(delay);
+      const resolvedDelay = parseDelaySeconds(delay);
       const activeScreenId = currentScreenIdRef.current || undefined;
+
       addLog('tool', `🧰 navigate_to called: ${targetScreen ?? 'missing_screen'}`, {
         currentScreen: activeScreenId,
         startedAtMs,
         requestedDelaySeconds: delay,
       });
 
-      const buildResult = (payload: {
-        success: boolean;
-        eventId?: string;
-        fromScreen?: string;
-        nextScreen?: string;
-        currentScreen?: string;
-        delaySeconds?: number;
-        reason?: string;
-        message: string;
-        availableNextScreens?: string[];
-      }) => {
+      if (!targetScreen || typeof targetScreen !== 'string') {
         const completedAtMs = Date.now();
-        addLog('tool', `🧰 navigate_to result: ${payload.reason ?? (payload.success ? 'ok' : 'failed')}`, {
+        addLog('tool', '🧰 navigate_to result: missing_screen', {
           screen: targetScreen ?? null,
-          eventId: payload.eventId ?? null,
-          success: payload.success,
-          currentScreen: payload.currentScreen ?? payload.fromScreen ?? activeScreenId,
-          fromScreen: payload.fromScreen ?? null,
-          nextScreen: payload.nextScreen ?? null,
-          availableNextScreens: payload.availableNextScreens ?? [],
+          success: false,
+          currentScreen: activeScreenId,
           startedAtMs,
           completedAtMs,
           elapsedMs: completedAtMs - startedAtMs,
-          delaySeconds: payload.delaySeconds ?? resolvedDelay,
+          delaySeconds: resolvedDelay,
         });
         return {
-          success: payload.success,
-          event_id: payload.eventId ?? null,
-          from_screen: payload.fromScreen ?? null,
-          next_screen: payload.nextScreen ?? null,
-          current_screen: payload.currentScreen ?? payload.fromScreen ?? null,
-          delay_seconds: payload.delaySeconds ?? 0,
-          reason: payload.reason ?? null,
-          message: payload.message,
-          available_next_screens: payload.availableNextScreens ?? [],
-        };
-      };
-
-      if (!targetScreen || typeof targetScreen !== 'string') {
-        return buildResult({
           success: false,
-          fromScreen: activeScreenId,
-          currentScreen: activeScreenId,
-          nextScreen: undefined,
+          from_screen: activeScreenId ?? null,
+          next_screen: null,
+          current_screen: activeScreenId ?? null,
+          delay_seconds: 0,
           reason: 'missing_screen',
           message: 'Missing required "screen" parameter.',
-        });
-      }
-
-      const dispatchTriggerEvent = (id: string, delaySeconds = 0) => {
-        const trigger = () => {
-          window.dispatchEvent(new CustomEvent('triggerEvent', {
-            detail: { eventId: id, timestamp: Date.now() }
-          }));
         };
-        if (delaySeconds > 0) {
-          setTimeout(trigger, delaySeconds * 1000);
-        } else {
-          trigger();
-        }
+      }
+
+      const triggerNavigation = () => {
+        window.dispatchEvent(new CustomEvent('navigateToScreen', {
+          detail: { screenId: targetScreen, timestamp: Date.now() }
+        }));
       };
 
-      const getNavigationTargetFromEvent = (event: AgentScreenEvent | undefined): string | undefined =>
-        collectNavigationTargetsFromEvent(event)[0];
-
-      const { activeScreen, activeScreenEvents } = getActiveScreenContext();
-
-      const pendingNavigation = pendingNavigationRef.current;
-      if (pendingNavigation && Date.now() <= pendingNavigation.expiresAtMs) {
-        if (pendingNavigation.targetScreenId === targetScreen) {
-          const remainingDelaySeconds = Math.max(0, Number(((pendingNavigation.executeAtMs - Date.now()) / 1000).toFixed(1)));
-          return buildResult({
-            success: true,
-            eventId: pendingNavigation.eventId,
-            fromScreen: activeScreenId,
-            nextScreen: targetScreen,
-            currentScreen: activeScreenId,
-            delaySeconds: remainingDelaySeconds,
-            reason: 'navigation_in_progress',
-            message: `Navigation to "${targetScreen}" is already in progress${remainingDelaySeconds > 0 ? ` (about ${remainingDelaySeconds}s remaining)` : ''}.`,
-          });
-        }
-
-        if (pendingNavigation.targetScreenId && pendingNavigation.targetScreenId !== targetScreen) {
-          return buildResult({
-            success: false,
-            eventId: pendingNavigation.eventId,
-            fromScreen: activeScreenId,
-            nextScreen: targetScreen,
-            currentScreen: activeScreenId,
-            delaySeconds: 0,
-            reason: 'navigation_in_progress_to_different_screen',
-            message: `Navigation to "${pendingNavigation.targetScreenId}" is still in progress. Wait for it to complete before navigating to "${targetScreen}".`,
-          });
-        }
+      if (resolvedDelay > 0) {
+        setTimeout(triggerNavigation, resolvedDelay * 1000);
+      } else {
+        triggerNavigation();
       }
 
-      if (!activeScreen) {
-        return buildResult({
-          success: false,
-          fromScreen: activeScreenId,
-          currentScreen: activeScreenId,
-          nextScreen: targetScreen,
-          reason: 'no_active_screen',
-          message: `Cannot navigate to "${targetScreen}" because there is no active screen context.`,
-        });
-      }
-
-      const screenEvents = activeScreenEvents;
-      const navEvents = screenEvents.filter((event: any) => getNavigationTargetFromEvent(event));
-      const matchingNavEvent = navEvents.find((event: any) => getNavigationTargetFromEvent(event) === targetScreen);
-      const availableNextScreens = navEvents
-        .map((event: any) => getNavigationTargetFromEvent(event))
-        .filter((value: string | undefined): value is string => typeof value === 'string');
-
-      // Idempotency guard:
-      // If the model calls navigate_to for the screen we're already on
-      // (for example, after a trigger_event-based navigation already completed),
-      // return success instead of surfacing an invalid transition error.
-      if (activeScreen.id === targetScreen) {
-        return buildResult({
-          success: true,
-          fromScreen: activeScreen.id,
-          nextScreen: activeScreen.id,
-          currentScreen: activeScreen.id,
-          delaySeconds: 0,
-          reason: 'already_on_target_screen',
-          message: `Already on "${targetScreen}". No additional navigation needed.`,
-          availableNextScreens,
-        });
-      }
-
-      if (!matchingNavEvent) {
-        return buildResult({
-          success: false,
-          fromScreen: activeScreen.id,
-          currentScreen: activeScreen.id,
-          nextScreen: targetScreen,
-          reason: 'invalid_transition_for_current_screen',
-          message: `Cannot navigate to "${targetScreen}" from "${activeScreen.id}".`,
-          availableNextScreens,
-        });
-      }
-
-      // Preserve freshly captured responses on screen before navigating away.
-      if (lastRecordInputRef.current) {
-        const elapsedMs = Date.now() - lastRecordInputRef.current.atMs;
-        if (elapsedMs >= 0 && elapsedMs <= RECENT_RECORD_INPUT_WINDOW_MS) {
-          const remainingHoldMs = RECORD_INPUT_DISPLAY_MS - elapsedMs;
-          if (remainingHoldMs > 0) {
-            const minimumDelaySeconds = Number((remainingHoldMs / 1000).toFixed(1));
-            if (resolvedDelay < minimumDelaySeconds) {
-              resolvedDelay = minimumDelaySeconds;
-              addLog(
-                'info',
-                `⏳ Holding navigate_to("${targetScreen}") for ${minimumDelaySeconds}s so the captured answer stays visible.`
-              );
-            }
-          }
-        }
-      }
-
-      const executeAtMs = Date.now() + resolvedDelay * 1000;
-      pendingNavigationRef.current = {
-        eventId: matchingNavEvent.id,
-        executeAtMs,
-        // Keep a short buffer after expected execution to absorb duplicate tool calls.
-        expiresAtMs: executeAtMs + 2000,
-        targetScreenId: targetScreen,
-        source: 'navigate_to',
-      };
-
-      dispatchTriggerEvent(matchingNavEvent.id, resolvedDelay);
-      return buildResult({
+      const completedAtMs = Date.now();
+      addLog('tool', '🧰 navigate_to result: navigation_scheduled', {
+        screen: targetScreen,
         success: true,
-        eventId: matchingNavEvent.id,
-        fromScreen: activeScreen.id,
+        currentScreen: activeScreenId,
         nextScreen: targetScreen,
-        currentScreen: activeScreen.id,
+        startedAtMs,
+        completedAtMs,
+        elapsedMs: completedAtMs - startedAtMs,
         delaySeconds: resolvedDelay,
-        reason: 'navigation_scheduled',
-        message: `Navigation to "${targetScreen}" triggered via event "${matchingNavEvent.id}". Wait for the screen change before asking the next prompt.`,
-        availableNextScreens,
       });
+      return {
+        success: true,
+        from_screen: activeScreenId ?? null,
+        next_screen: targetScreen,
+        current_screen: activeScreenId ?? null,
+        delay_seconds: resolvedDelay,
+        reason: 'navigation_scheduled',
+        message: `Navigation to "${targetScreen}" scheduled.`,
+      };
     },
 
     // Record user input to screen state immediately.
@@ -3978,24 +3804,7 @@ Important guidelines:
       const { title, summary = '', description = '', storeKey, nextEventId, delay = 0 } = params;
       const activeScreenId = currentScreenIdRef.current;
 
-      // Guard: only allow record_input once we have local evidence that the
-      // user actually spoke on this screen.
-      const userHasSpokenLocally = activeScreenId
-        ? userHasSpokenOnScreenRef.current.has(activeScreenId)
-        : userUtteranceCountRef.current > 0;
-      const canPersistCapture = userHasSpokenLocally;
-      const effectiveNextEventId = canPersistCapture ? nextEventId : undefined;
-      if (!canPersistCapture && nextEventId) {
-        addLog('warning', `⚠️ record_input: suppressing nextEventId "${nextEventId}" on "${activeScreenId ?? 'unknown'}" (user has not spoken on this screen yet).`, {
-          title, storeKey, nextEventId, currentScreen: activeScreenId, startedAtMs,
-        });
-      }
-      if (!canPersistCapture) {
-        addLog('warning', `⚠️ record_input: ignored for "${storeKey || title}" until a member answer is received on "${activeScreenId ?? 'unknown'}".`, {
-          userHasSpokenLocally,
-        });
-        return `Skipped record_input for "${title}" because no user response was detected on this screen yet. Ask a follow-up and try again after the member answers.`;
-      }
+      const effectiveNextEventId = nextEventId;
 
       const baseUpdates = deriveRecordInputModuleUpdates({ title, summary, storeKey });
       const { summary: displaySummary, updates: canonicalUpdates } = applyWeeklyFocusRecordInputPolicy(
@@ -4113,7 +3922,7 @@ Important guidelines:
         elapsedMs: completedAtMs - startedAtMs,
         nextEventId: nextEventId || null,
         effectiveNextEventId: effectiveNextEventId || null,
-        navigationSuppressed: !userHasSpokenLocally && !!nextEventId,
+        navigationSuppressed: false,
       });
       return {
         saved: true,

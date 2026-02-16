@@ -47,6 +47,8 @@ export const DEFAULT_QUIZ_DATA: Record<string, string> = {
   areas_to_improve: '[areas to improve from quiz]',
   learning_topics: '[learning topics from quiz]',
   motivation: '[motivation from quiz]',
+  last7DaysSummary: '[last 7 days check-in summary]',
+  last7DaysData: '[last 7 days raw check-in payload]',
   currentScreen: '[current screen id]',
   current_screen: '[current screen id]',
 };
@@ -76,9 +78,89 @@ export const DEFAULT_VARIABLES: Variable[] = [
   { name: 'goal_alcohol', description: 'Member goal for alcohol (drink less, quit, etc.)', category: 'quiz', isCustom: false },
   { name: 'areas_to_improve', description: 'Specific areas member wants to improve', category: 'quiz', isCustom: false },
   { name: 'learning_topics', description: 'Topics member wants to learn about (from quiz)', category: 'quiz', isCustom: false },
+  { name: 'last7DaysSummary', description: 'Formatted summary of last 7 days check-ins', category: 'context', isCustom: false },
+  { name: 'last7DaysData', description: 'Raw last 7 days check-in payload (JSON)', category: 'context', isCustom: false },
   { name: 'currentScreen', description: 'Current runtime screen pointer for flow control', category: 'context', isCustom: false },
   { name: 'current_screen', description: 'Legacy current runtime screen pointer (snake_case)', category: 'context', isCustom: false },
 ];
+
+type CheckinLikeEntry = {
+  abstained?: boolean;
+  standardUnits?: number | null;
+  standardDrinks?: number | null;
+  value?: number | boolean | null;
+};
+
+function parseLast7DaysPayload(value: unknown): unknown {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    try {
+      return JSON.parse(trimmed);
+    } catch {
+      return trimmed;
+    }
+  }
+  return value;
+}
+
+function formatCheckinEntry(entry: CheckinLikeEntry): string {
+  if (!entry || typeof entry !== 'object') return 'reported';
+
+  const quantity = entry.standardDrinks ?? entry.standardUnits;
+  if (typeof quantity === 'number') {
+    return quantity === 0 || entry.abstained ? '0 (abstained)' : `${quantity}`;
+  }
+
+  if (typeof entry.value === 'number') {
+    return entry.value === 0 ? '0 (abstained)' : `${entry.value}`;
+  }
+
+  if (typeof entry.value === 'boolean') {
+    return entry.value ? 'used' : 'abstained';
+  }
+
+  if (entry.abstained === true) return 'abstained';
+  if (entry.abstained === false) return 'used';
+  return 'reported';
+}
+
+function formatLast7DaysSummary(rawValue: unknown): string | undefined {
+  const parsed = parseLast7DaysPayload(rawValue);
+  if (!parsed) return undefined;
+
+  if (typeof parsed === 'string') {
+    return parsed;
+  }
+
+  if (Array.isArray(parsed)) {
+    const entries = parsed
+      .filter((item): item is { date?: string } & CheckinLikeEntry => !!item && typeof item === 'object')
+      .slice(0, 7)
+      .map((item) => {
+        const label = typeof item.date === 'string' && item.date.trim() ? item.date : 'unknown-date';
+        return `${label}: ${formatCheckinEntry(item)}`;
+      });
+    return entries.length > 0 ? entries.join('; ') : undefined;
+  }
+
+  if (typeof parsed !== 'object') return undefined;
+
+  const substanceSummaries = Object.entries(parsed as Record<string, unknown>)
+    .map(([substance, dates]) => {
+      if (!dates || typeof dates !== 'object' || Array.isArray(dates)) return '';
+      const dayEntries = Object.entries(dates as Record<string, CheckinLikeEntry>)
+        .filter(([date]) => /^\d{4}-\d{2}-\d{2}$/.test(date))
+        .sort(([a], [b]) => b.localeCompare(a))
+        .slice(0, 7)
+        .map(([date, entry]) => `${date}: ${formatCheckinEntry(entry)}`);
+      if (dayEntries.length === 0) return '';
+      return `${substance}: ${dayEntries.join('; ')}`;
+    })
+    .filter(Boolean);
+
+  return substanceSummaries.length > 0 ? substanceSummaries.join(' | ') : undefined;
+}
 
 /**
  * Regex pattern for matching {{variableName}} syntax
@@ -171,6 +253,26 @@ export function substitutePromptVariables(
       unifiedContext[legacyKey] = context[quizKey];
       console.log(`🔗 Mapped ${quizKey} → ${legacyKey}: ${context[quizKey]}`);
     }
+  }
+
+  const rawLast7DaysPayload =
+    context.last7DaysData ??
+    context.last7daysData ??
+    context.last7Days ??
+    context.last_7_days ??
+    context.drinkingLogs;
+  const last7DaysSummary = formatLast7DaysSummary(rawLast7DaysPayload);
+  if (last7DaysSummary) {
+    unifiedContext.last7DaysSummary = last7DaysSummary;
+    if (!context.drinkingLogs) {
+      unifiedContext.drinkingLogs = last7DaysSummary;
+    }
+  }
+
+  if (rawLast7DaysPayload !== undefined) {
+    const parsedPayload = parseLast7DaysPayload(rawLast7DaysPayload);
+    unifiedContext.last7DaysData =
+      typeof parsedPayload === 'string' ? parsedPayload : JSON.stringify(parsedPayload);
   }
 
   // Keep runtime screen pointer available in both naming styles.

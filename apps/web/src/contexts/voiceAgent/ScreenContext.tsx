@@ -65,19 +65,19 @@ export const ScreenProvider: React.FC<ScreenProviderProps> = ({
   const screenStateRef = React.useRef<Record<string, AnyCodable>>(initialScreen?.state || {});
   const moduleStateRef = React.useRef<Record<string, AnyCodable>>(initialModuleState);
 
-  // Update current screen when initialScreen prop changes
+  // Update current screen when initialScreen prop changes.
+  // IMPORTANT: only switch screens when the ID actually changes.
+  // Reapplying the same screen object on each render can pin voice flows
+  // to the old screen and hide captured UI cards that depend on current_screen.
   React.useEffect(() => {
-    if (initialScreen) {
-      // Always update when the initialScreen changes to support live editing
-      setCurrentScreenState(initialScreen);
-      // Only reset screen state if it's a different screen
-      if (initialScreen.id !== currentScreen?.id) {
-        const newState = initialScreen.state || {};
-        screenStateRef.current = newState; // Sync ref immediately
-        setScreenState(newState);
-      }
-    }
-  }, [initialScreen]);
+    if (!initialScreen) return;
+    if (initialScreen.id === currentScreen?.id) return;
+
+    setCurrentScreenState(initialScreen);
+    const newState = initialScreen.state || {};
+    screenStateRef.current = newState; // Sync ref immediately
+    setScreenState(newState);
+  }, [initialScreen, currentScreen?.id]);
 
   // Sync module state from parent props.
   // CRITICAL: Merge instead of replace to avoid wiping locally-set keys
